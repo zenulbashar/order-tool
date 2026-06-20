@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # The DB client connects lazily, so the build needs no DATABASE_URL.
+      - run: npm run build
+
+  migrate-prod:
+    name: Migrate prod (additive only)
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Applies committed migrations only. Keep these ADDITIVE — destructive
+      # changes (drop/rename/narrow) are run manually against prod. See README.
+      - name: Apply additive migrations
+        run: npm run db:migrate
+        env:
+          # Use the DIRECT (non-pooled) Neon URL for migrations.
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          # Included for parity with roster-tool's migrate step.
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
