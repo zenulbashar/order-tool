@@ -1,7 +1,12 @@
 import { asc } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { menuCategories, menuItems } from "@/lib/db/schema";
+import {
+  menuCategories,
+  menuItems,
+  modifierGroups,
+  modifierOptions,
+} from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 
 /**
@@ -24,4 +29,20 @@ export async function getItemsForVenue(venueId: string) {
     .from(menuItems)
     .where(scopedToVenue(menuItems.venueId, venueId))
     .orderBy(asc(menuItems.sortOrder), asc(menuItems.createdAt));
+}
+
+export async function getGroupsForVenue(venueId: string) {
+  return db
+    .select()
+    .from(modifierGroups)
+    .where(scopedToVenue(modifierGroups.venueId, venueId))
+    .orderBy(asc(modifierGroups.sortOrder), asc(modifierGroups.createdAt));
+}
+
+export async function getOptionsForVenue(venueId: string) {
+  return db
+    .select()
+    .from(modifierOptions)
+    .where(scopedToVenue(modifierOptions.venueId, venueId))
+    .orderBy(asc(modifierOptions.sortOrder), asc(modifierOptions.createdAt));
 }

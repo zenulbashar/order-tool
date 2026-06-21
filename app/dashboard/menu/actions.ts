@@ -6,14 +6,23 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { menuCategories, menuItems } from "@/lib/db/schema";
+import {
+  menuCategories,
+  menuItems,
+  modifierGroups,
+  modifierOptions,
+} from "@/lib/db/schema";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   categoryCreateSchema,
   categoryUpdateSchema,
+  groupCreateSchema,
+  groupUpdateSchema,
   idSchema,
   itemCreateSchema,
   itemUpdateSchema,
+  optionCreateSchema,
+  optionUpdateSchema,
 } from "@/lib/validation";
 
 export type MenuActionState = { error?: string };
@@ -32,6 +41,12 @@ async function requireVenueForAction(): Promise<Venue> {
     redirect("/signin");
   }
   return requireVenue();
+}
+
+/** Option price delta defaults to 0 when the field is left blank. */
+function priceDeltaInput(formData: FormData): string {
+  const raw = String(formData.get("priceDelta") ?? "").trim();
+  return raw.length > 0 ? raw : "0";
 }
 
 /** Next sort_order = MAX(sort_order)+1 within the venue (categories are top level). */
@@ -389,6 +404,392 @@ export async function moveItem(formData: FormData): Promise<void> {
         and(
           eq(menuItems.id, neighbor.id),
           scopedToVenue(menuItems.venueId, venue.id),
+        ),
+      );
+  });
+
+  revalidatePath(MENU_PATH);
+}
+
+/* ------------------------------ Modifier groups --------------------------- */
+
+/** Parent-ownership: returns the item id only if it belongs to the venue. */
+async function ownedItemId(
+  venueId: string,
+  itemId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: menuItems.id })
+    .from(menuItems)
+    .where(
+      and(eq(menuItems.id, itemId), scopedToVenue(menuItems.venueId, venueId)),
+    )
+    .limit(1);
+  return row?.id ?? null;
+}
+
+/** Next sort_order = MAX(sort_order)+1 among groups on the same item. */
+async function nextGroupSort(
+  venueId: string,
+  itemId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ sortOrder: modifierGroups.sortOrder })
+    .from(modifierGroups)
+    .where(
+      and(
+        scopedToVenue(modifierGroups.venueId, venueId),
+        eq(modifierGroups.itemId, itemId),
+      ),
+    )
+    .orderBy(desc(modifierGroups.sortOrder))
+    .limit(1);
+  return (rows[0]?.sortOrder ?? -1) + 1;
+}
+
+export async function createGroup(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const itemId = idSchema.safeParse(formData.get("itemId"));
+  if (!itemId.success) return { error: "Missing item." };
+
+  const parsed = groupCreateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    minSelect: formData.get("minSelect") ?? "",
+    maxSelect: formData.get("maxSelect") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const owned = await ownedItemId(venue.id, itemId.data);
+  if (!owned) return { error: "Item not found." };
+
+  await db.insert(modifierGroups).values({
+    venueId: venue.id,
+    itemId: owned,
+    name: parsed.data.name,
+    minSelect: parsed.data.minSelect,
+    maxSelect: parsed.data.maxSelect,
+    sortOrder: await nextGroupSort(venue.id, owned),
+  });
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function updateGroup(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return { error: "Missing group." };
+
+  const parsed = groupUpdateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    minSelect: formData.get("minSelect") ?? "",
+    maxSelect: formData.get("maxSelect") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  // item_id is immutable on edit; scope by id AND venue_id, no venue_id in set.
+  const updated = await db
+    .update(modifierGroups)
+    .set({
+      name: parsed.data.name,
+      minSelect: parsed.data.minSelect,
+      maxSelect: parsed.data.maxSelect,
+    })
+    .where(
+      and(
+        eq(modifierGroups.id, id.data),
+        scopedToVenue(modifierGroups.venueId, venue.id),
+      ),
+    )
+    .returning({ id: modifierGroups.id });
+  if (updated.length === 0) return { error: "Group not found." };
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function deleteGroup(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return;
+
+  // FK cascade removes this group's options. The UI confirms.
+  await db
+    .delete(modifierGroups)
+    .where(
+      and(
+        eq(modifierGroups.id, id.data),
+        scopedToVenue(modifierGroups.venueId, venue.id),
+      ),
+    );
+
+  revalidatePath(MENU_PATH);
+}
+
+export async function moveGroup(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  const direction = formData.get("direction");
+  if (!id.success || (direction !== "up" && direction !== "down")) return;
+
+  await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({
+        id: modifierGroups.id,
+        sortOrder: modifierGroups.sortOrder,
+        itemId: modifierGroups.itemId,
+      })
+      .from(modifierGroups)
+      .where(
+        and(
+          eq(modifierGroups.id, id.data),
+          scopedToVenue(modifierGroups.venueId, venue.id),
+        ),
+      )
+      .limit(1);
+    if (!current) return;
+
+    const [neighbor] = await tx
+      .select({ id: modifierGroups.id, sortOrder: modifierGroups.sortOrder })
+      .from(modifierGroups)
+      .where(
+        and(
+          scopedToVenue(modifierGroups.venueId, venue.id),
+          eq(modifierGroups.itemId, current.itemId),
+          direction === "up"
+            ? lt(modifierGroups.sortOrder, current.sortOrder)
+            : gt(modifierGroups.sortOrder, current.sortOrder),
+        ),
+      )
+      .orderBy(
+        direction === "up"
+          ? desc(modifierGroups.sortOrder)
+          : asc(modifierGroups.sortOrder),
+      )
+      .limit(1);
+    if (!neighbor) return;
+
+    await tx
+      .update(modifierGroups)
+      .set({ sortOrder: neighbor.sortOrder })
+      .where(
+        and(
+          eq(modifierGroups.id, current.id),
+          scopedToVenue(modifierGroups.venueId, venue.id),
+        ),
+      );
+    await tx
+      .update(modifierGroups)
+      .set({ sortOrder: current.sortOrder })
+      .where(
+        and(
+          eq(modifierGroups.id, neighbor.id),
+          scopedToVenue(modifierGroups.venueId, venue.id),
+        ),
+      );
+  });
+
+  revalidatePath(MENU_PATH);
+}
+
+/* ----------------------------- Modifier options --------------------------- */
+
+/** Parent-ownership: returns the group id only if it belongs to the venue. */
+async function ownedGroupId(
+  venueId: string,
+  groupId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: modifierGroups.id })
+    .from(modifierGroups)
+    .where(
+      and(
+        eq(modifierGroups.id, groupId),
+        scopedToVenue(modifierGroups.venueId, venueId),
+      ),
+    )
+    .limit(1);
+  return row?.id ?? null;
+}
+
+/** Next sort_order = MAX(sort_order)+1 among options in the same group. */
+async function nextOptionSort(
+  venueId: string,
+  groupId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ sortOrder: modifierOptions.sortOrder })
+    .from(modifierOptions)
+    .where(
+      and(
+        scopedToVenue(modifierOptions.venueId, venueId),
+        eq(modifierOptions.groupId, groupId),
+      ),
+    )
+    .orderBy(desc(modifierOptions.sortOrder))
+    .limit(1);
+  return (rows[0]?.sortOrder ?? -1) + 1;
+}
+
+export async function createOption(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const groupId = idSchema.safeParse(formData.get("groupId"));
+  if (!groupId.success) return { error: "Missing group." };
+
+  const parsed = optionCreateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    priceDeltaCents: priceDeltaInput(formData),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const owned = await ownedGroupId(venue.id, groupId.data);
+  if (!owned) return { error: "Group not found." };
+
+  await db.insert(modifierOptions).values({
+    venueId: venue.id,
+    groupId: owned,
+    name: parsed.data.name,
+    priceDeltaCents: parsed.data.priceDeltaCents,
+    sortOrder: await nextOptionSort(venue.id, owned),
+  });
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function updateOption(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return { error: "Missing option." };
+
+  const parsed = optionUpdateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    priceDeltaCents: priceDeltaInput(formData),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const isAvailable = formData.get("isAvailable") === "on";
+
+  // group_id is immutable on edit; scope by id AND venue_id, no venue_id in set.
+  const updated = await db
+    .update(modifierOptions)
+    .set({
+      name: parsed.data.name,
+      priceDeltaCents: parsed.data.priceDeltaCents,
+      isAvailable,
+    })
+    .where(
+      and(
+        eq(modifierOptions.id, id.data),
+        scopedToVenue(modifierOptions.venueId, venue.id),
+      ),
+    )
+    .returning({ id: modifierOptions.id });
+  if (updated.length === 0) return { error: "Option not found." };
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function deleteOption(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return;
+
+  await db
+    .delete(modifierOptions)
+    .where(
+      and(
+        eq(modifierOptions.id, id.data),
+        scopedToVenue(modifierOptions.venueId, venue.id),
+      ),
+    );
+
+  revalidatePath(MENU_PATH);
+}
+
+export async function moveOption(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  const direction = formData.get("direction");
+  if (!id.success || (direction !== "up" && direction !== "down")) return;
+
+  await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({
+        id: modifierOptions.id,
+        sortOrder: modifierOptions.sortOrder,
+        groupId: modifierOptions.groupId,
+      })
+      .from(modifierOptions)
+      .where(
+        and(
+          eq(modifierOptions.id, id.data),
+          scopedToVenue(modifierOptions.venueId, venue.id),
+        ),
+      )
+      .limit(1);
+    if (!current) return;
+
+    const [neighbor] = await tx
+      .select({ id: modifierOptions.id, sortOrder: modifierOptions.sortOrder })
+      .from(modifierOptions)
+      .where(
+        and(
+          scopedToVenue(modifierOptions.venueId, venue.id),
+          eq(modifierOptions.groupId, current.groupId),
+          direction === "up"
+            ? lt(modifierOptions.sortOrder, current.sortOrder)
+            : gt(modifierOptions.sortOrder, current.sortOrder),
+        ),
+      )
+      .orderBy(
+        direction === "up"
+          ? desc(modifierOptions.sortOrder)
+          : asc(modifierOptions.sortOrder),
+      )
+      .limit(1);
+    if (!neighbor) return;
+
+    await tx
+      .update(modifierOptions)
+      .set({ sortOrder: neighbor.sortOrder })
+      .where(
+        and(
+          eq(modifierOptions.id, current.id),
+          scopedToVenue(modifierOptions.venueId, venue.id),
+        ),
+      );
+    await tx
+      .update(modifierOptions)
+      .set({ sortOrder: current.sortOrder })
+      .where(
+        and(
+          eq(modifierOptions.id, neighbor.id),
+          scopedToVenue(modifierOptions.venueId, venue.id),
         ),
       );
   });
