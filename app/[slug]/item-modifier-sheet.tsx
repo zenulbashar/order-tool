@@ -1,0 +1,237 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+import { formatCents } from "@/lib/validation";
+
+import type { PublicGroup, PublicItem } from "./types";
+
+/**
+ * Maps the modifier data model to the selection UI:
+ *  - max_select === 1  -> radios. Required (min_select >= 1) has no "None";
+ *    optional (min_select === 0) gets a "None" choice so it can be cleared.
+ *  - max_select > 1    -> checkboxes, capped at max_select; min_select enforced.
+ *
+ * Running total is DISPLAY ONLY. "Add to cart" stays disabled until every
+ * required group is satisfied. The actual add is provided by the parent.
+ */
+export function ItemModifierSheet({
+  item,
+  onClose,
+  onAdd,
+}: {
+  item: PublicItem;
+  onClose: () => void;
+  onAdd?: (
+    itemId: string,
+    selectedOptionIds: string[],
+    quantity: number,
+  ) => void;
+}) {
+  const [selections, setSelections] = useState<Record<string, string[]>>({});
+  const [quantity, setQuantity] = useState(1);
+
+  // Lock background scroll while the sheet is open.
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  function selectRadio(group: PublicGroup, optionId: string | null) {
+    setSelections((prev) => ({
+      ...prev,
+      [group.id]: optionId ? [optionId] : [],
+    }));
+  }
+
+  function toggleCheckbox(group: PublicGroup, optionId: string) {
+    setSelections((prev) => {
+      const current = prev[group.id] ?? [];
+      if (current.includes(optionId)) {
+        return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
+      }
+      if (current.length >= group.maxSelect) return prev; // at cap
+      return { ...prev, [group.id]: [...current, optionId] };
+    });
+  }
+
+  const isSatisfied = (group: PublicGroup) =>
+    (selections[group.id]?.length ?? 0) >= group.minSelect;
+  const allValid = item.groups.every(isSatisfied);
+
+  const deltaCents = useMemo(() => {
+    let sum = 0;
+    for (const group of item.groups) {
+      const selected = selections[group.id] ?? [];
+      for (const option of group.options) {
+        if (selected.includes(option.id)) sum += option.priceDeltaCents;
+      }
+    }
+    return sum;
+  }, [item.groups, selections]);
+
+  const totalCents = (item.priceCents + deltaCents) * quantity;
+
+  function groupHint(group: PublicGroup): string {
+    if (group.maxSelect === 1) {
+      return group.minSelect >= 1 ? "Required · choose 1" : "Optional";
+    }
+    const base = `Choose up to ${group.maxSelect}`;
+    return group.minSelect >= 1 ? `${base} · at least ${group.minSelect}` : base;
+  }
+
+  function handleAdd() {
+    if (!allValid) return;
+    const selectedOptionIds = item.groups.flatMap((g) => selections[g.id] ?? []);
+    // onAdd is wired to the cart in the next commit; the sheet closes itself.
+    onAdd?.(item.id, selectedOptionIds, quantity);
+    onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.name}
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white sm:rounded-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold tracking-tight text-gray-900">
+              {item.name}
+            </h2>
+            {item.description ? (
+              <p className="mt-0.5 text-sm text-gray-500">{item.description}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+          {item.groups.map((group) => {
+            const selected = selections[group.id] ?? [];
+            const isRadio = group.maxSelect === 1;
+            const atCap = !isRadio && selected.length >= group.maxSelect;
+            return (
+              <fieldset key={group.id}>
+                <legend className="flex w-full items-baseline justify-between">
+                  <span className="text-sm font-medium text-gray-900">
+                    {group.name}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {groupHint(group)}
+                  </span>
+                </legend>
+
+                <div className="mt-2 space-y-1.5">
+                  {group.options.length === 0 ? (
+                    <p className="text-xs text-gray-400">No options available.</p>
+                  ) : null}
+
+                  {/* Optional single-select can be cleared via a "None" radio. */}
+                  {isRadio && group.minSelect === 0 ? (
+                    <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+                      <span className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name={group.id}
+                          checked={selected.length === 0}
+                          onChange={() => selectRadio(group, null)}
+                          className="h-4 w-4"
+                        />
+                        None
+                      </span>
+                    </label>
+                  ) : null}
+
+                  {group.options.map((option) => {
+                    const checked = selected.includes(option.id);
+                    return (
+                      <label
+                        key={option.id}
+                        className="flex items-center justify-between gap-3 text-sm text-gray-700"
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type={isRadio ? "radio" : "checkbox"}
+                            name={isRadio ? group.id : undefined}
+                            checked={checked}
+                            disabled={!isRadio && !checked && atCap}
+                            onChange={() =>
+                              isRadio
+                                ? selectRadio(group, option.id)
+                                : toggleCheckbox(group, option.id)
+                            }
+                            className="h-4 w-4"
+                          />
+                          {option.name}
+                        </span>
+                        {option.priceDeltaCents > 0 ? (
+                          <span className="text-gray-500">
+                            +${formatCents(option.priceDeltaCents)}
+                          </span>
+                        ) : null}
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            );
+          })}
+        </div>
+
+        <div className="space-y-3 border-t border-gray-100 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-900">Quantity</span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                disabled={quantity <= 1}
+                aria-label="Decrease quantity"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-700 disabled:opacity-40"
+              >
+                −
+              </button>
+              <span className="w-6 text-center text-sm font-medium">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQuantity((q) => q + 1)}
+                aria-label="Increase quantity"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-700"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!allValid}
+            className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ backgroundColor: "var(--brand)" }}
+          >
+            Add to cart · ${formatCents(totalCents)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

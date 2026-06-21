@@ -44,3 +44,6 @@ export type PublicCategory = {
 };
 
 export type PublicMenu = PublicCategory[];
+
+/** Order type is UI state only in 2a (persisted at order time in 2b). */
+export type OrderType = "pickup" | "dinein";
