@@ -142,3 +142,41 @@ export const optionCreateSchema = z.object({
   priceDeltaCents: priceDollarsToCentsSchema,
 });
 export const optionUpdateSchema = optionCreateSchema;
+
+/* -------------------------------------------------------------------------- */
+/* Storefront theming (Phase 2a)                                              */
+/* -------------------------------------------------------------------------- */
+
+/** Hex colour (#rgb or #rrggbb), normalized to lowercase. */
+export const brandColorSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(
+    /^#([0-9a-f]{3}|[0-9a-f]{6})$/,
+    "Enter a hex colour like #1d4ed8.",
+  );
+
+/** Field only this phase (no upload). Empty stored as null; else http(s) URL. */
+export const logoUrlSchema = z
+  .string()
+  .trim()
+  .max(2048, "Logo URL is too long.")
+  .refine(
+    (value) => value === "" || /^https?:\/\/.+/i.test(value),
+    "Enter a valid URL starting with http:// or https://.",
+  )
+  .transform((value) => (value.length > 0 ? value : null));
+
+/** Optional public blurb shown under the venue name on the storefront. */
+export const storefrontDescriptionSchema = z
+  .string()
+  .trim()
+  .max(500, "Description is too long.")
+  .transform((value) => (value.length > 0 ? value : null));
+
+export const venueSettingsSchema = z.object({
+  brandColor: brandColorSchema,
+  logoUrl: logoUrlSchema,
+  storefrontDescription: storefrontDescriptionSchema,
+});

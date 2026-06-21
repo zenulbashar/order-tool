@@ -33,15 +33,38 @@ export default async function DashboardPage() {
       </header>
 
       <section className="py-10">
-        <Link
-          href="/dashboard/menu"
-          className="block rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 hover:bg-gray-50"
-        >
-          <p className="text-sm font-medium text-gray-900">Menu</p>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage categories, items, and modifiers for your venue.
-          </p>
-        </Link>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/dashboard/menu"
+            className="block rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 hover:bg-gray-50"
+          >
+            <p className="text-sm font-medium text-gray-900">Menu</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage categories, items, and modifiers for your venue.
+            </p>
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="block rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 hover:bg-gray-50"
+          >
+            <p className="text-sm font-medium text-gray-900">
+              Storefront settings
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              Brand colour, logo, and the description customers see.
+            </p>
+          </Link>
+        </div>
+
+        <p className="mt-6 text-sm">
+          <Link
+            href={`/${venue.slug}`}
+            target="_blank"
+            className="font-medium text-gray-700 underline hover:text-gray-900"
+          >
+            View your storefront ↗
+          </Link>
+        </p>
         <p className="mt-6 text-xs text-gray-400">Signed in as {user.email}</p>
       </section>
     </main>
