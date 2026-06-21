@@ -6,12 +6,14 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { menuCategories } from "@/lib/db/schema";
+import { menuCategories, menuItems } from "@/lib/db/schema";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   categoryCreateSchema,
   categoryUpdateSchema,
   idSchema,
+  itemCreateSchema,
+  itemUpdateSchema,
 } from "@/lib/validation";
 
 export type MenuActionState = { error?: string };
@@ -183,6 +185,210 @@ export async function moveCategory(formData: FormData): Promise<void> {
         and(
           eq(menuCategories.id, neighbor.id),
           scopedToVenue(menuCategories.venueId, venue.id),
+        ),
+      );
+  });
+
+  revalidatePath(MENU_PATH);
+}
+
+/* ---------------------------------- Items --------------------------------- */
+
+/** Parent-ownership: returns the category id only if it belongs to the venue. */
+async function ownedCategoryId(
+  venueId: string,
+  categoryId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: menuCategories.id })
+    .from(menuCategories)
+    .where(
+      and(
+        eq(menuCategories.id, categoryId),
+        scopedToVenue(menuCategories.venueId, venueId),
+      ),
+    )
+    .limit(1);
+  return row?.id ?? null;
+}
+
+/** Next sort_order = MAX(sort_order)+1 among items in the same category. */
+async function nextItemSort(
+  venueId: string,
+  categoryId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ sortOrder: menuItems.sortOrder })
+    .from(menuItems)
+    .where(
+      and(
+        scopedToVenue(menuItems.venueId, venueId),
+        eq(menuItems.categoryId, categoryId),
+      ),
+    )
+    .orderBy(desc(menuItems.sortOrder))
+    .limit(1);
+  return (rows[0]?.sortOrder ?? -1) + 1;
+}
+
+export async function createItem(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const categoryId = idSchema.safeParse(formData.get("categoryId"));
+  if (!categoryId.success) return { error: "Missing category." };
+
+  const parsed = itemCreateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    description: formData.get("description") ?? "",
+    priceCents: formData.get("price") ?? "",
+    imageUrl: formData.get("imageUrl") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const owned = await ownedCategoryId(venue.id, categoryId.data);
+  if (!owned) return { error: "Category not found." };
+
+  await db.insert(menuItems).values({
+    venueId: venue.id,
+    categoryId: owned,
+    name: parsed.data.name,
+    description: parsed.data.description,
+    priceCents: parsed.data.priceCents,
+    imageUrl: parsed.data.imageUrl,
+    sortOrder: await nextItemSort(venue.id, owned),
+  });
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function updateItem(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return { error: "Missing item." };
+  const categoryId = idSchema.safeParse(formData.get("categoryId"));
+  if (!categoryId.success) return { error: "Missing category." };
+
+  const parsed = itemUpdateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    description: formData.get("description") ?? "",
+    priceCents: formData.get("price") ?? "",
+    imageUrl: formData.get("imageUrl") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const isAvailable = formData.get("isAvailable") === "on";
+
+  // Reparenting guard: an edit can change the category, so the NEW category
+  // must also belong to this venue before we point the item at it.
+  const owned = await ownedCategoryId(venue.id, categoryId.data);
+  if (!owned) return { error: "Category not found." };
+
+  // IDOR-safe: scope by id AND venue_id; venue_id is never in the payload.
+  const updated = await db
+    .update(menuItems)
+    .set({
+      name: parsed.data.name,
+      description: parsed.data.description,
+      priceCents: parsed.data.priceCents,
+      imageUrl: parsed.data.imageUrl,
+      isAvailable,
+      categoryId: owned,
+    })
+    .where(
+      and(eq(menuItems.id, id.data), scopedToVenue(menuItems.venueId, venue.id)),
+    )
+    .returning({ id: menuItems.id });
+  if (updated.length === 0) return { error: "Item not found." };
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function deleteItem(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return;
+
+  await db
+    .delete(menuItems)
+    .where(
+      and(eq(menuItems.id, id.data), scopedToVenue(menuItems.venueId, venue.id)),
+    );
+
+  revalidatePath(MENU_PATH);
+}
+
+export async function moveItem(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  const direction = formData.get("direction");
+  if (!id.success || (direction !== "up" && direction !== "down")) return;
+
+  // Reorder within the item's own category (siblings only). Multi-row write.
+  await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({
+        id: menuItems.id,
+        sortOrder: menuItems.sortOrder,
+        categoryId: menuItems.categoryId,
+      })
+      .from(menuItems)
+      .where(
+        and(
+          eq(menuItems.id, id.data),
+          scopedToVenue(menuItems.venueId, venue.id),
+        ),
+      )
+      .limit(1);
+    if (!current) return;
+
+    const [neighbor] = await tx
+      .select({ id: menuItems.id, sortOrder: menuItems.sortOrder })
+      .from(menuItems)
+      .where(
+        and(
+          scopedToVenue(menuItems.venueId, venue.id),
+          eq(menuItems.categoryId, current.categoryId),
+          direction === "up"
+            ? lt(menuItems.sortOrder, current.sortOrder)
+            : gt(menuItems.sortOrder, current.sortOrder),
+        ),
+      )
+      .orderBy(
+        direction === "up"
+          ? desc(menuItems.sortOrder)
+          : asc(menuItems.sortOrder),
+      )
+      .limit(1);
+    if (!neighbor) return;
+
+    await tx
+      .update(menuItems)
+      .set({ sortOrder: neighbor.sortOrder })
+      .where(
+        and(
+          eq(menuItems.id, current.id),
+          scopedToVenue(menuItems.venueId, venue.id),
+        ),
+      );
+    await tx
+      .update(menuItems)
+      .set({ sortOrder: current.sortOrder })
+      .where(
+        and(
+          eq(menuItems.id, neighbor.id),
+          scopedToVenue(menuItems.venueId, venue.id),
         ),
       );
   });
