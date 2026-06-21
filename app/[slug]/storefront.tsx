@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { CartBar } from "./cart-bar";
+import { CartProvider, useCart } from "./cart-provider";
 import { CategoryNav } from "./category-nav";
 import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
@@ -9,12 +11,9 @@ import { OrderTypeSelector } from "./order-type-selector";
 import type { OrderType, PublicItem, PublicMenu, PublicVenue } from "./types";
 
 /**
- * Top-level client storefront shell. Holds the browse-time UI state (order
- * type, table label, the item whose modifier sheet is open) and applies the
- * venue's brand colour as a runtime CSS variable consumed by descendants.
- *
- * Cart wiring (add-to-cart, the persistent cart bar, and cart review) arrives
- * in the next commit; for now adding an item just closes the sheet.
+ * Top-level storefront. The cart provider wraps everything so the modifier
+ * sheet and cart bar can read/write cart state; the venue's brand colour is
+ * applied as a runtime CSS variable consumed by descendants.
  */
 export function Storefront({
   venue,
@@ -25,6 +24,23 @@ export function Storefront({
   menu: PublicMenu;
   initialTable: string;
 }) {
+  return (
+    <CartProvider slug={venue.slug} menu={menu}>
+      <StorefrontInner venue={venue} menu={menu} initialTable={initialTable} />
+    </CartProvider>
+  );
+}
+
+function StorefrontInner({
+  venue,
+  menu,
+  initialTable,
+}: {
+  venue: PublicVenue;
+  menu: PublicMenu;
+  initialTable: string;
+}) {
+  const { addItem } = useCart();
   const [orderType, setOrderType] = useState<OrderType>(
     initialTable ? "dinein" : "pickup",
   );
@@ -115,8 +131,11 @@ export function Storefront({
           key={activeItem.id}
           item={activeItem}
           onClose={() => setActiveItem(null)}
+          onAdd={addItem}
         />
       ) : null}
+
+      <CartBar slug={venue.slug} />
     </div>
   );
 }
