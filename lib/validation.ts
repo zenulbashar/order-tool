@@ -180,3 +180,43 @@ export const venueSettingsSchema = z.object({
   logoUrl: logoUrlSchema,
   storefrontDescription: storefrontDescriptionSchema,
 });
+
+/* -------------------------------------------------------------------------- */
+/* Reserved slugs (Phase 2a)                                                  */
+/*                                                                            */
+/* A venue slug is served at the top-level path /{slug}, so it must never     */
+/* collide with a real app route. This is enforced in two places: blocked at  */
+/* venue creation (app/onboarding/actions.ts) AND treated as not-found by the */
+/* public resolver (app/[slug]/page.tsx) regardless of any DB row.            */
+/* -------------------------------------------------------------------------- */
+export const RESERVED_SLUGS = new Set<string>([
+  // Real top-level routes today.
+  "api",
+  "dashboard",
+  "onboarding",
+  "signin",
+  // Reserved for near-future routes and common conventions.
+  "account",
+  "admin",
+  "assets",
+  "cart",
+  "checkout",
+  "login",
+  "logout",
+  "menu",
+  "order",
+  "orders",
+  "public",
+  "settings",
+  "signup",
+  "static",
+  "_next",
+  "favicon.ico",
+  "robots.txt",
+  "sitemap.xml",
+  "well-known",
+]);
+
+export function isReservedSlug(slug: string): boolean {
+  return RESERVED_SLUGS.has(slug.trim().toLowerCase());
+}
