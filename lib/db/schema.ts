@@ -63,6 +63,13 @@ export const venues = pgTable(
       .notNull()
       .references(() => users.id),
     timezone: text("timezone").notNull().default("Australia/Brisbane"),
+    // Storefront theming (Phase 2a). brand_color is the venue's accent, applied
+    // as a runtime CSS variable on the public storefront; it is NOT NULL with a
+    // neutral default so existing rows backfill safely. logo_url is a URL field
+    // only (no upload yet). storefront_description is optional public copy.
+    brandColor: text("brand_color").notNull().default("#111827"),
+    logoUrl: text("logo_url"),
+    storefrontDescription: text("storefront_description"),
     createdAt: createdAt(),
   },
   (table) => [uniqueIndex("venues_slug_idx").on(table.slug)],

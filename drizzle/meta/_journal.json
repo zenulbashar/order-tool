@@ -15,6 +15,13 @@
       "when": 1782073515492,
       "tag": "0001_smooth_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782076204330,
+      "tag": "0002_harsh_umar",
+      "breakpoints": true
     }
   ]
 }

@@ -142,3 +142,81 @@ export const optionCreateSchema = z.object({
   priceDeltaCents: priceDollarsToCentsSchema,
 });
 export const optionUpdateSchema = optionCreateSchema;
+
+/* -------------------------------------------------------------------------- */
+/* Storefront theming (Phase 2a)                                              */
+/* -------------------------------------------------------------------------- */
+
+/** Hex colour (#rgb or #rrggbb), normalized to lowercase. */
+export const brandColorSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(
+    /^#([0-9a-f]{3}|[0-9a-f]{6})$/,
+    "Enter a hex colour like #1d4ed8.",
+  );
+
+/** Field only this phase (no upload). Empty stored as null; else http(s) URL. */
+export const logoUrlSchema = z
+  .string()
+  .trim()
+  .max(2048, "Logo URL is too long.")
+  .refine(
+    (value) => value === "" || /^https?:\/\/.+/i.test(value),
+    "Enter a valid URL starting with http:// or https://.",
+  )
+  .transform((value) => (value.length > 0 ? value : null));
+
+/** Optional public blurb shown under the venue name on the storefront. */
+export const storefrontDescriptionSchema = z
+  .string()
+  .trim()
+  .max(500, "Description is too long.")
+  .transform((value) => (value.length > 0 ? value : null));
+
+export const venueSettingsSchema = z.object({
+  brandColor: brandColorSchema,
+  logoUrl: logoUrlSchema,
+  storefrontDescription: storefrontDescriptionSchema,
+});
+
+/* -------------------------------------------------------------------------- */
+/* Reserved slugs (Phase 2a)                                                  */
+/*                                                                            */
+/* A venue slug is served at the top-level path /{slug}, so it must never     */
+/* collide with a real app route. This is enforced in two places: blocked at  */
+/* venue creation (app/onboarding/actions.ts) AND treated as not-found by the */
+/* public resolver (app/[slug]/page.tsx) regardless of any DB row.            */
+/* -------------------------------------------------------------------------- */
+export const RESERVED_SLUGS = new Set<string>([
+  // Real top-level routes today.
+  "api",
+  "dashboard",
+  "onboarding",
+  "signin",
+  // Reserved for near-future routes and common conventions.
+  "account",
+  "admin",
+  "assets",
+  "cart",
+  "checkout",
+  "login",
+  "logout",
+  "menu",
+  "order",
+  "orders",
+  "public",
+  "settings",
+  "signup",
+  "static",
+  "_next",
+  "favicon.ico",
+  "robots.txt",
+  "sitemap.xml",
+  "well-known",
+]);
+
+export function isReservedSlug(slug: string): boolean {
+  return RESERVED_SLUGS.has(slug.trim().toLowerCase());
+}

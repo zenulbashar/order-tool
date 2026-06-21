@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { venueMembers, venues } from "@/lib/db/schema";
-import { slugSchema, venueNameSchema } from "@/lib/validation";
+import { isReservedSlug, slugSchema, venueNameSchema } from "@/lib/validation";
 
 export type CreateVenueState = { error?: string };
 
@@ -40,6 +40,14 @@ export async function createVenue(
   }
   const name = nameResult.data;
   const slug = slugResult.data;
+
+  // The slug becomes a public top-level path (/{slug}); never let it collide
+  // with an app route. Reserved slugs are also rejected by the public resolver.
+  if (isReservedSlug(slug)) {
+    return {
+      error: `The address "${slug}" is reserved. Please choose another.`,
+    };
+  }
 
   // Phase 0: one venue per owner.
   const existingMembership = await db
