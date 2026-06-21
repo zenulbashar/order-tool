@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { signOut } from "@/lib/auth";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -31,12 +33,15 @@ export default async function DashboardPage() {
       </header>
 
       <section className="py-10">
-        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-          <p className="text-sm font-medium text-gray-900">Your venue is ready.</p>
+        <Link
+          href="/dashboard/menu"
+          className="block rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 hover:bg-gray-50"
+        >
+          <p className="text-sm font-medium text-gray-900">Menu</p>
           <p className="mt-1 text-sm text-gray-500">
-            Menus, storefront, and ordering arrive in later phases.
+            Manage categories, items, and modifiers for your venue.
           </p>
-        </div>
+        </Link>
         <p className="mt-6 text-xs text-gray-400">Signed in as {user.email}</p>
       </section>
     </main>
