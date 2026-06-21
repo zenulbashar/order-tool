@@ -1,5 +1,8 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
+  check,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -20,6 +23,12 @@ const id = () =>
 
 const createdAt = () =>
   timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
+
+const updatedAt = () =>
+  timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date());
 
 /* -------------------------------------------------------------------------- */
 /* Core domain                                                                */
@@ -124,3 +133,118 @@ export const verificationTokens = pgTable(
   },
   (table) => [primaryKey({ columns: [table.identifier, table.token] })],
 );
+
+/* -------------------------------------------------------------------------- */
+/* Menu catalog (Phase 1)                                                     */
+/* venue_id is denormalized onto every table so the scopedToVenue() convention */
+/* applies uniformly (see lib/tenant.ts). Money is INTEGER CENTS, never float. */
+/* sort_order has no DB default — inserts set it to MAX(sort_order)+1 within   */
+/* the parent scope (see app/dashboard/menu/actions.ts).                      */
+/* -------------------------------------------------------------------------- */
+
+export const menuCategories = pgTable(
+  "menu_categories",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    sortOrder: integer("sort_order").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [index("menu_categories_venue_idx").on(table.venueId)],
+);
+
+export const menuItems = pgTable(
+  "menu_items",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => menuCategories.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    // Money is integer cents; format to dollars only at display.
+    priceCents: integer("price_cents").notNull(),
+    // FIELD ONLY this phase — no upload. Nullable text URL.
+    imageUrl: text("image_url"),
+    isAvailable: boolean("is_available").notNull().default(true),
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("menu_items_venue_idx").on(table.venueId),
+    index("menu_items_category_idx").on(table.categoryId),
+    check("menu_items_price_cents_nonneg", sql`${table.priceCents} >= 0`),
+  ],
+);
+
+export const modifierGroups = pgTable(
+  "modifier_groups",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    itemId: text("item_id")
+      .notNull()
+      .references(() => menuItems.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // "Required" is DERIVED as min_select >= 1 — no separate column.
+    minSelect: integer("min_select").notNull().default(0),
+    maxSelect: integer("max_select").notNull().default(1),
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("modifier_groups_venue_idx").on(table.venueId),
+    index("modifier_groups_item_idx").on(table.itemId),
+    check("modifier_groups_min_select_nonneg", sql`${table.minSelect} >= 0`),
+    check("modifier_groups_max_select_min1", sql`${table.maxSelect} >= 1`),
+    check(
+      "modifier_groups_min_lte_max",
+      sql`${table.minSelect} <= ${table.maxSelect}`,
+    ),
+  ],
+);
+
+export const modifierOptions = pgTable(
+  "modifier_options",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    groupId: text("group_id")
+      .notNull()
+      .references(() => modifierGroups.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    priceDeltaCents: integer("price_delta_cents").notNull().default(0),
+    isAvailable: boolean("is_available").notNull().default(true),
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("modifier_options_venue_idx").on(table.venueId),
+    index("modifier_options_group_idx").on(table.groupId),
+    check(
+      "modifier_options_price_delta_nonneg",
+      sql`${table.priceDeltaCents} >= 0`,
+    ),
+  ],
+);
+
+export type MenuCategory = typeof menuCategories.$inferSelect;
+export type MenuItem = typeof menuItems.$inferSelect;
+export type ModifierGroup = typeof modifierGroups.$inferSelect;
+export type ModifierOption = typeof modifierOptions.$inferSelect;
