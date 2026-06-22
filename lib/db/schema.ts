@@ -255,3 +255,113 @@ export type MenuCategory = typeof menuCategories.$inferSelect;
 export type MenuItem = typeof menuItems.$inferSelect;
 export type ModifierGroup = typeof modifierGroups.$inferSelect;
 export type ModifierOption = typeof modifierOptions.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* Orders (Phase 2b)                                                          */
+/*                                                                            */
+/* Public, unauthenticated checkout writes here. The server RECOMPUTES every  */
+/* total from live menu prices and SNAPSHOTS names + prices at order time:    */
+/* the *_snapshot columns are the financial truth, while menu_item_id /       */
+/* modifier_option_id are SOFT references (nullable, NO FK) kept for analytics */
+/* only — repricing or deleting a menu row must never alter or break a        */
+/* historical order. Orders are retrieved publicly by the opaque,             */
+/* server-generated public_token, NEVER by sequential id. venue_id is         */
+/* denormalized onto every table for uniform scopedToVenue().                 */
+/* -------------------------------------------------------------------------- */
+
+export const orderType = pgEnum("order_type", ["pickup", "dine_in"]);
+export const orderStatus = pgEnum("order_status", [
+  "pending_payment",
+  "confirmed",
+  "cancelled",
+]);
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // Opaque, server-generated, URL-safe random token — the ONLY handle a
+    // customer uses to view an order. Unique + indexed; never a sequential id.
+    publicToken: text("public_token").notNull(),
+    orderType: orderType("order_type").notNull(),
+    tableLabel: text("table_label"),
+    customerName: text("customer_name").notNull(),
+    customerPhone: text("customer_phone"),
+    status: orderStatus("status").notNull().default("pending_payment"),
+    subtotalCents: integer("subtotal_cents").notNull(),
+    totalCents: integer("total_cents").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("orders_public_token_idx").on(table.publicToken),
+    index("orders_venue_idx").on(table.venueId),
+    check("orders_subtotal_cents_nonneg", sql`${table.subtotalCents} >= 0`),
+    check("orders_total_cents_nonneg", sql`${table.totalCents} >= 0`),
+  ],
+);
+
+export const orderItems = pgTable(
+  "order_items",
+  {
+    id: id(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // SOFT reference (nullable, no FK): analytics only. The snapshot columns
+    // are the financial truth and must survive menu edits/deletions.
+    menuItemId: text("menu_item_id"),
+    itemNameSnapshot: text("item_name_snapshot").notNull(),
+    unitPriceCentsSnapshot: integer("unit_price_cents_snapshot").notNull(),
+    quantity: integer("quantity").notNull(),
+    lineTotalCents: integer("line_total_cents").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("order_items_order_idx").on(table.orderId),
+    index("order_items_venue_idx").on(table.venueId),
+    check("order_items_quantity_pos", sql`${table.quantity} > 0`),
+    check(
+      "order_items_unit_price_nonneg",
+      sql`${table.unitPriceCentsSnapshot} >= 0`,
+    ),
+    check("order_items_line_total_nonneg", sql`${table.lineTotalCents} >= 0`),
+  ],
+);
+
+export const orderItemModifiers = pgTable(
+  "order_item_modifiers",
+  {
+    id: id(),
+    orderItemId: text("order_item_id")
+      .notNull()
+      .references(() => orderItems.id, { onDelete: "cascade" }),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // SOFT reference (nullable, no FK): analytics only.
+    modifierOptionId: text("modifier_option_id"),
+    nameSnapshot: text("name_snapshot").notNull(),
+    priceDeltaCentsSnapshot: integer("price_delta_cents_snapshot")
+      .notNull()
+      .default(0),
+  },
+  (table) => [
+    index("order_item_modifiers_order_item_idx").on(table.orderItemId),
+    index("order_item_modifiers_venue_idx").on(table.venueId),
+    check(
+      "order_item_modifiers_price_delta_nonneg",
+      sql`${table.priceDeltaCentsSnapshot} >= 0`,
+    ),
+  ],
+);
+
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type OrderItemModifier = typeof orderItemModifiers.$inferSelect;
