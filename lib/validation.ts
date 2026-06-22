@@ -220,3 +220,77 @@ export const RESERVED_SLUGS = new Set<string>([
 export function isReservedSlug(slug: string): boolean {
   return RESERVED_SLUGS.has(slug.trim().toLowerCase());
 }
+
+/* -------------------------------------------------------------------------- */
+/* Checkout / orders (Phase 2b)                                               */
+/*                                                                            */
+/* The placement action treats all of this as hostile input and re-validates  */
+/* every id against live, venue-scoped DB rows; these schemas only enforce     */
+/* shape + sane bounds. NO prices are ever accepted from the client.          */
+/* -------------------------------------------------------------------------- */
+
+export const ORDER_TYPES = ["pickup", "dine_in"] as const;
+export type OrderTypeValue = (typeof ORDER_TYPES)[number];
+
+/** The 2a storefront uses "dinein"; normalize to the DB value at the boundary. */
+export function normalizeOrderType(value: unknown): OrderTypeValue {
+  return value === "dine_in" || value === "dinein" ? "dine_in" : "pickup";
+}
+
+export const customerNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter your name.")
+  .max(80, "Name is too long.");
+
+const orderLineSchema = z.object({
+  itemId: idSchema,
+  selectedOptionIds: z
+    .array(idSchema)
+    .max(30, "Too many options on one item.")
+    .default([]),
+  quantity: z
+    .number()
+    .int("Invalid quantity.")
+    .min(1, "Quantity must be at least 1.")
+    .max(50, "Quantity is too high."),
+});
+
+export const placeOrderSchema = z
+  .object({
+    slug: z.string().trim().toLowerCase().min(1).max(64),
+    orderType: z.enum(["pickup", "dine_in"]),
+    tableLabel: z
+      .string()
+      .trim()
+      .max(40, "Table label is too long.")
+      .optional()
+      .transform((value) => (value && value.length > 0 ? value : null)),
+    customerName: customerNameSchema,
+    customerPhone: z
+      .string()
+      .trim()
+      .max(30, "Phone number is too long.")
+      .optional()
+      .transform((value) => (value && value.length > 0 ? value : null)),
+    lines: z
+      .array(orderLineSchema)
+      .min(1, "Your cart is empty.")
+      .max(50, "Too many items in one order."),
+  })
+  .refine(
+    (data) =>
+      data.orderType !== "dine_in" ||
+      (data.tableLabel !== null && data.tableLabel.length > 0),
+    { message: "Enter a table number for dine-in.", path: ["tableLabel"] },
+  );
+
+/** Explicit input contract for the placeOrder server action (what the client sends). */
+export type PlaceOrderInput = {
+  slug: string;
+  orderType: OrderTypeValue;
+  tableLabel?: string | null;
+  customerName: string;
+  customerPhone?: string | null;
+  lines: { itemId: string; selectedOptionIds: string[]; quantity: number }[];
+};
