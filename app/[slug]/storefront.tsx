@@ -135,7 +135,11 @@ function StorefrontInner({
         />
       ) : null}
 
-      <CartBar slug={venue.slug} />
+      <CartBar
+        slug={venue.slug}
+        orderType={orderType}
+        tableLabel={tableLabel}
+      />
     </div>
   );
 }

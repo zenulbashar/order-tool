@@ -1,0 +1,219 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+
+import { formatCents, type OrderTypeValue } from "@/lib/validation";
+
+import { useCart } from "../cart-provider";
+import type { PublicVenue } from "../types";
+import { placeOrder } from "./actions";
+
+const fieldClass =
+  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
+
+const ORDER_TYPE_OPTIONS: { value: OrderTypeValue; label: string }[] = [
+  { value: "pickup", label: "Pickup" },
+  { value: "dine_in", label: "Dine-in" },
+];
+
+export function CheckoutClient({
+  venue,
+  initialOrderType,
+  initialTable,
+}: {
+  venue: PublicVenue;
+  initialOrderType: OrderTypeValue;
+  initialTable: string;
+}) {
+  const router = useRouter();
+  const { displayLines, subtotalCents, count, lines, clear } = useCart();
+
+  const [orderType, setOrderType] = useState<OrderTypeValue>(initialOrderType);
+  const [tableLabel, setTableLabel] = useState(initialTable);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending) return; // double-submit guard (also disables the button)
+    setError(null);
+    startTransition(async () => {
+      const result = await placeOrder({
+        slug: venue.slug,
+        orderType,
+        tableLabel: orderType === "dine_in" ? tableLabel : null,
+        customerName,
+        customerPhone,
+        lines: lines.map((line) => ({
+          itemId: line.itemId,
+          selectedOptionIds: line.selectedOptionIds,
+          quantity: line.quantity,
+        })),
+      });
+      if (result.ok) {
+        clear();
+        router.push(`/${venue.slug}/order/${result.token}`);
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
+  if (count === 0) {
+    return (
+      <main
+        style={brandStyle}
+        className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center bg-white px-6 text-center"
+      >
+        <p className="text-sm text-gray-500">Your cart is empty.</p>
+        <Link
+          href={`/${venue.slug}`}
+          className="mt-4 text-sm font-medium underline"
+          style={{ color: "var(--brand)" }}
+        >
+          ← Back to {venue.name}
+        </Link>
+      </main>
+    );
+  }
+
+  return (
+    <main style={brandStyle} className="mx-auto min-h-dvh max-w-2xl bg-white">
+      <header className="border-b border-gray-100 px-5 py-5">
+        <Link
+          href={`/${venue.slug}`}
+          className="text-xs text-gray-500 hover:text-gray-900"
+        >
+          ← Back to menu
+        </Link>
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-gray-900">
+          Checkout
+        </h1>
+        <p className="text-sm text-gray-500">{venue.name}</p>
+      </header>
+
+      <section className="px-5 py-5">
+        <h2 className="text-sm font-semibold text-gray-900">Your order</h2>
+        <ul className="mt-2 divide-y divide-gray-100">
+          {displayLines.map((line) => (
+            <li
+              key={line.lineId}
+              className="flex items-start justify-between gap-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-sm text-gray-900">
+                  <span className="text-gray-500">{line.quantity}×</span>{" "}
+                  {line.itemName}
+                </p>
+                {line.options.length > 0 ? (
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {line.options.map((o) => o.name).join(", ")}
+                  </p>
+                ) : null}
+              </div>
+              <span className="shrink-0 text-sm text-gray-700">
+                ${formatCents(line.lineCents)}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-sm">
+          <span className="font-medium text-gray-900">Total</span>
+          <span className="font-semibold text-gray-900">
+            ${formatCents(subtotalCents)}
+          </span>
+        </div>
+      </section>
+
+      <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-10">
+        <div className="space-y-1.5">
+          <span className="block text-sm font-medium text-gray-900">
+            Order type
+          </span>
+          <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+            {ORDER_TYPE_OPTIONS.map((option) => {
+              const isActive = option.value === orderType;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setOrderType(option.value)}
+                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    isActive ? "bg-white shadow-sm" : "text-gray-500"
+                  }`}
+                  style={isActive ? { color: "var(--brand)" } : undefined}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {orderType === "dine_in" ? (
+          <label className="block text-sm font-medium text-gray-900">
+            Table number
+            <input
+              type="text"
+              value={tableLabel}
+              onChange={(event) => setTableLabel(event.target.value)}
+              maxLength={40}
+              required
+              placeholder="e.g. 12"
+              className={`mt-1 ${fieldClass}`}
+            />
+          </label>
+        ) : null}
+
+        <label className="block text-sm font-medium text-gray-900">
+          Name
+          <input
+            type="text"
+            value={customerName}
+            onChange={(event) => setCustomerName(event.target.value)}
+            maxLength={80}
+            required
+            autoComplete="name"
+            className={`mt-1 ${fieldClass}`}
+          />
+        </label>
+
+        <label className="block text-sm font-medium text-gray-900">
+          Phone <span className="font-normal text-gray-400">(optional)</span>
+          <input
+            type="tel"
+            value={customerPhone}
+            onChange={(event) => setCustomerPhone(event.target.value)}
+            maxLength={30}
+            autoComplete="tel"
+            className={`mt-1 ${fieldClass}`}
+          />
+        </label>
+
+        {error ? (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ backgroundColor: "var(--brand)" }}
+        >
+          {pending ? "Placing order…" : `Place order · $${formatCents(subtotalCents)}`}
+        </button>
+        <p className="text-center text-xs text-gray-400">
+          No payment is taken yet — this places a test order.
+        </p>
+      </form>
+    </main>
+  );
+}

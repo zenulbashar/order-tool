@@ -5,18 +5,24 @@ import Link from "next/link";
 import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
+import type { OrderType } from "./types";
 
 /**
  * Cart review drawer. Line totals are recomputed live from the current menu and
- * are clearly provisional — nothing priced is ever submitted; 2b recomputes
- * server-side. Stale local data is reconciled at load (see cart-provider); a
- * notice is shown here when that happened.
+ * are clearly provisional — nothing priced is ever submitted; the server
+ * recomputes at order time. Stale local data is reconciled at load (see
+ * cart-provider); a notice is shown here when that happened. The order-type
+ * selection is carried to checkout via query params.
  */
 export function CartReview({
   slug,
+  orderType,
+  tableLabel,
   onClose,
 }: {
   slug: string;
+  orderType: OrderType;
+  tableLabel: string;
   onClose: () => void;
 }) {
   const {
@@ -136,7 +142,11 @@ export function CartReview({
           </p>
           {count > 0 ? (
             <Link
-              href={`/${slug}/checkout`}
+              href={`/${slug}/checkout?type=${orderType}${
+                orderType === "dinein" && tableLabel.trim()
+                  ? `&table=${encodeURIComponent(tableLabel.trim())}`
+                  : ""
+              }`}
               className="block w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white"
               style={{ backgroundColor: "var(--brand)" }}
             >
