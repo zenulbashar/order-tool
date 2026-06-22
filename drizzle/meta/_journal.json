@@ -22,6 +22,13 @@
       "when": 1782076204330,
       "tag": "0002_harsh_umar",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782107780408,
+      "tag": "0003_naive_molten_man",
+      "breakpoints": true
     }
   ]
 }

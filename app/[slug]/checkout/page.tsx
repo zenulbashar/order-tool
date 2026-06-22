@@ -1,44 +1,43 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { isReservedSlug } from "@/lib/validation";
+import { isReservedSlug, normalizeOrderType } from "@/lib/validation";
 
-import { getPublicVenueBySlug } from "../queries";
+import { CartProvider } from "../cart-provider";
+import { getPublicMenu, getPublicVenueBySlug } from "../queries";
+import { CheckoutClient } from "./checkout-client";
 
-// Placeholder destination for "Continue to checkout". Order placement and
-// payment land in Phase 2b; nothing is submitted here.
+// Reads live menu + the persisted cart at request time; never prerendered.
 export const dynamic = "force-dynamic";
 
-type CheckoutParams = { params: Promise<{ slug: string }> };
+type CheckoutParams = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
-export default async function CheckoutPlaceholder({ params }: CheckoutParams) {
+export default async function CheckoutPage({
+  params,
+  searchParams,
+}: CheckoutParams) {
   const { slug } = await params;
   if (isReservedSlug(slug)) notFound();
 
   const venue = await getPublicVenueBySlug(slug);
   if (!venue) notFound();
 
-  const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+  const [menu, sp] = await Promise.all([getPublicMenu(venue.id), searchParams]);
+  // Carry the storefront's order-type selection; "dinein" (2a) -> "dine_in".
+  const initialOrderType = normalizeOrderType(
+    typeof sp.type === "string" ? sp.type : undefined,
+  );
+  const initialTable = typeof sp.table === "string" ? sp.table : "";
 
   return (
-    <main
-      style={brandStyle}
-      className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center px-6 text-center"
-    >
-      <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-        Checkout
-      </h1>
-      <p className="mt-2 max-w-sm text-sm text-gray-500">
-        Online checkout isn’t available yet — it arrives in the next update.
-        Your cart is saved on this device in the meantime.
-      </p>
-      <Link
-        href={`/${venue.slug}`}
-        className="mt-6 text-sm font-medium underline"
-        style={{ color: "var(--brand)" }}
-      >
-        ← Back to {venue.name}
-      </Link>
-    </main>
+    <CartProvider slug={venue.slug} menu={menu}>
+      <CheckoutClient
+        venue={venue}
+        initialOrderType={initialOrderType}
+        initialTable={initialTable}
+      />
+    </CartProvider>
   );
 }

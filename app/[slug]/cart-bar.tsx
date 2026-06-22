@@ -6,13 +6,23 @@ import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
 import { CartReview } from "./cart-review";
+import type { OrderType } from "./types";
 
 /**
  * Persistent cart bar. Hidden when the cart is empty; otherwise sticks to the
  * bottom and opens the review drawer. The storefront reserves bottom padding so
- * the bar never covers the last item.
+ * the bar never covers the last item. orderType/tableLabel are passed through
+ * to the review so "Continue to checkout" can carry the selection forward.
  */
-export function CartBar({ slug }: { slug: string }) {
+export function CartBar({
+  slug,
+  orderType,
+  tableLabel,
+}: {
+  slug: string;
+  orderType: OrderType;
+  tableLabel: string;
+}) {
   const { count, subtotalCents } = useCart();
   const [open, setOpen] = useState(false);
 
@@ -33,7 +43,14 @@ export function CartBar({ slug }: { slug: string }) {
           <span>${formatCents(subtotalCents)}</span>
         </button>
       </div>
-      {open ? <CartReview slug={slug} onClose={() => setOpen(false)} /> : null}
+      {open ? (
+        <CartReview
+          slug={slug}
+          orderType={orderType}
+          tableLabel={tableLabel}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

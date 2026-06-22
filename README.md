@@ -1,9 +1,9 @@
 # order-tool
 
-Branded online ordering for hospitality venues. This repository is the
-**Phase 0 foundation**: a multi-tenant scaffold with authentication, the base
-data model, and CI/CD. Menus, storefront, payments, and kitchen display arrive
-in later phases.
+Branded online ordering for hospitality venues. Multi-tenant (venue = tenant)
+with authentication, a menu catalog, a public per-venue storefront (browse +
+cart), and checkout / order placement. **Payments are stubbed** pending Stripe
+Connect (Phase 2c); kitchen display and owner order management come later.
 
 ## Stack
 
@@ -75,6 +75,34 @@ per venue later). **Every venue-owned query must be scoped by `venue_id`** —
 resolve the active venue with `requireVenue()` and filter with `scopedToVenue()`
 from `lib/tenant.ts`.
 
+## Ordering & checkout (Phase 2b)
+
+The storefront checkout is a **public, unauthenticated write**, so the placement
+action (`app/[slug]/checkout/actions.ts`) treats all input as hostile:
+
+- accepts **ids + quantities only** — never a client-supplied price;
+- **recomputes every total from live, venue-scoped DB prices**;
+- re-checks each item/option against the DB, requiring every selected option to
+  belong to a modifier group of **that** item (no cross-item / cross-venue
+  injection), and enforces modifier `min/max` server-side;
+- writes the order in a **single transaction** with every sensitive column
+  (venue, token, status, totals) **server-set** (mass-assignment defense).
+
+Orders are retrieved only via an **opaque, server-generated `public_token`**
+(never a sequential id). Line names/prices are **snapshotted** at order time, so
+later menu edits never alter historical orders.
+
+Payment is **stubbed**: orders are created `pending_payment` and flipped to
+`confirmed` by a clearly-marked inline stub that Phase 2c replaces with the
+Stripe payment webhook.
+
+### Deferred hardening
+
+- **Rate limiting / bot protection** (e.g. Cloudflare Turnstile) on the public
+  checkout endpoint — not yet implemented; sane input bounds only for now.
+- **Server-side idempotency key** to dedupe repeat submissions — deferred to 2c
+  (a payment concern). For now the client disables the button while submitting.
+
 ## Project structure
 
 ```
@@ -99,6 +127,10 @@ GitHub Actions (`.github/workflows/ci.yml`):
 - **On every PR and push to `main`:** `typecheck` + `build`.
 - **On push to `main`:** the `migrate-prod` job applies additive migrations
   (see policy above).
+
+Plus a manual workflow (`.github/workflows/audit-slugs.yml`, `workflow_dispatch`)
+that runs the read-only reserved-slug audit (`scripts/check-reserved-slugs.ts`)
+against prod.
 
 Required GitHub Actions secrets:
 
