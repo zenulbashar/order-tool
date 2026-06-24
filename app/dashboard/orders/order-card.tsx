@@ -1,6 +1,7 @@
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
+import { OrderStatusControls } from "./order-status-controls";
 import type { FulfillmentStatus, KitchenOrder } from "./queries";
 
 const STATUS_BADGE: Record<
@@ -106,6 +107,8 @@ export function OrderCard({
           ${formatCents(order.totalCents)}
         </span>
       </div>
+
+      <OrderStatusControls orderId={order.id} status={order.fulfillmentStatus} />
     </li>
   );
 }
