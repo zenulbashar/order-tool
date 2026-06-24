@@ -260,18 +260,23 @@ export const placeOrderSchema = z
   .object({
     slug: z.string().trim().toLowerCase().min(1).max(64),
     orderType: z.enum(["pickup", "dine_in"]),
+    // Optional. The typed client sends `null` (not just undefined) when absent,
+    // so accept null | undefined | "" via `.nullish()`; the transform normalises
+    // any of them to null and `.max()` only applies once a real string is given.
     tableLabel: z
       .string()
       .trim()
       .max(40, "Table label is too long.")
-      .optional()
+      .nullish()
       .transform((value) => (value && value.length > 0 ? value : null)),
     customerName: customerNameSchema,
+    // Optional, same nullish contract as tableLabel: blank input arrives as null
+    // (or "") and is stored as null; length is only checked when a value is given.
     customerPhone: z
       .string()
       .trim()
       .max(30, "Phone number is too long.")
-      .optional()
+      .nullish()
       .transform((value) => (value && value.length > 0 ? value : null)),
     lines: z
       .array(orderLineSchema)
