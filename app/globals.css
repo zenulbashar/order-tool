@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/*
+ * Print: page-level setup only. The dashboard/ticket show-hide is done with
+ * Tailwind `print:` utilities at the component (see PrintProvider); @page
+ * margins and the paper background can't be expressed as utilities.
+ */
+@media print {
+  @page {
+    margin: 6mm;
+  }
+
+  body {
+    background: #fff;
+  }
+}
