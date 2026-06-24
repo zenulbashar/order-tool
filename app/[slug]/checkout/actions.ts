@@ -14,11 +14,26 @@ import {
   orders,
   venues,
 } from "@/lib/db/schema";
+import {
+  computeApplicationFeeCents,
+  getStripe,
+  getStripePublishableKey,
+} from "@/lib/stripe";
 import { scopedToVenue } from "@/lib/tenant";
 import { isReservedSlug, placeOrderSchema, type PlaceOrderInput } from "@/lib/validation";
 
 export type PlaceOrderResult =
-  | { ok: true; token: string }
+  | {
+      ok: true;
+      token: string;
+      // Everything the browser needs to confirm payment against the PaymentIntent
+      // we created on the venue's connected account. The publishable key is
+      // public; the client never receives or sets the amount or the fee.
+      clientSecret: string;
+      stripeAccountId: string;
+      publishableKey: string;
+      amountCents: number;
+    }
   | { ok: false; error: string };
 
 function reject(error: string): PlaceOrderResult {
@@ -66,12 +81,24 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   // matching the route backstop — defense in depth.
   if (isReservedSlug(data.slug)) return reject("Venue not found.");
   const [venue] = await db
-    .select({ id: venues.id })
+    .select({
+      id: venues.id,
+      stripeAccountId: venues.stripeAccountId,
+      stripeChargesEnabled: venues.stripeChargesEnabled,
+    })
     .from(venues)
     .where(eq(venues.slug, data.slug))
     .limit(1);
   if (!venue) return reject("Venue not found.");
   const venueId = venue.id;
+
+  // Fail fast BEFORE writing any order: a venue that cannot accept payments must
+  // never produce a payable-but-unpayable order. charges_enabled is the gate,
+  // mirrored from Stripe by the Connect onboarding flow.
+  if (!venue.stripeChargesEnabled || !venue.stripeAccountId) {
+    return reject("This venue isn't accepting online payments yet.");
+  }
+  const stripeAccountId = venue.stripeAccountId;
 
   // (b) Bounds (non-empty, <=50 lines, qty 1..50) are enforced by the schema.
 
@@ -262,22 +289,49 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
   if (!orderId) return reject("Could not place your order. Please try again.");
 
-  // (g) PAYMENT SEAM (stub): the order was written as 'pending_payment'; confirm
-  // it inline now. In 2c this is triggered by the Stripe webhook instead — the
-  // creation/recompute code above is final; only this trigger changes.
-  await confirmOrderStub(orderId);
+  // (g) PAYMENT: create a PaymentIntent as a DIRECT CHARGE on the venue's
+  // connected account ({ stripeAccount } = the Stripe-Account header), taking a
+  // server-computed application fee. `amount` is the SERVER-recomputed total —
+  // the client never sets the amount or the fee. The order stays
+  // 'pending_payment'; it is confirmed ONLY by the signature-verified webhook
+  // (the inline stub is gone — there is no second confirmation path).
+  const stripe = getStripe();
+  try {
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: totalCents,
+        currency: "aud",
+        application_fee_amount: computeApplicationFeeCents(totalCents),
+        automatic_payment_methods: { enabled: true },
+        metadata: { orderId, venueId, publicToken: token },
+      },
+      // idempotencyKey keyed on the order so a retried submission of THIS order
+      // reuses the same PaymentIntent instead of creating a duplicate charge.
+      { stripeAccount: stripeAccountId, idempotencyKey: orderId },
+    );
 
-  return { ok: true, token };
-}
+    if (!paymentIntent.client_secret) {
+      return reject("We couldn't start payment. Please try again.");
+    }
 
-/**
- * Payment confirmation seam. Flips a pending order to 'confirmed'. There is no
- * real payment yet.
- */
-async function confirmOrderStub(orderId: string): Promise<void> {
-  // STUB: in 2c this transition is driven by the Stripe payment webhook, not inline.
-  await db
-    .update(orders)
-    .set({ status: "confirmed" })
-    .where(and(eq(orders.id, orderId), eq(orders.status, "pending_payment")));
+    await db
+      .update(orders)
+      .set({ stripePaymentIntentId: paymentIntent.id })
+      .where(
+        and(eq(orders.id, orderId), scopedToVenue(orders.venueId, venueId)),
+      );
+
+    return {
+      ok: true,
+      token,
+      clientSecret: paymentIntent.client_secret,
+      stripeAccountId,
+      publishableKey: getStripePublishableKey(),
+      amountCents: totalCents,
+    };
+  } catch {
+    // The order remains 'pending_payment' with no PaymentIntent; surface a
+    // retryable error rather than a confirmed order.
+    return reject("We couldn't start payment. Please try again.");
+  }
 }
