@@ -58,7 +58,9 @@ export function CheckoutClient({
         orderType,
         tableLabel: orderType === "dine_in" ? tableLabel : null,
         customerName,
-        customerPhone,
+        // Send null (not "") when blank, consistent with tableLabel's shape; the
+        // schema accepts both, but this keeps the optional contract uniform.
+        customerPhone: customerPhone.trim() ? customerPhone : null,
         lines: lines.map((line) => ({
           itemId: line.itemId,
           selectedOptionIds: line.selectedOptionIds,
