@@ -116,8 +116,18 @@ export default async function MenuPage() {
         >
           ← Back to dashboard
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Menu</h1>
-        <p className="text-sm text-gray-500">{venue.name}</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Menu</h1>
+            <p className="text-sm text-gray-500">{venue.name}</p>
+          </div>
+          <Link
+            href="/dashboard/menu/import"
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            Import menu from photo
+          </Link>
+        </div>
       </header>
 
       <section className="py-8">
