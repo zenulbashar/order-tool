@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { formatCents, isReservedSlug } from "@/lib/validation";
+import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
 
 import { getPublicVenueBySlug } from "../../queries";
 import { PaymentStatusPoller } from "./payment-status-poller";
@@ -26,7 +26,7 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
   if (!order) notFound();
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
-  const reference = order.publicToken.slice(0, 8).toUpperCase();
+  const reference = orderReference(order.publicToken);
 
   const isPaid = order.status === "confirmed";
   const isPending = order.status === "pending_payment";

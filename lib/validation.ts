@@ -229,6 +229,16 @@ export function isReservedSlug(slug: string): boolean {
 /* shape + sane bounds. NO prices are ever accepted from the client.          */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The human-facing order reference: the first 8 chars of the opaque
+ * public_token, upper-cased. Shown on BOTH the customer confirmation page and
+ * the owner kitchen view, so this is the single source that keeps the two
+ * identical — never re-derive it inline.
+ */
+export function orderReference(publicToken: string): string {
+  return publicToken.slice(0, 8).toUpperCase();
+}
+
 export const ORDER_TYPES = ["pickup", "dine_in"] as const;
 export type OrderTypeValue = (typeof ORDER_TYPES)[number];
 
