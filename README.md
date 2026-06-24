@@ -2,8 +2,8 @@
 
 Branded online ordering for hospitality venues. Multi-tenant (venue = tenant)
 with authentication, a menu catalog, a public per-venue storefront (browse +
-cart), and checkout / order placement. **Payments are stubbed** pending Stripe
-Connect (Phase 2c); kitchen display and owner order management come later.
+cart), checkout, and **online payments via Stripe Connect** (test mode).
+Kitchen display and owner order management come later.
 
 ## Stack
 
@@ -31,7 +31,10 @@ npm run dev                  # http://localhost:3000
 | `AUTH_SECRET`    | Auth.js        | `openssl rand -base64 33`.                                            |
 | `RESEND_API_KEY` | Resend         | API key for magic-link delivery.                                      |
 | `EMAIL_FROM`     | Resend         | Sender identity. **Must be a Resend-verified sending domain.**        |
-| `AUTH_URL`       | Auth.js (prod) | Set once a custom domain is live (see Deployment). Optional locally.  |
+| `AUTH_URL`       | Auth.js (prod) | Set once a custom domain is live (see Deployment). Also builds Stripe onboarding return URLs. |
+| `STRIPE_SECRET_KEY`      | Stripe (server)  | TEST secret key (`sk_test_…`). Lazily read; build/typecheck need none. |
+| `STRIPE_PUBLISHABLE_KEY` | Stripe (browser) | TEST publishable key (`pk_test_…`); handed to the Payment Element.     |
+| `STRIPE_WEBHOOK_SECRET`  | Stripe webhook   | Signing secret (`whsec_…`); added **post-deploy** (see Payments).      |
 
 ## Database & migrations
 
@@ -92,16 +95,55 @@ Orders are retrieved only via an **opaque, server-generated `public_token`**
 (never a sequential id). Line names/prices are **snapshotted** at order time, so
 later menu edits never alter historical orders.
 
-Payment is **stubbed**: orders are created `pending_payment` and flipped to
-`confirmed` by a clearly-marked inline stub that Phase 2c replaces with the
-Stripe payment webhook.
+Orders are created `pending_payment`; payment is taken via Stripe Connect and
+the order is confirmed **only** by the signature-verified webhook — never inline
+(see [Payments](#payments-phase-2c)).
 
 ### Deferred hardening
 
 - **Rate limiting / bot protection** (e.g. Cloudflare Turnstile) on the public
   checkout endpoint — not yet implemented; sane input bounds only for now.
-- **Server-side idempotency key** to dedupe repeat submissions — deferred to 2c
-  (a payment concern). For now the client disables the button while submitting.
+- **Server-side idempotency key** to dedupe repeat submissions — the
+  PaymentIntent is created with an idempotency key (the order id) and the
+  webhook's status guard is idempotent; full dedupe of repeat _order_
+  submissions is still deferred (the client disables the button while submitting).
+
+## Payments (Phase 2c)
+
+Online payments use **Stripe Connect (Express)** in **test mode**. Each venue
+connects its **own** Stripe account and customers are charged **directly** on it
+(direct charge via the `Stripe-Account` header); the platform takes a per-order
+`application_fee_amount` computed server-side by `computeApplicationFeeCents`
+(`lib/stripe.ts` — the single source of truth for the fee).
+
+- **Onboarding:** owners connect at **Dashboard → Payments**, which creates an
+  Express account (server-side, scoped to the venue, never client input) and
+  redirects to Stripe-hosted onboarding. `charges_enabled` gates checkout.
+- **Checkout:** the charge amount is the **server-recomputed** order total — the
+  client never sets the amount or the fee. Checkout refuses to place an order
+  when the venue can't accept payments. The order is written `pending_payment`,
+  a PaymentIntent is created on the connected account, and the browser confirms
+  it with the Stripe Payment Element.
+- **Confirmation:** the order is confirmed (or failed) **only** by the Stripe
+  webhook — there is no inline confirmation. The webhook verifies the raw body
+  against `STRIPE_WEBHOOK_SECRET` and rejects anything unverified.
+
+### Post-deploy: register the webhook (one-time)
+
+`STRIPE_WEBHOOK_SECRET` does not exist until the endpoint is registered, and the
+webhook route **rejects** requests when it is missing (it never bypasses
+verification). After this deploys:
+
+1. Stripe Dashboard (**test mode**) → **Developers → Webhooks** → **Add endpoint**,
+   choosing **"Events on connected accounts"** (a **Connect** endpoint —
+   direct-charge events originate on the connected accounts).
+2. Endpoint URL: `https://order.zaleit.com.au/api/stripe/webhook`.
+3. Events: `payment_intent.succeeded` and `payment_intent.payment_failed`.
+4. Copy the **Signing secret** (`whsec_…`) → add it to Vercel (Production) as
+   `STRIPE_WEBHOOK_SECRET` → **redeploy** so the variable is live.
+
+`STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` (test keys) must also be set in
+Vercel (Production).
 
 ## Project structure
 
@@ -152,3 +194,6 @@ Configure these in the Vercel project (Production):
 - `AUTH_URL` — set to the production URL once a custom domain is live (e.g.
   `https://order.zaleit.com.au`) so magic-link callbacks don't use the
   `*.vercel.app` URL.
+- `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` — Stripe **test** keys.
+- `STRIPE_WEBHOOK_SECRET` — added after registering the webhook (see
+  [Payments](#payments-phase-2c)).
