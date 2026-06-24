@@ -36,6 +36,13 @@
       "when": 1782294331448,
       "tag": "0004_plain_klaw",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782303840966,
+      "tag": "0005_sharp_redwing",
+      "breakpoints": true
     }
   ]
 }

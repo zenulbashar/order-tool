@@ -229,6 +229,29 @@ export function isReservedSlug(slug: string): boolean {
 /* shape + sane bounds. NO prices are ever accepted from the client.          */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The human-facing order reference: the first 8 chars of the opaque
+ * public_token, upper-cased. Shown on BOTH the customer confirmation page and
+ * the owner kitchen view, so this is the single source that keeps the two
+ * identical — never re-derive it inline.
+ */
+export function orderReference(publicToken: string): string {
+  return publicToken.slice(0, 8).toUpperCase();
+}
+
+/**
+ * Kitchen fulfillment status (Phase 3) — the four values of the
+ * order_fulfillment_status DB enum. The status-advance action validates the
+ * client-supplied target against this before writing; it is SEPARATE from the
+ * payment-lifecycle order status.
+ */
+export const fulfillmentStatusSchema = z.enum([
+  "new",
+  "preparing",
+  "ready",
+  "completed",
+]);
+
 export const ORDER_TYPES = ["pickup", "dine_in"] as const;
 export type OrderTypeValue = (typeof ORDER_TYPES)[number];
 

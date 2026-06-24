@@ -288,6 +288,17 @@ export const orderStatus = pgEnum("order_status", [
   "payment_failed",
 ]);
 
+// Kitchen/fulfillment lifecycle (Phase 3), DELIBERATELY SEPARATE from the
+// payment-lifecycle `order_status` above — do not overload one for the other.
+// A paid order is status='confirmed' AND fulfillment_status='new' until the
+// venue advances it through preparing -> ready -> completed.
+export const orderFulfillmentStatus = pgEnum("order_fulfillment_status", [
+  "new",
+  "preparing",
+  "ready",
+  "completed",
+]);
+
 export const orders = pgTable(
   "orders",
   {
@@ -303,6 +314,11 @@ export const orders = pgTable(
     customerName: text("customer_name").notNull(),
     customerPhone: text("customer_phone"),
     status: orderStatus("status").notNull().default("pending_payment"),
+    // Kitchen lifecycle, separate from `status` (payment). NOT NULL DEFAULT
+    // 'new' so existing paid orders backfill into the queue safely.
+    fulfillmentStatus: orderFulfillmentStatus("fulfillment_status")
+      .notNull()
+      .default("new"),
     subtotalCents: integer("subtotal_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
     // Stripe PaymentIntent backing this order (direct charge on the venue's
@@ -317,6 +333,13 @@ export const orders = pgTable(
     uniqueIndex("orders_public_token_idx").on(table.publicToken),
     index("orders_venue_idx").on(table.venueId),
     index("orders_payment_intent_idx").on(table.stripePaymentIntentId),
+    // Supports the kitchen queue read: venue-scoped, status='confirmed',
+    // ordered by created_at (FIFO). fulfillment_status is a residual filter.
+    index("orders_venue_status_created_idx").on(
+      table.venueId,
+      table.status,
+      table.createdAt,
+    ),
     check("orders_subtotal_cents_nonneg", sql`${table.subtotalCents} >= 0`),
     check("orders_total_cents_nonneg", sql`${table.totalCents} >= 0`),
   ],
