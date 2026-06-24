@@ -2,6 +2,7 @@ import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
 import { OrderStatusControls } from "./order-status-controls";
+import { PrintButton } from "./print-button";
 import type { FulfillmentStatus, KitchenOrder } from "./queries";
 
 const STATUS_BADGE: Record<
@@ -108,7 +109,10 @@ export function OrderCard({
         </span>
       </div>
 
-      <OrderStatusControls orderId={order.id} status={order.fulfillmentStatus} />
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+        <OrderStatusControls orderId={order.id} status={order.fulfillmentStatus} />
+        <PrintButton order={order} />
+      </div>
     </li>
   );
 }

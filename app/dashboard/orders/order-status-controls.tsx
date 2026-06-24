@@ -25,7 +25,7 @@ export function OrderStatusControls({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+    <div className="flex flex-wrap items-center gap-2">
       {STEPS.map((step) => {
         const isCurrent = step.value === status;
         return (
