@@ -54,6 +54,15 @@ export default async function DashboardPage() {
               Brand colour, logo, and the description customers see.
             </p>
           </Link>
+          <Link
+            href="/dashboard/payments"
+            className="block rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 hover:bg-gray-50"
+          >
+            <p className="text-sm font-medium text-gray-900">Payments</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Connect Stripe to accept online payments for your orders.
+            </p>
+          </Link>
         </div>
 
         <p className="mt-6 text-sm">

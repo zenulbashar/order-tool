@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { formatCents, type OrderTypeValue } from "@/lib/validation";
@@ -9,6 +8,7 @@ import { formatCents, type OrderTypeValue } from "@/lib/validation";
 import { useCart } from "../cart-provider";
 import type { PublicVenue } from "../types";
 import { placeOrder } from "./actions";
+import { PaymentStep } from "./payment-step";
 
 const fieldClass =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
@@ -17,6 +17,15 @@ const ORDER_TYPE_OPTIONS: { value: OrderTypeValue; label: string }[] = [
   { value: "pickup", label: "Pickup" },
   { value: "dine_in", label: "Dine-in" },
 ];
+
+// Everything the payment step needs once the order + PaymentIntent exist.
+type PaymentSession = {
+  clientSecret: string;
+  stripeAccountId: string;
+  publishableKey: string;
+  token: string;
+  amountCents: number;
+};
 
 export function CheckoutClient({
   venue,
@@ -27,7 +36,6 @@ export function CheckoutClient({
   initialOrderType: OrderTypeValue;
   initialTable: string;
 }) {
-  const router = useRouter();
   const { displayLines, subtotalCents, count, lines, clear } = useCart();
 
   const [orderType, setOrderType] = useState<OrderTypeValue>(initialOrderType);
@@ -36,6 +44,7 @@ export function CheckoutClient({
   const [customerPhone, setCustomerPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [payment, setPayment] = useState<PaymentSession | null>(null);
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
 
@@ -57,12 +66,36 @@ export function CheckoutClient({
         })),
       });
       if (result.ok) {
+        // The order is persisted server-side and the PaymentIntent exists; the
+        // cart is now spent. Advance to the Stripe payment step.
         clear();
-        router.push(`/${venue.slug}/order/${result.token}`);
+        setPayment({
+          clientSecret: result.clientSecret,
+          stripeAccountId: result.stripeAccountId,
+          publishableKey: result.publishableKey,
+          token: result.token,
+          amountCents: result.amountCents,
+        });
       } else {
         setError(result.error);
       }
     });
+  }
+
+  // Once a payment session exists, hand off entirely to the Stripe step. (The
+  // cart is intentionally empty by now, so this check must come before the
+  // empty-cart guard below.)
+  if (payment) {
+    return (
+      <PaymentStep
+        venue={venue}
+        clientSecret={payment.clientSecret}
+        stripeAccountId={payment.stripeAccountId}
+        publishableKey={payment.publishableKey}
+        token={payment.token}
+        amountCents={payment.amountCents}
+      />
+    );
   }
 
   if (count === 0) {
@@ -208,10 +241,12 @@ export function CheckoutClient({
           className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
           style={{ backgroundColor: "var(--brand)" }}
         >
-          {pending ? "Placing order…" : `Place order · $${formatCents(subtotalCents)}`}
+          {pending
+            ? "Starting payment…"
+            : `Continue to payment · $${formatCents(subtotalCents)}`}
         </button>
         <p className="text-center text-xs text-gray-400">
-          No payment is taken yet — this places a test order.
+          Next, pay securely with Stripe.
         </p>
       </form>
     </main>

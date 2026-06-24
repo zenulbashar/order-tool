@@ -15,7 +15,7 @@ export type ConfirmedOrderItem = {
 
 export type ConfirmedOrder = {
   publicToken: string;
-  status: "pending_payment" | "confirmed" | "cancelled";
+  status: "pending_payment" | "confirmed" | "cancelled" | "payment_failed";
   orderType: "pickup" | "dine_in";
   tableLabel: string | null;
   customerName: string;
