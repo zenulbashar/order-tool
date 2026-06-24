@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 
+import { usePrint } from "./print-context";
+
 const POLL_INTERVAL_MS = 12_000;
 
 /** Subscribe to tab visibility changes; returns an unsubscribe. */
@@ -35,26 +37,31 @@ function useTabHidden(): boolean {
  * Unlike the customer-side PaymentStatusPoller this never times out — the screen
  * runs all shift — but it pauses while the tab is hidden (no interval at all)
  * and refreshes once immediately when the tab becomes visible again, so a
- * returning operator sees the latest queue at once.
+ * returning operator sees the latest queue at once. It also pauses while an
+ * order ticket is printing: the staged ticket already survives a refresh (it's
+ * held in client state), but pausing avoids any churn under the print dialog.
  */
 export function OrdersAutoRefresh() {
   const router = useRouter();
   const hidden = useTabHidden();
+  const { isPrinting } = usePrint();
   const mounted = useRef(false);
 
   useEffect(() => {
     const isFirstRun = !mounted.current;
     mounted.current = true;
 
-    if (hidden) return; // backgrounded: no polling, no interval to clean up.
+    // Backgrounded or printing: no polling, no interval to clean up.
+    if (hidden || isPrinting) return;
 
-    // Catch up immediately when returning to a visible tab, but not on the very
-    // first run — the page was just server-rendered, so it's already current.
+    // Catch up immediately when polling resumes (tab visible again, or print
+    // finished), but not on the very first run — the page was just
+    // server-rendered, so it's already current.
     if (!isFirstRun) router.refresh();
 
     const interval = setInterval(() => router.refresh(), POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [hidden, router]);
+  }, [hidden, isPrinting, router]);
 
   return (
     <p className="flex items-center gap-1.5 text-xs text-gray-400">
