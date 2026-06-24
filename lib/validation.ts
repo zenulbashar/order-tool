@@ -144,6 +144,88 @@ export const optionCreateSchema = z.object({
 export const optionUpdateSchema = optionCreateSchema;
 
 /* -------------------------------------------------------------------------- */
+/* AI menu import (photo → human-reviewed draft → existing menu)              */
+/*                                                                            */
+/* Two shapes, BOTH validated server-side; the client draft is never trusted: */
+/*  - extraction: what the vision model returns. priceCents may be NULL when   */
+/*    the model can't read a price confidently — those are surfaced for the    */
+/*    owner to set in review, NEVER guessed; priceText carries the raw printed  */
+/*    text (e.g. "from $7.90") in that case.                                    */
+/*  - publish: the reviewed draft the client sends back. Prices are now         */
+/*    resolved to non-negative INTEGER cents — null is rejected. Re-validated   */
+/*    in the publish action with the SAME bounds as the manual menu CRUD.       */
+/* These are JSON payloads (not form strings), so names/descriptions use plain  */
+/* length-bounded string schemas rather than the form transformers above.       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Client review-screen money helper: a dollars string → integer cents, or null
+ * when blank/invalid. Mirrors priceDollarsToCentsSchema's rounding so the two
+ * never disagree; Math.round absorbs binary-float error (12.99 * 100). The
+ * publish action re-derives and re-checks cents server-side regardless.
+ */
+export function dollarsToCents(input: string): number | null {
+  const trimmed = input.trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null;
+  return Math.round(Number(trimmed) * 100);
+}
+
+const importNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter a name.")
+  .max(100, "Name is too long.");
+
+const importDescriptionSchema = z
+  .string()
+  .trim()
+  .max(500, "Description is too long.");
+
+/* Extraction (vision model → server). Tolerant: prices may be null. */
+const extractedItemSchema = z.object({
+  name: importNameSchema,
+  // null = model couldn't read a confident price; the owner sets it in review.
+  priceCents: z.number().int().min(0).nullable(),
+  // Raw printed price text for an ambiguous/missing price; "" otherwise.
+  priceText: z.string().trim().max(120).default(""),
+  description: importDescriptionSchema.default(""),
+});
+const extractedCategorySchema = z.object({
+  name: importNameSchema,
+  items: z.array(extractedItemSchema).max(200),
+});
+export const extractionSchema = z.object({
+  categories: z.array(extractedCategorySchema).max(60),
+});
+export type ExtractedMenu = z.infer<typeof extractionSchema>;
+
+/* Publish (reviewed client draft → server). Strict: every price resolved. */
+const publishItemSchema = z.object({
+  name: importNameSchema,
+  // Prices MUST be resolved before publish — no nulls reach the live menu.
+  priceCents: z
+    .number()
+    .int("Enter a valid price.")
+    .min(0, "Price can't be negative."),
+  // Empty stored as null, matching the manual item CRUD.
+  description: importDescriptionSchema.transform((v) =>
+    v.length > 0 ? v : null,
+  ),
+});
+const publishCategorySchema = z.object({
+  name: importNameSchema,
+  items: z.array(publishItemSchema).max(200),
+});
+export const publishDraftSchema = z.object({
+  categories: z
+    .array(publishCategorySchema)
+    .min(1, "Add at least one category.")
+    .max(60),
+});
+/** What the client sends to publishMenu (input side, before transforms). */
+export type PublishDraftInput = z.input<typeof publishDraftSchema>;
+
+/* -------------------------------------------------------------------------- */
 /* Storefront theming (Phase 2a)                                              */
 /* -------------------------------------------------------------------------- */
 
