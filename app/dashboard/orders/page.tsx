@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 import { OrderCard } from "./order-card";
+import { OrdersAutoRefresh } from "./orders-auto-refresh";
 import { getVenueOrders } from "./queries";
 
 // Always render fresh: the kitchen queue must reflect orders that arrived since
@@ -40,6 +41,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
           <p className="text-sm text-gray-500">{venue.name} · live kitchen queue</p>
         </div>
+        <OrdersAutoRefresh />
       </header>
 
       <section className="py-8">
