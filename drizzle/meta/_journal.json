@@ -29,6 +29,13 @@
       "when": 1782107780408,
       "tag": "0003_naive_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782294331448,
+      "tag": "0004_plain_klaw",
+      "breakpoints": true
     }
   ]
 }

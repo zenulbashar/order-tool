@@ -70,6 +70,15 @@ export const venues = pgTable(
     brandColor: text("brand_color").notNull().default("#111827"),
     logoUrl: text("logo_url"),
     storefrontDescription: text("storefront_description"),
+    // Stripe Connect (Phase 2c). The venue connects its OWN Express account;
+    // customers are charged directly on it and the platform takes a per-order
+    // application fee. All three are written server-side from Stripe — never
+    // from client input. charges_enabled gates whether checkout may charge.
+    stripeAccountId: text("stripe_account_id"),
+    stripeChargesEnabled: boolean("stripe_charges_enabled")
+      .notNull()
+      .default(false),
+    stripeOnboardedAt: timestamp("stripe_onboarded_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (table) => [uniqueIndex("venues_slug_idx").on(table.slug)],
@@ -274,6 +283,9 @@ export const orderStatus = pgEnum("order_status", [
   "pending_payment",
   "confirmed",
   "cancelled",
+  // Stripe reported the PaymentIntent failed (Phase 2c). Reached only via the
+  // webhook; the customer sees a clear, non-alarming retry path.
+  "payment_failed",
 ]);
 
 export const orders = pgTable(
@@ -293,12 +305,18 @@ export const orders = pgTable(
     status: orderStatus("status").notNull().default("pending_payment"),
     subtotalCents: integer("subtotal_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
+    // Stripe PaymentIntent backing this order (direct charge on the venue's
+    // connected account). Set server-side after the order row is written; the
+    // webhook resolves orders to confirm/fail by THIS id only — never a
+    // client-supplied identifier.
+    stripePaymentIntentId: text("stripe_payment_intent_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (table) => [
     uniqueIndex("orders_public_token_idx").on(table.publicToken),
     index("orders_venue_idx").on(table.venueId),
+    index("orders_payment_intent_idx").on(table.stripePaymentIntentId),
     check("orders_subtotal_cents_nonneg", sql`${table.subtotalCents} >= 0`),
     check("orders_total_cents_nonneg", sql`${table.totalCents} >= 0`),
   ],
