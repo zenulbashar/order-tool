@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { venueMembers, venues } from "@/lib/db/schema";
+import { setSelectedVenueCookie } from "@/lib/tenant";
 import { isReservedSlug, slugSchema, venueNameSchema } from "@/lib/validation";
 
 export type CreateVenueState = { error?: string };
@@ -49,16 +50,8 @@ export async function createVenue(
     };
   }
 
-  // Phase 0: one venue per owner.
-  const existingMembership = await db
-    .select({ venueId: venueMembers.venueId })
-    .from(venueMembers)
-    .where(eq(venueMembers.userId, userId))
-    .limit(1);
-  if (existingMembership.length > 0) {
-    redirect("/dashboard");
-  }
-
+  // One owner may run MANY venues, so we no longer cap at the first membership;
+  // an existing owner creating another location is the expected path here.
   const slugTaken = await db
     .select({ id: venues.id })
     .from(venues)
@@ -68,9 +61,10 @@ export async function createVenue(
     return { error: `The address "${slug}" is already taken.` };
   }
 
+  let newVenueId: string;
   try {
     // Venue + owner membership must be created atomically.
-    await db.transaction(async (tx) => {
+    newVenueId = await db.transaction(async (tx) => {
       const [venue] = await tx
         .insert(venues)
         .values({ slug, name, ownerUserId: userId })
@@ -78,6 +72,7 @@ export async function createVenue(
       await tx
         .insert(venueMembers)
         .values({ venueId: venue.id, userId, role: "owner" });
+      return venue.id;
     });
   } catch (error) {
     // Backstop the slug pre-check against a race (unique index violation).
@@ -86,6 +81,11 @@ export async function createVenue(
     }
     throw error;
   }
+
+  // Land the owner in the venue they just created — their first one, or any
+  // additional location. The membership was just inserted above, so no
+  // membership re-check is needed before selecting it.
+  await setSelectedVenueCookie(newVenueId);
 
   // Outside the try/catch: redirect throws a control-flow signal that must
   // not be swallowed.
