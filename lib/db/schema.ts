@@ -260,10 +260,44 @@ export const modifierOptions = pgTable(
   ],
 );
 
+/**
+ * Item size variants (Phase 5a). An item is EITHER flat-priced (uses
+ * menu_items.price_cents) OR variant-priced (has rows here, each carrying its
+ * OWN absolute price) — never both. When variants exist they are authoritative
+ * and the item's price_cents is ignored; that "which price wins" enforcement
+ * lands in checkout (Phase 5c). This phase is owner-side CRUD only. venue_id is
+ * denormalized for the scopedToVenue() convention; item_id cascades so variants
+ * die with their item. Mirrors modifier_options' shape and indexing.
+ */
+export const menuItemVariants = pgTable(
+  "menu_item_variants",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    itemId: text("item_id")
+      .notNull()
+      .references(() => menuItems.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // The variant's OWN absolute price (integer cents), not a delta.
+    priceCents: integer("price_cents").notNull(),
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("menu_item_variants_venue_idx").on(table.venueId),
+    index("menu_item_variants_item_idx").on(table.itemId),
+    check("menu_item_variants_price_cents_nonneg", sql`${table.priceCents} >= 0`),
+  ],
+);
+
 export type MenuCategory = typeof menuCategories.$inferSelect;
 export type MenuItem = typeof menuItems.$inferSelect;
 export type ModifierGroup = typeof modifierGroups.$inferSelect;
 export type ModifierOption = typeof modifierOptions.$inferSelect;
+export type MenuItemVariant = typeof menuItemVariants.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /* Orders (Phase 2b)                                                          */
