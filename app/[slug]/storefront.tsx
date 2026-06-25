@@ -7,7 +7,9 @@ import { CartProvider, useCart } from "./cart-provider";
 import { CategoryNav } from "./category-nav";
 import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
+import { MenuSearch } from "./menu-search";
 import { OrderTypeSelector } from "./order-type-selector";
+import { itemSearchText, matchesQuery } from "./search";
 import type { OrderType, PublicItem, PublicMenu, PublicVenue } from "./types";
 
 /**
@@ -46,11 +48,63 @@ function StorefrontInner({
   );
   const [tableLabel, setTableLabel] = useState(initialTable);
   const [activeItem, setActiveItem] = useState<PublicItem | null>(null);
+  const [query, setQuery] = useState("");
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
-  const navCategories = useMemo(
-    () => menu.map((category) => ({ id: category.id, name: category.name })),
+
+  // Normalize each item's searchable text ONCE per menu, not per keystroke, so
+  // typing stays instant over a large menu — the filter below is only substring
+  // / bounded-distance checks against these precomputed haystacks.
+  const searchIndex = useMemo(
+    () =>
+      menu.map((category) => ({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        items: category.items.map((item) => ({
+          item,
+          haystack: itemSearchText(item.name, item.description),
+        })),
+      })),
     [menu],
+  );
+
+  const trimmedQuery = query.trim();
+  const isSearching = trimmedQuery.length > 0;
+
+  // The menu actually rendered: the full menu (same reference, identical order)
+  // when not searching, otherwise each category filtered to its name/description
+  // matches with empty categories dropped — so results stay grouped under their
+  // headings and the cleared view is byte-for-byte today's.
+  const visibleMenu = useMemo<PublicMenu>(() => {
+    if (!isSearching) return menu;
+    const result: PublicMenu = [];
+    for (const category of searchIndex) {
+      const items = category.items
+        .filter((entry) => matchesQuery(trimmedQuery, entry.haystack))
+        .map((entry) => entry.item);
+      if (items.length > 0) {
+        result.push({
+          id: category.id,
+          name: category.name,
+          description: category.description,
+          items,
+        });
+      }
+    }
+    return result;
+  }, [isSearching, trimmedQuery, searchIndex, menu]);
+
+  const navCategories = useMemo(
+    () =>
+      visibleMenu.map((category) => ({ id: category.id, name: category.name })),
+    [visibleMenu],
+  );
+
+  const visibleItemCount = useMemo(
+    () =>
+      visibleMenu.reduce((total, category) => total + category.items.length, 0),
+    [visibleMenu],
   );
 
   return (
@@ -96,16 +150,33 @@ function StorefrontInner({
         />
       </div>
 
-      {menu.length > 0 ? <CategoryNav categories={navCategories} /> : null}
+      {menu.length > 0 ? (
+        <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/95 backdrop-blur">
+          <div className="px-5 pb-3 pt-3">
+            <MenuSearch
+              value={query}
+              onChange={setQuery}
+              resultCount={isSearching ? visibleItemCount : null}
+            />
+          </div>
+          {navCategories.length > 0 ? (
+            <CategoryNav categories={navCategories} />
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="space-y-8 px-5 py-6">
         {menu.length === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
             This venue hasn’t published a menu yet. Check back soon.
           </p>
+        ) : visibleMenu.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+            No items match “{trimmedQuery}”.
+          </p>
         ) : (
-          menu.map((category) => (
-            <section key={category.id} id={category.id} className="scroll-mt-28">
+          visibleMenu.map((category) => (
+            <section key={category.id} id={category.id} className="scroll-mt-32">
               <h2 className="text-lg font-semibold tracking-tight text-gray-900">
                 {category.name}
               </h2>
