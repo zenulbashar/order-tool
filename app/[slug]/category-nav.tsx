@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 
 /**
- * Sticky category nav with scroll-spy. Each category section is rendered with
- * an `id`; an IntersectionObserver highlights the section nearest the top, and
- * clicking a chip smooth-scrolls to it. The active chip uses the venue's brand
- * colour (a runtime CSS variable), so styling is inline rather than a class.
+ * Category nav with scroll-spy. Rendered inside the storefront's sticky header
+ * (which sits below the search box and owns the stickiness), so this element is
+ * not sticky itself. Each category section carries an `id`; an
+ * IntersectionObserver highlights the section nearest the top, and clicking a
+ * chip smooth-scrolls to it. The `rootMargin` top inset matches the sticky
+ * header height so a section becomes active as its heading clears the header.
+ * The active chip uses the venue's brand colour (a runtime CSS variable), so
+ * styling is inline rather than a class.
  */
 export function CategoryNav({
   categories,
@@ -25,8 +29,10 @@ export function CategoryNav({
           );
         if (visible[0]) setActive(visible[0].target.id);
       },
-      // Trigger when a section's top passes just below the sticky nav.
-      { rootMargin: "-96px 0px -70% 0px", threshold: 0 },
+      // Trigger when a section's top passes just below the sticky header
+      // (search box + chip row, ~109px). Keep this in step with the section
+      // scroll-mt-32 (128px) so the active chip flips as a heading clears it.
+      { rootMargin: "-120px 0px -70% 0px", threshold: 0 },
     );
 
     for (const category of categories) {
@@ -43,7 +49,7 @@ export function CategoryNav({
   }
 
   return (
-    <nav className="sticky top-0 z-20 border-b border-gray-100 bg-white/95 backdrop-blur">
+    <nav>
       <ul className="flex gap-1 overflow-x-auto px-3 py-2">
         {categories.map((category) => {
           const isActive = category.id === active;
