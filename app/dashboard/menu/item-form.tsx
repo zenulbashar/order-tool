@@ -1,11 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId, useRef, useState, useTransition } from "react";
 
 import { ButtonLabel } from "@/app/_components/spinner";
 import { formatCents } from "@/lib/validation";
 
 import { createItem, updateItem, type MenuActionState } from "./actions";
+import { suggestItemDescription } from "./descriptions/actions";
+
+const suggestButtonClass =
+  "shrink-0 rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
 
 const initialState: MenuActionState = {};
 
@@ -36,8 +40,42 @@ export function ItemForm({
     initialState,
   );
 
+  // "Suggest description" — additive to the existing form. It drafts copy into
+  // the editable field and STOPS; the owner accepts by saving through the
+  // existing createItem/updateItem action below. Nothing is auto-saved.
+  const descriptionId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const [suggesting, startSuggest] = useTransition();
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  function handleSuggest() {
+    setSuggestError(null);
+    const form = formRef.current;
+    if (!form) return;
+    // Read the in-progress name/category/price straight off the form so a draft
+    // reflects what the owner is typing (works before the item is even saved).
+    const data = new FormData(form);
+    const name = String(data.get("name") ?? "").trim();
+    if (name.length === 0) {
+      setSuggestError("Add an item name first, then suggest a description.");
+      return;
+    }
+    const categoryId = String(data.get("categoryId") ?? "");
+    const price = String(data.get("price") ?? "");
+    startSuggest(async () => {
+      const result = await suggestItemDescription({ name, categoryId, price });
+      if (result.ok && descriptionRef.current) {
+        descriptionRef.current.value = result.description;
+        descriptionRef.current.focus();
+      } else if (!result.ok) {
+        setSuggestError(result.error);
+      }
+    });
+  }
+
   return (
-    <form action={formAction} className="space-y-3">
+    <form ref={formRef} action={formAction} className="space-y-3">
       {item ? <input type="hidden" name="id" value={item.id} /> : null}
 
       {/* On create the parent category is fixed; on edit it can be changed. */}
@@ -77,16 +115,44 @@ export function ItemForm({
         />
       </label>
 
-      <label className="block text-sm font-medium text-gray-900">
-        Description <span className="text-gray-400">(optional)</span>
+      <div>
+        <div className="flex items-center justify-between gap-2">
+          <label
+            htmlFor={descriptionId}
+            className="text-sm font-medium text-gray-900"
+          >
+            Description <span className="text-gray-400">(optional)</span>
+          </label>
+          <button
+            type="button"
+            onClick={handleSuggest}
+            disabled={suggesting}
+            className={suggestButtonClass}
+          >
+            <ButtonLabel pending={suggesting} pendingLabel="Suggesting…">
+              Suggest description
+            </ButtonLabel>
+          </button>
+        </div>
         <textarea
+          id={descriptionId}
+          ref={descriptionRef}
           name="description"
           rows={2}
           maxLength={500}
           defaultValue={item?.description ?? ""}
           className={`mt-1 ${fieldClass}`}
         />
-      </label>
+        {suggestError ? (
+          <p className="mt-1 text-xs text-red-600" role="alert">
+            {suggestError}
+          </p>
+        ) : null}
+        <p className="mt-1 text-xs text-gray-400">
+          AI draft from the item name, category, and price. Review and edit it,
+          then save. It is never saved automatically.
+        </p>
+      </div>
 
       <label className="block text-sm font-medium text-gray-900">
         Price (dollars)

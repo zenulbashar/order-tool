@@ -16,6 +16,13 @@ import Anthropic from "@anthropic-ai/sdk";
 // Vision-capable model used to read a menu photo into structured JSON.
 export const MENU_EXTRACTION_MODEL = "claude-opus-4-8";
 
+// Text-only model used to draft appetising menu-item descriptions from a name,
+// category, and price. Drafting a sentence or two needs no vision and no deep
+// reasoning, so this deliberately uses a CHEAPER model than the vision
+// extraction above — the same lazy getAnthropic() client, just a different
+// model per call. Every call is an owner-initiated, metered API cost.
+export const MENU_COPY_MODEL = "claude-haiku-4-5";
+
 let client: Anthropic | null = null;
 
 export function getAnthropic(): Anthropic {
