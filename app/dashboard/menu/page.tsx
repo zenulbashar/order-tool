@@ -8,10 +8,12 @@ import {
   deleteGroup,
   deleteItem,
   deleteOption,
+  deleteVariant,
   moveCategory,
   moveGroup,
   moveItem,
   moveOption,
+  moveVariant,
 } from "./actions";
 import { CategoryForm } from "./category-form";
 import { ConfirmSubmit } from "./confirm-submit";
@@ -23,7 +25,9 @@ import {
   getGroupsForVenue,
   getItemsForVenue,
   getOptionsForVenue,
+  getVariantsForVenue,
 } from "./queries";
+import { VariantForm } from "./variant-form";
 
 const secondaryButton =
   "rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40";
@@ -80,11 +84,12 @@ export default async function MenuPage() {
   await requireUser();
   const venue = await requireVenue();
 
-  const [categories, items, groups, options] = await Promise.all([
+  const [categories, items, groups, options, variants] = await Promise.all([
     getCategoriesForVenue(venue.id),
     getItemsForVenue(venue.id),
     getGroupsForVenue(venue.id),
     getOptionsForVenue(venue.id),
+    getVariantsForVenue(venue.id),
   ]);
 
   const itemsByCategory = new Map<string, typeof items>();
@@ -104,6 +109,12 @@ export default async function MenuPage() {
     const list = optionsByGroup.get(option.groupId) ?? [];
     list.push(option);
     optionsByGroup.set(option.groupId, list);
+  }
+  const variantsByItem = new Map<string, typeof variants>();
+  for (const variant of variants) {
+    const list = variantsByItem.get(variant.itemId) ?? [];
+    list.push(variant);
+    variantsByItem.set(variant.itemId, list);
   }
   const categoryOptions = categories.map((c) => ({ id: c.id, name: c.name }));
 
@@ -194,6 +205,8 @@ export default async function MenuPage() {
                         <ul className="space-y-2">
                           {categoryItems.map((item, itemIndex) => {
                             const itemGroups = groupsByItem.get(item.id) ?? [];
+                            const itemVariants =
+                              variantsByItem.get(item.id) ?? [];
                             return (
                               <li
                                 key={item.id}
@@ -206,6 +219,12 @@ export default async function MenuPage() {
                                       <span className="ml-2 text-gray-500">
                                         ${formatCents(item.priceCents)}
                                       </span>
+                                      {itemVariants.length > 0 ? (
+                                        <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                                          {itemVariants.length} size
+                                          {itemVariants.length === 1 ? "" : "s"}
+                                        </span>
+                                      ) : null}
                                       {!item.isAvailable ? (
                                         <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
                                           Unavailable
@@ -228,6 +247,99 @@ export default async function MenuPage() {
                                     label={item.name}
                                   />
                                 </div>
+
+                                <details className="border-t border-gray-100 px-3 py-2">
+                                  <summary className={summaryClass}>
+                                    Sizes ({itemVariants.length})
+                                  </summary>
+                                  <div className="mt-3 space-y-2">
+                                    <p className="text-xs text-gray-500">
+                                      Adding sizes makes them set the price — the
+                                      single Price above is ignored while sizes
+                                      exist.
+                                    </p>
+                                    {itemVariants.length === 0 ? (
+                                      <p className="text-xs text-gray-500">
+                                        No sizes yet.
+                                      </p>
+                                    ) : (
+                                      <ul className="space-y-1.5">
+                                        {itemVariants.map(
+                                          (variant, variantIndex) => (
+                                            <li
+                                              key={variant.id}
+                                              className="rounded border border-gray-200 bg-white"
+                                            >
+                                              <div className="flex items-center justify-between gap-3 px-3 py-1.5">
+                                                <p className="truncate text-sm text-gray-900">
+                                                  {variant.name}
+                                                  <span className="ml-2 text-gray-500">
+                                                    $
+                                                    {formatCents(
+                                                      variant.priceCents,
+                                                    )}
+                                                  </span>
+                                                </p>
+                                                <MoveButtons
+                                                  action={moveVariant}
+                                                  id={variant.id}
+                                                  isFirst={variantIndex === 0}
+                                                  isLast={
+                                                    variantIndex ===
+                                                    itemVariants.length - 1
+                                                  }
+                                                  label={variant.name}
+                                                />
+                                              </div>
+                                              <details className="border-t border-gray-100 px-3 py-1.5">
+                                                <summary
+                                                  className={summaryClass}
+                                                >
+                                                  Edit
+                                                </summary>
+                                                <div className="mt-3 space-y-4">
+                                                  <VariantForm
+                                                    variant={{
+                                                      id: variant.id,
+                                                      name: variant.name,
+                                                      priceCents:
+                                                        variant.priceCents,
+                                                    }}
+                                                  />
+                                                  <form
+                                                    action={deleteVariant}
+                                                    className="border-t border-gray-100 pt-3"
+                                                  >
+                                                    <input
+                                                      type="hidden"
+                                                      name="id"
+                                                      value={variant.id}
+                                                    />
+                                                    <button
+                                                      type="submit"
+                                                      className={deleteLink}
+                                                    >
+                                                      Delete size
+                                                    </button>
+                                                  </form>
+                                                </div>
+                                              </details>
+                                            </li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    )}
+
+                                    <details className="rounded border border-dashed border-gray-300 px-3 py-1.5">
+                                      <summary className={summaryClass}>
+                                        Add a size
+                                      </summary>
+                                      <div className="mt-3">
+                                        <VariantForm itemId={item.id} />
+                                      </div>
+                                    </details>
+                                  </div>
+                                </details>
 
                                 <details className="border-t border-gray-100 px-3 py-2">
                                   <summary className={summaryClass}>
