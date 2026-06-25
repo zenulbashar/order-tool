@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   menuCategories,
   menuItems,
+  menuItemVariants,
   modifierGroups,
   modifierOptions,
 } from "@/lib/db/schema";
@@ -45,4 +46,12 @@ export async function getOptionsForVenue(venueId: string) {
     .from(modifierOptions)
     .where(scopedToVenue(modifierOptions.venueId, venueId))
     .orderBy(asc(modifierOptions.sortOrder), asc(modifierOptions.createdAt));
+}
+
+export async function getVariantsForVenue(venueId: string) {
+  return db
+    .select()
+    .from(menuItemVariants)
+    .where(scopedToVenue(menuItemVariants.venueId, venueId))
+    .orderBy(asc(menuItemVariants.sortOrder), asc(menuItemVariants.createdAt));
 }
