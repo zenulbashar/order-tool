@@ -34,6 +34,18 @@ export const getPublicVenueBySlug = cache(
         brandColor: venues.brandColor,
         logoUrl: venues.logoUrl,
         storefrontDescription: venues.storefrontDescription,
+        // Structured-data inputs (Phase 6) — public, consumed by the JSON-LD on
+        // the storefront. Selected here so generateMetadata + the page + the
+        // JSON-LD all share this one cached venue read (no extra query).
+        streetAddress: venues.streetAddress,
+        suburb: venues.suburb,
+        state: venues.state,
+        postcode: venues.postcode,
+        country: venues.country,
+        phone: venues.phone,
+        openingHours: venues.openingHours,
+        latitude: venues.latitude,
+        longitude: venues.longitude,
       })
       .from(venues)
       .where(eq(venues.slug, normalized))

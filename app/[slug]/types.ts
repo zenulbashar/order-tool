@@ -1,3 +1,5 @@
+import type { OpeningHoursEntry } from "@/lib/db/schema";
+
 /**
  * Customer-safe shapes for the public storefront. These deliberately omit
  * venue_id, owner identity, timestamps, and any unpublished rows — only what
@@ -11,6 +13,18 @@ export type PublicVenue = {
   brandColor: string;
   logoUrl: string | null;
   storefrontDescription: string | null;
+  // Structured-data inputs (Phase 6). Public by design — they power the venue's
+  // search listing via JSON-LD (see json-ld.tsx). Any field may be null, and
+  // the markup emits ONLY the parts that are set; nothing here is fabricated.
+  streetAddress: string | null;
+  suburb: string | null;
+  state: string | null;
+  postcode: string | null;
+  country: string | null;
+  phone: string | null;
+  openingHours: OpeningHoursEntry[] | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type PublicOption = {
