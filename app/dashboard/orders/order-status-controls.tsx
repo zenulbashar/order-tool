@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 
+import { Spinner } from "@/app/_components/spinner";
+
 import { updateOrderFulfillmentStatus } from "./actions";
 import type { FulfillmentStatus } from "./queries";
 
@@ -22,12 +24,14 @@ export function OrderStatusControls({
   status: FulfillmentStatus;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [target, setTarget] = useState<FulfillmentStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {STEPS.map((step) => {
         const isCurrent = step.value === status;
+        const isTarget = isPending && target === step.value;
         return (
           <button
             key={step.value}
@@ -37,6 +41,7 @@ export function OrderStatusControls({
             disabled={isPending || isCurrent}
             onClick={() => {
               setError(null);
+              setTarget(step.value);
               startTransition(async () => {
                 const result = await updateOrderFulfillmentStatus(
                   orderId,
@@ -51,7 +56,14 @@ export function OrderStatusControls({
                 : "border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             }`}
           >
-            {step.label}
+            {isTarget ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Spinner size="sm" label={`Setting ${step.label}`} />
+                {step.label}
+              </span>
+            ) : (
+              step.label
+            )}
           </button>
         );
       })}

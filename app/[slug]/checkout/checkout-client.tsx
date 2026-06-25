@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
+import { ButtonLabel } from "@/app/_components/spinner";
 import { formatCents, type OrderTypeValue } from "@/lib/validation";
 
 import { useCart } from "../cart-provider";
@@ -243,9 +244,9 @@ export function CheckoutClient({
           className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
           style={{ backgroundColor: "var(--brand)" }}
         >
-          {pending
-            ? "Starting payment…"
-            : `Continue to payment · $${formatCents(subtotalCents)}`}
+          <ButtonLabel pending={pending} pendingLabel="Starting payment…">
+            {`Continue to payment · $${formatCents(subtotalCents)}`}
+          </ButtonLabel>
         </button>
         <p className="text-center text-xs text-gray-400">
           Next, pay securely with Stripe.

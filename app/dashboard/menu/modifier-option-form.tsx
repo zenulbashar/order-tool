@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { ButtonLabel } from "@/app/_components/spinner";
 import { formatCents } from "@/lib/validation";
 
 import { createOption, updateOption, type MenuActionState } from "./actions";
@@ -86,7 +87,9 @@ export function ModifierOptionForm({
         disabled={pending}
         className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
       >
-        {pending ? "Saving…" : isEdit ? "Save changes" : "Add option"}
+        <ButtonLabel pending={pending} pendingLabel="Saving…">
+          {isEdit ? "Save changes" : "Add option"}
+        </ButtonLabel>
       </button>
     </form>
   );
