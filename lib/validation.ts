@@ -232,6 +232,50 @@ export const publishDraftSchema = z.object({
 export type PublishDraftInput = z.input<typeof publishDraftSchema>;
 
 /* -------------------------------------------------------------------------- */
+/* AI item descriptions (suggest a draft → owner review → existing column)    */
+/*                                                                            */
+/* Drafting reuses the import review-gate idea: the model proposes copy, the   */
+/* owner edits/accepts, and only an explicit save writes. There is NO new      */
+/* table or column — generated copy lands in the EXISTING menu_items.description*/
+/* (nullable text). saveDescriptionsSchema is the bulk "fill empty             */
+/* descriptions" commit payload; the action re-checks every id against a live, */
+/* venue-scoped row before writing, so this only enforces shape + bounds.      */
+/* Descriptions follow the same contract as the manual CRUD: trimmed, max 500, */
+/* empty stored as null. The single-item "Suggest description" needs no save    */
+/* schema — its accept path is the existing item update (Save changes).        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Max items drafted/saved in one bulk run. Bounds the single batched API call's
+ * cost and response size; the draft action surfaces a `capped` flag and the
+ * owner re-runs for the remainder. Imported by the action as the generation cap
+ * so the two never disagree.
+ */
+export const MAX_DESCRIPTION_DRAFTS = 40;
+
+/** Empty stored as null, max 500 — identical to menuDescriptionSchema. */
+const savedDescriptionSchema = z
+  .string()
+  .trim()
+  .max(500, "Description is too long.")
+  .transform((value) => (value.length > 0 ? value : null));
+
+export const saveDescriptionsSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        id: idSchema,
+        description: savedDescriptionSchema,
+      }),
+    )
+    .min(1, "Nothing to save.")
+    .max(MAX_DESCRIPTION_DRAFTS),
+});
+
+/** What the client sends to saveItemDescriptions (input side, before transforms). */
+export type SaveDescriptionsInput = z.input<typeof saveDescriptionsSchema>;
+
+/* -------------------------------------------------------------------------- */
 /* Storefront theming (Phase 2a)                                              */
 /* -------------------------------------------------------------------------- */
 
