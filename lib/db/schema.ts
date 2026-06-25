@@ -189,7 +189,9 @@ export const menuItems = pgTable(
     description: text("description"),
     // Money is integer cents; format to dollars only at display.
     priceCents: integer("price_cents").notNull(),
-    // FIELD ONLY this phase — no upload. Nullable text URL.
+    // Public URL of the owner-uploaded photo in Cloudflare R2 (nullable: items
+    // may have none). Written ONLY by the upload/remove actions, never by the
+    // item create/update form. See app/dashboard/menu/actions.ts + lib/r2.ts.
     imageUrl: text("image_url"),
     isAvailable: boolean("is_available").notNull().default(true),
     sortOrder: integer("sort_order").notNull(),

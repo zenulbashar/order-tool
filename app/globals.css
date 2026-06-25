@@ -1,6 +1,33 @@
 @import "tailwindcss";
 
 /*
+ * Loading indicator — a subtle three-dot pulse. Defined here (not as a utility)
+ * because the staggered keyframe can't be expressed inline; the <Spinner>
+ * component references it by name and inherits colour via `bg-current`, so it
+ * sits cleanly on dark/brand buttons as well as light surfaces. Honour reduced
+ * motion by holding the dots at a steady opacity instead of pulsing.
+ */
+@keyframes order-loading-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-loading-dot {
+    animation: none !important;
+    opacity: 0.6;
+  }
+}
+
+/*
  * Print: page-level setup only. The dashboard/ticket show-hide is done with
  * Tailwind `print:` utilities at the component (see PrintProvider); @page
  * margins and the paper background can't be expressed as utilities.

@@ -18,7 +18,7 @@ export function ItemCard({
     <button
       type="button"
       onClick={() => onSelect(item)}
-      className="flex w-full items-start justify-between gap-4 py-3 text-left"
+      className="flex w-full items-start justify-between gap-4 py-4 text-left"
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-900">{item.name}</p>
@@ -27,17 +27,20 @@ export function ItemCard({
             {item.description}
           </p>
         ) : null}
-        <p className="mt-1 text-sm text-gray-700">
+        <p className="mt-1.5 text-sm font-medium text-gray-700">
           ${formatCents(item.priceCents)}
         </p>
       </div>
       {item.imageUrl ? (
         // Arbitrary owner-supplied URL; next/image would need remote config.
+        // Lazy + async-decoded so a photo-heavy menu stays fast on mobile.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={item.imageUrl}
           alt={item.name}
-          className="h-20 w-20 shrink-0 rounded-lg object-cover"
+          loading="lazy"
+          decoding="async"
+          className="h-24 w-24 shrink-0 rounded-xl border border-gray-100 object-cover"
         />
       ) : null}
     </button>

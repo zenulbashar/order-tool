@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { ButtonLabel } from "@/app/_components/spinner";
 import { dollarsToCents, formatCents } from "@/lib/validation";
 
 import { extractMenu, publishMenu } from "./actions";
@@ -215,7 +216,9 @@ export function ImportClient() {
             disabled={!canExtract}
             className={`mt-4 ${primaryButton}`}
           >
-            {extracting ? "Reading menu…" : "Read menu"}
+            <ButtonLabel pending={extracting} pendingLabel="Reading menu…">
+              Read menu
+            </ButtonLabel>
           </button>
           <p className="mt-3 text-xs text-gray-400">
             Reading a menu uses AI and is a small one-time cost. The photo is sent
@@ -374,7 +377,9 @@ export function ImportClient() {
           disabled={!canPublish || publishing}
           className={primaryButton}
         >
-          {publishing ? "Adding…" : "Add these to my menu"}
+          <ButtonLabel pending={publishing} pendingLabel="Adding…">
+            Add these to my menu
+          </ButtonLabel>
         </button>
         <button
           type="button"

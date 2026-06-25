@@ -35,6 +35,12 @@ npm run dev                  # http://localhost:3000
 | `STRIPE_SECRET_KEY`      | Stripe (server)  | TEST secret key (`sk_test_…`). Lazily read; build/typecheck need none. |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe (browser) | TEST publishable key (`pk_test_…`); handed to the Payment Element.     |
 | `STRIPE_WEBHOOK_SECRET`  | Stripe webhook   | Signing secret (`whsec_…`); added **post-deploy** (see Payments).      |
+| `ANTHROPIC_API_KEY`      | Anthropic vision | Powers "Import menu from photo". Lazy (`lib/anthropic.ts`); metered cost. |
+| `R2_ACCOUNT_ID`          | Cloudflare R2    | R2 account id. Lazy (`lib/r2.ts`); build/typecheck/lint need none.     |
+| `R2_ACCESS_KEY_ID`       | Cloudflare R2    | R2 API token access key id.                                           |
+| `R2_SECRET_ACCESS_KEY`   | Cloudflare R2    | R2 API token secret.                                                  |
+| `R2_BUCKET_NAME`         | Cloudflare R2    | Bucket that holds menu-item photos.                                   |
+| `R2_PUBLIC_URL`          | Cloudflare R2    | Public base URL photos are served from (stored in `image_url`).       |
 
 ## Database & migrations
 
@@ -144,6 +150,35 @@ verification). After this deploys:
 
 `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` (test keys) must also be set in
 Vercel (Production).
+
+## Menu item photos
+
+Owners attach a real photo to each menu item; the storefront renders an
+image-led layout (photo + name/description/price), with items that have no photo
+falling back to a clean text-only row. Photos are **real owner uploads only** —
+no AI-generated or web-scraped images.
+
+- **Storage:** Cloudflare **R2** (S3-compatible), driven by `@aws-sdk/client-s3`
+  via a lazy client (`lib/r2.ts` — constructed on first use, so build/typecheck/
+  lint run with no R2 env). The public URL is stored in the existing
+  `menu_items.image_url` (no migration).
+- **Upload is server-side** (never browser→R2). `uploadItemPhoto`
+  (`app/dashboard/menu/actions.ts`) re-checks **type** (JPEG/PNG/WebP), **size**
+  (≤5 MB), and **venue ownership** of the item server-side — the real gate,
+  regardless of any client check — then writes to a collision-safe key
+  (`venues/{venueId}/items/{itemId}/{uuid}.{ext}`) and updates `image_url`
+  scoped by `id + venue_id`. Replacing or removing a photo cleans up the old R2
+  object best-effort (a failed cleanup never fails the request).
+- The item create/update form **never** touches `image_url`, so editing an
+  item's name or price can't wipe its photo.
+
+### Cloudflare setup (one-time, parallel to deploy)
+
+Create an R2 bucket, enable public access (or attach a Cloudflare-proxied custom
+domain), and create an R2 API token (Account ID + Access Key ID + Secret). Put
+the bucket name and public URL, with the token, into env — `.env.local` for
+local runs and **Vercel (Production)**. The build proceeds without them (lazy
+init); they're only needed at runtime to actually upload and serve photos.
 
 ## Project structure
 

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { ButtonLabel } from "@/app/_components/spinner";
 import { formatCents } from "@/lib/validation";
 
 import { createItem, updateItem, type MenuActionState } from "./actions";
@@ -17,7 +18,6 @@ type EditableItem = {
   name: string;
   description: string | null;
   priceCents: number;
-  imageUrl: string | null;
   isAvailable: boolean;
 };
 
@@ -101,18 +101,6 @@ export function ItemForm({
         />
       </label>
 
-      <label className="block text-sm font-medium text-gray-900">
-        Image URL <span className="text-gray-400">(optional)</span>
-        <input
-          name="imageUrl"
-          type="url"
-          maxLength={2048}
-          defaultValue={item?.imageUrl ?? ""}
-          placeholder="https://…"
-          className={`mt-1 ${fieldClass}`}
-        />
-      </label>
-
       {isEdit ? (
         <label className="flex items-center gap-2 text-sm text-gray-900">
           <input
@@ -136,7 +124,9 @@ export function ItemForm({
         disabled={pending}
         className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
       >
-        {pending ? "Saving…" : isEdit ? "Save changes" : "Add item"}
+        <ButtonLabel pending={pending} pendingLabel="Saving…">
+          {isEdit ? "Save changes" : "Add item"}
+        </ButtonLabel>
       </button>
     </form>
   );

@@ -20,6 +20,7 @@ import { ConfirmSubmit } from "./confirm-submit";
 import { ItemForm } from "./item-form";
 import { ModifierGroupForm } from "./modifier-group-form";
 import { ModifierOptionForm } from "./modifier-option-form";
+import { PhotoControl } from "./photo-control";
 import {
   getCategoriesForVenue,
   getGroupsForVenue,
@@ -213,29 +214,43 @@ export default async function MenuPage() {
                                 className="rounded-md border border-gray-200 bg-gray-50/50"
                               >
                                 <div className="flex items-center justify-between gap-3 px-3 py-2">
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm text-gray-900">
-                                      {item.name}
-                                      <span className="ml-2 text-gray-500">
-                                        ${formatCents(item.priceCents)}
-                                      </span>
-                                      {itemVariants.length > 0 ? (
-                                        <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
-                                          {itemVariants.length} size
-                                          {itemVariants.length === 1 ? "" : "s"}
-                                        </span>
-                                      ) : null}
-                                      {!item.isAvailable ? (
-                                        <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
-                                          Unavailable
-                                        </span>
-                                      ) : null}
-                                    </p>
-                                    {item.description ? (
-                                      <p className="truncate text-xs text-gray-500">
-                                        {item.description}
-                                      </p>
+                                  <div className="flex min-w-0 items-center gap-2.5">
+                                    {item.imageUrl ? (
+                                      // Owner-supplied URL; next/image would need
+                                      // remote config.
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img
+                                        src={item.imageUrl}
+                                        alt=""
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="h-10 w-10 shrink-0 rounded-md border border-gray-200 object-cover"
+                                      />
                                     ) : null}
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm text-gray-900">
+                                        {item.name}
+                                        <span className="ml-2 text-gray-500">
+                                          ${formatCents(item.priceCents)}
+                                        </span>
+                                        {itemVariants.length > 0 ? (
+                                          <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                                            {itemVariants.length} size
+                                            {itemVariants.length === 1 ? "" : "s"}
+                                          </span>
+                                        ) : null}
+                                        {!item.isAvailable ? (
+                                          <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                                            Unavailable
+                                          </span>
+                                        ) : null}
+                                      </p>
+                                      {item.description ? (
+                                        <p className="truncate text-xs text-gray-500">
+                                          {item.description}
+                                        </p>
+                                      ) : null}
+                                    </div>
                                   </div>
                                   <MoveButtons
                                     action={moveItem}
@@ -558,6 +573,13 @@ export default async function MenuPage() {
                                     Edit item
                                   </summary>
                                   <div className="mt-3 space-y-4">
+                                    <PhotoControl
+                                      item={{
+                                        id: item.id,
+                                        name: item.name,
+                                        imageUrl: item.imageUrl,
+                                      }}
+                                    />
                                     <ItemForm
                                       categories={categoryOptions}
                                       item={{
@@ -566,7 +588,6 @@ export default async function MenuPage() {
                                         name: item.name,
                                         description: item.description,
                                         priceCents: item.priceCents,
-                                        imageUrl: item.imageUrl,
                                         isAvailable: item.isAvailable,
                                       }}
                                     />

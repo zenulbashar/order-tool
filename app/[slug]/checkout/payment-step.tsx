@@ -10,6 +10,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { ButtonLabel } from "@/app/_components/spinner";
 import { formatCents } from "@/lib/validation";
 
 import type { PublicVenue } from "../types";
@@ -123,7 +124,9 @@ function PaymentForm({
         className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
         style={{ backgroundColor: "var(--brand)" }}
       >
-        {submitting ? "Processing…" : `Pay $${formatCents(amountCents)}`}
+        <ButtonLabel pending={submitting} pendingLabel="Processing…">
+          {`Pay $${formatCents(amountCents)}`}
+        </ButtonLabel>
       </button>
 
       <p className="text-center text-xs text-gray-400">
