@@ -70,17 +70,6 @@ export const menuDescriptionSchema = z
   .max(500, "Description is too long.")
   .transform((value) => (value.length > 0 ? value : null));
 
-/** Field only this phase (no upload). Empty stored as null; else http(s) URL. */
-export const menuImageUrlSchema = z
-  .string()
-  .trim()
-  .max(2048, "Image URL is too long.")
-  .refine(
-    (value) => value === "" || /^https?:\/\/.+/i.test(value),
-    "Enter a valid URL starting with http:// or https://.",
-  )
-  .transform((value) => (value.length > 0 ? value : null));
-
 /**
  * Prices are entered in dollars and converted to INTEGER CENTS server-side.
  * Math.round absorbs binary-float error (e.g. 12.99 * 100 === 1298.999…).
@@ -114,12 +103,16 @@ export const categoryCreateSchema = z.object({
 });
 export const categoryUpdateSchema = categoryCreateSchema;
 
-/* Item (price entered in dollars under the `priceCents` key → cents out). */
+/*
+ * Item (price entered in dollars under the `priceCents` key → cents out).
+ * NOTE: image_url is NOT part of this payload — a photo is set/replaced/removed
+ * only via the dedicated upload actions (uploadItemPhoto/removeItemPhoto), so
+ * editing an item's name/price never touches its photo.
+ */
 export const itemCreateSchema = z.object({
   name: menuNameSchema,
   description: menuDescriptionSchema,
   priceCents: priceDollarsToCentsSchema,
-  imageUrl: menuImageUrlSchema,
 });
 export const itemUpdateSchema = itemCreateSchema;
 

@@ -13,6 +13,11 @@ import {
   modifierGroups,
   modifierOptions,
 } from "@/lib/db/schema";
+import {
+  deleteFromR2,
+  r2KeyFromPublicUrl,
+  uploadToR2,
+} from "@/lib/r2";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   categoryCreateSchema,
@@ -262,7 +267,6 @@ export async function createItem(
     name: formData.get("name") ?? "",
     description: formData.get("description") ?? "",
     priceCents: formData.get("price") ?? "",
-    imageUrl: formData.get("imageUrl") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -271,13 +275,13 @@ export async function createItem(
   const owned = await ownedCategoryId(venue.id, categoryId.data);
   if (!owned) return { error: "Category not found." };
 
+  // New items start with no photo; image_url is set later via uploadItemPhoto.
   await db.insert(menuItems).values({
     venueId: venue.id,
     categoryId: owned,
     name: parsed.data.name,
     description: parsed.data.description,
     priceCents: parsed.data.priceCents,
-    imageUrl: parsed.data.imageUrl,
     sortOrder: await nextItemSort(venue.id, owned),
   });
 
@@ -300,7 +304,6 @@ export async function updateItem(
     name: formData.get("name") ?? "",
     description: formData.get("description") ?? "",
     priceCents: formData.get("price") ?? "",
-    imageUrl: formData.get("imageUrl") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -313,13 +316,14 @@ export async function updateItem(
   if (!owned) return { error: "Category not found." };
 
   // IDOR-safe: scope by id AND venue_id; venue_id is never in the payload.
+  // image_url is DELIBERATELY not in this set — the photo is owned by the
+  // upload/remove actions, so editing name/price/etc. never wipes it.
   const updated = await db
     .update(menuItems)
     .set({
       name: parsed.data.name,
       description: parsed.data.description,
       priceCents: parsed.data.priceCents,
-      imageUrl: parsed.data.imageUrl,
       isAvailable,
       categoryId: owned,
     })
@@ -410,6 +414,135 @@ export async function moveItem(formData: FormData): Promise<void> {
         ),
       );
   });
+
+  revalidatePath(MENU_PATH);
+}
+
+/* -------------------------------- Item photo ------------------------------ */
+/* Real owner-uploaded photos stored in Cloudflare R2 (server-side upload, never */
+/* browser->R2). The public URL is written to menu_items.image_url. Validation   */
+/* (type + size + parent-ownership) is the REAL gate, enforced server-side       */
+/* regardless of any client check. Old objects are cleaned up best-effort.       */
+
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024; // 5MB
+// Allowed upload types -> file extension used in the object key.
+const PHOTO_TYPE_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+/** Read the item's current photo URL (id + venue scoped), or null. */
+async function currentItemImageUrl(
+  venueId: string,
+  itemId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ imageUrl: menuItems.imageUrl })
+    .from(menuItems)
+    .where(
+      and(eq(menuItems.id, itemId), scopedToVenue(menuItems.venueId, venueId)),
+    )
+    .limit(1);
+  return row?.imageUrl ?? null;
+}
+
+/** Best-effort delete of an R2 object behind a stored public URL. Never throws. */
+async function bestEffortDeletePhoto(url: string | null): Promise<void> {
+  if (!url) return;
+  const key = r2KeyFromPublicUrl(url);
+  if (!key) return; // not an object we manage (e.g. a legacy pasted URL)
+  try {
+    await deleteFromR2(key);
+  } catch {
+    // Cleanup is best-effort: a leftover object is harmless and must never
+    // fail the owner's request.
+  }
+}
+
+export async function uploadItemPhoto(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const itemId = idSchema.safeParse(formData.get("itemId"));
+  if (!itemId.success) return { error: "Missing item." };
+
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose a photo to upload." };
+  }
+  // Server-side validation is the real gate (independent of any client check).
+  if (file.size > PHOTO_MAX_BYTES) {
+    return { error: "Photo must be 5MB or smaller." };
+  }
+  const ext = PHOTO_TYPE_EXT[file.type];
+  if (!ext) {
+    return { error: "Photo must be a JPEG, PNG, or WebP image." };
+  }
+
+  // Parent-ownership (IDOR gate): the item must belong to this venue.
+  const owned = await ownedItemId(venue.id, itemId.data);
+  if (!owned) return { error: "Item not found." };
+
+  // Capture the existing photo first so we can clean it up after a successful
+  // replace.
+  const previousUrl = await currentItemImageUrl(venue.id, owned);
+
+  // Collision-safe key namespaced by venue + item.
+  const key = `venues/${venue.id}/items/${owned}/${crypto.randomUUID()}.${ext}`;
+
+  let publicUrl: string;
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    publicUrl = await uploadToR2(key, buffer, file.type);
+  } catch {
+    // Upload failed (network, or R2 not configured) — leave the DB untouched.
+    return {
+      error: "Couldn't upload the photo right now. Please try again.",
+    };
+  }
+
+  // IDOR-safe write: scope by id AND venue_id; row assertion confirms a hit.
+  const updated = await db
+    .update(menuItems)
+    .set({ imageUrl: publicUrl })
+    .where(
+      and(eq(menuItems.id, owned), scopedToVenue(menuItems.venueId, venue.id)),
+    )
+    .returning({ id: menuItems.id });
+
+  if (updated.length === 0) {
+    // The item vanished between the ownership check and the write — don't orphan
+    // the just-uploaded object.
+    await bestEffortDeletePhoto(publicUrl);
+    return { error: "Item not found." };
+  }
+
+  // Replace succeeded — remove the previous object (best-effort).
+  await bestEffortDeletePhoto(previousUrl);
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function removeItemPhoto(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return;
+
+  const previousUrl = await currentItemImageUrl(venue.id, id.data);
+
+  // Venue-scoped clear of the photo column.
+  await db
+    .update(menuItems)
+    .set({ imageUrl: null })
+    .where(
+      and(eq(menuItems.id, id.data), scopedToVenue(menuItems.venueId, venue.id)),
+    );
+
+  await bestEffortDeletePhoto(previousUrl);
 
   revalidatePath(MENU_PATH);
 }
