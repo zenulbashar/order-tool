@@ -143,6 +143,19 @@ export const optionCreateSchema = z.object({
 });
 export const optionUpdateSchema = optionCreateSchema;
 
+/*
+ * Item size variant (Phase 5a). The variant's price is ABSOLUTE and required —
+ * it IS the item's price when variants exist — so this reuses the same
+ * dollars->cents handling as the item price (under `priceCents`), not the
+ * modifier option's optional delta. Reorder is validated inline in the action
+ * (id + direction), matching moveOption — no separate schema.
+ */
+export const variantCreateSchema = z.object({
+  name: menuNameSchema,
+  priceCents: priceDollarsToCentsSchema,
+});
+export const variantUpdateSchema = variantCreateSchema;
+
 /* -------------------------------------------------------------------------- */
 /* AI menu import (photo → human-reviewed draft → existing menu)              */
 /*                                                                            */

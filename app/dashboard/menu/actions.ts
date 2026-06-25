@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import {
   menuCategories,
   menuItems,
+  menuItemVariants,
   modifierGroups,
   modifierOptions,
 } from "@/lib/db/schema";
@@ -23,6 +24,8 @@ import {
   itemUpdateSchema,
   optionCreateSchema,
   optionUpdateSchema,
+  variantCreateSchema,
+  variantUpdateSchema,
 } from "@/lib/validation";
 
 export type MenuActionState = { error?: string };
@@ -790,6 +793,185 @@ export async function moveOption(formData: FormData): Promise<void> {
         and(
           eq(modifierOptions.id, neighbor.id),
           scopedToVenue(modifierOptions.venueId, venue.id),
+        ),
+      );
+  });
+
+  revalidatePath(MENU_PATH);
+}
+
+/* ----------------------------- Item size variants ------------------------- */
+/* Variants attach to an item (parent-ownership via the existing ownedItemId,  */
+/* same as modifier groups). Price is ABSOLUTE and required — read from the    */
+/* `price` field like the item price, not the option's optional delta.         */
+
+/** Next sort_order = MAX(sort_order)+1 among variants on the same item. */
+async function nextVariantSort(
+  venueId: string,
+  itemId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ sortOrder: menuItemVariants.sortOrder })
+    .from(menuItemVariants)
+    .where(
+      and(
+        scopedToVenue(menuItemVariants.venueId, venueId),
+        eq(menuItemVariants.itemId, itemId),
+      ),
+    )
+    .orderBy(desc(menuItemVariants.sortOrder))
+    .limit(1);
+  return (rows[0]?.sortOrder ?? -1) + 1;
+}
+
+export async function createVariant(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const itemId = idSchema.safeParse(formData.get("itemId"));
+  if (!itemId.success) return { error: "Missing item." };
+
+  const parsed = variantCreateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    priceCents: formData.get("price") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const owned = await ownedItemId(venue.id, itemId.data);
+  if (!owned) return { error: "Item not found." };
+
+  await db.insert(menuItemVariants).values({
+    venueId: venue.id,
+    itemId: owned,
+    name: parsed.data.name,
+    priceCents: parsed.data.priceCents,
+    sortOrder: await nextVariantSort(venue.id, owned),
+  });
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function updateVariant(
+  _prev: MenuActionState,
+  formData: FormData,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return { error: "Missing size." };
+
+  const parsed = variantUpdateSchema.safeParse({
+    name: formData.get("name") ?? "",
+    priceCents: formData.get("price") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  // item_id is immutable on edit; scope by id AND venue_id, no venue_id in set.
+  const updated = await db
+    .update(menuItemVariants)
+    .set({
+      name: parsed.data.name,
+      priceCents: parsed.data.priceCents,
+    })
+    .where(
+      and(
+        eq(menuItemVariants.id, id.data),
+        scopedToVenue(menuItemVariants.venueId, venue.id),
+      ),
+    )
+    .returning({ id: menuItemVariants.id });
+  if (updated.length === 0) return { error: "Size not found." };
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+export async function deleteVariant(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  if (!id.success) return;
+
+  await db
+    .delete(menuItemVariants)
+    .where(
+      and(
+        eq(menuItemVariants.id, id.data),
+        scopedToVenue(menuItemVariants.venueId, venue.id),
+      ),
+    );
+
+  revalidatePath(MENU_PATH);
+}
+
+export async function moveVariant(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const id = idSchema.safeParse(formData.get("id"));
+  const direction = formData.get("direction");
+  if (!id.success || (direction !== "up" && direction !== "down")) return;
+
+  await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({
+        id: menuItemVariants.id,
+        sortOrder: menuItemVariants.sortOrder,
+        itemId: menuItemVariants.itemId,
+      })
+      .from(menuItemVariants)
+      .where(
+        and(
+          eq(menuItemVariants.id, id.data),
+          scopedToVenue(menuItemVariants.venueId, venue.id),
+        ),
+      )
+      .limit(1);
+    if (!current) return;
+
+    const [neighbor] = await tx
+      .select({
+        id: menuItemVariants.id,
+        sortOrder: menuItemVariants.sortOrder,
+      })
+      .from(menuItemVariants)
+      .where(
+        and(
+          scopedToVenue(menuItemVariants.venueId, venue.id),
+          eq(menuItemVariants.itemId, current.itemId),
+          direction === "up"
+            ? lt(menuItemVariants.sortOrder, current.sortOrder)
+            : gt(menuItemVariants.sortOrder, current.sortOrder),
+        ),
+      )
+      .orderBy(
+        direction === "up"
+          ? desc(menuItemVariants.sortOrder)
+          : asc(menuItemVariants.sortOrder),
+      )
+      .limit(1);
+    if (!neighbor) return;
+
+    await tx
+      .update(menuItemVariants)
+      .set({ sortOrder: neighbor.sortOrder })
+      .where(
+        and(
+          eq(menuItemVariants.id, current.id),
+          scopedToVenue(menuItemVariants.venueId, venue.id),
+        ),
+      );
+    await tx
+      .update(menuItemVariants)
+      .set({ sortOrder: current.sortOrder })
+      .where(
+        and(
+          eq(menuItemVariants.id, neighbor.id),
+          scopedToVenue(menuItemVariants.venueId, venue.id),
         ),
       );
   });
