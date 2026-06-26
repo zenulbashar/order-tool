@@ -12,18 +12,23 @@ import type { PublicMenu } from "./types";
 
 /**
  * Cart state lives entirely on the client and is persisted to sessionStorage,
- * keyed by slug. We store ONLY ids + quantity per line — never prices. All
- * money shown is recomputed here from the current menu for display, and will be
- * recomputed server-side at order time in 2b (price-tampering defence).
+ * keyed by slug. We store ONLY ids + quantity per line — the chosen size variant
+ * id, the item id, and the modifier option ids — never prices. All money shown
+ * is recomputed here from the current menu for display, and will be recomputed
+ * server-side at order time (price-tampering defence).
  *
  * sessionStorage is a client-only external store, so it is read through
  * useSyncExternalStore — hydration-safe (server snapshot is always empty) and
  * without a setState-in-effect load.
  */
 
-/** Persisted shape — the minimum needed to rebuild a line. No prices. */
+/**
+ * Persisted shape — the minimum needed to rebuild a line. No prices. variantId
+ * is the chosen size for a variant-priced item, or null for a flat-priced one.
+ */
 type StoredLine = {
   itemId: string;
+  variantId: string | null;
   selectedOptionIds: string[];
   quantity: number;
 };
@@ -36,6 +41,8 @@ export type DisplayLine = {
   lineId: string;
   itemId: string;
   itemName: string;
+  // Chosen size's name for a variant-priced line (e.g. "Large"), else null.
+  variantName: string | null;
   quantity: number;
   options: { id: string; name: string; priceDeltaCents: number }[];
   unitCents: number;
@@ -49,7 +56,12 @@ type CartApi = {
   subtotalCents: number;
   /** True when the last load dropped/changed stale lines; cleared on mutation. */
   staleNotice: boolean;
-  addItem: (itemId: string, selectedOptionIds: string[], quantity: number) => void;
+  addItem: (
+    itemId: string,
+    variantId: string | null,
+    selectedOptionIds: string[],
+    quantity: number,
+  ) => void;
   setQuantity: (lineId: string, quantity: number) => void;
   removeLine: (lineId: string) => void;
   clear: () => void;
@@ -65,12 +77,18 @@ type MenuIndex = {
   items: Map<string, { name: string; priceCents: number }>;
   options: Map<string, { name: string; priceDeltaCents: number }>;
   itemOptionIds: Map<string, Set<string>>;
+  // Variant price/name by variant id, and the set of valid variant ids per item.
+  // An item with a non-empty set here is variant-priced; an empty set is flat.
+  variants: Map<string, { name: string; priceCents: number }>;
+  itemVariantIds: Map<string, Set<string>>;
 };
 
 function buildIndex(menu: PublicMenu): MenuIndex {
   const items = new Map<string, { name: string; priceCents: number }>();
   const options = new Map<string, { name: string; priceDeltaCents: number }>();
   const itemOptionIds = new Map<string, Set<string>>();
+  const variants = new Map<string, { name: string; priceCents: number }>();
+  const itemVariantIds = new Map<string, Set<string>>();
 
   for (const category of menu) {
     for (const item of category.items) {
@@ -86,14 +104,30 @@ function buildIndex(menu: PublicMenu): MenuIndex {
         }
       }
       itemOptionIds.set(item.id, ids);
+      const variantIds = new Set<string>();
+      for (const variant of item.variants) {
+        variants.set(variant.id, {
+          name: variant.name,
+          priceCents: variant.priceCents,
+        });
+        variantIds.add(variant.id);
+      }
+      itemVariantIds.set(item.id, variantIds);
     }
   }
-  return { items, options, itemOptionIds };
+  return { items, options, itemOptionIds, variants, itemVariantIds };
 }
 
-/** Order-independent identity so the same item+options merges into one line. */
-function lineKey(itemId: string, optionIds: string[]): string {
-  return `${itemId}__${[...optionIds].sort().join("-")}`;
+/**
+ * Order-independent identity so the same item + size + options merges into one
+ * line, while different sizes (e.g. Small vs Large) stay distinct lines.
+ */
+function lineKey(
+  itemId: string,
+  variantId: string | null,
+  optionIds: string[],
+): string {
+  return `${itemId}__${variantId ?? ""}__${[...optionIds].sort().join("-")}`;
 }
 
 function mergeLines(lines: CartLine[]): CartLine[] {
@@ -112,10 +146,11 @@ function mergeLines(lines: CartLine[]): CartLine[] {
 function addToLines(
   prev: CartLine[],
   itemId: string,
+  variantId: string | null,
   optionIds: string[],
   quantity: number,
 ): CartLine[] {
-  const id = lineKey(itemId, optionIds);
+  const id = lineKey(itemId, variantId, optionIds);
   const existing = prev.find((line) => line.lineId === id);
   if (existing) {
     return prev.map((line) =>
@@ -124,7 +159,10 @@ function addToLines(
         : line,
     );
   }
-  return [...prev, { lineId: id, itemId, selectedOptionIds: optionIds, quantity }];
+  return [
+    ...prev,
+    { lineId: id, itemId, variantId, selectedOptionIds: optionIds, quantity },
+  ];
 }
 
 function setLineQuantity(
@@ -147,6 +185,19 @@ function computeDisplay(lines: CartLine[], index: MenuIndex) {
   for (const line of lines) {
     const item = index.items.get(line.itemId);
     if (!item) continue; // defensive; reconciled at read
+
+    // Variant-priced lines take the chosen size's price as the base; flat lines
+    // use the item price. Display only — the server re-prices at order time from
+    // its own DB lookup and never trusts this number.
+    let baseCents = item.priceCents;
+    let variantName: string | null = null;
+    if (line.variantId) {
+      const variant = index.variants.get(line.variantId);
+      if (!variant) continue; // defensive; reconciled at read
+      baseCents = variant.priceCents;
+      variantName = variant.name;
+    }
+
     const options = line.selectedOptionIds
       .map((id) => {
         const option = index.options.get(id);
@@ -154,7 +205,7 @@ function computeDisplay(lines: CartLine[], index: MenuIndex) {
       })
       .filter((o): o is NonNullable<typeof o> => o !== null);
     const unitCents =
-      item.priceCents + options.reduce((sum, o) => sum + o.priceDeltaCents, 0);
+      baseCents + options.reduce((sum, o) => sum + o.priceDeltaCents, 0);
     const lineCents = unitCents * line.quantity;
     subtotalCents += lineCents;
     count += line.quantity;
@@ -162,6 +213,7 @@ function computeDisplay(lines: CartLine[], index: MenuIndex) {
       lineId: line.lineId,
       itemId: line.itemId,
       itemName: item.name,
+      variantName,
       quantity: line.quantity,
       options,
       unitCents,
@@ -203,7 +255,7 @@ function readStoredCart(
         changed = true;
         continue;
       }
-      const { itemId, selectedOptionIds, quantity } = entry as Record<
+      const { itemId, variantId, selectedOptionIds, quantity } = entry as Record<
         string,
         unknown
       >;
@@ -212,6 +264,27 @@ function readStoredCart(
         changed = true; // unknown / removed / unavailable item -> drop line
         continue;
       }
+
+      // Reconcile the chosen size against the live menu. A variant-priced item
+      // REQUIRES a currently-valid size: if the item gained variants since this
+      // line was stored, or the chosen size was removed/renamed, drop the line —
+      // we never silently pick a size for the customer. A now-flat item drops any
+      // stale size it used to carry. Either way the "items changed" notice fires.
+      const itemVariantIds =
+        index.itemVariantIds.get(itemId) ?? new Set<string>();
+      const rawVariantId = typeof variantId === "string" ? variantId : null;
+      let resolvedVariantId: string | null = null;
+      if (itemVariantIds.size > 0) {
+        if (rawVariantId && itemVariantIds.has(rawVariantId)) {
+          resolvedVariantId = rawVariantId;
+        } else {
+          changed = true; // missing/invalid size on a variant-priced item
+          continue;
+        }
+      } else if (rawVariantId !== null) {
+        changed = true; // stale size on a now-flat item -> strip it
+      }
+
       const validIds = index.itemOptionIds.get(itemId) ?? new Set<string>();
       const rawIds = Array.isArray(selectedOptionIds) ? selectedOptionIds : [];
       const ids = rawIds.filter(
@@ -231,8 +304,9 @@ function readStoredCart(
       }
 
       cleaned.push({
-        lineId: lineKey(itemId, ids),
+        lineId: lineKey(itemId, resolvedVariantId, ids),
         itemId,
+        variantId: resolvedVariantId,
         selectedOptionIds: ids,
         quantity: qty,
       });
@@ -250,8 +324,9 @@ function readStoredCart(
 function persist(slug: string, lines: CartLine[]) {
   try {
     const stored: StoredLine[] = lines.map(
-      ({ itemId, selectedOptionIds, quantity }) => ({
+      ({ itemId, variantId, selectedOptionIds, quantity }) => ({
         itemId,
+        variantId,
         selectedOptionIds,
         quantity,
       }),
@@ -333,8 +408,8 @@ export function CartProvider({
   const lines = state.lines;
 
   const addItem = useCallback(
-    (itemId: string, ids: string[], qty: number) =>
-      store.update((prev) => addToLines(prev, itemId, ids, qty)),
+    (itemId: string, variantId: string | null, ids: string[], qty: number) =>
+      store.update((prev) => addToLines(prev, itemId, variantId, ids, qty)),
     [store],
   );
   const setQuantity = useCallback(

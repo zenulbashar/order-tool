@@ -79,6 +79,7 @@ export function CartReview({
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900">
                         {line.itemName}
+                        {line.variantName ? ` (${line.variantName})` : ""}
                       </p>
                       {line.options.length > 0 ? (
                         <p className="mt-0.5 text-xs text-gray-500">
