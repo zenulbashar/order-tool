@@ -3,7 +3,12 @@
 import { useActionState, useId, useRef, useState, useTransition } from "react";
 
 import { ButtonLabel } from "@/app/_components/spinner";
-import { formatCents } from "@/lib/validation";
+import {
+  DIETARY_DISCLAIMER,
+  DIETARY_TAGS,
+  type DietaryTag,
+  formatCents,
+} from "@/lib/validation";
 
 import { createItem, updateItem, type MenuActionState } from "./actions";
 import { suggestItemDescription } from "./descriptions/actions";
@@ -23,6 +28,7 @@ type EditableItem = {
   description: string | null;
   priceCents: number;
   isAvailable: boolean;
+  tags: DietaryTag[];
 };
 
 export function ItemForm({
@@ -48,6 +54,22 @@ export function ItemForm({
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const [suggesting, startSuggest] = useTransition();
   const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  // Dietary/allergen tags as controlled checkbox state, seeded from the item's
+  // current tags. Checked tags POST under the "tags" key; the create/update
+  // action validates against the vocab and replace-sets them within venue scope.
+  const [selectedTags, setSelectedTags] = useState<Set<DietaryTag>>(
+    () => new Set(item?.tags ?? []),
+  );
+
+  function toggleTag(tag: DietaryTag) {
+    setSelectedTags((current) => {
+      const next = new Set(current);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  }
 
   function handleSuggest() {
     setSuggestError(null);
@@ -178,6 +200,44 @@ export function ItemForm({
           Available
         </label>
       ) : null}
+
+      {/* Dietary/allergen tags. Owner-set suggestions, never platform
+          guarantees — the storefront shows the same disclaimer to customers. */}
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-gray-900">
+          Dietary tags <span className="text-gray-400">(optional)</span>
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {DIETARY_TAGS.map((tag) => {
+            const checked = selectedTags.has(tag.value);
+            return (
+              <label
+                key={tag.value}
+                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  checked
+                    ? "border-gray-900 bg-gray-900 text-white"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  name="tags"
+                  value={tag.value}
+                  checked={checked}
+                  onChange={() => toggleTag(tag.value)}
+                  className="sr-only"
+                />
+                {tag.label}
+              </label>
+            );
+          })}
+        </div>
+        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          Tags you set are shown to customers as a guide only. {DIETARY_DISCLAIMER}{" "}
+          Use “gluten friendly” rather than “gluten free”: never state a dish is
+          allergen-safe.
+        </p>
+      </fieldset>
 
       {state.error ? (
         <p className="text-sm text-red-600" role="alert">

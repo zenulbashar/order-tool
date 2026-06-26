@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import {
   menuCategories,
   menuItems,
+  menuItemTags,
   menuItemVariants,
   modifierGroups,
   modifierOptions,
@@ -54,4 +55,18 @@ export async function getVariantsForVenue(venueId: string) {
     .from(menuItemVariants)
     .where(scopedToVenue(menuItemVariants.venueId, venueId))
     .orderBy(asc(menuItemVariants.sortOrder), asc(menuItemVariants.createdAt));
+}
+
+/**
+ * Every dietary/allergen tag set on this venue's items. Flat + venue-scoped;
+ * the page groups it into a tag-set per item (the editor pre-checks the item's
+ * current tags). created_at gives a stable order, though the editor renders
+ * tags in the canonical DIETARY_TAGS order regardless.
+ */
+export async function getTagsForVenue(venueId: string) {
+  return db
+    .select()
+    .from(menuItemTags)
+    .where(scopedToVenue(menuItemTags.venueId, venueId))
+    .orderBy(asc(menuItemTags.createdAt));
 }

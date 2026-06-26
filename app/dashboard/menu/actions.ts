@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import {
   menuCategories,
   menuItems,
+  menuItemTags,
   menuItemVariants,
   modifierGroups,
   modifierOptions,
@@ -22,11 +23,13 @@ import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   categoryCreateSchema,
   categoryUpdateSchema,
+  type DietaryTag,
   groupCreateSchema,
   groupUpdateSchema,
   idSchema,
   itemCreateSchema,
   itemUpdateSchema,
+  normalizeDietaryTags,
   optionCreateSchema,
   optionUpdateSchema,
   variantCreateSchema,
@@ -55,6 +58,43 @@ async function requireVenueForAction(): Promise<Venue> {
 function priceDeltaInput(formData: FormData): string {
   const raw = String(formData.get("priceDelta") ?? "").trim();
   return raw.length > 0 ? raw : "0";
+}
+
+/**
+ * The dietary tags selected on the item form. Reads every "tags" checkbox,
+ * validates each against the vocab, and de-duplicates — a forged or stale value
+ * is silently dropped, never written. Customers never reach this path.
+ */
+function tagsInput(formData: FormData): DietaryTag[] {
+  return normalizeDietaryTags(formData.getAll("tags").map((v) => String(v)));
+}
+
+/**
+ * Replace-set an item's dietary tags within a transaction: delete the item's
+ * current tags (scoped by item_id AND venue_id) then insert the selected set,
+ * every row carrying venue_id. The caller must have already confirmed the item
+ * belongs to the venue. Runs inside the create/update item transaction so a
+ * partial tag write can never be left behind.
+ */
+async function replaceItemTags(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  venueId: string,
+  itemId: string,
+  tags: DietaryTag[],
+): Promise<void> {
+  await tx
+    .delete(menuItemTags)
+    .where(
+      and(
+        eq(menuItemTags.itemId, itemId),
+        scopedToVenue(menuItemTags.venueId, venueId),
+      ),
+    );
+  if (tags.length > 0) {
+    await tx
+      .insert(menuItemTags)
+      .values(tags.map((tag) => ({ venueId, itemId, tag })));
+  }
 }
 
 /** Next sort_order = MAX(sort_order)+1 within the venue (categories are top level). */
@@ -275,14 +315,25 @@ export async function createItem(
   const owned = await ownedCategoryId(venue.id, categoryId.data);
   if (!owned) return { error: "Category not found." };
 
+  const tags = tagsInput(formData);
+  const sortOrder = await nextItemSort(venue.id, owned);
+
+  // Insert the item and its dietary tags atomically: the tags reference the
+  // new row, so a single transaction prevents a half-created item.
   // New items start with no photo; image_url is set later via uploadItemPhoto.
-  await db.insert(menuItems).values({
-    venueId: venue.id,
-    categoryId: owned,
-    name: parsed.data.name,
-    description: parsed.data.description,
-    priceCents: parsed.data.priceCents,
-    sortOrder: await nextItemSort(venue.id, owned),
+  await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(menuItems)
+      .values({
+        venueId: venue.id,
+        categoryId: owned,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        priceCents: parsed.data.priceCents,
+        sortOrder,
+      })
+      .returning({ id: menuItems.id });
+    await replaceItemTags(tx, venue.id, created.id, tags);
   });
 
   revalidatePath(MENU_PATH);
@@ -315,23 +366,37 @@ export async function updateItem(
   const owned = await ownedCategoryId(venue.id, categoryId.data);
   if (!owned) return { error: "Category not found." };
 
+  const tags = tagsInput(formData);
+
+  // Update the item and replace-set its dietary tags atomically. The tag write
+  // only runs once the venue-scoped UPDATE confirms the row exists, so a forged
+  // id for another venue's item is rejected before any tag is touched.
   // IDOR-safe: scope by id AND venue_id; venue_id is never in the payload.
   // image_url is DELIBERATELY not in this set — the photo is owned by the
   // upload/remove actions, so editing name/price/etc. never wipes it.
-  const updated = await db
-    .update(menuItems)
-    .set({
-      name: parsed.data.name,
-      description: parsed.data.description,
-      priceCents: parsed.data.priceCents,
-      isAvailable,
-      categoryId: owned,
-    })
-    .where(
-      and(eq(menuItems.id, id.data), scopedToVenue(menuItems.venueId, venue.id)),
-    )
-    .returning({ id: menuItems.id });
-  if (updated.length === 0) return { error: "Item not found." };
+  let hit = false;
+  await db.transaction(async (tx) => {
+    const updated = await tx
+      .update(menuItems)
+      .set({
+        name: parsed.data.name,
+        description: parsed.data.description,
+        priceCents: parsed.data.priceCents,
+        isAvailable,
+        categoryId: owned,
+      })
+      .where(
+        and(
+          eq(menuItems.id, id.data),
+          scopedToVenue(menuItems.venueId, venue.id),
+        ),
+      )
+      .returning({ id: menuItems.id });
+    if (updated.length === 0) return;
+    hit = true;
+    await replaceItemTags(tx, venue.id, id.data, tags);
+  });
+  if (!hit) return { error: "Item not found." };
 
   revalidatePath(MENU_PATH);
   return {};
