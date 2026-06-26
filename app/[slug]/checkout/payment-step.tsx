@@ -2,6 +2,7 @@
 
 import {
   Elements,
+  ExpressCheckoutElement,
   PaymentElement,
   useElements,
   useStripe,
@@ -79,9 +80,18 @@ function PaymentForm({
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Whether a wallet (Apple Pay / Google Pay / Link) is available on this device,
+  // reported by the Express Checkout Element's onReady. Gates ONLY that element's
+  // heading + divider, so when no wallet exists the card form below is unchanged.
+  const [hasWallet, setHasWallet] = useState(false);
 
-  async function handlePay(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  // SINGLE confirmation path. BOTH the card form submit and the Express Checkout
+  // Element's onConfirm call this one helper, which confirms the SAME
+  // PaymentIntent placeOrder already created — carried by `elements` (the same
+  // connected-account clientSecret + stripeAccount). There is no second intent
+  // and no second confirm path; the order is still confirmed ONLY by the
+  // signature-verified webhook on payment_intent.succeeded.
+  async function confirmAgainstIntent() {
     if (!stripe || !elements || submitting) return;
     setSubmitting(true);
     setError(null);
@@ -96,9 +106,10 @@ function PaymentForm({
     });
 
     // We only reach this point when confirmation did NOT redirect — i.e. an
-    // immediate error (declined card, validation). Keep the customer on this
-    // step with a clear, non-alarming message so they can retry. On success,
-    // Stripe has already redirected to return_url.
+    // immediate error (declined card, cancelled/failed wallet, validation). Keep
+    // the customer on this step with a clear, non-alarming message so they can
+    // retry (card OR wallet). On success, Stripe has already redirected to
+    // return_url.
     if (confirmError) {
       setError(
         confirmError.message ??
@@ -108,9 +119,53 @@ function PaymentForm({
     }
   }
 
+  async function handlePay(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await confirmAgainstIntent();
+  }
+
   return (
     <form onSubmit={handlePay} className="space-y-5 px-5 py-6">
-      <PaymentElement />
+      {/*
+        Express Checkout (Apple Pay / Google Pay / Link), mounted ABOVE the card
+        form on the SAME Elements instance. On authorization it confirms the SAME
+        PaymentIntent via confirmAgainstIntent() — never a second intent or a
+        second confirm path; the webhook stays the sole confirmation source. The
+        element is always mounted so onReady can report wallet availability; when
+        none is available it renders nothing, hasWallet stays false, and the
+        heading + divider collapse — leaving the card form exactly as it is
+        without this feature. The buttons use their mandated platform styling
+        (Apple Pay is not brand-recolorable, per Apple's rules). The wallet's
+        returned billing/contact details are ignored — the order already
+        snapshotted the customer's name/phone before this step.
+      */}
+      <div>
+        <div className={hasWallet ? "mb-5 space-y-4" : undefined}>
+          {hasWallet ? (
+            <p className="text-sm font-medium text-gray-900">Express checkout</p>
+          ) : null}
+          <ExpressCheckoutElement
+            options={{
+              buttonType: { applePay: "order", googlePay: "order" },
+              buttonTheme: { applePay: "black", googlePay: "black" },
+              layout: { maxColumns: 1 },
+            }}
+            onReady={({ availablePaymentMethods }) =>
+              setHasWallet(Boolean(availablePaymentMethods))
+            }
+            onConfirm={() => confirmAgainstIntent()}
+          />
+          {hasWallet ? (
+            <div className="flex items-center gap-3">
+              <span className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs text-gray-400">Or pay with card</span>
+              <span className="h-px flex-1 bg-gray-200" />
+            </div>
+          ) : null}
+        </div>
+
+        <PaymentElement />
+      </div>
 
       {error ? (
         <p className="text-sm text-red-600" role="alert">
