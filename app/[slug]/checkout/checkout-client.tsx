@@ -64,6 +64,9 @@ export function CheckoutClient({
         customerPhone: customerPhone.trim() ? customerPhone : null,
         lines: lines.map((line) => ({
           itemId: line.itemId,
+          // Chosen size id only (null for flat items) — never a price. The server
+          // re-validates it venue-scoped and reads the price from the DB.
+          variantId: line.variantId,
           selectedOptionIds: line.selectedOptionIds,
           quantity: line.quantity,
         })),
@@ -146,6 +149,7 @@ export function CheckoutClient({
                 <p className="text-sm text-gray-900">
                   <span className="text-gray-500">{line.quantity}×</span>{" "}
                   {line.itemName}
+                  {line.variantName ? ` (${line.variantName})` : ""}
                 </p>
                 {line.options.length > 0 ? (
                   <p className="mt-0.5 text-xs text-gray-500">
