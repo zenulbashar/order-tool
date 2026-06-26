@@ -710,3 +710,24 @@ export type PlaceOrderInput = {
     quantity: number;
   }[];
 };
+
+/* -------------------------------------------------------------------------- */
+/* Customer identity (#7)                                                     */
+/*                                                                            */
+/* Used by the OPT-IN customer sign-in flow, which is firewalled from owner    */
+/* Auth.js. Email is trimmed + lower-cased here so casing can never fork a      */
+/* second customer; the DB unique index on (venue_id, lower(email)) is the      */
+/* backstop. (Order-claim and reorder take an id/token, validated with the      */
+/* existing idSchema — no new schema needed.)                                   */
+/* -------------------------------------------------------------------------- */
+
+export const customerEmailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, "Enter your email.")
+  .max(254, "Email is too long.")
+  .refine(
+    (value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
+    "Enter a valid email address.",
+  );
