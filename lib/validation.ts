@@ -221,13 +221,42 @@ export const DIETARY_DISCLAIMER =
 /*  - extraction: what the vision model returns. priceCents may be NULL when   */
 /*    the model can't read a price confidently — those are surfaced for the    */
 /*    owner to set in review, NEVER guessed; priceText carries the raw printed  */
-/*    text (e.g. "from $7.90") in that case.                                    */
+/*    text (e.g. "from $7.90") in that case. An item priced by SIZE comes back  */
+/*    with priceCents null and a `sizes` list (each name + nullable price); a    */
+/*    flat item has an empty `sizes`. Size prices are as tolerant as the item    */
+/*    price (null = unread, fixed in review), never invented.                    */
 /*  - publish: the reviewed draft the client sends back. Prices are now         */
-/*    resolved to non-negative INTEGER cents — null is rejected. Re-validated   */
-/*    in the publish action with the SAME bounds as the manual menu CRUD.       */
+/*    resolved to non-negative INTEGER cents — null is rejected. A SIZED item    */
+/*    carries >= 1 size, each a non-negative integer-cents price; the publish    */
+/*    action derives the item's base price from them. Re-validated in the        */
+/*    publish action with the SAME bounds as the manual menu CRUD — the size     */
+/*    price bound is shared with variantCreateSchema (via the resolved-cents     */
+/*    schema below) so the importer can never write a weaker size than the CRUD. */
 /* These are JSON payloads (not form strings), so names/descriptions use plain  */
 /* length-bounded string schemas rather than the form transformers above.       */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Max size variants proposed/published for one imported item. A generous cap
+ * (most items have 2–4 sizes) that bounds a pathological extraction/payload.
+ * Enforced in zod (the structured-output schema can't carry length bounds), and
+ * mirrored client-side for fast feedback.
+ */
+export const MAX_SIZES_PER_ITEM = 20;
+
+/**
+ * The resolved-cents money bound for the import PUBLISH payload: a non-negative
+ * integer number of cents. This is the same effective bound the manual menu
+ * CRUD lands on after priceDollarsToCentsSchema runs (the item price AND
+ * variantCreateSchema's size price both resolve to "non-negative integer
+ * cents"). Factored out so the imported item price and its size prices validate
+ * IDENTICALLY — the importer can never become a weaker back-door than the
+ * variant CRUD for writing a size price.
+ */
+const resolvedPriceCentsSchema = z
+  .number()
+  .int("Enter a valid price.")
+  .min(0, "Price can't be negative.");
 
 /**
  * Client review-screen money helper: a dollars string → integer cents, or null
@@ -253,13 +282,30 @@ const importDescriptionSchema = z
   .max(500, "Description is too long.");
 
 /* Extraction (vision model → server). Tolerant: prices may be null. */
+
+/**
+ * One proposed size for a size-priced item. Tolerant exactly like the item
+ * price: the name is bounded like any menu name, and the price may be NULL when
+ * the model can't read it confidently — surfaced in review for the owner to set,
+ * NEVER guessed. default() so a malformed/absent price still parses to null.
+ */
+const extractedSizeSchema = z.object({
+  name: importNameSchema,
+  priceCents: z.number().int().min(0).nullable().default(null),
+});
 const extractedItemSchema = z.object({
   name: importNameSchema,
   // null = model couldn't read a confident price; the owner sets it in review.
+  // Also null for a size-priced item — its prices live in `sizes` below.
   priceCents: z.number().int().min(0).nullable(),
   // Raw printed price text for an ambiguous/missing price; "" otherwise.
   priceText: z.string().trim().max(120).default(""),
   description: importDescriptionSchema.default(""),
+  // Proposed size variants when the menu prices this item by size (e.g.
+  // S $4 / L $5); EMPTY for a flat item. default([]) so a response that omits
+  // sizes still parses (degrades to flat). Bounded here, not in the structured
+  // schema (which rejects length constraints).
+  sizes: z.array(extractedSizeSchema).max(MAX_SIZES_PER_ITEM).default([]),
 });
 const extractedCategorySchema = z.object({
   name: importNameSchema,
@@ -271,18 +317,41 @@ export const extractionSchema = z.object({
 export type ExtractedMenu = z.infer<typeof extractionSchema>;
 
 /* Publish (reviewed client draft → server). Strict: every price resolved. */
-const publishItemSchema = z.object({
+
+/**
+ * One published size variant. Name + REQUIRED non-negative integer-cents price —
+ * the exact bounds variantCreateSchema enforces (name via menuNameSchema/
+ * importNameSchema, price via the shared resolvedPriceCentsSchema). A null /
+ * missing / negative size price is rejected HERE, before any write, so a
+ * half-built size can never reach menu_item_variants through the importer.
+ */
+const publishSizeSchema = z.object({
   name: importNameSchema,
-  // Prices MUST be resolved before publish — no nulls reach the live menu.
-  priceCents: z
-    .number()
-    .int("Enter a valid price.")
-    .min(0, "Price can't be negative."),
-  // Empty stored as null, matching the manual item CRUD.
-  description: importDescriptionSchema.transform((v) =>
-    v.length > 0 ? v : null,
-  ),
+  priceCents: resolvedPriceCentsSchema,
 });
+const publishItemSchema = z
+  .object({
+    name: importNameSchema,
+    // Flat price: resolved non-negative integer cents. NULLABLE now because a
+    // SIZED item carries no single price (its prices live in `sizes`); the
+    // refine below requires one or the other. Empty/omitted -> null.
+    priceCents: resolvedPriceCentsSchema.nullable().default(null),
+    // Empty stored as null, matching the manual item CRUD.
+    description: importDescriptionSchema.transform((v) =>
+      v.length > 0 ? v : null,
+    ),
+    // A sized item has >= 1 size here; a flat item has none. The publish action
+    // derives the item's base price_cents from these (min) and writes each as a
+    // menu_item_variants row. EMPTY (default) => flat item, priced by priceCents.
+    sizes: z.array(publishSizeSchema).max(MAX_SIZES_PER_ITEM).default([]),
+  })
+  // No half-built items: an item must be EITHER flat (a price) OR sized (>= 1
+  // size). Reject "neither" — a sized item whose sizes were all removed, or a
+  // flat item with no price. ("Both" is harmless: sizes win, priceCents ignored.)
+  .refine((item) => item.sizes.length > 0 || item.priceCents !== null, {
+    message: "Set a price, or add at least one size.",
+    path: ["priceCents"],
+  });
 const publishCategorySchema = z.object({
   name: importNameSchema,
   items: z.array(publishItemSchema).max(200),

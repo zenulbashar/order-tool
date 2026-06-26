@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { getAnthropic, MENU_EXTRACTION_MODEL } from "@/lib/anthropic";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { menuCategories, menuItems } from "@/lib/db/schema";
+import { menuCategories, menuItems, menuItemVariants } from "@/lib/db/schema";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   extractionSchema,
@@ -43,7 +43,12 @@ export type ExtractResult =
   | { ok: false; error: string };
 
 export type PublishResult =
-  | { ok: true; addedCategories: number; addedItems: number }
+  | {
+      ok: true;
+      addedCategories: number;
+      addedItems: number;
+      addedSizes: number;
+    }
   | { ok: false; error: string };
 
 /**
@@ -64,7 +69,9 @@ async function requireVenueForAction(): Promise<Venue> {
  * Structured-output schema handed to the vision model. Types only — structured
  * outputs reject min/max/length constraints, so bounds are enforced afterwards
  * by extractionSchema (zod). priceCents is nullable so the model can flag a
- * price it can't read rather than guessing one.
+ * price it can't read rather than guessing one. `sizes` carries proposed size
+ * variants (each name + nullable price) for a size-priced item, and is [] for a
+ * flat item — its price is nullable too, mirroring the item price.
  */
 const MENU_JSON_SCHEMA: Record<string, unknown> = {
   type: "object",
@@ -84,12 +91,30 @@ const MENU_JSON_SCHEMA: Record<string, unknown> = {
             items: {
               type: "object",
               additionalProperties: false,
-              required: ["name", "priceCents", "priceText", "description"],
+              required: [
+                "name",
+                "priceCents",
+                "priceText",
+                "description",
+                "sizes",
+              ],
               properties: {
                 name: { type: "string" },
                 priceCents: { type: ["integer", "null"] },
                 priceText: { type: "string" },
                 description: { type: "string" },
+                sizes: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["name", "priceCents"],
+                    properties: {
+                      name: { type: "string" },
+                      priceCents: { type: ["integer", "null"] },
+                    },
+                  },
+                },
               },
             },
           },
@@ -105,10 +130,12 @@ Rules:
 - Group items under the category headings printed on the menu (e.g. Coffee, Breakfast, Mains). If there are no headings, use one category named "Menu".
 - For each item give its name, its price, and a short description ONLY if one is printed on the menu.
 - Return priceCents as an INTEGER number of cents: $4.50 -> 450, $12 -> 1200.
-- If a price is missing, unreadable, or ambiguous — e.g. "from $7.90", a range, "MP"/"market price", or a size/combo-dependent price — set priceCents to null and copy the exact printed price text into priceText. Do NOT guess a number.
+- SIZES: when an item clearly lists more than one size, each with its own price (e.g. "Latte S $4 / L $5", "Pot of tea $6 / Cup $4", a row or column of sizes with prices), set that item's priceCents to null and return each size in the "sizes" array — its printed size name (e.g. "Small", "Large", "Regular") and its price as INTEGER cents. Read a size's price exactly like an item price: if you cannot read it confidently, set that size's priceCents to null. NEVER invent a size name or price that is not printed.
+- For an item with a SINGLE price, return an EMPTY "sizes" array and the normal priceCents.
+- If a price is missing, unreadable, or ambiguous — e.g. "from $7.90", a range, "MP"/"market price" — set priceCents to null and copy the exact printed price text into priceText. Do NOT guess a number. When you are unsure whether something really is a set of sizes, prefer a single flat item with priceCents null (so the owner sets it) over inventing sizes.
 - When a real numeric price is given, leave priceText as "". When there is no description, leave description as "".
 - OMIT any item or category you cannot read with confidence rather than inventing it.
-- Do NOT extract sizes, add-ons, or modifier options as items.
+- Do NOT extract a size as its own item — attach it to its parent item's "sizes" instead. Do NOT extract add-ons or modifier options as items or sizes.
 - Return only what actually appears on the menu.`;
 
 export async function extractMenu(formData: FormData): Promise<ExtractResult> {
@@ -220,6 +247,16 @@ async function nextCategorySort(venueId: string): Promise<number> {
  * "Add these to my menu" action after review. APPEND semantics — it never
  * wipes or replaces. Every field is re-validated here (the client draft is not
  * trusted) and every write is venue-scoped.
+ *
+ * A reviewed item is EITHER flat (a single price, inserted exactly as before) OR
+ * sized (>= 1 reviewed size). For a sized item the base price_cents is derived
+ * server-side as the MIN of its size prices (a sensible non-null value that
+ * satisfies NOT NULL + CHECK; it is NEVER a charge source — checkout reads the
+ * chosen variant's own price — and matches the "from $X" display), and each size
+ * becomes a menu_item_variants row through the SAME bounds + sort_order
+ * convention as the owner variant CRUD. publishDraftSchema has already rejected
+ * any zero-size sized item or null/invalid size price BEFORE this transaction, so
+ * no half-built sized item can be written.
  */
 export async function publishMenu(
   draft: PublishDraftInput,
@@ -238,10 +275,11 @@ export async function publishMenu(
 
   let addedCategories = 0;
   let addedItems = 0;
+  let addedSizes = 0;
 
   // Multi-row write -> transaction; every statement carries venue_id. New
   // categories append after existing ones; items append within their new
-  // category from sort_order 0.
+  // category from sort_order 0, and a sized item's sizes from sort_order 0.
   await db.transaction(async (tx) => {
     let categorySort = await nextCategorySort(venue.id);
     for (const category of parsed.data.categories) {
@@ -259,20 +297,49 @@ export async function publishMenu(
 
       let itemSort = 0;
       for (const item of category.items) {
-        await tx.insert(menuItems).values({
-          venueId: venue.id,
-          categoryId: created.id,
-          name: item.name,
-          description: item.description,
-          priceCents: item.priceCents,
-          sortOrder: itemSort,
-        });
+        const sized = item.sizes.length > 0;
+        // Base price: a sized item uses the MIN of its size prices (never a
+        // charge source; satisfies NOT NULL + CHECK; matches "from $X"). A flat
+        // item uses its own resolved price — the schema's refine guarantees one
+        // is present, so `?? 0` is a type guard only, never an actual write.
+        const basePriceCents = sized
+          ? Math.min(...item.sizes.map((size) => size.priceCents))
+          : item.priceCents ?? 0;
+
+        const [createdItem] = await tx
+          .insert(menuItems)
+          .values({
+            venueId: venue.id,
+            categoryId: created.id,
+            name: item.name,
+            description: item.description,
+            priceCents: basePriceCents,
+            sortOrder: itemSort,
+          })
+          .returning({ id: menuItems.id });
         itemSort += 1;
         addedItems += 1;
+
+        if (sized) {
+          // Each reviewed size -> a venue-scoped menu_item_variants row, with the
+          // SAME bounds (name + non-negative cents, already validated by
+          // publishSizeSchema) and sort_order convention (array order from 0) as
+          // the owner variant CRUD. No separate variant write model.
+          await tx.insert(menuItemVariants).values(
+            item.sizes.map((size, sizeIndex) => ({
+              venueId: venue.id,
+              itemId: createdItem.id,
+              name: size.name,
+              priceCents: size.priceCents,
+              sortOrder: sizeIndex,
+            })),
+          );
+          addedSizes += item.sizes.length;
+        }
       }
     }
   });
 
   revalidatePath(MENU_PATH);
-  return { ok: true, addedCategories, addedItems };
+  return { ok: true, addedCategories, addedItems, addedSizes };
 }
