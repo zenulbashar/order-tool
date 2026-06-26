@@ -35,10 +35,15 @@ export function ItemForm({
   categoryId,
   item,
   categories,
+  hasSizes,
 }: {
   categoryId?: string;
   item?: EditableItem;
   categories?: { id: string; name: string }[];
+  // When the item is variant-priced (>= 1 size), the base price is ignored
+  // downstream — surface that under the Price field. Additive + defaults off,
+  // so flat items render exactly as before.
+  hasSizes?: boolean;
 }) {
   const isEdit = Boolean(item);
   const [state, formAction, pending] = useActionState(
@@ -176,18 +181,26 @@ export function ItemForm({
         </p>
       </div>
 
-      <label className="block text-sm font-medium text-gray-900">
-        Price (dollars)
-        <input
-          name="price"
-          type="text"
-          inputMode="decimal"
-          required
-          placeholder="4.50"
-          defaultValue={item ? formatCents(item.priceCents) : ""}
-          className={`mt-1 ${fieldClass}`}
-        />
-      </label>
+      <div>
+        <label className="block text-sm font-medium text-gray-900">
+          Price (dollars)
+          <input
+            name="price"
+            type="text"
+            inputMode="decimal"
+            required
+            placeholder="4.50"
+            defaultValue={item ? formatCents(item.priceCents) : ""}
+            className={`mt-1 ${fieldClass}`}
+          />
+        </label>
+        {hasSizes ? (
+          <p className="mt-1 text-xs text-amber-700">
+            This item has sizes, so each size sets its own price — this single
+            price is ignored while sizes exist.
+          </p>
+        ) : null}
+      </div>
 
       {isEdit ? (
         <label className="flex items-center gap-2 text-sm text-gray-900">
