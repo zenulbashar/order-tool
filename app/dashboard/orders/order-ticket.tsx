@@ -65,6 +65,7 @@ export function OrderTicket({
             <div className="flex justify-between gap-2">
               <span className="font-bold">
                 {item.quantity}× {item.name}
+                {item.variantName ? ` (${item.variantName})` : ""}
               </span>
               <span className="font-bold">${formatCents(item.lineTotalCents)}</span>
             </div>

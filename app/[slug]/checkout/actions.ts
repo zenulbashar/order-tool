@@ -7,6 +7,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   menuItems,
+  menuItemVariants,
   modifierGroups,
   modifierOptions,
   orderItemModifiers,
@@ -55,8 +56,16 @@ function generateToken(): string {
 }
 
 type ItemRow = { id: string; name: string; priceCents: number };
+type VariantRow = {
+  id: string;
+  itemId: string;
+  name: string;
+  priceCents: number;
+};
 type LinePlan = {
   item: ItemRow;
+  // The chosen size variant for a variant-priced line; null for a flat line.
+  variant: VariantRow | null;
   quantity: number;
   unitCents: number;
   lineTotalCents: number;
@@ -122,6 +131,29 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     );
   const itemById = new Map(itemRows.map((row) => [row.id, row]));
 
+  // Size variants for the referenced items, scoped to THIS venue and item set.
+  // Because the lookup is keyed on the venue id + the cart's item ids, a forged
+  // or cross-venue variant id is structurally absent from the map and fails the
+  // per-line ownership check below — the same defense the modifier options use.
+  // An item present in itemsWithVariants is variant-priced (its base price_cents
+  // is ignored); an item absent from it is flat-priced and must carry no variant.
+  const variantRows = await db
+    .select({
+      id: menuItemVariants.id,
+      itemId: menuItemVariants.itemId,
+      name: menuItemVariants.name,
+      priceCents: menuItemVariants.priceCents,
+    })
+    .from(menuItemVariants)
+    .where(
+      and(
+        scopedToVenue(menuItemVariants.venueId, venueId),
+        inArray(menuItemVariants.itemId, itemIds),
+      ),
+    );
+  const variantById = new Map(variantRows.map((row) => [row.id, row]));
+  const itemsWithVariants = new Set(variantRows.map((row) => row.itemId));
+
   const groupRows = await db
     .select({
       id: modifierGroups.id,
@@ -173,6 +205,29 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     const item = itemById.get(line.itemId);
     if (!item) return reject("An item in your cart is no longer available.");
 
+    // VARIANT: derive this line's base price. A variant-priced item REQUIRES a
+    // chosen size that belongs to THIS item (the venue is already scoped by the
+    // fetch); a flat-priced item must carry no variant. The base is read from the
+    // DB row — the client's price is never trusted, and an invalid/missing/stray
+    // variant id is rejected, not silently priced.
+    const hasVariants = itemsWithVariants.has(line.itemId);
+    let baseCents: number;
+    let chosenVariant: VariantRow | null = null;
+    if (hasVariants) {
+      if (!line.variantId) {
+        return reject("Please choose a size for an item in your cart.");
+      }
+      const variant = variantById.get(line.variantId);
+      if (!variant || variant.itemId !== line.itemId) {
+        return reject("A size in your cart is no longer available.");
+      }
+      baseCents = variant.priceCents;
+      chosenVariant = variant;
+    } else {
+      if (line.variantId) return reject("Invalid selection.");
+      baseCents = item.priceCents;
+    }
+
     const optionIds = line.selectedOptionIds;
     if (new Set(optionIds).size !== optionIds.length) {
       return reject("Invalid selection.");
@@ -208,12 +263,16 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       }
     }
 
+    // Modifiers layer ON TOP of the size: base is the variant (or item) price,
+    // plus the server-recomputed modifier deltas. Identical math to before — only
+    // the base differs for variant-priced lines.
     const deltaCents = chosen.reduce((sum, o) => sum + o.priceDeltaCents, 0);
-    const unitCents = item.priceCents + deltaCents;
+    const unitCents = baseCents + deltaCents;
     const lineTotalCents = unitCents * line.quantity;
     subtotalCents += lineTotalCents;
     plan.push({
       item,
+      variant: chosenVariant,
       quantity: line.quantity,
       unitCents,
       lineTotalCents,
@@ -259,6 +318,13 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
               unitPriceCentsSnapshot: entry.unitCents,
               quantity: entry.quantity,
               lineTotalCents: entry.lineTotalCents,
+              // Chosen size snapshot (Phase 5c); all null for a flat line. The
+              // name + price are immutable financial truth that survive later
+              // menu edits. menu_item_variant_id is a SOFT analytics ref ONLY —
+              // never read it back as a price; the price is the snapshot column.
+              menuItemVariantId: entry.variant?.id ?? null,
+              variantNameSnapshot: entry.variant?.name ?? null,
+              variantPriceCentsSnapshot: entry.variant?.priceCents ?? null,
             })
             .returning({ id: orderItems.id });
 

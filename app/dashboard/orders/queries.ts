@@ -15,6 +15,8 @@ export type KitchenOrderModifier = {
 export type KitchenOrderItem = {
   id: string;
   name: string;
+  // Chosen size for a variant-priced line (snapshot), else null.
+  variantName: string | null;
   quantity: number;
   unitPriceCents: number;
   lineTotalCents: number;
@@ -90,6 +92,7 @@ export async function getVenueOrders(
       id: orderItems.id,
       orderId: orderItems.orderId,
       name: orderItems.itemNameSnapshot,
+      variantName: orderItems.variantNameSnapshot,
       quantity: orderItems.quantity,
       unitPriceCents: orderItems.unitPriceCentsSnapshot,
       lineTotalCents: orderItems.lineTotalCents,
@@ -138,6 +141,7 @@ export async function getVenueOrders(
     list.push({
       id: item.id,
       name: item.name,
+      variantName: item.variantName,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       lineTotalCents: item.lineTotalCents,

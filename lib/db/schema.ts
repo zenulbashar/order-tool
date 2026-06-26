@@ -477,6 +477,17 @@ export const orderItems = pgTable(
     unitPriceCentsSnapshot: integer("unit_price_cents_snapshot").notNull(),
     quantity: integer("quantity").notNull(),
     lineTotalCents: integer("line_total_cents").notNull(),
+    // Chosen item size variant snapshot (Phase 5c). All THREE are NULLABLE: a
+    // flat-priced line has no variant and leaves them null. variant_price_cents
+    // _snapshot is the FINANCIAL base price for the line at order time (already
+    // folded into unit_price_cents_snapshot together with any modifier deltas);
+    // variant_name_snapshot is what the kitchen / receipt / confirmation render.
+    // menu_item_variant_id is a SOFT reference (nullable, NO FK) for "which sizes
+    // sell" analytics ONLY — NEVER a price source — mirroring the menu_item_id /
+    // modifier_option_id soft refs. Additive: no existing column is altered.
+    menuItemVariantId: text("menu_item_variant_id"),
+    variantNameSnapshot: text("variant_name_snapshot"),
+    variantPriceCentsSnapshot: integer("variant_price_cents_snapshot"),
     createdAt: createdAt(),
   },
   (table) => [
@@ -488,6 +499,10 @@ export const orderItems = pgTable(
       sql`${table.unitPriceCentsSnapshot} >= 0`,
     ),
     check("order_items_line_total_nonneg", sql`${table.lineTotalCents} >= 0`),
+    check(
+      "order_items_variant_price_snapshot_nonneg",
+      sql`${table.variantPriceCentsSnapshot} IS NULL OR ${table.variantPriceCentsSnapshot} >= 0`,
+    ),
   ],
 );
 

@@ -14,6 +14,13 @@ export function ItemCard({
   item: PublicItem;
   onSelect: (item: PublicItem) => void;
 }) {
+  // Variant-priced items advertise their lowest size as "from $X"; flat items
+  // show their single price. The base priceCents is ignored when variants exist.
+  const fromPriceCents =
+    item.variants.length > 0
+      ? Math.min(...item.variants.map((variant) => variant.priceCents))
+      : null;
+
   return (
     <button
       type="button"
@@ -40,7 +47,9 @@ export function ItemCard({
           </ul>
         ) : null}
         <p className="mt-1.5 text-sm font-medium text-gray-700">
-          ${formatCents(item.priceCents)}
+          {fromPriceCents !== null
+            ? `from $${formatCents(fromPriceCents)}`
+            : `$${formatCents(item.priceCents)}`}
         </p>
       </div>
       {item.imageUrl ? (

@@ -115,6 +115,7 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
                 <p className="text-sm text-gray-900">
                   <span className="text-gray-500">{item.quantity}×</span>{" "}
                   {item.name}
+                  {item.variantName ? ` (${item.variantName})` : ""}
                 </p>
                 {item.modifiers.length > 0 ? (
                   <p className="mt-0.5 text-xs text-gray-500">

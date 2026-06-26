@@ -11,13 +11,16 @@ import {
 import type { PublicGroup, PublicItem } from "./types";
 
 /**
- * Maps the modifier data model to the selection UI:
+ * Maps the item's options to the selection UI:
+ *  - SIZE (variant-priced items only): a required radio list of sizes with NO
+ *    default — the customer must pick one. Flat-priced items show no size picker.
  *  - max_select === 1  -> radios. Required (min_select >= 1) has no "None";
  *    optional (min_select === 0) gets a "None" choice so it can be cleared.
  *  - max_select > 1    -> checkboxes, capped at max_select; min_select enforced.
  *
- * Running total is DISPLAY ONLY. "Add to cart" stays disabled until every
- * required group is satisfied. The actual add is provided by the parent.
+ * Running total is DISPLAY ONLY (base = chosen size's price + modifier deltas).
+ * "Add to cart" stays disabled until a size is chosen AND every required group is
+ * satisfied. The actual add is provided by the parent.
  */
 export function ItemModifierSheet({
   item,
@@ -28,11 +31,17 @@ export function ItemModifierSheet({
   onClose: () => void;
   onAdd?: (
     itemId: string,
+    variantId: string | null,
     selectedOptionIds: string[],
     quantity: number,
   ) => void;
 }) {
   const [selections, setSelections] = useState<Record<string, string[]>>({});
+  // The chosen size for a variant-priced item. No default — the customer MUST
+  // pick one, and "Add to cart" stays disabled until they do.
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    null,
+  );
   const [quantity, setQuantity] = useState(1);
 
   // Lock background scroll while the sheet is open.
@@ -63,7 +72,15 @@ export function ItemModifierSheet({
 
   const isSatisfied = (group: PublicGroup) =>
     (selections[group.id]?.length ?? 0) >= group.minSelect;
-  const allValid = item.groups.every(isSatisfied);
+
+  // A variant-priced item must have a size chosen before it can be added; a
+  // flat-priced item has no size to choose. Modifiers layer on top either way.
+  const hasVariants = item.variants.length > 0;
+  const selectedVariant = hasVariants
+    ? (item.variants.find((variant) => variant.id === selectedVariantId) ?? null)
+    : null;
+  const sizeChosen = !hasVariants || selectedVariant !== null;
+  const allValid = sizeChosen && item.groups.every(isSatisfied);
 
   const deltaCents = useMemo(() => {
     let sum = 0;
@@ -76,7 +93,12 @@ export function ItemModifierSheet({
     return sum;
   }, [item.groups, selections]);
 
-  const totalCents = (item.priceCents + deltaCents) * quantity;
+  // Base is the chosen size's price (variant-priced) or the item price (flat).
+  // Display only; the server re-prices from its own DB lookup at order time.
+  const baseCents = selectedVariant
+    ? selectedVariant.priceCents
+    : item.priceCents;
+  const totalCents = (baseCents + deltaCents) * quantity;
 
   function groupHint(group: PublicGroup): string {
     if (group.maxSelect === 1) {
@@ -89,8 +111,9 @@ export function ItemModifierSheet({
   function handleAdd() {
     if (!allValid) return;
     const selectedOptionIds = item.groups.flatMap((g) => selections[g.id] ?? []);
-    // onAdd is wired to the cart in the next commit; the sheet closes itself.
-    onAdd?.(item.id, selectedOptionIds, quantity);
+    // Pass ONLY the chosen variant id (null for flat items) — never a price. The
+    // server looks the price up from the DB and re-validates this id at checkout.
+    onAdd?.(item.id, selectedVariant?.id ?? null, selectedOptionIds, quantity);
     onClose();
   }
 
@@ -138,6 +161,39 @@ export function ItemModifierSheet({
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+          {/* Size picker (variant-priced items only). Radio list in the owner's
+              sort order, each with its own price; NO default, so the customer
+              must choose before "Add to cart" enables. */}
+          {hasVariants ? (
+            <fieldset>
+              <legend className="flex w-full items-baseline justify-between">
+                <span className="text-sm font-medium text-gray-900">Size</span>
+                <span className="text-xs text-gray-400">Required · choose 1</span>
+              </legend>
+              <div className="mt-2 space-y-1.5">
+                {item.variants.map((variant) => (
+                  <label
+                    key={variant.id}
+                    className="flex items-center justify-between gap-3 text-sm text-gray-700"
+                  >
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="size-variant"
+                        checked={selectedVariantId === variant.id}
+                        onChange={() => setSelectedVariantId(variant.id)}
+                        className="h-4 w-4"
+                      />
+                      {variant.name}
+                    </span>
+                    <span className="text-gray-500">
+                      ${formatCents(variant.priceCents)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
           {/* LIFE-SAFETY: tags above are the venue's own labels, not a
               guarantee. A prominent, unmissable note right where the customer is
               about to order — never a faint caption. */}
@@ -268,7 +324,9 @@ export function ItemModifierSheet({
             className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
             style={{ backgroundColor: "var(--brand)" }}
           >
-            Add to cart · ${formatCents(totalCents)}
+            {hasVariants && !selectedVariant
+              ? "Select a size"
+              : `Add to cart · $${formatCents(totalCents)}`}
           </button>
         </div>
       </div>

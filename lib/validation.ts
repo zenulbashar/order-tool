@@ -573,6 +573,15 @@ export const customerNameSchema = z
 
 const orderLineSchema = z.object({
   itemId: idSchema,
+  // The chosen size variant id, or null for a flat-priced item. SHAPE ONLY: the
+  // action re-fetches it venue-scoped, confirms it belongs to this line's item,
+  // and reads its price from the DB — a missing/foreign id is rejected there.
+  variantId: z
+    .string()
+    .trim()
+    .min(1)
+    .nullish()
+    .transform((value) => value ?? null),
   selectedOptionIds: z
     .array(idSchema)
     .max(30, "Too many options on one item.")
@@ -625,5 +634,10 @@ export type PlaceOrderInput = {
   tableLabel?: string | null;
   customerName: string;
   customerPhone?: string | null;
-  lines: { itemId: string; selectedOptionIds: string[]; quantity: number }[];
+  lines: {
+    itemId: string;
+    variantId?: string | null;
+    selectedOptionIds: string[];
+    quantity: number;
+  }[];
 };
