@@ -150,6 +150,71 @@ export const variantCreateSchema = z.object({
 export const variantUpdateSchema = variantCreateSchema;
 
 /* -------------------------------------------------------------------------- */
+/* Dietary / allergen tags (Phase 7)                                          */
+/*                                                                            */
+/* Single source of truth for the controlled vocabulary: its members, their   */
+/* customer-facing labels, the canonical display order, and the mandatory      */
+/* life-safety disclaimer. Imported by the owner editor, the menu_item_tags    */
+/* writes, the public payload (to sort tags), and every storefront surface, so */
+/* none of them can drift. The values MUST stay in lockstep with the           */
+/* dietary_tag pgEnum in lib/db/schema.ts.                                      */
+/*                                                                            */
+/* LIFE-SAFETY: these are venue-set SUGGESTIONS, never platform guarantees.    */
+/* The label is "Gluten friendly" (never "gluten free") on purpose, and the    */
+/* disclaimer is shown wherever tags/filters appear.                           */
+/* -------------------------------------------------------------------------- */
+export const DIETARY_TAGS = [
+  { value: "vegan", label: "Vegan" },
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "gluten_friendly", label: "Gluten friendly" },
+  { value: "dairy_free", label: "Dairy free" },
+  { value: "halal", label: "Halal" },
+  { value: "nut_free", label: "Nut free" },
+  { value: "spicy", label: "Spicy" },
+] as const;
+
+export type DietaryTag = (typeof DIETARY_TAGS)[number]["value"];
+
+/** Validates one tag against the vocab; off-list values are rejected. */
+export const dietaryTagSchema = z.enum(
+  DIETARY_TAGS.map((t) => t.value) as [DietaryTag, ...DietaryTag[]],
+);
+
+/** Canonical display order of a tag, for stable sorting of an item's tag set. */
+const DIETARY_TAG_ORDER = new Map<DietaryTag, number>(
+  DIETARY_TAGS.map((t, index) => [t.value, index]),
+);
+
+/** Human label for a tag (e.g. "Gluten friendly"), or the raw value if unknown. */
+export function dietaryTagLabel(tag: DietaryTag): string {
+  return DIETARY_TAGS.find((t) => t.value === tag)?.label ?? tag;
+}
+
+/**
+ * Validate, de-duplicate, and canonically order a list of candidate tag strings
+ * (from a form's checkboxes or a stored row set). Anything not in the vocab is
+ * silently dropped — a forged or stale value can never be written or rendered.
+ */
+export function normalizeDietaryTags(values: readonly string[]): DietaryTag[] {
+  const seen = new Set<DietaryTag>();
+  for (const value of values) {
+    const parsed = dietaryTagSchema.safeParse(value);
+    if (parsed.success) seen.add(parsed.data);
+  }
+  return [...seen].sort(
+    (a, b) => (DIETARY_TAG_ORDER.get(a) ?? 0) - (DIETARY_TAG_ORDER.get(b) ?? 0),
+  );
+}
+
+/**
+ * MANDATORY life-safety disclaimer shown wherever tags/filters appear. Tags are
+ * the venue's own labels, not platform guarantees, so a customer with an
+ * allergy must confirm directly with the venue before ordering.
+ */
+export const DIETARY_DISCLAIMER =
+  "Please confirm any allergies directly with the venue.";
+
+/* -------------------------------------------------------------------------- */
 /* AI menu import (photo → human-reviewed draft → existing menu)              */
 /*                                                                            */
 /* Two shapes, BOTH validated server-side; the client draft is never trusted: */

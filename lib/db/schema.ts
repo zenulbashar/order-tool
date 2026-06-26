@@ -324,11 +324,61 @@ export const menuItemVariants = pgTable(
   ],
 );
 
+/**
+ * Owner-managed dietary/allergen tags on a menu item (Phase 7). A controlled
+ * vocabulary the venue applies to an item to mark it e.g. vegan / halal /
+ * gluten friendly, surfaced on the storefront as filter chips + card labels.
+ *
+ * LIFE-SAFETY: tags are SUGGESTIONS made BY THE VENUE, never platform
+ * guarantees, so the storefront always shows a "confirm allergies with the
+ * venue" disclaimer alongside them and uses "gluten friendly" (never "gluten
+ * free") wording. The vocab is a pgEnum to match the house style
+ * (venue_role / order_type / order_status / order_fulfillment_status); adding a
+ * value later is a one-line additive migration, acceptable for a deliberately
+ * slow-changing, safety-sensitive list.
+ *
+ * Shape + indexing mirror menu_item_variants: venue_id is denormalized for the
+ * scopedToVenue() convention, item_id cascades so tags die with their item. An
+ * item's tags are an unordered SET replace-set on save (no reorder, no in-place
+ * edit), so there is deliberately no sort_order / updated_at. The unique index
+ * on (item_id, tag) makes a tag idempotent per item.
+ */
+export const dietaryTag = pgEnum("dietary_tag", [
+  "vegan",
+  "vegetarian",
+  "gluten_friendly",
+  "dairy_free",
+  "halal",
+  "nut_free",
+  "spicy",
+]);
+
+export const menuItemTags = pgTable(
+  "menu_item_tags",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    itemId: text("item_id")
+      .notNull()
+      .references(() => menuItems.id, { onDelete: "cascade" }),
+    tag: dietaryTag("tag").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("menu_item_tags_item_tag_idx").on(table.itemId, table.tag),
+    index("menu_item_tags_venue_idx").on(table.venueId),
+    index("menu_item_tags_item_idx").on(table.itemId),
+  ],
+);
+
 export type MenuCategory = typeof menuCategories.$inferSelect;
 export type MenuItem = typeof menuItems.$inferSelect;
 export type ModifierGroup = typeof modifierGroups.$inferSelect;
 export type ModifierOption = typeof modifierOptions.$inferSelect;
 export type MenuItemVariant = typeof menuItemVariants.$inferSelect;
+export type MenuItemTag = typeof menuItemTags.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /* Orders (Phase 2b)                                                          */

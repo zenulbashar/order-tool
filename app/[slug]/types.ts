@@ -1,4 +1,5 @@
 import type { OpeningHoursEntry } from "@/lib/db/schema";
+import type { DietaryTag } from "@/lib/validation";
 
 /**
  * Customer-safe shapes for the public storefront. These deliberately omit
@@ -47,6 +48,10 @@ export type PublicItem = {
   description: string | null;
   priceCents: number;
   imageUrl: string | null;
+  // Owner-set dietary/allergen tags (canonical order). Customer-safe: tag
+  // strings only — no venue_id or timestamps. A guide, never a guarantee; the
+  // storefront shows the confirm-with-the-venue disclaimer alongside them.
+  tags: DietaryTag[];
   groups: PublicGroup[];
 };
 

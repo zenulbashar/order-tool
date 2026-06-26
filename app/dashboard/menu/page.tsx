@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { computeMenuHealth } from "@/lib/menu-health";
 import { requireUser, requireVenue } from "@/lib/tenant";
-import { formatCents } from "@/lib/validation";
+import { type DietaryTag, formatCents } from "@/lib/validation";
 
 import { DeepLinkOpener } from "./_components/deep-link-opener";
 import { MenuHealthPanel } from "./_components/menu-health-panel";
@@ -29,6 +29,7 @@ import {
   getGroupsForVenue,
   getItemsForVenue,
   getOptionsForVenue,
+  getTagsForVenue,
   getVariantsForVenue,
 } from "./queries";
 import { VariantForm } from "./variant-form";
@@ -88,13 +89,15 @@ export default async function MenuPage() {
   await requireUser();
   const venue = await requireVenue();
 
-  const [categories, items, groups, options, variants] = await Promise.all([
-    getCategoriesForVenue(venue.id),
-    getItemsForVenue(venue.id),
-    getGroupsForVenue(venue.id),
-    getOptionsForVenue(venue.id),
-    getVariantsForVenue(venue.id),
-  ]);
+  const [categories, items, groups, options, variants, tags] =
+    await Promise.all([
+      getCategoriesForVenue(venue.id),
+      getItemsForVenue(venue.id),
+      getGroupsForVenue(venue.id),
+      getOptionsForVenue(venue.id),
+      getVariantsForVenue(venue.id),
+      getTagsForVenue(venue.id),
+    ]);
 
   const itemsByCategory = new Map<string, typeof items>();
   for (const item of items) {
@@ -119,6 +122,14 @@ export default async function MenuPage() {
     const list = variantsByItem.get(variant.itemId) ?? [];
     list.push(variant);
     variantsByItem.set(variant.itemId, list);
+  }
+  // An item's current dietary tags, grouped for the editor to pre-check. The
+  // form renders them in canonical order, so the raw row order here is fine.
+  const tagsByItem = new Map<string, DietaryTag[]>();
+  for (const row of tags) {
+    const list = tagsByItem.get(row.itemId) ?? [];
+    list.push(row.tag);
+    tagsByItem.set(row.itemId, list);
   }
   const categoryOptions = categories.map((c) => ({ id: c.id, name: c.name }));
 
@@ -618,6 +629,7 @@ export default async function MenuPage() {
                                         description: item.description,
                                         priceCents: item.priceCents,
                                         isAvailable: item.isAvailable,
+                                        tags: tagsByItem.get(item.id) ?? [],
                                       }}
                                     />
                                     <form
