@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getUserVenues, requireUser } from "@/lib/tenant";
+import { getBaseUrl } from "@/lib/url";
 
 import { OnboardingForm } from "./onboarding-form";
 
@@ -11,6 +12,11 @@ export default async function OnboardingPage() {
   // is the entry point both for a brand-new owner and for adding another
   // location; only the copy changes between those two cases.
   const hasVenues = (await getUserVenues()).length > 0;
+
+  // Host for the form's live storefront-link preview (e.g. order.zaleit.com.au
+  // in prod, localhost:3000 in dev). Reuses the canonical base-URL helper so the
+  // domain is never hardcoded.
+  const baseHost = new URL(await getBaseUrl()).host;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-12">
@@ -33,7 +39,7 @@ export default async function OnboardingPage() {
               : "Set up your venue to get started. You can refine the details later."}
           </p>
         </div>
-        <OnboardingForm />
+        <OnboardingForm baseHost={baseHost} />
       </div>
     </main>
   );
