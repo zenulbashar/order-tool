@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { getCustomer } from "@/lib/customer/auth";
 import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
 
 import { getPublicVenueBySlug } from "../../queries";
 import { PaymentStatusPoller } from "./payment-status-poller";
 import { getOrderByToken } from "./queries";
+import { SaveToAccount } from "./save-to-account";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,11 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
   // Resolved by opaque token AND venue — never by sequential id.
   const order = await getOrderByToken(venue.id, token);
   if (!order) notFound();
+
+  // Opt-in customer association (#7). Only resolves a session for THIS venue;
+  // null for guests, who see the unchanged confirmation. Does not affect the
+  // order itself — linking is a separate, explicit action.
+  const customer = await getCustomer(venue.id);
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
   const reference = orderReference(order.publicToken);
@@ -136,6 +143,22 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
             ${formatCents(order.totalCents)}
           </span>
         </div>
+      </section>
+
+      {/* Opt-in: save this order to a customer account, or sign in to. Never
+          required; the order is complete regardless. */}
+      <section className="border-t border-gray-100 px-5 py-5">
+        {customer ? (
+          <SaveToAccount slug={venue.slug} token={order.publicToken} />
+        ) : (
+          <Link
+            href={`/${venue.slug}/account`}
+            className="text-sm font-medium underline"
+            style={{ color: "var(--brand)" }}
+          >
+            Sign in to save this order &amp; reorder later
+          </Link>
+        )}
       </section>
 
       <div className="px-5 pb-10">

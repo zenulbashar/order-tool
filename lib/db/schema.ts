@@ -381,6 +381,120 @@ export type MenuItemVariant = typeof menuItemVariants.$inferSelect;
 export type MenuItemTag = typeof menuItemTags.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
+/* Customer identity (#7) — a SEPARATE system from owner Auth.js              */
+/*                                                                            */
+/* This is the customer-facing identity store, FIREWALLED from the owner auth */
+/* system above (users / accounts / sessions / verification_tokens):          */
+/*  - the Auth.js DrizzleAdapter (lib/auth.ts) is wired to ONLY the owner four */
+/*    tables and has no knowledge of anything here;                           */
+/*  - all customer code lives under lib/customer/* + app/[slug]/account/* and  */
+/*    NEVER imports lib/auth.ts, signIn/auth/signOut, or the owner tables;     */
+/*  - customers use their OWN session cookie (ot_customer_session), distinct   */
+/*    from the Auth.js cookie and from ot_selected_venue.                      */
+/*                                                                            */
+/* SCOPE = per-VENUE: a customer belongs to ONE venue, keyed by (venue_id,     */
+/* lower(email)). The SAME email can therefore be a customer at venue A, a     */
+/* customer at venue B, AND an owner — all as SEPARATE records that never      */
+/* collide, because owner identity lives in a different table keyed GLOBALLY.  */
+/* An owner is never auto-made a customer, or vice-versa. Forward-compatible   */
+/* to per-platform later via an additive account table + nullable link.        */
+/*                                                                            */
+/* Defined BEFORE the Orders section below so orders.customer_id can carry a   */
+/* nullable FK into it (matching the codebase's define-before-reference rule). */
+/* -------------------------------------------------------------------------- */
+
+export const customers = pgTable(
+  "customers",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // The verified identity — the magic-link is sent here. Stored lowercased;
+    // the unique index is on lower(email) PER VENUE so casing can never fork a
+    // second customer (mirrors the owner users_email_lower_idx, venue-scoped).
+    email: text("email").notNull(),
+    // OPTIONAL, customer-saved for venue convenience — NOT an auth factor, and
+    // deliberately NOT used to claim past orders under email auth (auto-claiming
+    // an UNVERIFIED phone match would be an IDOR; see app/[slug]/account).
+    phone: text("phone"),
+    // Optional display name; minimal PII by design.
+    name: text("name"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    // Per-venue, case-insensitive identity key: "one customer per (venue,
+    // email)". Keeps the owner/customer keyspaces disjoint — owner email is
+    // unique GLOBALLY, customer email only WITHIN a venue.
+    uniqueIndex("customers_venue_email_lower_idx").on(
+      table.venueId,
+      sql`lower(${table.email})`,
+    ),
+    index("customers_venue_idx").on(table.venueId),
+  ],
+);
+
+/**
+ * Single-use magic-link tokens for customer sign-in — SEPARATE from the Auth.js
+ * verification_tokens table. We store only a SHA-256 HASH of the token; the raw
+ * token exists only inside the emailed link, so a DB leak yields no usable links
+ * (stronger than the owner adapter, which stores raw tokens). Venue-scoped,
+ * short-lived (~15 min), and deleted on consume.
+ */
+export const customerLoginTokens = pgTable(
+  "customer_login_tokens",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("customer_login_tokens_token_hash_idx").on(table.tokenHash),
+    index("customer_login_tokens_venue_email_idx").on(
+      table.venueId,
+      table.email,
+    ),
+  ],
+);
+
+/**
+ * Customer sessions — SEPARATE from the Auth.js sessions table. Created after a
+ * magic link is consumed. The cookie holds only the raw opaque session token; we
+ * store its SHA-256 HASH. The row is VENUE-BOUND: getCustomer(venueId) requires
+ * session.venue_id === venueId, so a session minted at venue A resolves to null
+ * at venue B — per-venue isolation enforced server-side even though the cookie
+ * itself is path "/".
+ */
+export const customerSessions = pgTable(
+  "customer_sessions",
+  {
+    id: id(),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    sessionTokenHash: text("session_token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("customer_sessions_token_hash_idx").on(table.sessionTokenHash),
+    index("customer_sessions_customer_idx").on(table.customerId),
+    index("customer_sessions_venue_idx").on(table.venueId),
+  ],
+);
+
+export type Customer = typeof customers.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
 /* Orders (Phase 2b)                                                          */
 /*                                                                            */
 /* Public, unauthenticated checkout writes here. The server RECOMPUTES every  */
@@ -428,6 +542,19 @@ export const orders = pgTable(
     tableLabel: text("table_label"),
     customerName: text("customer_name").notNull(),
     customerPhone: text("customer_phone"),
+    // OPTIONAL, NULLABLE soft association to a customer account (#7). Guest
+    // orders leave this NULL and behave EXACTLY as before — identity is opt-in
+    // and is NEVER required to order. placeOrder does NOT set this column (its
+    // INSERT lists explicit columns), so the order-creation path stays
+    // byte-for-byte unchanged; an order is linked ONLY by the SEPARATE
+    // claimOrder action, where possession of the opaque public_token is the
+    // proof. FK with ON DELETE SET NULL — deleting a customer reverts their
+    // orders to guest and NEVER deletes an order (cf. the venue cascade). It is
+    // a real relationship to a living entity (like venue_id), not a price
+    // snapshot, hence an FK and not one of the analytics-only soft refs.
+    customerId: text("customer_id").references(() => customers.id, {
+      onDelete: "set null",
+    }),
     status: orderStatus("status").notNull().default("pending_payment"),
     // Kitchen lifecycle, separate from `status` (payment). NOT NULL DEFAULT
     // 'new' so existing paid orders backfill into the queue safely.
@@ -455,6 +582,10 @@ export const orders = pgTable(
       table.status,
       table.createdAt,
     ),
+    // The customer order-history read (#7): a customer's own orders, newest
+    // first. Always combined with venue_id in the query (the session is
+    // venue-bound), and customer_id is session-derived — never client input.
+    index("orders_customer_created_idx").on(table.customerId, table.createdAt),
     check("orders_subtotal_cents_nonneg", sql`${table.subtotalCents} >= 0`),
     check("orders_total_cents_nonneg", sql`${table.totalCents} >= 0`),
   ],

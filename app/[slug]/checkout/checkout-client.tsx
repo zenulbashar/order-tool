@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { ButtonLabel } from "@/app/_components/spinner";
 import { formatCents, type OrderTypeValue } from "@/lib/validation";
 
+import { claimOrder } from "../account/actions";
 import { useCart } from "../cart-provider";
 import type { PublicVenue } from "../types";
 import { placeOrder } from "./actions";
@@ -75,6 +76,12 @@ export function CheckoutClient({
         // The order is persisted server-side and the PaymentIntent exists; the
         // cart is now spent. Advance to the Stripe payment step.
         clear();
+        // Auto-link this just-placed order to the customer IF they're signed in
+        // (#7). Fire-and-forget and a no-op for guests, so it never blocks the
+        // payment step — and it never touches how the order was created/priced:
+        // placeOrder already returned, and claimOrder only sets the nullable
+        // customer_id on this order (token possession + session = proof).
+        void claimOrder(venue.slug, result.token).catch(() => {});
         setPayment({
           clientSecret: result.clientSecret,
           stripeAccountId: result.stripeAccountId,
