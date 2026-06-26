@@ -12,14 +12,18 @@ import {
 } from "./actions";
 
 /**
- * Owner-side photo control for a single (already-saved) menu item. Shows the
- * current photo with Replace + Remove, or an Add-photo uploader when none.
+ * Owner-side photo control for a single (already-saved) menu item, laid out so
+ * the uploader sits exactly where the image goes: the current photo fills an
+ * image-shaped box (with Replace + Remove), or an empty dashed "Upload photo"
+ * box occupies that same spot when there's none.
  *
  * The upload is a SEPARATE multipart form (its own server action), so this must
  * be rendered as a sibling of the ItemForm <form>, never nested inside it. Only
  * available on saved items — a brand-new item has no id yet, exactly like
  * variants/modifiers. Client checks here are a courtesy; uploadItemPhoto
- * re-validates type + size + ownership server-side as the real gate.
+ * re-validates type + size + ownership server-side as the real gate. image_url
+ * is written ONLY by uploadItemPhoto/removeItemPhoto — this is layout, not a new
+ * upload mechanism.
  */
 
 const ACCEPT = "image/jpeg,image/png,image/webp";
@@ -34,17 +38,26 @@ export function PhotoControl({
   item: { id: string; name: string; imageUrl: string | null };
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <p className="text-sm font-medium text-gray-900">Photo</p>
 
       {item.imageUrl ? (
-        <div className="flex items-start gap-3">
-          {/* Owner-supplied URL; next/image would need remote config. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="h-20 w-20 shrink-0 rounded-lg border border-gray-200 object-cover"
+        <div className="space-y-3">
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+            {/* Owner-supplied URL; next/image would need remote config. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="h-48 w-full object-cover"
+            />
+          </div>
+          {/* key remounts the uploader (clearing the picked file + any error)
+              once a successful upload changes imageUrl. */}
+          <UploadForm
+            key={item.imageUrl}
+            itemId={item.id}
+            label="Replace photo"
           />
           <form action={removeItemPhoto}>
             <input type="hidden" name="id" value={item.id} />
@@ -52,18 +65,8 @@ export function PhotoControl({
           </form>
         </div>
       ) : (
-        <p className="text-xs text-gray-500">
-          No photo yet. Customers see a clean text-only row until you add one.
-        </p>
+        <UploadForm key="none" itemId={item.id} label="Upload photo" empty />
       )}
-
-      {/* key remounts the uploader (clearing the picked file + any error) once a
-          successful upload changes imageUrl. */}
-      <UploadForm
-        key={item.imageUrl ?? "none"}
-        itemId={item.id}
-        label={item.imageUrl ? "Replace photo" : "Add photo"}
-      />
     </div>
   );
 }
@@ -76,50 +79,80 @@ function RemoveButton() {
       disabled={pending}
       className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
     >
-      {pending ? <Spinner size="sm" label="Removing photo" /> : "Remove"}
+      {pending ? <Spinner size="sm" label="Removing photo" /> : "Remove photo"}
     </button>
   );
 }
 
-function UploadForm({ itemId, label }: { itemId: string; label: string }) {
+function UploadForm({
+  itemId,
+  label,
+  empty,
+}: {
+  itemId: string;
+  label: string;
+  empty?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(
     uploadItemPhoto,
     initialState,
   );
   const [clientError, setClientError] = useState<string | null>(null);
-  const [hasFile, setHasFile] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const hasFile = fileName !== null;
 
   function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     setClientError(null);
     const file = event.target.files?.[0];
     if (!file) {
-      setHasFile(false);
+      setFileName(null);
       return;
     }
     if (!ALLOWED.includes(file.type)) {
       setClientError("Photo must be a JPEG, PNG, or WebP image.");
-      setHasFile(false);
+      setFileName(null);
       return;
     }
     if (file.size > MAX_BYTES) {
       setClientError("Photo must be 5MB or smaller.");
-      setHasFile(false);
+      setFileName(null);
       return;
     }
-    setHasFile(true);
+    setFileName(file.name);
   }
 
   return (
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="itemId" value={itemId} />
-      <input
-        type="file"
-        name="photo"
-        accept={ACCEPT}
-        disabled={pending}
-        onChange={handleFile}
-        className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border file:border-gray-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-50 disabled:opacity-50"
-      />
+
+      {empty ? (
+        // The empty state IS the image area: an image-shaped dropzone.
+        <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 text-center transition hover:border-gray-400 hover:bg-gray-100">
+          <span className="truncate text-sm font-medium text-gray-700">
+            {hasFile ? fileName : "Upload photo"}
+          </span>
+          <span className="text-xs text-gray-400">
+            {hasFile ? "Click Upload to save" : "JPEG, PNG, or WebP · up to 5MB"}
+          </span>
+          <input
+            type="file"
+            name="photo"
+            accept={ACCEPT}
+            disabled={pending}
+            onChange={handleFile}
+            className="sr-only"
+          />
+        </label>
+      ) : (
+        <input
+          type="file"
+          name="photo"
+          accept={ACCEPT}
+          disabled={pending}
+          onChange={handleFile}
+          className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border file:border-gray-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-50 disabled:opacity-50"
+        />
+      )}
 
       {clientError ? (
         <p className="text-sm text-red-600" role="alert">
@@ -146,7 +179,9 @@ function UploadForm({ itemId, label }: { itemId: string; label: string }) {
           label
         )}
       </button>
-      <p className="text-xs text-gray-400">JPEG, PNG, or WebP · up to 5MB.</p>
+      {!empty ? (
+        <p className="text-xs text-gray-400">JPEG, PNG, or WebP · up to 5MB.</p>
+      ) : null}
     </form>
   );
 }
