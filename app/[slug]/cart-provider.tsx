@@ -337,6 +337,31 @@ function persist(slug: string, lines: CartLine[]) {
   }
 }
 
+/**
+ * Seed the slug's persisted cart with a set of lines, REPLACING whatever's
+ * there. Used by reorder (#7): it writes the SAME ids-only shape the cart
+ * already stores (no prices), so when a fresh CartProvider mounts on the next
+ * navigation, readStoredCart() reconciles them against the live menu (dropping
+ * unavailable items, raising the stale notice) and checkout re-prices — exactly
+ * like a returning customer's saved cart. Additive: the store, readStoredCart,
+ * and persist are unchanged.
+ */
+export function seedStoredCart(slug: string, lines: StoredLine[]): void {
+  try {
+    const stored: StoredLine[] = lines.map(
+      ({ itemId, variantId, selectedOptionIds, quantity }) => ({
+        itemId,
+        variantId,
+        selectedOptionIds,
+        quantity,
+      }),
+    );
+    sessionStorage.setItem(storageKey(slug), JSON.stringify(stored));
+  } catch {
+    // Storage unavailable — reorder simply won't pre-fill; never fatal.
+  }
+}
+
 type CartState = { lines: CartLine[]; stale: boolean };
 const EMPTY_STATE: CartState = { lines: [], stale: false };
 
