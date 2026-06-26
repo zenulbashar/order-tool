@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
@@ -177,6 +178,13 @@ function StorefrontInner({
             </p>
           ) : null}
         </div>
+        {/* Opt-in customer area (#7) — never blocks ordering; guests ignore it. */}
+        <Link
+          href={`/${venue.slug}/account`}
+          className="ml-auto shrink-0 self-start text-xs font-medium text-gray-500 hover:text-gray-900"
+        >
+          Your orders
+        </Link>
       </header>
 
       <div className="px-5 pb-4">
