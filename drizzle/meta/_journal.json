@@ -57,6 +57,13 @@
       "when": 1782424981795,
       "tag": "0007_right_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782471782247,
+      "tag": "0008_soft_the_phantom",
+      "breakpoints": true
     }
   ]
 }
