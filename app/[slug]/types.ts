@@ -34,6 +34,18 @@ export type PublicOption = {
   priceDeltaCents: number;
 };
 
+/**
+ * One size variant of an item (Phase 5b). Customer-safe: id + name + the
+ * variant's OWN absolute price; no venue_id or timestamps. When an item has >= 1
+ * of these it is variant-priced and these are the authoritative price source —
+ * the item's base priceCents is ignored for it (the EITHER flat OR variant rule).
+ */
+export type PublicVariant = {
+  id: string;
+  name: string;
+  priceCents: number;
+};
+
 export type PublicGroup = {
   id: string;
   name: string;
@@ -48,6 +60,11 @@ export type PublicItem = {
   description: string | null;
   priceCents: number;
   imageUrl: string | null;
+  // Size variants in sort_order (Phase 5b). EMPTY for a flat-priced item, which
+  // then behaves exactly as before (priceCents is the price). When non-empty the
+  // item is variant-priced: the storefront shows "from $<min>", makes the
+  // customer pick a size, and prices from the chosen variant — never priceCents.
+  variants: PublicVariant[];
   // Owner-set dietary/allergen tags (canonical order). Customer-safe: tag
   // strings only — no venue_id or timestamps. A guide, never a guarantee; the
   // storefront shows the confirm-with-the-venue disclaimer alongside them.

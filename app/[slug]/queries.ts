@@ -6,6 +6,7 @@ import {
   menuCategories,
   menuItems,
   menuItemTags,
+  menuItemVariants,
   modifierGroups,
   modifierOptions,
   venues,
@@ -65,7 +66,7 @@ export const getPublicVenueBySlug = cache(
  * a customer never lands on an empty section.
  */
 export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
-  const [categories, items, groups, options, tags] = await Promise.all([
+  const [categories, items, groups, options, tags, variants] = await Promise.all([
     db
       .select({
         id: menuCategories.id,
@@ -130,6 +131,22 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
       })
       .from(menuItemTags)
       .where(scopedToVenue(menuItemTags.venueId, venueId)),
+    // Size variants (Phase 5b). Venue-scoped and customer-safe (id, name, and
+    // the variant's OWN absolute price only). sort_order with a created_at
+    // tiebreak gives the same stable order the owner set, mirroring options/tags.
+    db
+      .select({
+        id: menuItemVariants.id,
+        itemId: menuItemVariants.itemId,
+        name: menuItemVariants.name,
+        priceCents: menuItemVariants.priceCents,
+      })
+      .from(menuItemVariants)
+      .where(scopedToVenue(menuItemVariants.venueId, venueId))
+      .orderBy(
+        asc(menuItemVariants.sortOrder),
+        asc(menuItemVariants.createdAt),
+      ),
   ]);
 
   const optionsByGroup = new Map<string, typeof options>();
@@ -143,6 +160,12 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
     const list = groupsByItem.get(group.itemId) ?? [];
     list.push(group);
     groupsByItem.set(group.itemId, list);
+  }
+  const variantsByItem = new Map<string, typeof variants>();
+  for (const variant of variants) {
+    const list = variantsByItem.get(variant.itemId) ?? [];
+    list.push(variant);
+    variantsByItem.set(variant.itemId, list);
   }
   const itemsByCategory = new Map<string, typeof items>();
   for (const item of items) {
@@ -173,6 +196,11 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
         description: item.description,
         priceCents: item.priceCents,
         imageUrl: item.imageUrl,
+        variants: (variantsByItem.get(item.id) ?? []).map((variant) => ({
+          id: variant.id,
+          name: variant.name,
+          priceCents: variant.priceCents,
+        })),
         tags: normalizeDietaryTags(rawTagsByItem.get(item.id) ?? []),
         groups: (groupsByItem.get(item.id) ?? []).map((group) => ({
           id: group.id,
