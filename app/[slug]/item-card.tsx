@@ -1,4 +1,4 @@
-import { formatCents } from "@/lib/validation";
+import { dietaryTagLabel, formatCents } from "@/lib/validation";
 
 import type { PublicItem } from "./types";
 
@@ -26,6 +26,18 @@ export function ItemCard({
           <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">
             {item.description}
           </p>
+        ) : null}
+        {item.tags.length > 0 ? (
+          <ul className="mt-1.5 flex flex-wrap gap-1">
+            {item.tags.map((tag) => (
+              <li
+                key={tag}
+                className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+              >
+                {dietaryTagLabel(tag)}
+              </li>
+            ))}
+          </ul>
         ) : null}
         <p className="mt-1.5 text-sm font-medium text-gray-700">
           ${formatCents(item.priceCents)}

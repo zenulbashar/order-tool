@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { formatCents } from "@/lib/validation";
+import {
+  DIETARY_DISCLAIMER,
+  dietaryTagLabel,
+  formatCents,
+} from "@/lib/validation";
 
 import type { PublicGroup, PublicItem } from "./types";
 
@@ -110,6 +114,18 @@ export function ItemModifierSheet({
             {item.description ? (
               <p className="mt-0.5 text-sm text-gray-500">{item.description}</p>
             ) : null}
+            {item.tags.length > 0 ? (
+              <ul className="mt-2 flex flex-wrap gap-1">
+                {item.tags.map((tag) => (
+                  <li
+                    key={tag}
+                    className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+                  >
+                    {dietaryTagLabel(tag)}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
           <button
             type="button"
@@ -122,6 +138,30 @@ export function ItemModifierSheet({
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+          {/* LIFE-SAFETY: tags above are the venue's own labels, not a
+              guarantee. A prominent, unmissable note right where the customer is
+              about to order — never a faint caption. */}
+          {item.tags.length > 0 ? (
+            <p className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-medium text-amber-900">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+                className="mt-0.5 h-5 w-5 shrink-0"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>
+                Dietary tags are a guide set by the venue, not a guarantee.{" "}
+                {DIETARY_DISCLAIMER}
+              </span>
+            </p>
+          ) : null}
           {item.groups.map((group) => {
             const selected = selections[group.id] ?? [];
             const isRadio = group.maxSelect === 1;

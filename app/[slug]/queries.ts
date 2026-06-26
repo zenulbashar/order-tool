@@ -5,11 +5,13 @@ import { db } from "@/lib/db";
 import {
   menuCategories,
   menuItems,
+  menuItemTags,
   modifierGroups,
   modifierOptions,
   venues,
 } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
+import { normalizeDietaryTags } from "@/lib/validation";
 
 import type { PublicMenu, PublicVenue } from "./types";
 
@@ -63,7 +65,7 @@ export const getPublicVenueBySlug = cache(
  * a customer never lands on an empty section.
  */
 export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
-  const [categories, items, groups, options] = await Promise.all([
+  const [categories, items, groups, options, tags] = await Promise.all([
     db
       .select({
         id: menuCategories.id,
@@ -121,6 +123,13 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
         ),
       )
       .orderBy(asc(modifierOptions.sortOrder), asc(modifierOptions.createdAt)),
+    db
+      .select({
+        itemId: menuItemTags.itemId,
+        tag: menuItemTags.tag,
+      })
+      .from(menuItemTags)
+      .where(scopedToVenue(menuItemTags.venueId, venueId)),
   ]);
 
   const optionsByGroup = new Map<string, typeof options>();
@@ -141,6 +150,14 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
     list.push(item);
     itemsByCategory.set(item.categoryId, list);
   }
+  // Collect each item's tag strings, then normalize once per item below to drop
+  // any off-vocab value and apply the canonical display order.
+  const rawTagsByItem = new Map<string, string[]>();
+  for (const row of tags) {
+    const list = rawTagsByItem.get(row.itemId) ?? [];
+    list.push(row.tag);
+    rawTagsByItem.set(row.itemId, list);
+  }
 
   const menu: PublicMenu = [];
   for (const category of categories) {
@@ -156,6 +173,7 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
         description: item.description,
         priceCents: item.priceCents,
         imageUrl: item.imageUrl,
+        tags: normalizeDietaryTags(rawTagsByItem.get(item.id) ?? []),
         groups: (groupsByItem.get(item.id) ?? []).map((group) => ({
           id: group.id,
           name: group.name,

@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from "react";
 
+import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
+
 import { CartBar } from "./cart-bar";
 import { CartProvider, useCart } from "./cart-provider";
 import { CategoryNav } from "./category-nav";
+import { DietaryFilter } from "./dietary-filter";
 import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
@@ -49,8 +52,36 @@ function StorefrontInner({
   const [tableLabel, setTableLabel] = useState(initialTable);
   const [activeItem, setActiveItem] = useState<PublicItem | null>(null);
   const [query, setQuery] = useState("");
+  const [selectedTags, setSelectedTags] = useState<DietaryTag[]>([]);
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+
+  // The dietary tags actually in use across this venue's menu, in canonical
+  // order — only these become filter chips, so there are never dead chips.
+  const availableTags = useMemo(
+    () =>
+      normalizeDietaryTags(
+        menu.flatMap((category) =>
+          category.items.flatMap((item) => item.tags),
+        ),
+      ),
+    [menu],
+  );
+
+  // Keep the selection valid if the menu changes (e.g. a tag falls out of use):
+  // never filter by a tag with no chip.
+  const activeTags = useMemo(
+    () => selectedTags.filter((tag) => availableTags.includes(tag)),
+    [selectedTags, availableTags],
+  );
+
+  function toggleTag(tag: DietaryTag) {
+    setSelectedTags((current) =>
+      current.includes(tag)
+        ? current.filter((t) => t !== tag)
+        : [...current, tag],
+    );
+  }
 
   // Normalize each item's searchable text ONCE per menu, not per keystroke, so
   // typing stays instant over a large menu — the filter below is only substring
@@ -71,17 +102,24 @@ function StorefrontInner({
 
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
+  const isFiltering = isSearching || activeTags.length > 0;
 
   // The menu actually rendered: the full menu (same reference, identical order)
-  // when not searching, otherwise each category filtered to its name/description
-  // matches with empty categories dropped — so results stay grouped under their
-  // headings and the cleared view is byte-for-byte today's.
+  // when no filter is active, otherwise each category filtered to items passing
+  // BOTH the search predicate AND the tag predicate, with empty categories
+  // dropped — so results stay grouped under their headings and the cleared view
+  // is byte-for-byte today's. Tag filtering is AND: an item must carry EVERY
+  // selected tag.
   const visibleMenu = useMemo<PublicMenu>(() => {
-    if (!isSearching) return menu;
+    if (!isFiltering) return menu;
     const result: PublicMenu = [];
     for (const category of searchIndex) {
       const items = category.items
-        .filter((entry) => matchesQuery(trimmedQuery, entry.haystack))
+        .filter(
+          (entry) =>
+            (!isSearching || matchesQuery(trimmedQuery, entry.haystack)) &&
+            activeTags.every((tag) => entry.item.tags.includes(tag)),
+        )
         .map((entry) => entry.item);
       if (items.length > 0) {
         result.push({
@@ -93,7 +131,7 @@ function StorefrontInner({
       }
     }
     return result;
-  }, [isSearching, trimmedQuery, searchIndex, menu]);
+  }, [isFiltering, isSearching, trimmedQuery, activeTags, searchIndex, menu]);
 
   const navCategories = useMemo(
     () =>
@@ -152,11 +190,16 @@ function StorefrontInner({
 
       {menu.length > 0 ? (
         <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/95 backdrop-blur">
-          <div className="px-5 pb-3 pt-3">
+          <div className="space-y-3 px-5 pb-3 pt-3">
             <MenuSearch
               value={query}
               onChange={setQuery}
               resultCount={isSearching ? visibleItemCount : null}
+            />
+            <DietaryFilter
+              available={availableTags}
+              selected={activeTags}
+              onToggle={toggleTag}
             />
           </div>
           {navCategories.length > 0 ? (
@@ -172,7 +215,9 @@ function StorefrontInner({
           </p>
         ) : visibleMenu.length === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
-            No items match “{trimmedQuery}”.
+            {isSearching
+              ? `No items match “${trimmedQuery}”${activeTags.length > 0 ? " with those dietary tags" : ""}.`
+              : "No items match those dietary tags."}
           </p>
         ) : (
           visibleMenu.map((category) => (
