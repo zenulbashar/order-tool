@@ -151,6 +151,44 @@ verification). After this deploys:
 `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` (test keys) must also be set in
 Vercel (Production).
 
+### Express checkout & Apple Pay domain registration (per connected account)
+
+The payment step shows a one-tap **Express Checkout** button (Apple Pay / Google
+Pay / Link) **above** the card form. It confirms the **same** PaymentIntent as the
+card form — same direct charge, same app fee — so the webhook stays the sole
+confirmation source; there is no second confirmation path. If no wallet is
+available the button doesn't render and checkout is exactly the card form.
+
+**Google Pay and Link need no extra setup. Apple Pay on the web** only renders
+once the storefront **domain is registered as a payment method domain in Stripe**.
+Because every charge is a **direct charge on the venue's connected account**, the
+domain must be registered **on each connected account** — registering it only on
+the platform is not enough.
+
+This is **Stripe configuration, not code.** There is a single storefront domain
+(`order.zaleit.com.au`; venues are path-based, `…/<slug>`), registered **once per
+connected account**, most reliably via the API with that account's `Stripe-Account`
+header:
+
+```ts
+await stripe.paymentMethodDomains.create(
+  { domain_name: "order.zaleit.com.au" },
+  { stripeAccount: "<acct_id>" },
+);
+```
+
+Stripe serves the Apple Pay domain-association file for domains registered this way
+when the storefront loads Stripe.js, so the app does **not** host a `.well-known`
+file.
+
+**If it's skipped, nothing breaks** — the Apple Pay button just doesn't appear for
+that venue, and the customer still has Google Pay / Link / the card form. Register
+a venue's domain when you want Apple Pay live for it.
+
+> Future enhancement (not built this phase): auto-register the domain during
+> Connect onboarding once an account reaches `charges_enabled`, so operators never
+> do it by hand.
+
 ## Menu item photos
 
 Owners attach a real photo to each menu item; the storefront renders an
