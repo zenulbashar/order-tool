@@ -6,7 +6,6 @@ import {
   createLoginToken,
   destroyCustomerSession,
   getCustomer,
-  upsertCustomerByEmail,
 } from "@/lib/customer/auth";
 import { sendCustomerMagicLinkEmail } from "@/lib/customer/email";
 import { db } from "@/lib/db";

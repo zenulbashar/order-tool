@@ -189,6 +189,60 @@ a venue's domain when you want Apple Pay live for it.
 > Connect onboarding once an account reaches `charges_enabled`, so operators never
 > do it by hand.
 
+## Customer accounts (#7)
+
+An **optional, opt-in** customer identity so a customer can save their details,
+see their past orders, and **reorder in one tap**. **Guest checkout is the
+untouched default** — `orders.customer_id` is **nullable**, identity is never
+required to order, and `placeOrder` is unchanged (it never sets `customer_id`).
+
+**Firewalled from owner Auth.js — a separate system, by construction:**
+
+- Customers have their **own tables** (`customers`, `customer_login_tokens`,
+  `customer_sessions`) — **never** the owner `users`/`sessions`/`accounts`/
+  `verification_tokens`. The Auth.js Drizzle adapter (`lib/auth.ts`) is wired to
+  only the owner four and has no knowledge of the customer tables.
+- Customer code lives under `lib/customer/*` + `app/[slug]/account/*` and
+  **never imports `lib/auth.ts`** or calls `signIn`/`auth`/`signOut`.
+- Customers use their **own cookie** (`ot_customer_session`), distinct from the
+  Auth.js cookie and from `ot_selected_venue`. Owner routes gate on
+  `requireUser()` (blind to this cookie); the customer area gates on
+  `getCustomer()` (zero venue-management).
+- **Disjoint identity keyspaces:** owner email is unique **globally**; customer
+  email is unique **per venue** (`customers (venue_id, lower(email))`). The same
+  person can be an owner **and** a customer as separate records that never
+  collide.
+
+**Scope = per-venue.** A customer belongs to one venue. Forward-compatible to a
+platform-wide account later via an additive account table + nullable link.
+
+**Mechanism = email magic-link**, hand-rolled and **separate** from the Auth.js
+Resend provider — but it **reuses the same `RESEND_API_KEY`/`EMAIL_FROM`**, so
+there is **no new required env**. Tokens are stored **SHA-256-hashed**; the raw
+token lives only in the emailed link (single-use, ~15 min) or the httpOnly
+session cookie. The send path (`lib/customer/email.ts`) calls the Resend REST API
+lazily, so build/typecheck/lint run with no env.
+
+**Linking orders is IDOR-safe.** Claiming runs
+`UPDATE orders SET customer_id = <session customer> WHERE venue_id = ? AND
+public_token = ? AND customer_id IS NULL`: authorization is **possession of the
+unguessable `public_token`** (the same capability that already authorizes
+viewing), the `IS NULL` guard blocks taking an already-owned order, and the
+customer is **session-derived, never client input**. We deliberately do **not**
+bulk-claim by phone (an unverified phone match would be an IDOR; that's reserved
+for a future phone-OTP upgrade). The history read is filtered by `venue_id` AND
+the session customer, so a customer only ever sees their own orders.
+
+**Reorder re-prices live.** It seeds the cart with the past order's **ids only**
+(never prices) via the same shape the cart already persists; a fresh
+`CartProvider` reconciles them against the live menu (dropping unavailable items,
+raising the "items changed" notice) and **checkout re-prices server-side through
+the same verified `placeOrder` recompute**. A reorder is just a normal new order
+with a pre-filled cart — no stored/old price is ever charged.
+
+Routes live under `/[slug]/account` (`/[slug]/account` history + sign-in,
+`/[slug]/account/verify` magic-link callback). The additive migration is `0010`.
+
 ## Menu item photos
 
 Owners attach a real photo to each menu item; the storefront renders an
@@ -229,7 +283,8 @@ app/
   api/auth/[...nextauth]/      # Auth.js route handlers
 lib/
   db/{index,schema}.ts         # Drizzle client + schema
-  auth.ts                      # Auth.js config
+  auth.ts                      # Auth.js config (OWNER auth only)
+  customer/                    # customer identity (#7) — SEPARATE from auth.ts
   tenant.ts                    # venue resolution + scoping convention
   validation.ts                # email/slug validation
 drizzle/                       # generated migrations
