@@ -1,8 +1,11 @@
 import Link from "next/link";
 
+import { computeMenuHealth } from "@/lib/menu-health";
 import { requireUser, requireVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
+import { DeepLinkOpener } from "./_components/deep-link-opener";
+import { MenuHealthPanel } from "./_components/menu-health-panel";
 import {
   deleteCategory,
   deleteGroup,
@@ -125,6 +128,10 @@ export default async function MenuPage() {
     (item) => !item.description || item.description.trim().length === 0,
   ).length;
 
+  // Menu health — computed read-only from the venue-scoped data already loaded
+  // above (no extra query, no writes). Drives the "Menu health" panel below.
+  const health = computeMenuHealth(items, categories);
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
       <header className="border-b border-gray-200 pb-6">
@@ -158,6 +165,10 @@ export default async function MenuPage() {
         </div>
       </header>
 
+      <DeepLinkOpener />
+
+      <MenuHealthPanel report={health} />
+
       <section className="py-8">
         <h2 className="text-sm font-semibold text-gray-900">Add a category</h2>
         <div className="mt-3 rounded-lg border border-gray-200 p-4">
@@ -184,7 +195,8 @@ export default async function MenuPage() {
               return (
                 <li
                   key={category.id}
-                  className="rounded-lg border border-gray-200"
+                  id={`category-${category.id}`}
+                  className="scroll-mt-24 rounded-lg border border-gray-200"
                 >
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
@@ -227,7 +239,8 @@ export default async function MenuPage() {
                             return (
                               <li
                                 key={item.id}
-                                className="rounded-md border border-gray-200 bg-gray-50/50"
+                                id={`item-${item.id}`}
+                                className="scroll-mt-24 rounded-md border border-gray-200 bg-gray-50/50"
                               >
                                 <div className="flex items-center justify-between gap-3 px-3 py-2">
                                   <div className="flex min-w-0 items-center gap-2.5">
