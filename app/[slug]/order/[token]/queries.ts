@@ -7,6 +7,8 @@ import { scopedToVenue } from "@/lib/tenant";
 export type ConfirmedOrderItem = {
   id: string;
   name: string;
+  // Chosen size for a variant-priced line (snapshot), else null.
+  variantName: string | null;
   quantity: number;
   unitPriceCents: number;
   lineTotalCents: number;
@@ -63,6 +65,7 @@ export async function getOrderByToken(
     .select({
       id: orderItems.id,
       name: orderItems.itemNameSnapshot,
+      variantName: orderItems.variantNameSnapshot,
       quantity: orderItems.quantity,
       unitPriceCents: orderItems.unitPriceCentsSnapshot,
       lineTotalCents: orderItems.lineTotalCents,
@@ -112,6 +115,7 @@ export async function getOrderByToken(
     items: items.map((item) => ({
       id: item.id,
       name: item.name,
+      variantName: item.variantName,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       lineTotalCents: item.lineTotalCents,
