@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { requireUser, requireVenue } from "@/lib/tenant";
 
+import { SettingsDetailsForm } from "./settings-details-form";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
@@ -44,6 +45,32 @@ export default async function SettingsPage() {
           </Link>
           .
         </p>
+      </section>
+
+      <section className="border-t border-gray-200 py-8">
+        <h2 className="text-lg font-semibold tracking-tight text-gray-900">
+          Business details
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          These power your venue&rsquo;s Google search listing (structured data).
+          Everything here is optional, and only the fields you fill in are
+          published — blanks are never guessed.
+        </p>
+        <div className="mt-4 rounded-lg border border-gray-200 p-4">
+          <SettingsDetailsForm
+            details={{
+              streetAddress: venue.streetAddress,
+              suburb: venue.suburb,
+              state: venue.state,
+              postcode: venue.postcode,
+              country: venue.country,
+              phone: venue.phone,
+              openingHours: venue.openingHours,
+              latitude: venue.latitude,
+              longitude: venue.longitude,
+            }}
+          />
+        </div>
       </section>
     </main>
   );

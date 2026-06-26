@@ -314,6 +314,114 @@ export const venueSettingsSchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
+/* Venue business details — structured data / SEO (Phase 6)                   */
+/*                                                                            */
+/* All fields are OPTIONAL: a venue fills in whatever it has, and the public   */
+/* storefront emits schema.org JSON-LD using ONLY the parts that are set (see  */
+/* app/[slug]/json-ld.tsx). Empty inputs become NULL — never empty strings or  */
+/* placeholders — so nothing fabricated reaches the markup. These feed         */
+/* updateVenueDetails, which (exactly like updateVenueSettings) re-checks auth  */
+/* + venue scope and writes WHERE id = venue.id; no value here is ever an       */
+/* authorization input. country has no default — the form pre-fills "AU".      */
+/* -------------------------------------------------------------------------- */
+
+/** Optional bounded free text; empty/whitespace stored as null. */
+const optionalDetailSchema = (max: number, label: string) =>
+  z
+    .string()
+    .trim()
+    .max(max, `${label} is too long.`)
+    .transform((value) => (value.length > 0 ? value : null));
+
+/** Loose, international-friendly phone check; empty stored as null. */
+export const venuePhoneSchema = z
+  .string()
+  .trim()
+  .max(32, "Phone number is too long.")
+  .refine(
+    (value) => value === "" || /^[+()\-\s\d]{5,32}$/.test(value),
+    "Enter a valid phone number (digits, spaces, +, -, ( ) only).",
+  )
+  .transform((value) => (value.length > 0 ? value : null));
+
+/**
+ * A single geographic coordinate from a text input. Empty -> null; otherwise a
+ * decimal within [min, max]. Latitude and longitude are validated as a PAIR
+ * (both-or-neither) in venueDetailsSchema, so a half-set geo never emits.
+ */
+const coordinateSchema = (min: number, max: number, label: string) =>
+  z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^-?\d{1,3}(\.\d{1,8})?$/.test(value),
+      `Enter a valid ${label}.`,
+    )
+    .transform((value) => (value === "" ? null : Number(value)))
+    .refine(
+      (value) => value === null || (value >= min && value <= max),
+      `${label} must be between ${min} and ${max}.`,
+    );
+
+/** 24h "HH:MM" exactly as an <input type="time"> produces. */
+const TIME_24H = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * One opening-hours range. `opens` must be strictly before `closes` (same-day);
+ * overnight ranges that cross midnight are out of scope for this pass. `day` is
+ * 0=Monday … 6=Sunday, matching OPENING_DAYS and OpeningHoursEntry.
+ */
+const openingHoursEntrySchema = z
+  .object({
+    day: z.number().int().min(0).max(6),
+    opens: z.string().regex(TIME_24H, "Enter a valid opening time."),
+    closes: z.string().regex(TIME_24H, "Enter a valid closing time."),
+  })
+  .refine((entry) => entry.opens < entry.closes, {
+    message: "Closing time must be after opening time.",
+    path: ["closes"],
+  });
+
+/** Array of ranges; empty -> null so the JSON-LD omits opening hours entirely. */
+export const openingHoursSchema = z
+  .array(openingHoursEntrySchema)
+  .max(21, "Too many opening-hours ranges.")
+  .transform((ranges) => (ranges.length > 0 ? ranges : null));
+
+/**
+ * The seven day rows the owner form renders and the update action reads. `day`
+ * is the stored index (0=Monday) and `label` doubles as the schema.org
+ * DayOfWeek name emitted in the JSON-LD, so form, storage, and markup stay in
+ * lockstep.
+ */
+export const OPENING_DAYS = [
+  { key: "mon", label: "Monday", day: 0 },
+  { key: "tue", label: "Tuesday", day: 1 },
+  { key: "wed", label: "Wednesday", day: 2 },
+  { key: "thu", label: "Thursday", day: 3 },
+  { key: "fri", label: "Friday", day: 4 },
+  { key: "sat", label: "Saturday", day: 5 },
+  { key: "sun", label: "Sunday", day: 6 },
+] as const;
+
+export const venueDetailsSchema = z
+  .object({
+    streetAddress: optionalDetailSchema(120, "Street address"),
+    suburb: optionalDetailSchema(80, "Suburb"),
+    state: optionalDetailSchema(60, "State"),
+    postcode: optionalDetailSchema(16, "Postcode"),
+    country: optionalDetailSchema(56, "Country"),
+    phone: venuePhoneSchema,
+    latitude: coordinateSchema(-90, 90, "Latitude"),
+    longitude: coordinateSchema(-180, 180, "Longitude"),
+    openingHours: openingHoursSchema,
+  })
+  .refine((data) => (data.latitude === null) === (data.longitude === null), {
+    message: "Enter both latitude and longitude, or leave both blank.",
+    path: ["latitude"],
+  });
+
+/* -------------------------------------------------------------------------- */
 /* Reserved slugs (Phase 2a)                                                  */
 /*                                                                            */
 /* A venue slug is served at the top-level path /{slug}, so it must never     */

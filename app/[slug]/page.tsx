@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { getBaseUrl } from "@/lib/url";
 import { isReservedSlug } from "@/lib/validation";
 
+import { StorefrontJsonLd } from "./json-ld";
 import { getPublicMenu, getPublicVenueBySlug } from "./queries";
 import { Storefront } from "./storefront";
 import type { PublicVenue } from "./types";
@@ -48,9 +50,22 @@ export default async function StorefrontPage({
   const venue = await resolveVenue(slug);
   if (!venue) notFound();
 
-  const [menu, sp] = await Promise.all([getPublicMenu(venue.id), searchParams]);
+  const [menu, sp, baseUrl] = await Promise.all([
+    getPublicMenu(venue.id),
+    searchParams,
+    getBaseUrl(),
+  ]);
   const tableParam = sp.table;
   const initialTable = typeof tableParam === "string" ? tableParam : "";
 
-  return <Storefront venue={venue} menu={menu} initialTable={initialTable} />;
+  // Per-venue structured data (SEO). Built from the SAME venue + menu already
+  // loaded above — no extra query — and emits only owner-entered fields.
+  const canonicalUrl = `${baseUrl}/${venue.slug}`;
+
+  return (
+    <>
+      <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
+      <Storefront venue={venue} menu={menu} initialTable={initialTable} />
+    </>
+  );
 }

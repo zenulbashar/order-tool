@@ -2,8 +2,10 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -53,6 +55,16 @@ export const users = pgTable(
   ],
 );
 
+/**
+ * One opening-hours range for a venue, stored in venues.opening_hours (jsonb).
+ * `day` is 0=Monday … 6=Sunday; `opens`/`closes` are 24h "HH:MM" strings exactly
+ * as produced by an <input type="time">, so the data is valid by construction.
+ * Closed days are simply absent from the array, and the array shape is
+ * forward-compatible with split hours (two ranges on the same day). Emitted as
+ * schema.org OpeningHoursSpecification on the public storefront — never guessed.
+ */
+export type OpeningHoursEntry = { day: number; opens: string; closes: string };
+
 export const venues = pgTable(
   "venues",
   {
@@ -79,6 +91,23 @@ export const venues = pgTable(
       .notNull()
       .default(false),
     stripeOnboardedAt: timestamp("stripe_onboarded_at", { withTimezone: true }),
+    // Structured-data / SEO inputs (Phase 6). ALL NULLABLE with no defaults: a
+    // venue fills in whatever it has, and the public storefront emits schema.org
+    // JSON-LD using ONLY the fields that are set (see app/[slug]/json-ld.tsx) —
+    // never placeholders or guesses. None of these alter an existing column.
+    // Address parts map to a PostalAddress; phone -> telephone; opening_hours ->
+    // OpeningHoursSpecification; latitude/longitude -> GeoCoordinates (emitted
+    // only when BOTH are set). country has no DB default — the owner form
+    // pre-fills "AU" but existing rows stay untouched (NULL).
+    streetAddress: text("street_address"),
+    suburb: text("suburb"),
+    state: text("state"),
+    postcode: text("postcode"),
+    country: text("country"),
+    phone: text("phone"),
+    openingHours: jsonb("opening_hours").$type<OpeningHoursEntry[]>(),
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
     createdAt: createdAt(),
   },
   (table) => [uniqueIndex("venues_slug_idx").on(table.slug)],
