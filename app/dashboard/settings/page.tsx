@@ -68,6 +68,7 @@ export default async function SettingsPage() {
               openingHours: venue.openingHours,
               latitude: venue.latitude,
               longitude: venue.longitude,
+              schedulingEnabled: venue.schedulingEnabled,
             }}
           />
         </div>

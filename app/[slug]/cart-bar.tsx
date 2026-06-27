@@ -18,10 +18,12 @@ export function CartBar({
   slug,
   orderType,
   tableLabel,
+  scheduledFor,
 }: {
   slug: string;
   orderType: OrderType;
   tableLabel: string;
+  scheduledFor: string | null;
 }) {
   const { count, subtotalCents } = useCart();
   const [open, setOpen] = useState(false);
@@ -48,6 +50,7 @@ export function CartBar({
           slug={slug}
           orderType={orderType}
           tableLabel={tableLabel}
+          scheduledFor={scheduledFor}
           onClose={() => setOpen(false)}
         />
       ) : null}

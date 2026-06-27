@@ -41,6 +41,11 @@ export function OrderTicket({
       <p className="text-center text-[11px]">
         {formatVenueTime(order.createdAt, timezone)}
       </p>
+      {order.scheduledFor ? (
+        <p className="text-center text-[12px] font-bold">
+          Pickup: {formatVenueTime(order.scheduledFor, timezone)}
+        </p>
+      ) : null}
 
       {/* The single most important line for the kitchen: how to fulfil it. */}
       <div className="mt-2 border-2 border-black px-2 py-1.5 text-center">

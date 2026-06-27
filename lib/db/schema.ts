@@ -108,9 +108,31 @@ export const venues = pgTable(
     openingHours: jsonb("opening_hours").$type<OpeningHoursEntry[]>(),
     latitude: doublePrecision("latitude"),
     longitude: doublePrecision("longitude"),
+    // Scheduled pickup config (Phase 8). schedulingEnabled is the explicit
+    // per-venue opt-in (default false — nothing changes until an owner turns it
+    // on AND has opening_hours set). lead/max bound how far out a customer may
+    // schedule; defaulted so existing rows backfill safely. None alters an
+    // existing column. The scheduled time itself lives on orders.scheduled_for.
+    schedulingEnabled: boolean("scheduling_enabled").notNull().default(false),
+    schedulingLeadMinutes: integer("scheduling_lead_minutes")
+      .notNull()
+      .default(20),
+    schedulingMaxDaysAhead: integer("scheduling_max_days_ahead")
+      .notNull()
+      .default(7),
     createdAt: createdAt(),
   },
-  (table) => [uniqueIndex("venues_slug_idx").on(table.slug)],
+  (table) => [
+    uniqueIndex("venues_slug_idx").on(table.slug),
+    check(
+      "venues_scheduling_lead_minutes_nonneg",
+      sql`${table.schedulingLeadMinutes} >= 0`,
+    ),
+    check(
+      "venues_scheduling_max_days_ahead_nonneg",
+      sql`${table.schedulingMaxDaysAhead} >= 0`,
+    ),
+  ],
 );
 
 export const memberRole = pgEnum("venue_role", ["owner", "staff"]);
@@ -608,6 +630,14 @@ export const orders = pgTable(
     // webhook resolves orders to confirm/fail by THIS id only — never a
     // client-supplied identifier.
     stripePaymentIntentId: text("stripe_payment_intent_id"),
+    // OPTIONAL scheduled pickup time (Phase 8). NULL = ASAP = today's exact
+    // behaviour. An ADDITIVE capture like `notes`: the customer's chosen pickup
+    // instant (validated server-side, in the venue timezone, against open hours +
+    // lead time BEFORE the order is created) — INERT to money: the recompute,
+    // snapshots, app fee, PaymentIntent, and webhook never read it. Stored as an
+    // absolute instant (timestamptz) so the kitchen renders it with
+    // formatVenueTime exactly like created_at. Pickup-only; dine-in stays NULL.
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

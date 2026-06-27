@@ -25,6 +25,7 @@ type VenueDetails = {
   openingHours: OpeningHoursEntry[] | null;
   latitude: number | null;
   longitude: number | null;
+  schedulingEnabled: boolean;
 };
 
 export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
@@ -177,6 +178,25 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
         Set both latitude and longitude (from Google Maps) to place your venue on
         the map in its search listing, or leave both blank.
       </p>
+
+      <div className="border-t border-gray-100 pt-5">
+        <label className="flex items-start gap-3 text-sm font-medium text-gray-900">
+          <input
+            type="checkbox"
+            name="schedulingEnabled"
+            defaultChecked={details.schedulingEnabled}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300"
+          />
+          <span>
+            Accept scheduled pickup orders
+            <span className="mt-0.5 block text-xs font-normal text-gray-500">
+              Lets customers choose a pickup time within your opening hours
+              (earliest 20 minutes ahead, up to 7 days out). Requires opening
+              hours set above.
+            </span>
+          </span>
+        </label>
+      </div>
 
       {state.error ? (
         <p className="text-sm text-red-600" role="alert">

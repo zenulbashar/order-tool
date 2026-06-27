@@ -668,6 +668,24 @@ export const orderNotesSchema = z
   .nullish()
   .transform((value) => (value && value.length > 0 ? value : null));
 
+/**
+ * Optional scheduled pickup time (Phase 8): a NAIVE venue-local wall-clock
+ * string "YYYY-MM-DDTHH:MM" (never a browser-converted instant — the venue
+ * timezone is applied server-side; see lib/schedule.ts). SHAPE ONLY — the
+ * placeOrder server gate re-validates it against the venue's open hours +
+ * lead/max in the venue timezone and is authoritative. Blank/absent -> null
+ * (ASAP), the same nullish->null contract as notes/tableLabel.
+ */
+export const scheduledForSchema = z
+  .string()
+  .trim()
+  .nullish()
+  .transform((value) => (value && value.length > 0 ? value : null))
+  .refine(
+    (value) => value === null || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value),
+    "Choose a valid pickup time.",
+  );
+
 const orderLineSchema = z.object({
   itemId: idSchema,
   // The chosen size variant id, or null for a flat-priced item. SHAPE ONLY: the
@@ -714,6 +732,9 @@ export const placeOrderSchema = z
       .transform((value) => (value && value.length > 0 ? value : null)),
     // Optional special request; captured + stored, NEVER priced (see schema).
     notes: orderNotesSchema,
+    // Optional scheduled pickup time. SHAPE ONLY; placeOrder's server gate
+    // validates it against the venue's hours + lead/max in the venue timezone.
+    scheduledFor: scheduledForSchema,
     lines: z
       .array(orderLineSchema)
       .min(1, "Your cart is empty.")
@@ -734,6 +755,9 @@ export type PlaceOrderInput = {
   customerName: string;
   customerPhone?: string | null;
   notes?: string | null;
+  // Naive venue-local wall-clock "YYYY-MM-DDTHH:MM" for a scheduled pickup, or
+  // null/omitted for ASAP. Server-validated against the venue tz + hours/lead/max.
+  scheduledFor?: string | null;
   lines: {
     itemId: string;
     variantId?: string | null;

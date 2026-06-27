@@ -36,6 +36,9 @@ export type KitchenOrder = {
   subtotalCents: number;
   totalCents: number;
   createdAt: Date;
+  // Scheduled pickup instant (Phase 8), or null for ASAP. The page surfaces a
+  // scheduled order by this time, not its created_at.
+  scheduledFor: Date | null;
   items: KitchenOrderItem[];
 };
 
@@ -72,6 +75,7 @@ export async function getVenueOrders(
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
       createdAt: orders.createdAt,
+      scheduledFor: orders.scheduledFor,
     })
     .from(orders)
     .where(
@@ -165,6 +169,7 @@ export async function getVenueOrders(
     subtotalCents: order.subtotalCents,
     totalCents: order.totalCents,
     createdAt: order.createdAt,
+    scheduledFor: order.scheduledFor,
     items: itemsByOrder.get(order.id) ?? [],
   }));
 }

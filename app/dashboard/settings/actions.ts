@@ -123,6 +123,10 @@ export async function updateVenueDetails(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
+  // Checkbox (not part of venueDetailsSchema): the explicit per-venue opt-in for
+  // scheduled pickup. Read directly, like the menu's boolean toggles.
+  const schedulingEnabled = formData.get("schedulingEnabled") === "on";
+
   await db
     .update(venues)
     .set({
@@ -135,6 +139,7 @@ export async function updateVenueDetails(
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
       openingHours: parsed.data.openingHours,
+      schedulingEnabled,
     })
     .where(eq(venues.id, venue.id));
 

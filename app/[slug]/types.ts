@@ -26,6 +26,13 @@ export type PublicVenue = {
   openingHours: OpeningHoursEntry[] | null;
   latitude: number | null;
   longitude: number | null;
+  // Scheduled-pickup config (Phase 8). timezone + openingHours let the client
+  // build venue-local pickup slots; the server re-validates authoritatively.
+  // The picker is offered only when schedulingEnabled && openingHours is set.
+  timezone: string;
+  schedulingEnabled: boolean;
+  schedulingLeadMinutes: number;
+  schedulingMaxDaysAhead: number;
 };
 
 export type PublicOption = {

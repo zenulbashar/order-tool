@@ -49,6 +49,12 @@ export const getPublicVenueBySlug = cache(
         openingHours: venues.openingHours,
         latitude: venues.latitude,
         longitude: venues.longitude,
+        // Scheduled-pickup config (Phase 8) — feeds the storefront slot picker;
+        // the server gate re-validates against these same values.
+        timezone: venues.timezone,
+        schedulingEnabled: venues.schedulingEnabled,
+        schedulingLeadMinutes: venues.schedulingLeadMinutes,
+        schedulingMaxDaysAhead: venues.schedulingMaxDaysAhead,
       })
       .from(venues)
       .where(eq(venues.slug, normalized))

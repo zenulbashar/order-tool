@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import { ButtonLabel } from "@/app/_components/spinner";
+import { type SchedulingConfig } from "@/lib/schedule";
 import { formatCents, type OrderTypeValue } from "@/lib/validation";
 
 import { claimOrder } from "../account/actions";
 import { useCart } from "../cart-provider";
+import { SchedulePicker } from "../schedule-picker";
 import type { PublicVenue } from "../types";
 import { placeOrder } from "./actions";
 import { PaymentStep } from "./payment-step";
@@ -34,21 +36,31 @@ export function CheckoutClient({
   venue,
   initialOrderType,
   initialTable,
+  initialScheduledFor,
   initialName,
   initialPhone,
+  nowMs,
 }: {
   venue: PublicVenue;
   initialOrderType: OrderTypeValue;
   initialTable: string;
+  // Scheduled pickup wall-clock carried from the storefront, or null for ASAP.
+  initialScheduledFor: string | null;
   // Name/phone form DEFAULTS resolved server-side (session record, else the
   // device remember-me cookie, else empty). Pre-filled but fully editable.
   initialName: string;
   initialPhone: string;
+  // Request-time "now" (server-captured) so the picker offers fresh slots with no
+  // client clock read; the server re-validates on submit.
+  nowMs: number;
 }) {
   const { displayLines, subtotalCents, count, lines, clear } = useCart();
 
   const [orderType, setOrderType] = useState<OrderTypeValue>(initialOrderType);
   const [tableLabel, setTableLabel] = useState(initialTable);
+  const [scheduledFor, setScheduledFor] = useState<string | null>(
+    initialScheduledFor,
+  );
   const [customerName, setCustomerName] = useState(initialName);
   const [customerPhone, setCustomerPhone] = useState(initialPhone);
   const [notes, setNotes] = useState("");
@@ -57,6 +69,29 @@ export function CheckoutClient({
   const [payment, setPayment] = useState<PaymentSession | null>(null);
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+
+  // Scheduled-pickup config for the picker (Phase 8) — the same values the server
+  // gate validates against. Offered only when enabled + opening hours are set.
+  const scheduling = useMemo<SchedulingConfig | null>(
+    () =>
+      venue.schedulingEnabled &&
+      venue.openingHours &&
+      venue.openingHours.length > 0
+        ? {
+            timeZone: venue.timezone,
+            openingHours: venue.openingHours,
+            leadMinutes: venue.schedulingLeadMinutes,
+            maxDaysAhead: venue.schedulingMaxDaysAhead,
+          }
+        : null,
+    [venue],
+  );
+
+  // Switching away from pickup clears any scheduled time (dine-in is always now).
+  function handleOrderType(next: OrderTypeValue) {
+    setOrderType(next);
+    if (next !== "pickup") setScheduledFor(null);
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,6 +109,9 @@ export function CheckoutClient({
         // Optional special request; same blank -> null shape. Server trims,
         // caps, and stores it — it never affects pricing.
         notes: notes.trim() ? notes : null,
+        // Scheduled pickup wall-clock (pickup only); the server re-validates it
+        // against the venue's hours + lead/max in the venue timezone.
+        scheduledFor: orderType === "pickup" ? scheduledFor : null,
         lines: lines.map((line) => ({
           itemId: line.itemId,
           // Chosen size id only (null for flat items) — never a price. The server
@@ -210,7 +248,7 @@ export function CheckoutClient({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setOrderType(option.value)}
+                  onClick={() => handleOrderType(option.value)}
                   className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
                     isActive ? "bg-white shadow-sm" : "text-gray-500"
                   }`}
@@ -236,6 +274,15 @@ export function CheckoutClient({
               className={`mt-1 ${fieldClass}`}
             />
           </label>
+        ) : null}
+
+        {orderType === "pickup" ? (
+          <SchedulePicker
+            scheduling={scheduling}
+            scheduledFor={scheduledFor}
+            onScheduledFor={setScheduledFor}
+            nowMs={nowMs}
+          />
         ) : null}
 
         <label className="block text-sm font-medium text-gray-900">

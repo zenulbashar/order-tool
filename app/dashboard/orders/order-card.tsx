@@ -53,6 +53,11 @@ export function OrderCard({
           <p className="mt-0.5 text-xs text-gray-500">
             {formatVenueTime(order.createdAt, timezone)}
           </p>
+          {order.scheduledFor ? (
+            <p className="mt-0.5 text-xs font-semibold text-blue-700">
+              Scheduled pickup · {formatVenueTime(order.scheduledFor, timezone)}
+            </p>
+          ) : null}
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
