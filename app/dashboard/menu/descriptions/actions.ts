@@ -10,6 +10,7 @@ import { getAnthropic, MENU_COPY_MODEL } from "@/lib/anthropic";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { menuCategories, menuItems } from "@/lib/db/schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   dollarsToCents,
@@ -203,6 +204,18 @@ export async function suggestItemDescription(input: {
   // blank input is just omitted from the prompt.
   const priceCents = input.price ? dollarsToCents(input.price) : null;
 
+  // Per-venue cost gate IN FRONT of the metered description call (after the
+  // cheap name check so an empty name still gets its own message). Fail-open: a
+  // limiter/store error returns success and never blocks drafting.
+  const limit = await checkRateLimit("aiCopy", venue.id);
+  if (!limit.success) {
+    return {
+      ok: false,
+      error:
+        "You've reached the description-drafting limit for now. Please try again shortly.",
+    };
+  }
+
   let message: Anthropic.Message;
   try {
     message = await getAnthropic().messages.create({
@@ -289,6 +302,18 @@ export async function draftEmptyDescriptions(): Promise<DraftEmptyResult> {
     )
     .join("\n\n");
   const userText = `Draft a menu description for EACH item below. Return one entry per item in the "descriptions" array, reusing the exact numeric "index" shown for that item. Apply all the rules to every description.\n\n${list}`;
+
+  // Per-venue cost gate IN FRONT of the metered bulk call. Sits after the
+  // "nothing to draft" early return so an empty run never consumes budget.
+  // Fail-open: a limiter/store error returns success and never blocks drafting.
+  const limit = await checkRateLimit("aiCopy", venue.id);
+  if (!limit.success) {
+    return {
+      ok: false,
+      error:
+        "You've reached the description-drafting limit for now. Please try again shortly.",
+    };
+  }
 
   let message: Anthropic.Message;
   try {

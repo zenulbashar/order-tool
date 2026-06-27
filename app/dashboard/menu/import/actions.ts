@@ -9,6 +9,7 @@ import { getAnthropic, MENU_EXTRACTION_MODEL } from "@/lib/anthropic";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { menuCategories, menuItems, menuItemVariants } from "@/lib/db/schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   extractionSchema,
@@ -139,7 +140,7 @@ Rules:
 - Return only what actually appears on the menu.`;
 
 export async function extractMenu(formData: FormData): Promise<ExtractResult> {
-  await requireVenueForAction();
+  const venue = await requireVenueForAction();
 
   // Collect uploaded images and apply the caps BEFORE touching the API.
   const imageFiles = formData
@@ -159,6 +160,19 @@ export async function extractMenu(formData: FormData): Promise<ExtractResult> {
     if (!ALLOWED_IMAGE_TYPES.includes(file.type as AllowedImageType)) {
       return { ok: false, error: "Photos must be JPEG, PNG, WebP, or GIF." };
     }
+  }
+
+  // Per-venue cost gate IN FRONT of the metered, owner-initiated vision call
+  // (the costliest AI call). Sits after the cheap image caps so a bad upload
+  // still gets its helpful error. Fail-open: a limiter/store error returns
+  // success and never blocks an import.
+  const limit = await checkRateLimit("aiImport", venue.id);
+  if (!limit.success) {
+    return {
+      ok: false,
+      error:
+        "You've reached the menu-import limit for now. Please try again in a little while.",
+    };
   }
 
   // The image bytes are sent to the model for extraction only — never stored.
