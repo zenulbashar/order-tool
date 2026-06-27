@@ -88,5 +88,24 @@ export type PublicCategory = {
 
 export type PublicMenu = PublicCategory[];
 
+/**
+ * Aggregate, venue-scoped "frequently bought together" signal (#11). Customer-
+ * safe by construction: ONLY public menu-item ids + one boolean — never a
+ * venue_id, timestamp, customer, snapshot, or raw sales count. Computed read-only
+ * from this venue's CONFIRMED orders' order_items soft refs (see
+ * getRecommendations); the client resolves these ids to PublicItem from the menu
+ * it already holds, applies the in-cart exclusion + 2–4 cap at render, and hides
+ * every surface when hasHistory is false (cold-start). Nothing crosses venues.
+ */
+export type PublicRecommendations = {
+  // anchor item id -> co-occurring item ids, strongest first. Already limited to
+  // currently available + active items, with the anchor and weak pairs dropped.
+  byItem: Record<string, string[]>;
+  // Popularity fallback: available + active item ids, most-ordered first.
+  popular: string[];
+  // True only when the venue has enough confirmed-order history to recommend.
+  hasHistory: boolean;
+};
+
 /** Order type is UI state only in 2a (persisted at order time in 2b). */
 export type OrderType = "pickup" | "dinein";

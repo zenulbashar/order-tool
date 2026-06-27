@@ -8,6 +8,7 @@ import {
   formatCents,
 } from "@/lib/validation";
 
+import { ItemGoesWellWith } from "./recommendations";
 import type { PublicGroup, PublicItem } from "./types";
 
 /**
@@ -26,6 +27,7 @@ export function ItemModifierSheet({
   item,
   onClose,
   onAdd,
+  onSelectItem,
 }: {
   item: PublicItem;
   onClose: () => void;
@@ -35,6 +37,10 @@ export function ItemModifierSheet({
     selectedOptionIds: string[],
     quantity: number,
   ) => void;
+  // Open another item through this same sheet — used by the "Goes well with…"
+  // row so a recommended item still goes through required selections + pricing,
+  // never a blind add. Absent => the row is not rendered.
+  onSelectItem?: (item: PublicItem) => void;
 }) {
   const [selections, setSelections] = useState<Record<string, string[]>>({});
   // The chosen size for a variant-priced item. No default — the customer MUST
@@ -288,6 +294,14 @@ export function ItemModifierSheet({
               </fieldset>
             );
           })}
+
+          {/* "Goes well with…" — aggregate, venue-scoped recommendations.
+              Tapping one re-opens THIS sheet for that item (onSelectItem), so any
+              required size/modifier choice + pricing still happens — never a
+              blind add. Hidden when there is no usable signal. */}
+          {onSelectItem ? (
+            <ItemGoesWellWith anchorId={item.id} onSelect={onSelectItem} />
+          ) : null}
         </div>
 
         <div className="space-y-3 border-t border-gray-100 px-5 py-4">

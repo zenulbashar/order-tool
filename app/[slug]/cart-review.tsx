@@ -5,7 +5,8 @@ import Link from "next/link";
 import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
-import type { OrderType } from "./types";
+import { CartUpsell } from "./recommendations";
+import type { OrderType, PublicItem } from "./types";
 
 /**
  * Cart review drawer. Line totals are recomputed live from the current menu and
@@ -19,11 +20,14 @@ export function CartReview({
   orderType,
   tableLabel,
   onClose,
+  onSelectItem,
 }: {
   slug: string;
   orderType: OrderType;
   tableLabel: string;
   onClose: () => void;
+  // Open an item through the existing modifier sheet. Used by the upsell row.
+  onSelectItem: (item: PublicItem) => void;
 }) {
   const {
     displayLines,
@@ -33,6 +37,14 @@ export function CartReview({
     removeLine,
     staleNotice,
   } = useCart();
+
+  // Tapping an upsell closes this drawer and opens the item's modifier sheet, so
+  // any required size/variant/modifier choice + pricing still happens before it
+  // enters the cart — the add itself goes through the existing item flow.
+  function handleUpsell(item: PublicItem) {
+    onSelectItem(item);
+    onClose();
+  }
 
   return (
     <div
@@ -129,6 +141,11 @@ export function CartReview({
               ))}
             </ul>
           )}
+
+          {/* "Add a drink or side?" — aggregate co-occurrence against the cart,
+              excluding what's already in it. Hidden when thin or on no history.
+              Built last and cuttable: surface (2) stands alone without this. */}
+          {count > 0 ? <CartUpsell onSelect={handleUpsell} /> : null}
         </div>
 
         <div className="space-y-3 border-t border-gray-100 px-5 py-4">
