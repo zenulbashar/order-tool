@@ -18,11 +18,13 @@ export function CartReview({
   slug,
   orderType,
   tableLabel,
+  scheduledFor,
   onClose,
 }: {
   slug: string;
   orderType: OrderType;
   tableLabel: string;
+  scheduledFor: string | null;
   onClose: () => void;
 }) {
   const {
@@ -146,6 +148,10 @@ export function CartReview({
               href={`/${slug}/checkout?type=${orderType}${
                 orderType === "dinein" && tableLabel.trim()
                   ? `&table=${encodeURIComponent(tableLabel.trim())}`
+                  : ""
+              }${
+                orderType === "pickup" && scheduledFor
+                  ? `&scheduledFor=${encodeURIComponent(scheduledFor)}`
                   : ""
               }`}
               className="block w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white"
