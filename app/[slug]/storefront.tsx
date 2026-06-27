@@ -13,8 +13,15 @@ import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
 import { OrderTypeSelector } from "./order-type-selector";
+import { RecommendationsProvider } from "./recommendations";
 import { itemSearchText, matchesQuery } from "./search";
-import type { OrderType, PublicItem, PublicMenu, PublicVenue } from "./types";
+import type {
+  OrderType,
+  PublicItem,
+  PublicMenu,
+  PublicRecommendations,
+  PublicVenue,
+} from "./types";
 
 /**
  * Top-level storefront. The cart provider wraps everything so the modifier
@@ -25,14 +32,18 @@ export function Storefront({
   venue,
   menu,
   initialTable,
+  recommendations,
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
+  recommendations: PublicRecommendations;
 }) {
   return (
     <CartProvider slug={venue.slug} menu={menu}>
-      <StorefrontInner venue={venue} menu={menu} initialTable={initialTable} />
+      <RecommendationsProvider menu={menu} recommendations={recommendations}>
+        <StorefrontInner venue={venue} menu={menu} initialTable={initialTable} />
+      </RecommendationsProvider>
     </CartProvider>
   );
 }
@@ -256,6 +267,7 @@ function StorefrontInner({
           item={activeItem}
           onClose={() => setActiveItem(null)}
           onAdd={addItem}
+          onSelectItem={setActiveItem}
         />
       ) : null}
 

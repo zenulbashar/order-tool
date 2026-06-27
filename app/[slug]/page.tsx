@@ -5,7 +5,11 @@ import { getBaseUrl } from "@/lib/url";
 import { isReservedSlug } from "@/lib/validation";
 
 import { StorefrontJsonLd } from "./json-ld";
-import { getPublicMenu, getPublicVenueBySlug } from "./queries";
+import {
+  getPublicMenu,
+  getPublicVenueBySlug,
+  getRecommendations,
+} from "./queries";
 import { Storefront } from "./storefront";
 import type { PublicVenue } from "./types";
 
@@ -58,6 +62,11 @@ export default async function StorefrontPage({
   const tableParam = sp.table;
   const initialTable = typeof tableParam === "string" ? tableParam : "";
 
+  // Frequently-bought-together signal (#11): read-only, venue-scoped, cached.
+  // Resolved against the menu just loaded so it adds no extra menu read and only
+  // ever references currently available items.
+  const recommendations = await getRecommendations(venue.id, menu);
+
   // Per-venue structured data (SEO). Built from the SAME venue + menu already
   // loaded above — no extra query — and emits only owner-entered fields.
   const canonicalUrl = `${baseUrl}/${venue.slug}`;
@@ -65,7 +74,12 @@ export default async function StorefrontPage({
   return (
     <>
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
-      <Storefront venue={venue} menu={menu} initialTable={initialTable} />
+      <Storefront
+        venue={venue}
+        menu={menu}
+        initialTable={initialTable}
+        recommendations={recommendations}
+      />
     </>
   );
 }
