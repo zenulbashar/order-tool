@@ -542,6 +542,14 @@ export const orders = pgTable(
     tableLabel: text("table_label"),
     customerName: text("customer_name").notNull(),
     customerPhone: text("customer_phone"),
+    // OPTIONAL, NULLABLE free-text "special requests" the customer types at
+    // checkout (e.g. "no onion", "extra napkins"). ADDITIVE and deliberately
+    // INERT to money: it is captured/trimmed/length-capped text only, stored on
+    // the order row, shown to the kitchen / on the receipt / confirmation /
+    // history — and is NEVER read back as a pricing input. The server recompute,
+    // the snapshot totals, the app fee, the PaymentIntent, and the webhook do not
+    // touch it. Guest orders and the pre-notes money path are unchanged.
+    notes: text("notes"),
     // OPTIONAL, NULLABLE soft association to a customer account (#7). Guest
     // orders leave this NULL and behave EXACTLY as before — identity is opt-in
     // and is NEVER required to order. placeOrder does NOT set this column (its
