@@ -22,6 +22,7 @@ import {
 } from "@/lib/stripe";
 import { scopedToVenue } from "@/lib/tenant";
 import { isReservedSlug, placeOrderSchema, type PlaceOrderInput } from "@/lib/validation";
+import { validateScheduledForConfig } from "@/lib/schedule";
 
 export type PlaceOrderResult =
   | {
@@ -53,6 +54,26 @@ function isUniqueViolation(error: unknown): boolean {
 /** URL-safe, 192-bit opaque token; the unique index is the collision backstop. */
 function generateToken(): string {
   return randomBytes(24).toString("base64url");
+}
+
+/**
+ * Scheduling config for the slot gate (Phase 8). A SEPARATE small read so
+ * placeOrder's existing venue SELECT — the money path — stays byte-for-byte;
+ * this is only ever called for a scheduled pickup order.
+ */
+async function getSchedulingConfig(venueId: string) {
+  const [row] = await db
+    .select({
+      schedulingEnabled: venues.schedulingEnabled,
+      timeZone: venues.timezone,
+      openingHours: venues.openingHours,
+      leadMinutes: venues.schedulingLeadMinutes,
+      maxDaysAhead: venues.schedulingMaxDaysAhead,
+    })
+    .from(venues)
+    .where(eq(venues.id, venueId))
+    .limit(1);
+  return row ?? null;
 }
 
 type ItemRow = { id: string; name: string; priceCents: number };
@@ -108,6 +129,24 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     return reject("This venue isn't accepting online payments yet.");
   }
   const stripeAccountId = venue.stripeAccountId;
+
+  // Scheduled pickup (Phase 8): validate the chosen time BEFORE any item fetch,
+  // price recompute, order write, or PaymentIntent — server-authoritative and
+  // timezone-correct (computed in the venue tz against its open hours + lead/max).
+  // Runs ONLY for a scheduled PICKUP order; dine-in/ASAP skip it entirely and
+  // store NULL (today's exact behaviour). The config read is separate so the
+  // money-path venue SELECT above stays byte-for-byte. scheduled_for is captured
+  // additively below and is NEVER a pricing input.
+  let scheduledForInstant: Date | null = null;
+  if (data.orderType !== "dine_in" && data.scheduledFor) {
+    const config = await getSchedulingConfig(venueId);
+    if (!config || !config.schedulingEnabled || !config.openingHours?.length) {
+      return reject("This venue isn't taking scheduled orders right now.");
+    }
+    const result = validateScheduledForConfig(config, data.scheduledFor, Date.now());
+    if (!result.ok) return reject(result.error);
+    scheduledForInstant = result.instant;
+  }
 
   // (b) Bounds (non-empty, <=50 lines, qty 1..50) are enforced by the schema.
 
@@ -305,6 +344,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
             // input and never read back into any total. The recompute above and
             // the PaymentIntent below are byte-for-byte unchanged.
             notes: data.notes ?? null,
+            // Additive scheduled-pickup capture (Phase 8): a server-validated
+            // absolute instant, or NULL for ASAP/dine-in. Inert to money — never
+            // read by the recompute, app fee, PaymentIntent, or webhook.
+            scheduledFor: scheduledForInstant,
             status: "pending_payment",
             subtotalCents,
             totalCents,
