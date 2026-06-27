@@ -78,6 +78,19 @@ export function OrderCard({
         ) : null}
       </div>
 
+      {/* Customer special request — rendered as plain (React-escaped) text so it
+          can never inject markup, and visually loud so the kitchen sees it. */}
+      {order.notes ? (
+        <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+            Notes
+          </p>
+          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-amber-900">
+            {order.notes}
+          </p>
+        </div>
+      ) : null}
+
       <ul className="mt-3 divide-y divide-gray-100 border-t border-gray-100">
         {order.items.map((item) => (
           <li

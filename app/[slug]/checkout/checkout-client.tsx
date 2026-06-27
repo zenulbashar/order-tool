@@ -11,6 +11,7 @@ import { useCart } from "../cart-provider";
 import type { PublicVenue } from "../types";
 import { placeOrder } from "./actions";
 import { PaymentStep } from "./payment-step";
+import { rememberCustomerPrefill } from "./prefill-actions";
 
 const fieldClass =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
@@ -33,17 +34,24 @@ export function CheckoutClient({
   venue,
   initialOrderType,
   initialTable,
+  initialName,
+  initialPhone,
 }: {
   venue: PublicVenue;
   initialOrderType: OrderTypeValue;
   initialTable: string;
+  // Name/phone form DEFAULTS resolved server-side (session record, else the
+  // device remember-me cookie, else empty). Pre-filled but fully editable.
+  initialName: string;
+  initialPhone: string;
 }) {
   const { displayLines, subtotalCents, count, lines, clear } = useCart();
 
   const [orderType, setOrderType] = useState<OrderTypeValue>(initialOrderType);
   const [tableLabel, setTableLabel] = useState(initialTable);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState(initialName);
+  const [customerPhone, setCustomerPhone] = useState(initialPhone);
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [payment, setPayment] = useState<PaymentSession | null>(null);
@@ -63,6 +71,9 @@ export function CheckoutClient({
         // Send null (not "") when blank, consistent with tableLabel's shape; the
         // schema accepts both, but this keeps the optional contract uniform.
         customerPhone: customerPhone.trim() ? customerPhone : null,
+        // Optional special request; same blank -> null shape. Server trims,
+        // caps, and stores it — it never affects pricing.
+        notes: notes.trim() ? notes : null,
         lines: lines.map((line) => ({
           itemId: line.itemId,
           // Chosen size id only (null for flat items) — never a price. The server
@@ -82,6 +93,15 @@ export function CheckoutClient({
         // placeOrder already returned, and claimOrder only sets the nullable
         // customer_id on this order (token possession + session = proof).
         void claimOrder(venue.slug, result.token).catch(() => {});
+        // Remember name+phone on THIS device for next time's pre-fill (item 4).
+        // Fire-and-forget and guest-gated server-side: it's skipped for a signed-
+        // in customer (their session pre-fills) and only ever sets a non-auth
+        // name+phone cookie — no session, no history access.
+        void rememberCustomerPrefill(
+          venue.slug,
+          customerName,
+          customerPhone.trim() ? customerPhone : null,
+        ).catch(() => {});
         setPayment({
           clientSecret: result.clientSecret,
           stripeAccountId: result.stripeAccountId,
@@ -240,6 +260,19 @@ export function CheckoutClient({
             maxLength={30}
             autoComplete="tel"
             className={`mt-1 ${fieldClass}`}
+          />
+        </label>
+
+        <label className="block text-sm font-medium text-gray-900">
+          Order notes{" "}
+          <span className="font-normal text-gray-400">(optional)</span>
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            maxLength={280}
+            rows={2}
+            placeholder="Special requests, e.g. no onion"
+            className={`mt-1 resize-none ${fieldClass}`}
           />
         </label>
 

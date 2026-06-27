@@ -640,6 +640,22 @@ export const customerNameSchema = z
   .min(1, "Enter your name.")
   .max(80, "Name is too long.");
 
+/**
+ * OPTIONAL free-text order note / special request (e.g. "no onion", "extra
+ * napkins"). Trimmed; empty -> null (same nullish->null contract as
+ * customerPhone / tableLabel). Capped at 280 chars: a special request is short,
+ * it prints cleanly on an 80mm thermal ticket, and the bound limits abuse. This
+ * is CAPTURED TEXT ONLY — it is never a pricing input. It is rendered as a plain
+ * (React-escaped) text node on the kitchen card / receipt / confirmation /
+ * history, never as raw HTML.
+ */
+export const orderNotesSchema = z
+  .string()
+  .trim()
+  .max(280, "Order notes are too long (280 characters max).")
+  .nullish()
+  .transform((value) => (value && value.length > 0 ? value : null));
+
 const orderLineSchema = z.object({
   itemId: idSchema,
   // The chosen size variant id, or null for a flat-priced item. SHAPE ONLY: the
@@ -684,6 +700,8 @@ export const placeOrderSchema = z
       .max(30, "Phone number is too long.")
       .nullish()
       .transform((value) => (value && value.length > 0 ? value : null)),
+    // Optional special request; captured + stored, NEVER priced (see schema).
+    notes: orderNotesSchema,
     lines: z
       .array(orderLineSchema)
       .min(1, "Your cart is empty.")
@@ -703,6 +721,7 @@ export type PlaceOrderInput = {
   tableLabel?: string | null;
   customerName: string;
   customerPhone?: string | null;
+  notes?: string | null;
   lines: {
     itemId: string;
     variantId?: string | null;

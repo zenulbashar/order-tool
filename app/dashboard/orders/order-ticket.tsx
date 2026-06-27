@@ -59,6 +59,17 @@ export function OrderTicket({
         {order.customerPhone ? <p>{order.customerPhone}</p> : null}
       </div>
 
+      {/* Special request, boxed so it stands out on paper. Plain text node
+          (React-escaped); break long words so it never overflows the 72mm. */}
+      {order.notes ? (
+        <div className="mt-2 border-2 border-black px-2 py-1">
+          <p className="text-[11px] font-bold uppercase">Notes</p>
+          <p className="break-words whitespace-pre-wrap font-bold">
+            {order.notes}
+          </p>
+        </div>
+      ) : null}
+
       <ul className="mt-2 border-t border-dashed border-black pt-1">
         {order.items.map((item) => (
           <li key={item.id} className="mt-1 first:mt-0">
