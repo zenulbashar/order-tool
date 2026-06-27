@@ -550,6 +550,25 @@ export const OPENING_DAYS = [
   { key: "sun", label: "Sunday", day: 6 },
 ] as const;
 
+/**
+ * Owner-editable scheduled-pickup window (Phase 8 refinement). Reuses the
+ * non-negative whole-number contract; the DB also has `>= 0` checks. The server
+ * gate enforces whatever is stored — the client never supplies the lead/max.
+ */
+const schedulingLeadMinutesSchema = wholeNumberSchema(
+  "Lead time must be a whole number of minutes.",
+).refine(
+  (value) => value <= 1440,
+  "Lead time must be 24 hours (1440 minutes) or less.",
+);
+
+const schedulingMaxDaysAheadSchema = wholeNumberSchema(
+  "Days ahead must be a whole number.",
+).refine(
+  (value) => value >= 1 && value <= 30,
+  "Days ahead must be between 1 and 30.",
+);
+
 export const venueDetailsSchema = z
   .object({
     streetAddress: optionalDetailSchema(120, "Street address"),
@@ -561,6 +580,8 @@ export const venueDetailsSchema = z
     latitude: coordinateSchema(-90, 90, "Latitude"),
     longitude: coordinateSchema(-180, 180, "Longitude"),
     openingHours: openingHoursSchema,
+    schedulingLeadMinutes: schedulingLeadMinutesSchema,
+    schedulingMaxDaysAhead: schedulingMaxDaysAheadSchema,
   })
   .refine((data) => (data.latitude === null) === (data.longitude === null), {
     message: "Enter both latitude and longitude, or leave both blank.",

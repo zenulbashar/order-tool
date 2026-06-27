@@ -26,6 +26,8 @@ type VenueDetails = {
   latitude: number | null;
   longitude: number | null;
   schedulingEnabled: boolean;
+  schedulingLeadMinutes: number;
+  schedulingMaxDaysAhead: number;
 };
 
 export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
@@ -190,12 +192,38 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
           <span>
             Accept scheduled pickup orders
             <span className="mt-0.5 block text-xs font-normal text-gray-500">
-              Lets customers choose a pickup time within your opening hours
-              (earliest 20 minutes ahead, up to 7 days out). Requires opening
-              hours set above.
+              Lets customers choose a pickup time within your opening hours, using
+              the window set below. Requires opening hours set above.
             </span>
           </span>
         </label>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="block text-sm font-medium text-gray-900">
+            Earliest pickup (minutes from now)
+            <input
+              name="schedulingLeadMinutes"
+              type="number"
+              min={0}
+              max={1440}
+              step={5}
+              defaultValue={details.schedulingLeadMinutes}
+              className={`mt-1 ${fieldClass}`}
+            />
+          </label>
+          <label className="block text-sm font-medium text-gray-900">
+            Schedule up to (days ahead)
+            <input
+              name="schedulingMaxDaysAhead"
+              type="number"
+              min={1}
+              max={30}
+              step={1}
+              defaultValue={details.schedulingMaxDaysAhead}
+              className={`mt-1 ${fieldClass}`}
+            />
+          </label>
+        </div>
       </div>
 
       {state.error ? (
