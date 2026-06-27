@@ -807,3 +807,64 @@ export const customerEmailSchema = z
     (value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
     "Enter a valid email address.",
   );
+
+/* -------------------------------------------------------------------------- */
+/* AI ordering concierge (#12) — diner "prompt to eat"                        */
+/*                                                                            */
+/* Diner-facing AND unauthenticated, so the proposeCart server action treats   */
+/* this input as hostile: these schemas enforce SHAPE + BOUNDS only. The hard  */
+/* guarantee lives in the action, which re-grounds every item id the model      */
+/* returns against the live, venue-scoped getPublicMenu set — the model can     */
+/* never inject an item, name, or price. Conversation state is EPHEMERAL: the   */
+/* client resends a short capped history each turn and nothing is persisted     */
+/* (no table, no migration).                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Max items the concierge proposes in one turn. The action caps to this AFTER
+ * grounding, regardless of how many ids the model returns, so a runaway
+ * response can never flood the proposal UI.
+ */
+export const MAX_CONCIERGE_ITEMS = 6;
+
+/**
+ * Max prior turns the client may resend for refine context (≈3 exchanges).
+ * Bounds the per-call prompt size (cost); the client slices to this before
+ * sending and the schema rejects anything longer.
+ */
+export const MAX_CONCIERGE_HISTORY = 6;
+
+/** One diner prompt: trimmed, non-empty, short. */
+const conciergeMessageSchema = z
+  .string()
+  .trim()
+  .min(1, "Tell us what you feel like eating.")
+  .max(500, "Message is too long.");
+
+/**
+ * One prior conversation turn the client resends for context. `content` is the
+ * diner's own text (user) or the concierge's prior rationale (assistant) — it is
+ * NEVER a price/name source for the cart (every proposed id is re-grounded
+ * server-side). Bounded more generously than a fresh prompt so a returned
+ * assistant rationale always validates when echoed back next turn.
+ */
+const conciergeTurnSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().trim().min(1).max(2000),
+});
+
+export const conciergeInputSchema = z.object({
+  slug: z.string().trim().toLowerCase().min(1).max(64),
+  message: conciergeMessageSchema,
+  history: z.array(conciergeTurnSchema).max(MAX_CONCIERGE_HISTORY).default([]),
+});
+
+/** One ephemeral conversation turn (shared by the client panel + the action). */
+export type ConciergeTurn = { role: "user" | "assistant"; content: string };
+
+/** What the client sends to proposeCart (input side, before defaults applied). */
+export type ConciergeInput = {
+  slug: string;
+  message: string;
+  history?: ConciergeTurn[];
+};

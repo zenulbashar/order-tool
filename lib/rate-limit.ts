@@ -70,6 +70,10 @@ const CONFIG = {
   // AI (cost-protection — each call is real Anthropic spend). Keyed on venue.
   aiImport: { limit: 10, window: "1 h", prefix: "rl:ai:import" }, // vision (costliest)
   aiCopy: { limit: 30, window: "1 h", prefix: "rl:ai:copy" }, // descriptions (cheap)
+  // CONCIERGE (diner-facing "prompt to eat" — real Anthropic spend + abusable
+  // from the public storefront). Keyed per venue+IP so one diner can't spam a
+  // venue's concierge. Independent of the future fair-use cap (canUseConcierge).
+  aiConcierge: { limit: 15, window: "1 h", prefix: "rl:ai:concierge" },
   // CHECKOUT (moderate — stop junk-order floods, tolerate payment retries).
   checkoutIp: { limit: 20, window: "1 m", prefix: "rl:checkout:ip" },
 } as const;
