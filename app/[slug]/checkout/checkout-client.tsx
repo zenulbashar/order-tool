@@ -11,6 +11,7 @@ import { useCart } from "../cart-provider";
 import type { PublicVenue } from "../types";
 import { placeOrder } from "./actions";
 import { PaymentStep } from "./payment-step";
+import { rememberCustomerPrefill } from "./prefill-actions";
 
 const fieldClass =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
@@ -33,17 +34,23 @@ export function CheckoutClient({
   venue,
   initialOrderType,
   initialTable,
+  initialName,
+  initialPhone,
 }: {
   venue: PublicVenue;
   initialOrderType: OrderTypeValue;
   initialTable: string;
+  // Name/phone form DEFAULTS resolved server-side (session record, else the
+  // device remember-me cookie, else empty). Pre-filled but fully editable.
+  initialName: string;
+  initialPhone: string;
 }) {
   const { displayLines, subtotalCents, count, lines, clear } = useCart();
 
   const [orderType, setOrderType] = useState<OrderTypeValue>(initialOrderType);
   const [tableLabel, setTableLabel] = useState(initialTable);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerName, setCustomerName] = useState(initialName);
+  const [customerPhone, setCustomerPhone] = useState(initialPhone);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -86,6 +93,15 @@ export function CheckoutClient({
         // placeOrder already returned, and claimOrder only sets the nullable
         // customer_id on this order (token possession + session = proof).
         void claimOrder(venue.slug, result.token).catch(() => {});
+        // Remember name+phone on THIS device for next time's pre-fill (item 4).
+        // Fire-and-forget and guest-gated server-side: it's skipped for a signed-
+        // in customer (their session pre-fills) and only ever sets a non-auth
+        // name+phone cookie — no session, no history access.
+        void rememberCustomerPrefill(
+          venue.slug,
+          customerName,
+          customerPhone.trim() ? customerPhone : null,
+        ).catch(() => {});
         setPayment({
           clientSecret: result.clientSecret,
           stripeAccountId: result.stripeAccountId,

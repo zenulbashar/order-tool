@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 
+import { getCustomer } from "@/lib/customer/auth";
+import { readCustomerPrefill } from "@/lib/customer/prefill";
 import { isReservedSlug, normalizeOrderType } from "@/lib/validation";
 
 import { CartProvider } from "../cart-provider";
@@ -24,12 +26,25 @@ export default async function CheckoutPage({
   const venue = await getPublicVenueBySlug(slug);
   if (!venue) notFound();
 
-  const [menu, sp] = await Promise.all([getPublicMenu(venue.id), searchParams]);
+  const [menu, sp, customer] = await Promise.all([
+    getPublicMenu(venue.id),
+    searchParams,
+    getCustomer(venue.id),
+  ]);
   // Carry the storefront's order-type selection; "dinein" (2a) -> "dine_in".
   const initialOrderType = normalizeOrderType(
     typeof sp.type === "string" ? sp.type : undefined,
   );
   const initialTable = typeof sp.table === "string" ? sp.table : "";
+
+  // Name/phone pre-fill DEFAULTS for the form (still fully editable; the server
+  // re-validates everything on placeOrder regardless). PRECEDENCE: a signed-in
+  // customer's account record (session-derived) wins; otherwise fall back to the
+  // device "remember me" cookie (name+phone only, no identity). Guests with
+  // neither get empty fields — today's exact behaviour.
+  const prefill = customer
+    ? { name: customer.name ?? "", phone: customer.phone ?? "" }
+    : ((await readCustomerPrefill()) ?? { name: "", phone: "" });
 
   return (
     <CartProvider slug={venue.slug} menu={menu}>
@@ -37,6 +52,8 @@ export default async function CheckoutPage({
         venue={venue}
         initialOrderType={initialOrderType}
         initialTable={initialTable}
+        initialName={prefill.name}
+        initialPhone={prefill.phone}
       />
     </CartProvider>
   );
