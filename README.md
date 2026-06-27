@@ -41,6 +41,8 @@ npm run dev                  # http://localhost:3000
 | `R2_SECRET_ACCESS_KEY`   | Cloudflare R2    | R2 API token secret.                                                  |
 | `R2_BUCKET_NAME`         | Cloudflare R2    | Bucket that holds menu-item photos.                                   |
 | `R2_PUBLIC_URL`          | Cloudflare R2    | Public base URL photos are served from (stored in `image_url`).       |
+| `UPSTASH_REDIS_REST_URL`   | Rate limiting | Upstash Redis REST URL. Lazy (`lib/rate-limit.ts`); **absent → limiter fails open** (no limiting). |
+| `UPSTASH_REDIS_REST_TOKEN` | Rate limiting | Upstash Redis REST token.                                             |
 
 ## Database & migrations
 
@@ -107,8 +109,10 @@ the order is confirmed **only** by the signature-verified webhook — never inli
 
 ### Deferred hardening
 
-- **Rate limiting / bot protection** (e.g. Cloudflare Turnstile) on the public
-  checkout endpoint — not yet implemented; sane input bounds only for now.
+- **Rate limiting** on the public checkout endpoint is now implemented at the
+  app level (per-IP, fail-open) — see [Rate limiting](#rate-limiting). A
+  CAPTCHA / bot-challenge (e.g. Cloudflare Turnstile) stays the **edge's** job
+  and is not in the app.
 - **Server-side idempotency key** to dedupe repeat submissions — the
   PaymentIntent is created with an idempotency key (the order id) and the
   webhook's status guard is idempotent; full dedupe of repeat _order_
@@ -272,6 +276,54 @@ the bucket name and public URL, with the token, into env — `.env.local` for
 local runs and **Vercel (Production)**. The build proceeds without them (lazy
 init); they're only needed at runtime to actually upload and serve photos.
 
+## Rate limiting
+
+Sensitive, cost-bearing, and abusable endpoints are rate-limited **at the app
+level** as defense-in-depth — the **second** line behind the edge (Cloudflare /
+Vercel), which absorbs volumetric floods. App-level limiting catches abuse that
+is lower-volume, distributed, or passes the edge: magic-link spam / sign-in
+probing, the cost-bearing AI calls, and junk-order floods.
+
+Serverless functions don't share memory, so an in-memory counter can't
+rate-limit; the limiter (`lib/rate-limit.ts`) uses **Upstash Redis** via
+`@upstash/ratelimit` (sliding window). It is **lazy** (build/typecheck/lint run
+with no env, like the Stripe/Anthropic/R2 clients) and **fails open**: if the
+store is unconfigured, unreachable, slow, or errors, the request is **allowed**
+(a Redis blip must never 500 a request or block checkout/sign-in). Enforcement
+is server-side and every key is server-derived (never spoofable client input).
+
+| Endpoint                            | Key                         | Limit                              |
+| ----------------------------------- | --------------------------- | ---------------------------------- |
+| Customer + owner magic-link         | IP **and** email (SHA-256)  | 30/hr per IP, 5 per 15 min / email |
+| Menu import (vision)                | venue                       | 10/hr                              |
+| AI descriptions (single + bulk)     | venue                       | 30/hr                              |
+| Order placement (`placeOrder`)      | IP                          | 20/min                             |
+
+Reads (storefront / menu) are not app-limited (the edge handles volumetric;
+reads are cheap), and the non-AI writes (`publishMenu` / `saveItemDescriptions`)
+are not limited (no cost / email, already venue-scoped). When limited, the user
+sees a friendly "too many…" message in the existing form error slot — never a
+scary error. The checkout limit deliberately errs **loose** (blocking a real
+sale is worse than a few junk orders, which the payment step rejects anyway);
+raise `checkoutIp` if a busy single-NAT venue ever trips it.
+
+**Client IP behind the proxies.** There is no `request.ip` in Next 16, so the IP
+is read from headers in this order: `cf-connecting-ip` (Cloudflare overwrites any
+client-supplied value, so it's the trustworthy client IP in prod) →
+`x-vercel-forwarded-for` / `x-real-ip` (Vercel-set) → first hop of
+`x-forwarded-for` (last resort, never authoritative) → `"unknown"`. This defeats
+both collapsing everyone to one proxy IP and trusting a spoofed per-request IP.
+
+Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (Upstash console) in
+Vercel (Production); without them the limiter fails open (no limiting), which is
+fine in dev / preview.
+
+> Edge's job / future: a direct POST to the Auth.js `/api/auth/signin/resend`
+> route bypasses the owner-sign-in wrapper and is covered by the edge. An
+> optional `sendVerificationRequest` chokepoint in `lib/auth.ts` would add
+> app-level coverage there as a fast-follow (left out so owner auth stays
+> stable).
+
 ## Project structure
 
 ```
@@ -325,3 +377,5 @@ Configure these in the Vercel project (Production):
 - `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` — Stripe **test** keys.
 - `STRIPE_WEBHOOK_SECRET` — added after registering the webhook (see
   [Payments](#payments-phase-2c)).
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — Upstash Redis for rate
+  limiting (see [Rate limiting](#rate-limiting)). Absent → limiter fails open.

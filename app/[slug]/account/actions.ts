@@ -1,6 +1,7 @@
 "use server";
 
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { headers } from "next/headers";
 
 import {
   createLoginToken,
@@ -15,6 +16,7 @@ import {
   orders,
   venues,
 } from "@/lib/db/schema";
+import { checkRateLimit, clientIpFromHeaders, emailKey } from "@/lib/rate-limit";
 import { scopedToVenue } from "@/lib/tenant";
 import { getBaseUrl } from "@/lib/url";
 import { customerEmailSchema, idSchema, isReservedSlug } from "@/lib/validation";
@@ -61,6 +63,25 @@ export async function requestCustomerMagicLink(
     };
   }
   const email = parsed.data;
+
+  // Rate-limit the request server-side BEFORE minting/sending anything: per-IP
+  // (one IP can't spam many inboxes) AND per-email (one inbox can't be flooded
+  // from many IPs). Fail-open — a limiter/store error returns success and never
+  // blocks a legit sign-in. The send logic below is unchanged; this only gates
+  // whether we reach it. The limited response is an intentional non-generic
+  // result (it discloses rate-limit state, never account existence).
+  const ip = clientIpFromHeaders(await headers());
+  const [ipLimit, emailLimit] = await Promise.all([
+    checkRateLimit("authIp", ip),
+    checkRateLimit("authEmail", emailKey(email)),
+  ]);
+  if (!ipLimit.success || !emailLimit.success) {
+    return {
+      ok: false,
+      error:
+        "Too many sign-in link requests. Please wait a few minutes and try again.",
+    };
+  }
 
   try {
     const token = await createLoginToken(venue.id, email);
