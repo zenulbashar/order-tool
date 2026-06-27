@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { canUseConcierge } from "@/lib/concierge";
 import { getBaseUrl } from "@/lib/url";
 import { isReservedSlug } from "@/lib/validation";
 
@@ -67,6 +68,11 @@ export default async function StorefrontPage({
   // ever references currently available items.
   const recommendations = await getRecommendations(venue.id, menu);
 
+  // AI ordering concierge (#12) on/off — the SINGLE billing seam. Ungated for
+  // now (always true); gates whether the storefront renders the prompt box. The
+  // server action re-checks it too, so a forged client can never bypass it.
+  const conciergeEnabled = await canUseConcierge(venue);
+
   // Per-venue structured data (SEO). Built from the SAME venue + menu already
   // loaded above — no extra query — and emits only owner-entered fields.
   const canonicalUrl = `${baseUrl}/${venue.slug}`;
@@ -79,6 +85,7 @@ export default async function StorefrontPage({
         menu={menu}
         initialTable={initialTable}
         recommendations={recommendations}
+        conciergeEnabled={conciergeEnabled}
       />
     </>
   );

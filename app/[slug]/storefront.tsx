@@ -8,6 +8,7 @@ import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
 import { CartBar } from "./cart-bar";
 import { CartProvider, useCart } from "./cart-provider";
 import { CategoryNav } from "./category-nav";
+import { ConciergePanel } from "./concierge/concierge-panel";
 import { DietaryFilter } from "./dietary-filter";
 import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
@@ -33,16 +34,23 @@ export function Storefront({
   menu,
   initialTable,
   recommendations,
+  conciergeEnabled,
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
   recommendations: PublicRecommendations;
+  conciergeEnabled: boolean;
 }) {
   return (
     <CartProvider slug={venue.slug} menu={menu}>
       <RecommendationsProvider menu={menu} recommendations={recommendations}>
-        <StorefrontInner venue={venue} menu={menu} initialTable={initialTable} />
+        <StorefrontInner
+          venue={venue}
+          menu={menu}
+          initialTable={initialTable}
+          conciergeEnabled={conciergeEnabled}
+        />
       </RecommendationsProvider>
     </CartProvider>
   );
@@ -52,10 +60,12 @@ function StorefrontInner({
   venue,
   menu,
   initialTable,
+  conciergeEnabled,
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
+  conciergeEnabled: boolean;
 }) {
   const { addItem } = useCart();
   const [orderType, setOrderType] = useState<OrderType>(
@@ -206,6 +216,20 @@ function StorefrontInner({
           onTableLabel={setTableLabel}
         />
       </div>
+
+      {/* AI ordering concierge (#12). Gated on the single canUseConcierge seam
+          and hidden when there's no menu to ground in. Proposes items; tapping
+          one routes through setActiveItem -> the existing ItemModifierSheet ->
+          addItem, exactly like the menu tiles — never a direct cart write. */}
+      {conciergeEnabled && menu.length > 0 ? (
+        <div className="px-5 pb-4">
+          <ConciergePanel
+            slug={venue.slug}
+            menu={menu}
+            onSelectItem={setActiveItem}
+          />
+        </div>
+      ) : null}
 
       {menu.length > 0 ? (
         <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/95 backdrop-blur">
