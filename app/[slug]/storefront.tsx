@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import type { SchedulingConfig } from "@/lib/schedule";
 import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
 
 import { CartBar } from "./cart-bar";
@@ -14,7 +13,6 @@ import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
 import { OrderTypeSelector } from "./order-type-selector";
-import { SchedulePicker } from "./schedule-picker";
 import { itemSearchText, matchesQuery } from "./search";
 import type { OrderType, PublicItem, PublicMenu, PublicVenue } from "./types";
 
@@ -27,21 +25,14 @@ export function Storefront({
   venue,
   menu,
   initialTable,
-  nowMs,
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
-  nowMs: number;
 }) {
   return (
     <CartProvider slug={venue.slug} menu={menu}>
-      <StorefrontInner
-        venue={venue}
-        menu={menu}
-        initialTable={initialTable}
-        nowMs={nowMs}
-      />
+      <StorefrontInner venue={venue} menu={menu} initialTable={initialTable} />
     </CartProvider>
   );
 }
@@ -50,48 +41,21 @@ function StorefrontInner({
   venue,
   menu,
   initialTable,
-  nowMs,
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
-  nowMs: number;
 }) {
   const { addItem } = useCart();
   const [orderType, setOrderType] = useState<OrderType>(
     initialTable ? "dinein" : "pickup",
   );
   const [tableLabel, setTableLabel] = useState(initialTable);
-  const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<PublicItem | null>(null);
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<DietaryTag[]>([]);
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
-
-  // Scheduled-pickup config for the slot picker (Phase 8). Offered only when the
-  // owner enabled scheduling AND has opening hours set; memoized so the picker's
-  // slot computation is stable. The server gate re-validates against these.
-  const scheduling = useMemo<SchedulingConfig | null>(
-    () =>
-      venue.schedulingEnabled &&
-      venue.openingHours &&
-      venue.openingHours.length > 0
-        ? {
-            timeZone: venue.timezone,
-            openingHours: venue.openingHours,
-            leadMinutes: venue.schedulingLeadMinutes,
-            maxDaysAhead: venue.schedulingMaxDaysAhead,
-          }
-        : null,
-    [venue],
-  );
-
-  // Switching away from pickup clears any scheduled time (dine-in is always now).
-  function handleOrderType(next: OrderType) {
-    setOrderType(next);
-    if (next !== "pickup") setScheduledFor(null);
-  }
 
   // The dietary tags actually in use across this venue's menu, in canonical
   // order — only these become filter chips, so there are never dead chips.
@@ -223,21 +187,13 @@ function StorefrontInner({
         </Link>
       </header>
 
-      <div className="space-y-4 px-5 pb-4">
+      <div className="px-5 pb-4">
         <OrderTypeSelector
           orderType={orderType}
-          onOrderType={handleOrderType}
+          onOrderType={setOrderType}
           tableLabel={tableLabel}
           onTableLabel={setTableLabel}
         />
-        {orderType === "pickup" ? (
-          <SchedulePicker
-            scheduling={scheduling}
-            scheduledFor={scheduledFor}
-            onScheduledFor={setScheduledFor}
-            nowMs={nowMs}
-          />
-        ) : null}
       </div>
 
       {menu.length > 0 ? (
@@ -307,7 +263,6 @@ function StorefrontInner({
         slug={venue.slug}
         orderType={orderType}
         tableLabel={tableLabel}
-        scheduledFor={scheduledFor}
       />
     </div>
   );

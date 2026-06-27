@@ -37,10 +37,6 @@ export default async function CheckoutPage({
     typeof sp.type === "string" ? sp.type : undefined,
   );
   const initialTable = typeof sp.table === "string" ? sp.table : "";
-  // Scheduled pickup wall-clock carried from the storefront (Phase 8). A pre-fill
-  // only — placeOrder re-validates it server-side against the venue's hours/tz.
-  const initialScheduledFor =
-    typeof sp.scheduledFor === "string" ? sp.scheduledFor : null;
 
   // Name/phone pre-fill DEFAULTS for the form (still fully editable; the server
   // re-validates everything on placeOrder regardless). PRECEDENCE: a signed-in
@@ -57,7 +53,6 @@ export default async function CheckoutPage({
         venue={venue}
         initialOrderType={initialOrderType}
         initialTable={initialTable}
-        initialScheduledFor={initialScheduledFor}
         initialName={prefill.name}
         initialPhone={prefill.phone}
         nowMs={requestNowMs()}

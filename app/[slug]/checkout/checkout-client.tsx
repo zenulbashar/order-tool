@@ -36,7 +36,6 @@ export function CheckoutClient({
   venue,
   initialOrderType,
   initialTable,
-  initialScheduledFor,
   initialName,
   initialPhone,
   nowMs,
@@ -44,8 +43,6 @@ export function CheckoutClient({
   venue: PublicVenue;
   initialOrderType: OrderTypeValue;
   initialTable: string;
-  // Scheduled pickup wall-clock carried from the storefront, or null for ASAP.
-  initialScheduledFor: string | null;
   // Name/phone form DEFAULTS resolved server-side (session record, else the
   // device remember-me cookie, else empty). Pre-filled but fully editable.
   initialName: string;
@@ -58,9 +55,7 @@ export function CheckoutClient({
 
   const [orderType, setOrderType] = useState<OrderTypeValue>(initialOrderType);
   const [tableLabel, setTableLabel] = useState(initialTable);
-  const [scheduledFor, setScheduledFor] = useState<string | null>(
-    initialScheduledFor,
-  );
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState(initialName);
   const [customerPhone, setCustomerPhone] = useState(initialPhone);
   const [notes, setNotes] = useState("");
