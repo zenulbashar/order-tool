@@ -30,7 +30,9 @@ export default async function DashboardLayout({
 
   return (
     <div>
-      <div className="border-b border-gray-200 bg-white">
+      {/* print:hidden so dashboard prints (the orders ticket, the tables QR
+          sheet) show only page content, never this venue-switcher chrome. */}
+      <div className="border-b border-gray-200 bg-white print:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-3">
           <div className="flex min-w-0 items-center gap-2">
             <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400">
