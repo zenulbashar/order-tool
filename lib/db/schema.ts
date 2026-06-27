@@ -133,6 +133,38 @@ export const venueMembers = pgTable(
   ],
 );
 
+/**
+ * Dine-in tables (Phase 10). Owner-managed dining tables for a venue. `label`
+ * is the free-text table name (e.g. "1", "Patio 3") shown to staff and encoded
+ * into a per-table QR deep-link ({baseUrl}/{slug}?table=<label>) that pre-fills
+ * dine-in on the storefront. Venue-scoped with IDOR-safe writes, mirroring
+ * menu_item_variants. Additive: a brand-new table, no existing column altered.
+ */
+export const venueTables = pgTable(
+  "venue_tables",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    // No DB default; set to MAX(sort_order)+1 within the venue on insert.
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("venue_tables_venue_idx").on(table.venueId),
+    // Case-insensitive uniqueness per venue so two tables can't share a label
+    // (and therefore an identical QR deep-link). Mirrors users_email_lower_idx.
+    uniqueIndex("venue_tables_venue_label_idx").on(
+      table.venueId,
+      sql`lower(${table.label})`,
+    ),
+  ],
+);
+export type VenueTable = typeof venueTables.$inferSelect;
+
 /* -------------------------------------------------------------------------- */
 /* Auth.js adapter tables                                                     */
 /* JS property names match what @auth/drizzle-adapter expects; DB columns are */

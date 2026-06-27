@@ -44,6 +44,15 @@ export default async function DashboardPage() {
             </p>
           </Link>
           <Link
+            href="/dashboard/tables"
+            className="block rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 hover:bg-gray-50"
+          >
+            <p className="text-sm font-medium text-gray-900">Tables</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Name your dine-in tables and print a QR code for each one.
+            </p>
+          </Link>
+          <Link
             href="/dashboard/settings"
             className="block rounded-lg border border-gray-200 p-6 transition hover:border-gray-300 hover:bg-gray-50"
           >

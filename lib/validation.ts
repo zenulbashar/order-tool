@@ -38,6 +38,18 @@ export const slugSchema = z
     "Use lowercase letters, numbers, and single hyphens.",
   );
 
+/**
+ * Dine-in table label (Phase 10), e.g. "1" or "Patio 3". Required and trimmed.
+ * Capped at 40 to MATCH the checkout tableLabel bound (see placeOrderSchema),
+ * so a label baked into a QR deep-link can never exceed what checkout accepts
+ * when the customer lands on {slug}?table=<label>.
+ */
+export const tableLabelSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter a table name.")
+  .max(40, "Table name is too long.");
+
 /* -------------------------------------------------------------------------- */
 /* Menu catalog (Phase 1)                                                     */
 /*                                                                            */
