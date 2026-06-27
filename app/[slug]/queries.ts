@@ -1,4 +1,6 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { db } from "@/lib/db";
@@ -9,12 +11,14 @@ import {
   menuItemVariants,
   modifierGroups,
   modifierOptions,
+  orderItems,
+  orders,
   venues,
 } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 import { normalizeDietaryTags } from "@/lib/validation";
 
-import type { PublicMenu, PublicVenue } from "./types";
+import type { PublicMenu, PublicRecommendations, PublicVenue } from "./types";
 
 /**
  * Public venue resolver — NO session/user involved (cf. getCurrentVenue, which
@@ -225,3 +229,166 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
 
   return menu;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Frequently-bought-together recommendations (#11)                           */
+/*                                                                            */
+/* READ-ONLY and venue-scoped: an aggregate co-occurrence + popularity signal */
+/* computed from EXISTING order_items.menu_item_id soft refs over this venue's */
+/* CONFIRMED (paid) orders only. NO migration, NO new columns, NO writes, and  */
+/* NO change to the cart/checkout/payment/webhook/order paths — recommended    */
+/* items enter the cart through the existing item flow. Nothing crosses venues.*/
+/* -------------------------------------------------------------------------- */
+
+// Tuning constants. A pair must co-occur in at least MIN_PAIR_ORDERS CONFIRMED
+// orders to count as signal (1 is coincidence/noise). Below MIN_VENUE_ORDERS
+// confirmed orders the venue has too little history to recommend at all, so
+// every surface hides (cold-start). Per-anchor partners and the popularity list
+// are capped so the cached payload — and the client bundle it ships in — stay
+// bounded regardless of menu size; the storefront only ever shows up to 4.
+const MIN_PAIR_ORDERS = 2;
+const MIN_VENUE_ORDERS = 5;
+const MAX_PARTNERS_PER_ANCHOR = 8;
+const MAX_POPULAR = 20;
+
+type CoOccurrence = {
+  byItem: Record<string, string[]>;
+  popular: string[];
+  hasHistory: boolean;
+};
+
+/**
+ * The expensive, slow-moving half: the per-venue co-occurrence + popularity
+ * aggregate over order_items, wrapped in the Next data cache so it runs at most
+ * once per venue per hour instead of on every storefront load (React cache()
+ * alone only dedups within one request). Returns ONLY menu-item ids + a boolean
+ * — no counts leave here: pairs are pre-filtered by MIN_PAIR_ORDERS and sorted
+ * strongest-first, so list position alone encodes strength.
+ *
+ * unstable_cache is the documented mechanism for caching non-fetch DB queries in
+ * a project that has NOT adopted Cache Components (Next 16 "Caching and
+ * Revalidating (Previous Model)" guide). Keyed by venueId, 1h revalidate, tagged
+ * per venue. Availability is deliberately NOT baked in here: it is applied live
+ * in getRecommendations against the current menu, so an item toggled unavailable
+ * drops from recommendations on the next load, never up to an hour later.
+ */
+const getVenueCoOccurrence = (venueId: string): Promise<CoOccurrence> =>
+  unstable_cache(
+    async (): Promise<CoOccurrence> => {
+      const a = alias(orderItems, "a");
+      const b = alias(orderItems, "b");
+
+      const [pairRows, popularRows, confirmedRows] = await Promise.all([
+        // Self-join within the venue: how many CONFIRMED orders contain BOTH
+        // distinct items. COUNT(DISTINCT order_id) so a multi-line order counts
+        // once; both directions kept so lookup by anchor is direct. Null soft
+        // refs (deleted items) are excluded, never recommended.
+        db
+          .select({
+            anchor: a.menuItemId,
+            partner: b.menuItemId,
+            together: sql<number>`count(distinct ${a.orderId})::int`,
+          })
+          .from(a)
+          .innerJoin(
+            b,
+            and(eq(b.orderId, a.orderId), ne(b.menuItemId, a.menuItemId)),
+          )
+          .innerJoin(orders, eq(orders.id, a.orderId))
+          .where(
+            and(
+              scopedToVenue(a.venueId, venueId),
+              eq(orders.status, "confirmed"),
+              isNotNull(a.menuItemId),
+              isNotNull(b.menuItemId),
+            ),
+          )
+          .groupBy(a.menuItemId, b.menuItemId)
+          .having(sql`count(distinct ${a.orderId}) >= ${MIN_PAIR_ORDERS}`)
+          .orderBy(desc(sql`count(distinct ${a.orderId})`), asc(b.menuItemId)),
+        // Popularity fallback: confirmed orders containing each item, most first.
+        db
+          .select({
+            itemId: orderItems.menuItemId,
+            orders: sql<number>`count(distinct ${orderItems.orderId})::int`,
+          })
+          .from(orderItems)
+          .innerJoin(orders, eq(orders.id, orderItems.orderId))
+          .where(
+            and(
+              scopedToVenue(orderItems.venueId, venueId),
+              eq(orders.status, "confirmed"),
+              isNotNull(orderItems.menuItemId),
+            ),
+          )
+          .groupBy(orderItems.menuItemId)
+          .orderBy(desc(sql`count(distinct ${orderItems.orderId})`))
+          .limit(MAX_POPULAR),
+        // History gate: how many confirmed orders this venue has at all.
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(orders)
+          .where(
+            and(
+              scopedToVenue(orders.venueId, venueId),
+              eq(orders.status, "confirmed"),
+            ),
+          ),
+      ]);
+
+      const byItem: Record<string, string[]> = {};
+      for (const { anchor, partner } of pairRows) {
+        if (!anchor || !partner) continue; // defensive; SQL already drops nulls
+        const list = (byItem[anchor] ??= []);
+        if (list.length < MAX_PARTNERS_PER_ANCHOR) list.push(partner);
+      }
+
+      const popular = popularRows
+        .map((row) => row.itemId)
+        .filter((id): id is string => id !== null);
+
+      const hasHistory = (confirmedRows[0]?.count ?? 0) >= MIN_VENUE_ORDERS;
+
+      return { byItem, popular, hasHistory };
+    },
+    ["recommendations", venueId],
+    { revalidate: 3600, tags: [`recommendations:${venueId}`] },
+  )();
+
+/**
+ * The live, cheap half: take the cached aggregate and intersect it with the
+ * CURRENT menu so recommendations only ever reference items a customer can add
+ * right now — available items in active categories, exactly the set
+ * getPublicMenu returns. An anchor or partner that is now unavailable / in an
+ * inactive category / deleted simply isn't in that set and drops out here.
+ * Wrapped in React cache() for per-request dedup. The in-cart exclusion and the
+ * 2–4 cap happen at render, where the cart state lives. Returns a customer-safe
+ * payload (ids + one boolean only). Pass the menu already loaded for the page so
+ * this adds no extra menu read.
+ */
+export const getRecommendations = cache(
+  async (
+    venueId: string,
+    menu: PublicMenu,
+  ): Promise<PublicRecommendations> => {
+    const available = new Set<string>();
+    for (const category of menu) {
+      for (const item of category.items) available.add(item.id);
+    }
+
+    const { byItem, popular, hasHistory } = await getVenueCoOccurrence(venueId);
+
+    const filtered: Record<string, string[]> = {};
+    for (const [anchor, partners] of Object.entries(byItem)) {
+      if (!available.has(anchor)) continue;
+      const live = partners.filter((id) => available.has(id));
+      if (live.length > 0) filtered[anchor] = live;
+    }
+
+    return {
+      byItem: filtered,
+      popular: popular.filter((id) => available.has(id)),
+      hasHistory,
+    };
+  },
+);
