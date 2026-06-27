@@ -8,7 +8,6 @@ import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
 import { getPublicVenueBySlug } from "../../queries";
 import { PaymentStatusPoller } from "./payment-status-poller";
 import { getOrderByToken } from "./queries";
-import { SaveToAccount } from "./save-to-account";
 
 export const dynamic = "force-dynamic";
 
@@ -158,11 +157,23 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
         ) : null}
       </section>
 
-      {/* Opt-in: save this order to a customer account, or sign in to. Never
-          required; the order is complete regardless. */}
+      {/* Opt-in account association (#7). A SIGNED-IN customer's order is already
+          auto-linked at checkout (the fire-and-forget claimOrder), so it's
+          already in their history — we confirm that and point to it rather than
+          prompting a redundant "save". A GUEST gets the invitation to sign in and
+          claim it. Never required; the order is complete either way. */}
       <section className="border-t border-gray-100 px-5 py-5">
         {customer ? (
-          <SaveToAccount slug={venue.slug} token={order.publicToken} />
+          <p className="text-sm text-gray-600">
+            Saved to your account.{" "}
+            <Link
+              href={`/${venue.slug}/account`}
+              className="font-medium underline"
+              style={{ color: "var(--brand)" }}
+            >
+              View your orders
+            </Link>
+          </p>
         ) : (
           <Link
             href={`/${venue.slug}/account`}
