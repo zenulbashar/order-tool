@@ -201,6 +201,7 @@ export function CartUpsell({
       title="Add a drink or side?"
       items={items}
       onSelect={onSelect}
+      className="mt-5 border-t border-gray-100 pt-5"
     />
   );
 }

@@ -6,7 +6,7 @@ import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
 import { CartReview } from "./cart-review";
-import type { OrderType } from "./types";
+import type { OrderType, PublicItem } from "./types";
 
 /**
  * Persistent cart bar. Hidden when the cart is empty; otherwise sticks to the
@@ -18,10 +18,14 @@ export function CartBar({
   slug,
   orderType,
   tableLabel,
+  onSelectItem,
 }: {
   slug: string;
   orderType: OrderType;
   tableLabel: string;
+  // Open an item through the existing modifier sheet — passed to the cart-review
+  // upsell so a recommended add still goes through required selections + pricing.
+  onSelectItem: (item: PublicItem) => void;
 }) {
   const { count, subtotalCents } = useCart();
   const [open, setOpen] = useState(false);
@@ -49,6 +53,7 @@ export function CartBar({
           orderType={orderType}
           tableLabel={tableLabel}
           onClose={() => setOpen(false)}
+          onSelectItem={onSelectItem}
         />
       ) : null}
     </>

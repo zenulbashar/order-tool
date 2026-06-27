@@ -16,15 +16,20 @@ export function RecommendationRow({
   title,
   items,
   onSelect,
+  className,
 }: {
   title: string;
   items: PublicItem[];
   onSelect: (item: PublicItem) => void;
+  // Optional wrapper classes (e.g. a separator for the cart surface). Applied to
+  // the <section>, so it only renders when the row itself does — never a stray
+  // empty bordered box when there are no recommendations.
+  className?: string;
 }) {
   if (items.length === 0) return null;
 
   return (
-    <section aria-label={title}>
+    <section aria-label={title} className={className}>
       <h3 className="text-sm font-medium text-gray-900">{title}</h3>
       <ul className="mt-2 flex gap-3 overflow-x-auto pb-1">
         {items.map((item) => {

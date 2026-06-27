@@ -275,6 +275,7 @@ function StorefrontInner({
         slug={venue.slug}
         orderType={orderType}
         tableLabel={tableLabel}
+        onSelectItem={setActiveItem}
       />
     </div>
   );
