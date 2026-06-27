@@ -69,6 +69,8 @@ export default async function SettingsPage() {
               latitude: venue.latitude,
               longitude: venue.longitude,
               schedulingEnabled: venue.schedulingEnabled,
+              schedulingLeadMinutes: venue.schedulingLeadMinutes,
+              schedulingMaxDaysAhead: venue.schedulingMaxDaysAhead,
             }}
           />
         </div>

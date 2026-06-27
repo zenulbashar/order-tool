@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { requestNowMs } from "@/lib/schedule";
 import { getBaseUrl } from "@/lib/url";
 import { isReservedSlug } from "@/lib/validation";
 
@@ -66,12 +65,7 @@ export default async function StorefrontPage({
   return (
     <>
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
-      <Storefront
-        venue={venue}
-        menu={menu}
-        initialTable={initialTable}
-        nowMs={requestNowMs()}
-      />
+      <Storefront venue={venue} menu={menu} initialTable={initialTable} />
     </>
   );
 }

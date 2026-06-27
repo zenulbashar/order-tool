@@ -118,6 +118,8 @@ export async function updateVenueDetails(
     latitude: formData.get("latitude") ?? "",
     longitude: formData.get("longitude") ?? "",
     openingHours: hours.value,
+    schedulingLeadMinutes: formData.get("schedulingLeadMinutes") ?? "",
+    schedulingMaxDaysAhead: formData.get("schedulingMaxDaysAhead") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -139,6 +141,8 @@ export async function updateVenueDetails(
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
       openingHours: parsed.data.openingHours,
+      schedulingLeadMinutes: parsed.data.schedulingLeadMinutes,
+      schedulingMaxDaysAhead: parsed.data.schedulingMaxDaysAhead,
       schedulingEnabled,
     })
     .where(eq(venues.id, venue.id));
