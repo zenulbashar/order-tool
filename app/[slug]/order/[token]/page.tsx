@@ -143,6 +143,19 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
             ${formatCents(order.totalCents)}
           </span>
         </div>
+
+        {/* Special request the customer left, echoed back. Plain (React-escaped)
+            text node — never raw HTML. */}
+        {order.notes ? (
+          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <p className="text-xs uppercase tracking-wide text-gray-400">
+              Notes
+            </p>
+            <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-gray-700">
+              {order.notes}
+            </p>
+          </div>
+        ) : null}
       </section>
 
       {/* Opt-in: save this order to a customer account, or sign in to. Never

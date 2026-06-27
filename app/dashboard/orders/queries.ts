@@ -30,6 +30,8 @@ export type KitchenOrder = {
   tableLabel: string | null;
   customerName: string;
   customerPhone: string | null;
+  // Optional customer special request (e.g. "no onion"); rendered as plain text.
+  notes: string | null;
   fulfillmentStatus: FulfillmentStatus;
   subtotalCents: number;
   totalCents: number;
@@ -65,6 +67,7 @@ export async function getVenueOrders(
       tableLabel: orders.tableLabel,
       customerName: orders.customerName,
       customerPhone: orders.customerPhone,
+      notes: orders.notes,
       fulfillmentStatus: orders.fulfillmentStatus,
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
@@ -157,6 +160,7 @@ export async function getVenueOrders(
     tableLabel: order.tableLabel,
     customerName: order.customerName,
     customerPhone: order.customerPhone,
+    notes: order.notes,
     fulfillmentStatus: order.fulfillmentStatus,
     subtotalCents: order.subtotalCents,
     totalCents: order.totalCents,

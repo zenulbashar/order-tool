@@ -21,6 +21,8 @@ export type ConfirmedOrder = {
   orderType: "pickup" | "dine_in";
   tableLabel: string | null;
   customerName: string;
+  // Optional customer special request; rendered as plain (escaped) text.
+  notes: string | null;
   subtotalCents: number;
   totalCents: number;
   createdAt: Date;
@@ -47,6 +49,7 @@ export async function getOrderByToken(
       orderType: orders.orderType,
       tableLabel: orders.tableLabel,
       customerName: orders.customerName,
+      notes: orders.notes,
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
       createdAt: orders.createdAt,
@@ -109,6 +112,7 @@ export async function getOrderByToken(
     orderType: order.orderType,
     tableLabel: order.tableLabel,
     customerName: order.customerName,
+    notes: order.notes,
     subtotalCents: order.subtotalCents,
     totalCents: order.totalCents,
     createdAt: order.createdAt,
