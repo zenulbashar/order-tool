@@ -301,6 +301,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
             tableLabel: data.orderType === "dine_in" ? data.tableLabel : null,
             customerName: data.customerName,
             customerPhone: data.customerPhone,
+            // Additive capture ONLY: stored as-is from the validated/trimmed
+            // input and never read back into any total. The recompute above and
+            // the PaymentIntent below are byte-for-byte unchanged.
+            notes: data.notes ?? null,
             status: "pending_payment",
             subtotalCents,
             totalCents,

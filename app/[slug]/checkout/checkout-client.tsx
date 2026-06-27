@@ -44,6 +44,7 @@ export function CheckoutClient({
   const [tableLabel, setTableLabel] = useState(initialTable);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [payment, setPayment] = useState<PaymentSession | null>(null);
@@ -63,6 +64,9 @@ export function CheckoutClient({
         // Send null (not "") when blank, consistent with tableLabel's shape; the
         // schema accepts both, but this keeps the optional contract uniform.
         customerPhone: customerPhone.trim() ? customerPhone : null,
+        // Optional special request; same blank -> null shape. Server trims,
+        // caps, and stores it — it never affects pricing.
+        notes: notes.trim() ? notes : null,
         lines: lines.map((line) => ({
           itemId: line.itemId,
           // Chosen size id only (null for flat items) — never a price. The server
@@ -240,6 +244,19 @@ export function CheckoutClient({
             maxLength={30}
             autoComplete="tel"
             className={`mt-1 ${fieldClass}`}
+          />
+        </label>
+
+        <label className="block text-sm font-medium text-gray-900">
+          Order notes{" "}
+          <span className="font-normal text-gray-400">(optional)</span>
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            maxLength={280}
+            rows={2}
+            placeholder="Special requests, e.g. no onion"
+            className={`mt-1 resize-none ${fieldClass}`}
           />
         </label>
 
