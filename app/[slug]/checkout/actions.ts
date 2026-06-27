@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 
 import { and, eq, inArray } from "drizzle-orm";
+import { headers } from "next/headers";
 
 import { db } from "@/lib/db";
 import {
@@ -15,6 +16,7 @@ import {
   orders,
   venues,
 } from "@/lib/db/schema";
+import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import {
   computeApplicationFeeCents,
   getStripe,
@@ -101,6 +103,19 @@ type LinePlan = {
  * opaque public_token on success — the client navigates to the confirmation.
  */
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
+  // Moderate per-IP gate IN FRONT of placement — the first statement, before any
+  // DB work or PaymentIntent: stops junk-order floods while tolerating a few
+  // payment retries. Fail-open: a limiter/store error returns success and never
+  // blocks a real order. Everything below (recompute, snapshots, app fee,
+  // PaymentIntent, idempotency) is byte-for-byte unchanged.
+  const ip = clientIpFromHeaders(await headers());
+  const rate = await checkRateLimit("checkoutIp", ip);
+  if (!rate.success) {
+    return reject(
+      "You're sending orders too quickly. Please wait a moment, then try again.",
+    );
+  }
+
   const parsed = placeOrderSchema.safeParse(input);
   if (!parsed.success) {
     return reject(parsed.error.issues[0]?.message ?? "Invalid order.");
