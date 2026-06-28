@@ -33,7 +33,9 @@ export type IssueKind =
   | "invalid_price"
   | "price_outlier"
   | "unavailable"
-  | "empty_category";
+  | "empty_category"
+  | "duplicate_name"
+  | "no_name";
 
 export type Severity = "high" | "medium" | "low";
 
@@ -55,9 +57,9 @@ export type HealthBand = "good" | "ok" | "poor";
 export interface MenuHealthReport {
   hasItems: boolean;
   totalItems: number;
-  /** Items passing all four conversion-critical checks. */
+  /** Items free of any High/Medium issue (the headline "looks fine" count). */
   passingItems: number;
-  /** 0–100, the percentage of items with no conversion-critical issue. */
+  /** 0–100, severity-weighted (worst issue per item, no stacking). */
   score: number;
   band: HealthBand;
   /** Conversion-critical issues, sorted by severity (high first). */
@@ -69,6 +71,14 @@ export interface MenuHealthReport {
 }
 
 const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2 };
+
+/**
+ * Severity weights for the score. An item's penalty is its WORST issue only
+ * (issues do not stack), normalised against the worst possible (high). So an
+ * all-photos-missing menu (low) reads ~90, while $0 / no-name / duplicate items
+ * (high) pull the score down sharply. Tunable.
+ */
+const WEIGHT: Record<Severity, number> = { high: 10, medium: 4, low: 1 };
 
 /** Median of a non-empty numeric list. Caller guarantees length > 0. */
 function median(values: number[]): number {
@@ -107,63 +117,93 @@ export function computeMenuHealth(
     highBound = mid * OUTLIER_FACTOR;
   }
 
+  // Duplicate item names: group by normalized name (lower + trim), venue-wide
+  // (duplicates can span categories). Pure — no query, no mutation. Blank names
+  // are excluded here (they are flagged separately by no_name). Builds the set
+  // of affected item ids (for scoring) and the per-name groups (one issue each).
+  const categoryNameById = new Map(
+    categories.map((category) => [category.id, category.name]),
+  );
+  const itemsByNormName = new Map<string, MenuItem[]>();
+  for (const item of items) {
+    const norm = item.name.trim().toLowerCase();
+    if (norm.length === 0) continue;
+    const list = itemsByNormName.get(norm) ?? [];
+    list.push(item);
+    itemsByNormName.set(norm, list);
+  }
+  const duplicateItemIds = new Set<string>();
+  for (const group of itemsByNormName.values()) {
+    if (group.length >= 2) {
+      for (const item of group) duplicateItemIds.add(item.id);
+    }
+  }
+
   const criticalIssues: MenuHealthIssue[] = [];
   const advisories: MenuHealthIssue[] = [];
   let passingItems = 0;
+  let totalPenalty = 0;
 
   for (const item of items) {
     const anchor = `item-${item.id}`;
-    let passes = true;
-
-    if (!item.imageUrl || item.imageUrl.trim().length === 0) {
-      passes = false;
+    const title = item.name.trim().length > 0 ? item.name : "(no name)";
+    // Track this item's WORST scored-issue weight; the penalty never stacks.
+    let worst = 0;
+    const flag = (severity: Severity, kind: IssueKind, detail: string) => {
+      worst = Math.max(worst, WEIGHT[severity]);
       criticalIssues.push({
-        kind: "missing_photo",
-        severity: "high",
+        kind,
+        severity,
         anchor,
-        title: item.name,
-        detail: "No photo — items with a photo convert far better.",
+        title,
+        detail,
         priceCents: item.priceCents,
       });
+    };
+
+    if (item.name.trim().length === 0) {
+      flag(
+        "high",
+        "no_name",
+        "This item has no name. Add one so customers know what it is.",
+      );
+    }
+
+    if (!item.imageUrl || item.imageUrl.trim().length === 0) {
+      flag(
+        "low",
+        "missing_photo",
+        "No photo. Items with a photo convert far better.",
+      );
     }
 
     if (item.priceCents === 0) {
-      passes = false;
-      criticalIssues.push({
-        kind: "invalid_price",
-        severity: "high",
-        anchor,
-        title: item.name,
-        detail: "Price is $0.00 — likely a mistake.",
-        priceCents: item.priceCents,
-      });
+      flag("high", "invalid_price", "Price is $0.00, likely a mistake.");
     } else if (item.priceCents < lowBound || item.priceCents > highBound) {
       // Only reachable when the median bounds are active (>= MIN_ITEMS_FOR_OUTLIER).
-      passes = false;
-      criticalIssues.push({
-        kind: "price_outlier",
-        severity: "low",
-        anchor,
-        title: item.name,
-        detail: "Price is far outside the rest of your menu — worth a check.",
-        priceCents: item.priceCents,
-      });
+      flag(
+        "low",
+        "price_outlier",
+        "Price is far outside the rest of your menu, worth a check.",
+      );
     }
 
     if (hasWeakDescription(item.description)) {
-      passes = false;
-      criticalIssues.push({
-        kind: "weak_description",
-        severity: "medium",
-        anchor,
-        title: item.name,
-        detail:
-          "Description is missing or very short — add a tempting line or two.",
-        priceCents: item.priceCents,
-      });
+      flag(
+        "medium",
+        "weak_description",
+        "Description is missing or very short. Add a tempting line or two.",
+      );
     }
 
-    if (passes) passingItems += 1;
+    // A duplicate name contributes to this item's worst severity (so the score
+    // reflects it), but the row is emitted ONCE per name below, not per item.
+    if (duplicateItemIds.has(item.id)) {
+      worst = Math.max(worst, WEIGHT.high);
+    }
+
+    totalPenalty += worst;
+    if (worst <= WEIGHT.low) passingItems += 1; // free of any High/Medium issue
 
     // Advisory — excluded from the score (hiding an item is a valid choice).
     if (!item.isAvailable) {
@@ -171,11 +211,33 @@ export function computeMenuHealth(
         kind: "unavailable",
         severity: "low",
         anchor,
-        title: item.name,
-        detail: "Hidden from customers — remove it or re-enable it?",
+        title,
+        detail: "Hidden from customers. Remove it or re-enable it?",
         priceCents: item.priceCents,
       });
     }
+  }
+
+  // One duplicate_name issue per duplicated name (High, scored): lists the
+  // affected categories and deep-links the first affected item. Flag only — the
+  // owner fixes it in the editor; nothing here merges, deletes, or renames.
+  for (const group of itemsByNormName.values()) {
+    if (group.length < 2) continue;
+    const cats = [
+      ...new Set(
+        group
+          .map((item) => categoryNameById.get(item.categoryId))
+          .filter((name): name is string => Boolean(name)),
+      ),
+    ];
+    const where = cats.length > 0 ? ` (in ${cats.join(", ")})` : "";
+    criticalIssues.push({
+      kind: "duplicate_name",
+      severity: "high",
+      anchor: `item-${group[0].id}`,
+      title: group[0].name,
+      detail: `${group.length} items share this name${where}. Rename or remove the extras so customers and recommendations aren't confused.`,
+    });
   }
 
   // Advisory — categories with no items look broken on the storefront.
@@ -193,7 +255,7 @@ export function computeMenuHealth(
         severity: "low",
         anchor: `category-${category.id}`,
         title: category.name,
-        detail: "No items in this category — add some or remove it.",
+        detail: "No items in this category. Add some or remove it.",
       });
     }
   }
@@ -202,8 +264,15 @@ export function computeMenuHealth(
     (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity],
   );
 
+  // Severity-weighted score: 100 minus the share of the worst-possible penalty
+  // (every item at high) the menu actually incurs.
   const score =
-    totalItems === 0 ? 100 : Math.round((passingItems / totalItems) * 100);
+    totalItems === 0
+      ? 100
+      : Math.max(
+          0,
+          Math.round(100 * (1 - totalPenalty / (totalItems * WEIGHT.high))),
+        );
   const band: HealthBand =
     score >= GOOD_SCORE ? "good" : score >= OK_SCORE ? "ok" : "poor";
 
