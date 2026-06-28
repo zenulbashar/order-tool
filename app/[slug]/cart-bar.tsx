@@ -17,7 +17,7 @@ export function CartBar({ onOpen }: { onOpen: () => void }) {
   if (count === 0) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-2xl px-5 pb-4">
+    <div className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-3xl px-5 pb-4">
       <button
         type="button"
         onClick={onOpen}

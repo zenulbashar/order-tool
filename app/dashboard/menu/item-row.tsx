@@ -149,7 +149,7 @@ export function ItemRow({
       </div>
 
       {isExpanded ? (
-        <div className="space-y-4 border-t border-gray-100 px-3 py-3">
+        <div className="space-y-3 border-t border-gray-100 px-3 py-3">
           {/* Photo as the image area. Its own upload/remove forms — a SIBLING of
               ItemForm below, never nested inside it, so image_url stays owned by
               the dedicated upload/remove actions. */}

@@ -170,7 +170,7 @@ function StorefrontInner({
   return (
     <div
       style={brandStyle}
-      className="mx-auto min-h-dvh max-w-2xl bg-white pb-24"
+      className="mx-auto min-h-dvh max-w-3xl bg-white pb-24"
     >
       <header className="flex items-center gap-4 px-5 py-6">
         {venue.logoUrl ? (
