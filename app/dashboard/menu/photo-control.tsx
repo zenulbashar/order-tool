@@ -43,15 +43,21 @@ export function PhotoControl({
 
       {item.imageUrl ? (
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+          {/* Square preview at the size a diner actually sees on the item card
+              (object-cover, rounded-xl) so the owner gets a realistic preview,
+              not a giant upload rectangle. */}
+          <div className="h-28 w-28 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
             {/* Owner-supplied URL; next/image would need remote config. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={item.imageUrl}
               alt={item.name}
-              className="h-48 w-full object-cover"
+              className="h-full w-full object-cover"
             />
           </div>
+          <p className="text-xs text-gray-400">
+            Shown to diners at about this size.
+          </p>
           {/* key remounts the uploader (clearing the picked file + any error)
               once a successful upload changes imageUrl. */}
           <UploadForm
@@ -126,23 +132,32 @@ function UploadForm({
       <input type="hidden" name="itemId" value={itemId} />
 
       {empty ? (
-        // The empty state IS the image area: an image-shaped dropzone.
-        <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 text-center transition hover:border-gray-400 hover:bg-gray-100">
-          <span className="truncate text-sm font-medium text-gray-700">
-            {hasFile ? fileName : "Upload photo"}
-          </span>
-          <span className="text-xs text-gray-400">
-            {hasFile ? "Click Upload to save" : "JPEG, PNG, or WebP · up to 5MB"}
-          </span>
-          <input
-            type="file"
-            name="photo"
-            accept={ACCEPT}
-            disabled={pending}
-            onChange={handleFile}
-            className="sr-only"
-          />
-        </label>
+        // The empty state IS the image area: a small square dropzone matching
+        // the size/shape a diner sees on the item card. The format hint moves
+        // below the box so the square stays compact.
+        <div className="space-y-1.5">
+          <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-2 text-center transition hover:border-gray-400 hover:bg-gray-100">
+            <span className="max-w-full truncate text-xs font-medium text-gray-700">
+              {hasFile ? fileName : "Upload photo"}
+            </span>
+            {hasFile ? (
+              <span className="text-[11px] text-gray-400">
+                Click Upload to save
+              </span>
+            ) : null}
+            <input
+              type="file"
+              name="photo"
+              accept={ACCEPT}
+              disabled={pending}
+              onChange={handleFile}
+              className="sr-only"
+            />
+          </label>
+          <p className="text-xs text-gray-400">
+            Shown to diners at about this size. JPEG, PNG, or WebP · up to 5MB.
+          </p>
+        </div>
       ) : (
         <input
           type="file"

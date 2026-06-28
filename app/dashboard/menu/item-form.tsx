@@ -19,7 +19,7 @@ const suggestButtonClass =
 const initialState: MenuActionState = {};
 
 const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
+  "w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 type EditableItem = {
   id: string;
@@ -102,7 +102,7 @@ export function ItemForm({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-3">
+    <form ref={formRef} action={formAction} className="space-y-2.5">
       {item ? <input type="hidden" name="id" value={item.id} /> : null}
 
       {/* On create the parent category is fixed; on edit it can be changed. */}
