@@ -154,13 +154,17 @@ export function emailKey(normalizedEmail: string): string {
 }
 
 /**
- * Best real client IP behind Cloudflare -> Vercel. Trust ONLY proxy-set headers,
- * in order of trust:
- *  - `cf-connecting-ip`: Cloudflare overwrites any client-supplied value with the
- *    true client IP, so it is non-spoofable in normal prod traffic.
- *  - `x-vercel-forwarded-for` / `x-real-ip`: Vercel-set, reflect the real peer
- *    (used when a request reaches the Vercel origin without Cloudflare).
- *  - first hop of `x-forwarded-for`: last resort, never treated as authoritative.
+ * Best real client IP. The app is served DIRECTLY by Vercel (prompt2eat.com is
+ * DNS-only at Cloudflare — no Cloudflare proxy in front), so Vercel's edge is the
+ * trusted hop and its headers are authoritative. Read ONLY proxy-set headers, in
+ * order of trust:
+ *  - first (left-most) hop of `x-forwarded-for`: Vercel sets this on its edge and
+ *    the left-most entry is the real client IP — the primary, trusted source for
+ *    this deployment.
+ *  - `x-real-ip` / `x-vercel-forwarded-for`: Vercel-set fallbacks if x-forwarded-for
+ *    is absent.
+ *  - `cf-connecting-ip`: last resort only (Cloudflare's proxy is no longer in front,
+ *    so this header is normally absent; kept solely in case the proxy is re-enabled).
  *  - "unknown": never crash; collapses unknown-IP traffic into one bucket.
  *
  * Accepts anything header-like (Headers / Next's ReadonlyHeaders) so it can be
@@ -170,10 +174,10 @@ export function clientIpFromHeaders(h: {
   get(name: string): string | null;
 }): string {
   return (
-    h.get("cf-connecting-ip") ??
-    h.get("x-vercel-forwarded-for") ??
-    h.get("x-real-ip") ??
     h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    h.get("x-real-ip") ??
+    h.get("x-vercel-forwarded-for") ??
+    h.get("cf-connecting-ip") ??
     "unknown"
   );
 }
