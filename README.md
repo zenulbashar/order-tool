@@ -34,7 +34,8 @@ npm run dev                  # http://localhost:3000
 | `AUTH_URL`       | Auth.js (prod) | Set once a custom domain is live (see Deployment). Also builds Stripe onboarding return URLs. |
 | `STRIPE_SECRET_KEY`      | Stripe (server)  | TEST secret key (`sk_test_…`). Lazily read; build/typecheck need none. |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe (browser) | TEST publishable key (`pk_test_…`); handed to the Payment Element.     |
-| `STRIPE_WEBHOOK_SECRET`  | Stripe webhook   | Signing secret (`whsec_…`); added **post-deploy** (see Payments).      |
+| `STRIPE_WEBHOOK_SECRET`  | Stripe webhook   | Signing secret (`whsec_…`) for the **order** webhook; added **post-deploy** (see Payments). |
+| `STRIPE_BILLING_WEBHOOK_SECRET` | Stripe webhook | SEPARATE signing secret (`whsec_…`) for the **billing** webhook (`/api/stripe/billing-webhook`, subscriptions/invoices). Distinct endpoint and secret from the order webhook. |
 | `ANTHROPIC_API_KEY`      | Anthropic vision | Powers "Import menu from photo". Lazy (`lib/anthropic.ts`); metered cost. |
 | `R2_ACCOUNT_ID`          | Cloudflare R2    | R2 account id. Lazy (`lib/r2.ts`); build/typecheck/lint need none.     |
 | `R2_ACCESS_KEY_ID`       | Cloudflare R2    | R2 API token access key id.                                           |
