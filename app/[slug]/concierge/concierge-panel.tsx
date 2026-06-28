@@ -128,7 +128,7 @@ export function ConciergePanel({
         className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
       >
         <SparkleIcon />
-        Order by vibe — ask the menu assistant
+        Not sure what to get? Ask Prompt2Eat
       </button>
 
       {open ? (
@@ -136,7 +136,7 @@ export function ConciergePanel({
           className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center"
           role="dialog"
           aria-modal="true"
-          aria-label="Menu assistant"
+          aria-label="Prompt2Eat"
           onClick={() => setOpen(false)}
         >
           <div
@@ -146,11 +146,11 @@ export function ConciergePanel({
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
               <div className="min-w-0">
                 <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-gray-900">
-                  <SparkleIcon /> Menu assistant
+                  <SparkleIcon /> Prompt2Eat
                 </h2>
                 <p className="mt-0.5 text-sm text-gray-500">
-                  Tell us what you feel like — we’ll suggest items from this menu
-                  to review and add.
+                  Tell Prompt2Eat what you feel like. We’ll suggest items from
+                  this menu.
                 </p>
               </div>
               <button
@@ -229,7 +229,7 @@ export function ConciergePanel({
                 </>
               ) : asked && !pending && !error ? (
                 <p className="text-sm text-gray-500">
-                  No matches this time — try describing it a different way.
+                  No matches this time. Try describing it a different way.
                 </p>
               ) : null}
             </div>
