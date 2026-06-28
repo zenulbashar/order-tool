@@ -9,9 +9,15 @@ import {
   type ConciergeTurn,
 } from "@/lib/validation";
 
+import { useCart } from "../cart-provider";
 import { RecommendationRow } from "../recommendation-row";
 import type { PublicItem, PublicMenu } from "../types";
 import { proposeCart, type ConciergeProposal } from "./actions";
+import {
+  type AddLine,
+  type ConciergePick,
+  MultiItemPicker,
+} from "./multi-item-picker";
 
 /**
  * The diner-facing "prompt to eat" box (#12). The diner types what they feel
@@ -52,6 +58,7 @@ export function ConciergePanel({
   slug,
   menu,
   onSelectItem,
+  onOpenCart,
 }: {
   slug: string;
   menu: PublicMenu;
@@ -59,8 +66,14 @@ export function ConciergePanel({
   // callback the menu tiles and recommendations use. The concierge never adds
   // directly: required size/modifier choices + display pricing happen there.
   onSelectItem: (item: PublicItem) => void;
+  // Open the storefront's cart-review drawer (its open-state lives in
+  // StorefrontInner). Used by the "View order" control and after "Add all".
+  onOpenCart: () => void;
 }) {
+  // addItem is the ONLY cart write; count drives the "View order" control.
+  const { addItem, count } = useCart();
   const [open, setOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [history, setHistory] = useState<ConciergeTurn[]>([]);
   const [proposals, setProposals] = useState<ConciergeProposal[]>([]);
   const [input, setInput] = useState("");
@@ -79,13 +92,32 @@ export function ConciergePanel({
     return map;
   }, [menu]);
 
-  const proposedItems = useMemo(
+  // Pair each proposed id with its (non-binding) suggested size, resolved to the
+  // live item. Unknown ids are skipped; the name/price/image shown always come
+  // from the resolved item, never the model.
+  const picks = useMemo<ConciergePick[]>(
     () =>
-      proposals
-        .map((proposal) => itemsById.get(proposal.itemId))
-        .filter((item): item is PublicItem => item !== undefined),
+      proposals.flatMap((proposal) => {
+        const item = itemsById.get(proposal.itemId);
+        return item
+          ? [{ item, suggestedVariantId: proposal.suggestedVariantId }]
+          : [];
+      }),
     [proposals, itemsById],
   );
+  const proposedItems = useMemo(() => picks.map((pick) => pick.item), [picks]);
+
+  // "Add all": adds every reviewed line via the existing addItem (the only cart
+  // write) — reached ONLY after every required choice is valid and the customer
+  // taps the button in the picker. Then close everything and show the cart.
+  function handleAddAll(lines: AddLine[]) {
+    for (const line of lines) {
+      addItem(line.itemId, line.variantId, line.selectedOptionIds, line.quantity);
+    }
+    setPickerOpen(false);
+    setOpen(false);
+    onOpenCart();
+  }
 
   function submit(message: string) {
     const trimmed = message.trim();
@@ -132,6 +164,7 @@ export function ConciergePanel({
       </button>
 
       {open ? (
+        <>
         <div
           className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center"
           role="dialog"
@@ -153,14 +186,28 @@ export function ConciergePanel({
                   this menu.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-              >
-                ✕
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                {count > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onOpenCart();
+                    }}
+                    className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                  >
+                    View order · {count}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                  className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
@@ -220,6 +267,16 @@ export function ConciergePanel({
                     items={proposedItems}
                     onSelect={onSelectItem}
                   />
+                  {/* Money-safe bulk path: opens one sheet to choose every
+                      required size/option, then adds all via addItem. Nothing is
+                      added until the customer completes + taps "Add all". */}
+                  <button
+                    type="button"
+                    onClick={() => setPickerOpen(true)}
+                    className="w-full rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Review and add all ({proposedItems.length})
+                  </button>
                   {/* LIFE-SAFETY: tags are the venue's guide, never a guarantee,
                       and the concierge never asserts allergen safety. */}
                   <p className="text-xs text-gray-400">
@@ -260,6 +317,18 @@ export function ConciergePanel({
             </form>
           </div>
         </div>
+
+        {/* Multi-item picker (z-50) sits above this panel (z-40). It is the only
+            bulk add path and writes the cart solely through addItem, after every
+            required choice is made. */}
+        {pickerOpen ? (
+          <MultiItemPicker
+            picks={picks}
+            onAddAll={handleAddAll}
+            onClose={() => setPickerOpen(false)}
+          />
+        ) : null}
+        </>
       ) : null}
     </>
   );
