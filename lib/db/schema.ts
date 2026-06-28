@@ -66,12 +66,19 @@ export const users = pgTable(
 export type OpeningHoursEntry = { day: number; opens: string; closes: string };
 
 /**
- * Billing tiers (Phase 1). A closed set, so a pgEnum (house style) — unlike
- * plan_status, which is free text for Stripe-status flexibility. `trial` is the
- * safe default for every existing and new venue. The plan→features mapping lives
- * in lib/billing/plans.ts; this enum is only the storage type.
+ * Billing tiers. A closed set, so a pgEnum (house style) — unlike plan_status,
+ * which is free text for Stripe-status flexibility. `trial` is the safe default
+ * for every existing and new venue. `free` (Phase 2) is the LAPSED end-state: a
+ * venue whose subscription canceled/lapsed drops to `free`, which maps to no
+ * tier-differentiated features (baseline ordering only) in lib/billing/plans.ts.
+ * The plan→features mapping lives there; this enum is only the storage type.
  */
-export const venuePlan = pgEnum("venue_plan", ["trial", "pro", "scale"]);
+export const venuePlan = pgEnum("venue_plan", [
+  "trial",
+  "pro",
+  "scale",
+  "free",
+]);
 
 export const venues = pgTable(
   "venues",
@@ -139,10 +146,25 @@ export const venues = pgTable(
     plan: venuePlan("plan").notNull().default("trial"),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     planStatus: text("plan_status").notNull().default("trialing"),
+    // Platform billing (Phase 2). The venue's Stripe CUSTOMER + SUBSCRIPTION on
+    // the PLATFORM account — entirely separate from the Connect account above
+    // (stripe_account_id), which is the venue's own charging account. These let
+    // the separate billing webhook resolve a venue from an invoice/subscription
+    // event when metadata is absent. Both nullable (set when the owner first
+    // subscribes) and written server-side only, never from client input.
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
     createdAt: createdAt(),
   },
   (table) => [
     uniqueIndex("venues_slug_idx").on(table.slug),
+    // One venue per Stripe customer / subscription. Nullable-unique: many NULLs
+    // are allowed in Postgres, and these give the billing webhook a reliable
+    // fallback lookup when an event carries no venueId metadata (e.g. invoices).
+    uniqueIndex("venues_stripe_customer_id_idx").on(table.stripeCustomerId),
+    uniqueIndex("venues_stripe_subscription_id_idx").on(
+      table.stripeSubscriptionId,
+    ),
     check(
       "venues_scheduling_lead_minutes_nonneg",
       sql`${table.schedulingLeadMinutes} >= 0`,
