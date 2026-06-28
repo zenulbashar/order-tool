@@ -1,6 +1,41 @@
 @import "tailwindcss";
 
 /*
+ * Prompt2Eat design tokens — FOUNDATION ONLY.
+ * Colours are named by intent (not raw hex) so surfaces reference meaning;
+ * pages adopt them incrementally in later per-surface PRs. Literal hex lives in
+ * a plain @theme block; the font tokens reference the next/font CSS variables
+ * (set on <html> in layout.tsx) so they go in @theme inline to inline the var().
+ */
+@theme {
+  /* Brand / forest greens */
+  --color-brand: #16241c;
+  --color-brand-deep: #13301f;
+  --color-brand-deepest: #0e1f18;
+  /* Actions */
+  --color-accent: #f4b43c; /* amber */
+  --color-secondary: #e2553a; /* tomato */
+  /* Status */
+  --color-success: #3fa66a;
+  --color-success-deep: #2f8a55;
+  --color-error: #e2553a; /* named separately so it can diverge from tomato */
+  /* Surfaces */
+  --color-surface: #f7f3ea; /* page bg */
+  --color-surface-elevated: #fffdf8; /* cards / elevated */
+  --color-sand: #efe7d6; /* subtle bg / border */
+  /* Text */
+  --color-ink: #0e1f18; /* default text — forest near-black */
+  --color-muted: #6e756b; /* muted text — sage-grey */
+}
+
+@theme inline {
+  --font-display: var(--font-bricolage); /* headlines / wordmark */
+  --font-body: var(--font-hanken); /* body / UI */
+  --font-mono: var(--font-space-mono); /* labels / AI-prompt / data */
+  --font-sans: var(--font-hanken); /* app default */
+}
+
+/*
  * Loading indicator — a subtle three-dot pulse. Defined here (not as a utility)
  * because the staggered keyframe can't be expressed inline; the <Spinner>
  * component references it by name and inherits colour via `bg-current`, so it
