@@ -242,6 +242,7 @@ function StorefrontInner({
             slug={venue.slug}
             menu={menu}
             onSelectItem={setActiveItem}
+            onOpenCart={() => setCartOpen(true)}
           />
         </div>
       ) : null}
