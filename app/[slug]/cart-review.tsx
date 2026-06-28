@@ -6,24 +6,25 @@ import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
 import { CartUpsell } from "./recommendations";
-import type { OrderType, PublicItem } from "./types";
+import type { PublicItem } from "./types";
 
 /**
  * Cart review drawer. Line totals are recomputed live from the current menu and
- * are clearly provisional — nothing priced is ever submitted; the server
+ * are clearly provisional: nothing priced is ever submitted; the server
  * recomputes at order time. Stale local data is reconciled at load (see
- * cart-provider); a notice is shown here when that happened. The order-type
- * selection is carried to checkout via query params.
+ * cart-provider); a notice is shown here when that happened. Order type is now
+ * chosen at checkout (A2); the only hint carried forward is a table-QR arrival
+ * (tableLabel), which pre-selects dine-in + that table at checkout.
  */
 export function CartReview({
   slug,
-  orderType,
   tableLabel,
   onClose,
   onSelectItem,
 }: {
   slug: string;
-  orderType: OrderType;
+  // A table-QR arrival's table number (empty otherwise). Forwarded to checkout to
+  // pre-select dine-in for that table; a normal arrival defaults to pickup there.
   tableLabel: string;
   onClose: () => void;
   // Open an item through the existing modifier sheet. Used by the upsell row.
@@ -160,9 +161,9 @@ export function CartReview({
           </p>
           {count > 0 ? (
             <Link
-              href={`/${slug}/checkout?type=${orderType}${
-                orderType === "dinein" && tableLabel.trim()
-                  ? `&table=${encodeURIComponent(tableLabel.trim())}`
+              href={`/${slug}/checkout${
+                tableLabel.trim()
+                  ? `?type=dinein&table=${encodeURIComponent(tableLabel.trim())}`
                   : ""
               }`}
               className="block w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white"

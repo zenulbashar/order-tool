@@ -7,17 +7,16 @@ import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
 
 import { CartBar } from "./cart-bar";
 import { CartProvider, useCart } from "./cart-provider";
+import { CartReview } from "./cart-review";
 import { CategoryNav } from "./category-nav";
 import { ConciergePanel } from "./concierge/concierge-panel";
 import { DietaryFilter } from "./dietary-filter";
 import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
-import { OrderTypeSelector } from "./order-type-selector";
 import { RecommendationsProvider } from "./recommendations";
 import { itemSearchText, matchesQuery } from "./search";
 import type {
-  OrderType,
   PublicItem,
   PublicMenu,
   PublicRecommendations,
@@ -68,11 +67,12 @@ function StorefrontInner({
   conciergeEnabled: boolean;
 }) {
   const { addItem } = useCart();
-  const [orderType, setOrderType] = useState<OrderType>(
-    initialTable ? "dinein" : "pickup",
-  );
-  const [tableLabel, setTableLabel] = useState(initialTable);
+  // A table-QR arrival (?table=) is implicitly dine-in; this hint is forwarded to
+  // checkout, which is now the single place the order type is chosen (A2). The
+  // landing no longer shows a pickup/dine-in toggle.
+  const tableLabel = initialTable;
   const [activeItem, setActiveItem] = useState<PublicItem | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<DietaryTag[]>([]);
 
@@ -208,29 +208,9 @@ function StorefrontInner({
         </Link>
       </header>
 
-      <div className="px-5 pb-4">
-        <OrderTypeSelector
-          orderType={orderType}
-          onOrderType={setOrderType}
-          tableLabel={tableLabel}
-          onTableLabel={setTableLabel}
-        />
-      </div>
-
-      {/* AI ordering concierge (#12). Gated on the single canUseConcierge seam
-          and hidden when there's no menu to ground in. Proposes items; tapping
-          one routes through setActiveItem -> the existing ItemModifierSheet ->
-          addItem, exactly like the menu tiles — never a direct cart write. */}
-      {conciergeEnabled && menu.length > 0 ? (
-        <div className="px-5 pb-4">
-          <ConciergePanel
-            slug={venue.slug}
-            menu={menu}
-            onSelectItem={setActiveItem}
-          />
-        </div>
-      ) : null}
-
+      {/* Menu search pinned directly under the header (A1): the primary way to
+          find an item, kept above the AI launcher rather than stacked beneath it.
+          Sticky so it stays reachable while scrolling a long menu. */}
       {menu.length > 0 ? (
         <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/95 backdrop-blur">
           <div className="space-y-3 px-5 pb-3 pt-3">
@@ -248,6 +228,21 @@ function StorefrontInner({
           {navCategories.length > 0 ? (
             <CategoryNav categories={navCategories} />
           ) : null}
+        </div>
+      ) : null}
+
+      {/* AI ordering concierge (#12). Gated on the single canUseConcierge seam
+          and hidden when there's no menu to ground in. Proposes items; tapping
+          one routes through setActiveItem -> the existing ItemModifierSheet ->
+          addItem, exactly like the menu tiles, never a direct cart write. Sits
+          just below the menu search (A1), above the menu list. */}
+      {conciergeEnabled && menu.length > 0 ? (
+        <div className="px-5 pb-2 pt-4">
+          <ConciergePanel
+            slug={venue.slug}
+            menu={menu}
+            onSelectItem={setActiveItem}
+          />
         </div>
       ) : null}
 
@@ -295,12 +290,18 @@ function StorefrontInner({
         />
       ) : null}
 
-      <CartBar
-        slug={venue.slug}
-        orderType={orderType}
-        tableLabel={tableLabel}
-        onSelectItem={setActiveItem}
-      />
+      <CartBar onOpen={() => setCartOpen(true)} />
+
+      {/* Cart review drawer. Its open-state lives here in StorefrontInner so both
+          the cart bar and (in a later step) the concierge panel can open it. */}
+      {cartOpen ? (
+        <CartReview
+          slug={venue.slug}
+          tableLabel={tableLabel}
+          onClose={() => setCartOpen(false)}
+          onSelectItem={setActiveItem}
+        />
+      ) : null}
     </div>
   );
 }
