@@ -49,6 +49,12 @@ export type Feature = (typeof FEATURES)[keyof typeof FEATURES];
  *   - trial: Scale-level access (taste everything) for the 1-month trial.
  *   - pro:   full ordering platform + diner concierge + owner AI tools.
  *   - scale: everything in pro + multi-venue + custom domain.
+ *   - free:  the LAPSED end-state (Phase 2). NO tier-differentiated features —
+ *            baseline ordering only (storefront, menu, cart, checkout, kitchen,
+ *            tables, scheduling, which are baseline for every plan). A venue
+ *            drops here when its subscription cancels/lapses. Keeping this an
+ *            empty set is what lets entitlement stay a single hasFeature() check
+ *            off `plan` — no plan_status-based gating scattered anywhere.
  * (Higher fair-use caps are a LATER phase — only the feature flags live here.)
  */
 const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
@@ -71,6 +77,7 @@ const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
     FEATURES.MULTI_VENUE,
     FEATURES.CUSTOM_DOMAIN,
   ]),
+  free: new Set<Feature>(),
 };
 
 /**
