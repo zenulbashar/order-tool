@@ -1,14 +1,30 @@
 import Link from "next/link";
 
 import { signOut } from "@/lib/auth";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { isOnboardingComplete, requireUser, requireVenue } from "@/lib/tenant";
 
 export default async function DashboardPage() {
   const user = await requireUser();
   const venue = await requireVenue();
+  // Nudge (not a lockout): until onboarding is finished, surface a one-click
+  // path back into the wizard. The hard go-live block is added in 3c.
+  const needsOnboarding = !isOnboardingComplete(venue);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
+      {needsOnboarding ? (
+        <Link
+          href="/onboarding"
+          className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-sand bg-surface-elevated px-4 py-3 transition hover:border-brand"
+        >
+          <span className="text-sm text-ink">
+            Finish setting up your venue to go live and take orders.
+          </span>
+          <span className="shrink-0 text-sm font-medium text-brand">
+            Finish setup →
+          </span>
+        </Link>
+      ) : null}
       <header className="flex items-start justify-between gap-4 border-b border-gray-200 pb-6">
         <div className="space-y-1">
           <p className="text-xs uppercase tracking-wide text-gray-500">Venue</p>
