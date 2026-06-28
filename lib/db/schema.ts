@@ -80,6 +80,19 @@ export const venuePlan = pgEnum("venue_plan", [
   "free",
 ]);
 
+/**
+ * Venue category (Phase 3a onboarding). A closed set, so a pgEnum (house style).
+ * Nullable on the venue until the owner picks one in the wizard's first step; it
+ * is presentational metadata only and gates nothing.
+ */
+export const venueType = pgEnum("venue_type", [
+  "cafe",
+  "restaurant",
+  "bar",
+  "bakery",
+  "food_truck",
+]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -154,6 +167,22 @@ export const venues = pgTable(
     // subscribes) and written server-side only, never from client input.
     stripeCustomerId: text("stripe_customer_id"),
     stripeSubscriptionId: text("stripe_subscription_id"),
+    // Onboarding wizard (Phase 3a). venue_type is the owner-picked category.
+    // onboarding_completed_at is the SINGLE "this venue is live-ready" signal —
+    // null until the wizard finishes (Step 5, a later sub-phase); the go-live /
+    // order-taking block keys off it then. onboarding_step is the resume pointer
+    // (1..5) so a paused wizard re-enters where it left off. Service-style flags
+    // record which fulfilment modes the venue offers; defaults mirror today's
+    // behaviour (pickup + dine-in, no delivery) so existing rows are unaffected.
+    // STORED in 3a but NOT yet enforced on the diner storefront.
+    venueType: venueType("venue_type"),
+    onboardingCompletedAt: timestamp("onboarding_completed_at", {
+      withTimezone: true,
+    }),
+    onboardingStep: integer("onboarding_step").notNull().default(1),
+    offersDineIn: boolean("offers_dine_in").notNull().default(true),
+    offersTakeaway: boolean("offers_takeaway").notNull().default(true),
+    offersDelivery: boolean("offers_delivery").notNull().default(false),
     createdAt: createdAt(),
   },
   (table) => [
