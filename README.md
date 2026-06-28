@@ -307,12 +307,16 @@ scary error. The checkout limit deliberately errs **loose** (blocking a real
 sale is worse than a few junk orders, which the payment step rejects anyway);
 raise `checkoutIp` if a busy single-NAT venue ever trips it.
 
-**Client IP behind the proxies.** There is no `request.ip` in Next 16, so the IP
-is read from headers in this order: `cf-connecting-ip` (Cloudflare overwrites any
-client-supplied value, so it's the trustworthy client IP in prod) →
-`x-vercel-forwarded-for` / `x-real-ip` (Vercel-set) → first hop of
-`x-forwarded-for` (last resort, never authoritative) → `"unknown"`. This defeats
-both collapsing everyone to one proxy IP and trusting a spoofed per-request IP.
+**Client IP (served directly by Vercel).** There is no `request.ip` in Next 16,
+and prompt2eat.com is DNS-only at Cloudflare (no Cloudflare proxy in front), so
+Vercel's edge is the trusted hop. The IP is read from headers in this order:
+first (left-most) hop of `x-forwarded-for` (Vercel-set on its edge; the left-most
+entry is the real client IP — the trusted primary) → `x-real-ip` /
+`x-vercel-forwarded-for` (Vercel-set fallbacks) → `cf-connecting-ip` (last resort
+only, normally absent now that Cloudflare's proxy is gone; kept in case it is
+re-enabled) → `"unknown"`. Trusting Vercel's left-most `x-forwarded-for` entry
+avoids both collapsing everyone to one proxy IP and trusting a spoofed
+per-request IP.
 
 Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (Upstash console) in
 Vercel (Production); without them the limiter fails open (no limiting), which is
