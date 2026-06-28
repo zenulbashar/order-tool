@@ -65,6 +65,14 @@ export const users = pgTable(
  */
 export type OpeningHoursEntry = { day: number; opens: string; closes: string };
 
+/**
+ * Billing tiers (Phase 1). A closed set, so a pgEnum (house style) — unlike
+ * plan_status, which is free text for Stripe-status flexibility. `trial` is the
+ * safe default for every existing and new venue. The plan→features mapping lives
+ * in lib/billing/plans.ts; this enum is only the storage type.
+ */
+export const venuePlan = pgEnum("venue_plan", ["trial", "pro", "scale"]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -120,6 +128,17 @@ export const venues = pgTable(
     schedulingMaxDaysAhead: integer("scheduling_max_days_ahead")
       .notNull()
       .default(7),
+    // Billing entitlement (Phase 1). `plan` is the ONLY field gated on now; it is
+    // the single value hasFeature() reads (see lib/billing/plans.ts). Existing
+    // rows backfill to 'trial' so every current venue keeps full access, matching
+    // the diner concierge being free for all today. trial_ends_at + plan_status
+    // are STORED now but ENFORCED in Phase 2 (trial-expiry + Stripe sync) — added
+    // here so that phase needs no destructive migration. plan_status is plain text
+    // (not an enum) on purpose: Stripe's status vocabulary expands later
+    // (past_due, unpaid, paused, ...) and text avoids a forced ALTER TYPE.
+    plan: venuePlan("plan").notNull().default("trial"),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+    planStatus: text("plan_status").notNull().default("trialing"),
     createdAt: createdAt(),
   },
   (table) => [
