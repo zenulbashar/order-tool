@@ -65,7 +65,7 @@ const getMembershipVenues = cache(async (userId: string): Promise<Venue[]> => {
  *
  * Read-only: it never writes the cookie. Setting cookies during Server
  * Component rendering is illegal in Next 16; the cookie is written only by the
- * server actions setCurrentVenue() and createVenue().
+ * server actions setCurrentVenue() and createVenueFromOnboarding().
  */
 export async function getCurrentVenue(): Promise<Venue | null> {
   const session = await auth();
@@ -89,6 +89,38 @@ export async function getCurrentVenue(): Promise<Venue | null> {
 export async function requireVenue(): Promise<Venue> {
   const venue = await getCurrentVenue();
   if (!venue) {
+    redirect("/onboarding");
+  }
+  return venue;
+}
+
+/**
+ * Has this venue finished the onboarding wizard? The SINGLE source of truth for
+ * "live-ready": onboarding_completed_at is stamped only when the final step (go
+ * live, a later sub-phase) succeeds. Pure read — no I/O.
+ */
+export function isOnboardingComplete(venue: Venue): boolean {
+  return venue.onboardingCompletedAt !== null;
+}
+
+/**
+ * Resolve the current venue and require that its onboarding is COMPLETE,
+ * otherwise redirect into the wizard to finish setup.
+ *
+ * Phase 3a builds this seam but deliberately does NOT call it yet: onboarding is
+ * mandatory only for the GO-LIVE / order-taking path, and that surface (the
+ * diner storefront + checkout) is out of scope this phase, plus the final wizard
+ * step that flips onboarding_completed_at does not exist until Phase 3c. The
+ * dashboard stays reachable with a "finish setup" nudge — no lockout.
+ *
+ * >>> PHASE 3c HOOK: call this (or check isOnboardingComplete) at the order-
+ * accepting entry points — app/[slug]/checkout/actions.ts placeOrder and the
+ * concierge/cart surfaces — to block taking orders until the venue is live.
+ * That is the ONLY place the hard block belongs; do not scatter it elsewhere.
+ */
+export async function requireOnboardedVenue(): Promise<Venue> {
+  const venue = await requireVenue();
+  if (!isOnboardingComplete(venue)) {
     redirect("/onboarding");
   }
   return venue;
@@ -123,7 +155,7 @@ export async function isVenueMember(
 /**
  * Persist the owner's selected venue. Writes the cookie ONLY — the caller is
  * responsible for validating membership first (setCurrentVenue) or for having
- * just created the venue+membership (createVenue). Must run inside a Server
+ * just created the venue+membership (createVenueFromOnboarding). Must run inside a Server
  * Action or Route Handler; Next 16 forbids cookie writes during RSC rendering.
  */
 export async function setSelectedVenueCookie(venueId: string): Promise<void> {
