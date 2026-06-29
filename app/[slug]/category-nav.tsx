@@ -61,7 +61,7 @@ export function CategoryNav({
                 className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
                   isActive
                     ? "text-white"
-                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                    : "border-sand bg-surface-elevated text-muted hover:bg-sand"
                 }`}
                 style={
                   isActive
