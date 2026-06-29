@@ -2,12 +2,11 @@
 
 import { useState, useTransition } from "react";
 
-import { ButtonLabel } from "@/app/_components/spinner";
+import { Button } from "@/app/_components/button";
+import { Field } from "@/app/_components/field";
+import { Input } from "@/app/_components/input";
 
 import { requestCustomerMagicLink } from "./actions";
-
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 /**
  * Opt-in customer sign-in: enter an email, receive a magic link. Separate from
@@ -49,20 +48,18 @@ export function SignInForm({
   if (sent) {
     return (
       <section className="px-5 py-8">
-        <div className="rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Check your email
-          </h2>
-          <p className="mt-1 text-sm text-gray-600">
+        <div className="rounded-card border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink">Check your email</h2>
+          <p className="mt-1 text-sm text-muted">
             If that address is valid, we&apos;ve sent a sign-in link to{" "}
-            <span className="font-medium text-gray-900">{email}</span>. It
-            expires in 15 minutes and can be used once.
+            <span className="font-medium text-ink">{email}</span>. It expires in
+            15 minutes and can be used once.
           </p>
           <button
             type="button"
             onClick={() => setSent(false)}
             className="mt-4 text-sm font-medium underline"
-            style={{ color: "var(--brand)" }}
+            style={{ color: "var(--action)" }}
           >
             Use a different email
           </button>
@@ -73,14 +70,14 @@ export function SignInForm({
 
   return (
     <section className="px-5 py-8">
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted">
         Save your details and view your past orders at {venueName}, then reorder
         in one tap. Ordering never requires an account — this is optional.
       </p>
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-        <label className="block text-sm font-medium text-gray-900">
-          Email
-          <input
+        <Field label="Email" htmlFor="customer-email">
+          <Input
+            id="customer-email"
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -88,26 +85,24 @@ export function SignInForm({
             required
             autoComplete="email"
             placeholder="you@example.com"
-            className={`mt-1 ${fieldClass}`}
           />
-        </label>
+        </Field>
 
         {error ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-[var(--color-warm)]" role="alert">
             {error}
           </p>
         ) : null}
 
-        <button
+        <Button
           type="submit"
-          disabled={pending}
-          className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ backgroundColor: "var(--brand)" }}
+          variant="primary"
+          loading={pending}
+          loadingLabel="Sending link…"
+          className="w-full"
         >
-          <ButtonLabel pending={pending} pendingLabel="Sending link…">
-            Email me a sign-in link
-          </ButtonLabel>
-        </button>
+          Email me a sign-in link
+        </Button>
       </form>
     </section>
   );

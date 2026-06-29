@@ -2,14 +2,18 @@ import type { ReactNode } from "react";
 
 import { cx } from "./cx";
 
-export type StatusTone = "new" | "preparing" | "ready" | "done" | "late";
+/** Kitchen order-progress tones (orders dashboard — Step 7). */
+export type KitchenTone = "new" | "preparing" | "ready" | "done" | "late";
+/** Payment / order-state tones (order confirmation + customer history — 2b). */
+export type PaymentTone = "paid" | "processing" | "failed" | "cancelled";
+export type StatusTone = KitchenTone | PaymentTone;
 
 /**
  * Tone → semantic token, replacing the raw blue/green/amber/gray currently
- * scattered across order-card / order-history. "new"/"preparing" are the
- * sanctioned amber status tones (product signature, not a functional control);
- * "ready" → success, "late" → deep terracotta (white = 4.63:1, AA), "done" →
- * muted. Pure display → server-safe.
+ * scattered across order-card / order-history. "new"/"preparing"/"processing"
+ * are the sanctioned amber status tones (product signature, not a functional
+ * control); success → "ready"/"paid", terracotta → "late"/"failed", muted →
+ * "done"/"cancelled". Pure display → server-safe.
  */
 const toneStyles: Record<StatusTone, string> = {
   new: "bg-accent text-forest",
@@ -17,6 +21,10 @@ const toneStyles: Record<StatusTone, string> = {
   ready: "bg-[var(--color-success)]/15 text-success-deep",
   done: "bg-sand text-muted",
   late: "bg-[var(--color-warm-deep)] text-white",
+  paid: "bg-[var(--color-success)]/15 text-success-deep",
+  processing: "bg-[var(--color-accent)]/15 text-accent-deep",
+  failed: "bg-[var(--color-warm)]/15 text-warm-deep",
+  cancelled: "bg-sand text-muted",
 };
 
 const toneLabel: Record<StatusTone, string> = {
@@ -25,6 +33,10 @@ const toneLabel: Record<StatusTone, string> = {
   ready: "Ready",
   done: "Done",
   late: "Late",
+  paid: "Paid",
+  processing: "Processing",
+  failed: "Not completed",
+  cancelled: "Cancelled",
 };
 
 export type StatusBadgeProps = {
