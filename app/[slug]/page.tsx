@@ -68,10 +68,11 @@ export default async function StorefrontPage({
   // ever references currently available items.
   const recommendations = await getRecommendations(venue.id, menu);
 
-  // AI ordering concierge (#12) on/off — the SINGLE billing seam. Ungated for
-  // now (always true); gates whether the storefront renders the prompt box. The
-  // server action re-checks it too, so a forged client can never bypass it.
-  const conciergeEnabled = await canUseConcierge(venue);
+  // AI ordering concierge (#12) on/off — the SINGLE billing seam. The server
+  // action re-checks it too, so a forged client can never bypass it. Suppressed
+  // for a not-yet-live venue (Phase 3c) so the prompt box is not offered when
+  // ordering is blocked; the concierge's own grounding/security is unchanged.
+  const conciergeEnabled = (await canUseConcierge(venue)) && venue.isLive;
 
   // Per-venue structured data (SEO). Built from the SAME venue + menu already
   // loaded above — no extra query — and emits only owner-entered fields.
@@ -80,6 +81,11 @@ export default async function StorefrontPage({
   return (
     <>
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
+      {!venue.isLive ? (
+        <div className="bg-accent/15 px-6 py-3 text-center text-sm text-ink">
+          This venue isn&apos;t taking orders yet. Please check back soon.
+        </div>
+      ) : null}
       <Storefront
         venue={venue}
         menu={menu}

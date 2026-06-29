@@ -33,6 +33,11 @@ export type PublicVenue = {
   schedulingEnabled: boolean;
   schedulingLeadMinutes: number;
   schedulingMaxDaysAhead: number;
+  // Whether the venue has finished onboarding and is live (Phase 3c). A DERIVED
+  // boolean (onboarding_completed_at !== null) — never the raw timestamp — so the
+  // storefront can show a graceful "not taking orders yet" state. The server-side
+  // placeOrder gate is the authoritative block; this only drives presentation.
+  isLive: boolean;
 };
 
 export type PublicOption = {

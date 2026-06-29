@@ -27,6 +27,22 @@ export default async function CheckoutPage({
   const venue = await getPublicVenueBySlug(slug);
   if (!venue) notFound();
 
+  // A venue that has not finished onboarding is not live (Phase 3c). Show a
+  // graceful notice instead of the checkout form; placeOrder is the authoritative
+  // server-side block. Live venues skip this entirely (today's exact behaviour).
+  if (!venue.isLive) {
+    return (
+      <main className="mx-auto max-w-md px-6 py-16 text-center">
+        <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
+          {venue.name} isn&apos;t taking orders yet
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          This venue is still setting up. Please check back soon.
+        </p>
+      </main>
+    );
+  }
+
   const [menu, sp, customer] = await Promise.all([
     getPublicMenu(venue.id),
     searchParams,

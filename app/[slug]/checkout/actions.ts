@@ -130,12 +130,21 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       id: venues.id,
       stripeAccountId: venues.stripeAccountId,
       stripeChargesEnabled: venues.stripeChargesEnabled,
+      onboardingCompletedAt: venues.onboardingCompletedAt,
     })
     .from(venues)
     .where(eq(venues.slug, data.slug))
     .limit(1);
   if (!venue) return reject("Venue not found.");
   const venueId = venue.id;
+
+  // Fail fast BEFORE writing any order: a venue that has not finished onboarding
+  // is not live and cannot take orders (Phase 3c). A single read-only entitlement
+  // check, sibling to the charges gate below, ahead of any item fetch, recompute,
+  // app fee, order write, or PaymentIntent. None of the money logic changes.
+  if (venue.onboardingCompletedAt === null) {
+    return reject("This venue isn't taking orders yet.");
+  }
 
   // Fail fast BEFORE writing any order: a venue that cannot accept payments must
   // never produce a payable-but-unpayable order. charges_enabled is the gate,
