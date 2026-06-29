@@ -8,13 +8,17 @@
  * (set on <html> in layout.tsx) so they go in @theme inline to inline the var().
  */
 @theme {
-  /* Brand / forest greens */
-  --color-brand: #16241c;
-  --color-brand-deep: #13301f;
-  --color-brand-deepest: #0e1f18;
+  /* Forest greens — neutral dark surfaces. Renamed from the old brand-prefixed
+     tokens so the unprefixed runtime --brand (per-tenant venue colour) is the
+     only thing called "brand". */
+  --color-forest: #16241c;
+  --color-forest-deep: #13301f;
+  --color-forest-deepest: #0e1f18;
   /* Actions */
-  --color-accent: #f4b43c; /* amber */
+  --color-accent: #f4b43c; /* amber — product signature (owner / marketing / AI) */
+  --color-accent-deep: #b07f1e; /* amber-as-text on cream */
   --color-secondary: #e2553a; /* tomato */
+  --color-warm: #e2553a; /* terracotta — semantic warm alert / secondary */
   /* Status */
   --color-success: #3fa66a;
   --color-success-deep: #2f8a55;
@@ -22,15 +26,23 @@
   /* Surfaces */
   --color-surface: #f7f3ea; /* page bg */
   --color-surface-elevated: #fffdf8; /* cards / elevated */
-  --color-sand: #efe7d6; /* subtle bg / border */
+  --color-sand: #efe7d6; /* subtle bg / border (value unchanged) */
+  --color-line: #e6ddcb; /* hairline border — adopt in new work only */
   /* Text */
   --color-ink: #0e1f18; /* default text — forest near-black */
   --color-muted: #6e756b; /* muted text — sage-grey */
+  --color-label: #a0987f; /* muted-tan mono eyebrow/label — new work only */
+  /* Radius scale (export: pill 999 / card 16 / control 11 / small 6). Only
+     --radius-sm overrides a Tailwind default; rounded-sm is unused, so no diff. */
+  --radius-pill: 999px;
+  --radius-card: 16px;
+  --radius-control: 11px;
+  --radius-sm: 6px;
   /*
    * Concierge (storefront-c) — the AI conversation panel is the ONE forest-dark
    * diner surface (everything else stays cream). These scoped tokens hold the
    * exact design-source values so the components reference tokens, never raw hex.
-   * Reuses --color-brand-deepest (#0e1f18), --color-brand (#16241c), and
+   * Reuses --color-forest-deepest (#0e1f18), --color-forest (#16241c), and
    * --color-accent (#f4b43c) where the source values already match a token.
    */
   --color-concierge-glow: #1c4231; /* lighter-forest glow at the panel top */
@@ -55,6 +67,40 @@
   --font-body: var(--font-hanken); /* body / UI */
   --font-mono: var(--font-space-mono); /* labels / AI-prompt / data */
   --font-sans: var(--font-hanken); /* app default */
+}
+
+/*
+ * Functional-accent indirection — the owner↔diner firewall in one variable.
+ * Shared components reference var(--action) for every functional accent:
+ *   - owner / product surfaces resolve it to the amber product signature;
+ *   - the diner storefront resolves it to the per-tenant venue --brand, which
+ *     is set inline on the same element that carries data-domain="diner".
+ * AI affordances are the deliberate exception: they use bg-accent / text-accent
+ * (amber) explicitly and must never read --action.
+ */
+:root {
+  --action: var(--color-accent);
+  /*
+   * Readable text/icon colour to pair with a functional accent. Owner default
+   * is the cream surface. Diner roots MAY override per-venue alongside --brand —
+   * deferred, NOT computed in this PR:
+   *   style={{ "--brand": c, "--brand-contrast": readableOn(c) }}
+   */
+  --brand-contrast: var(--color-surface-elevated);
+}
+
+[data-domain="diner"] {
+  --action: var(--brand);
+}
+
+/*
+ * Keyboard-focus ring. Zero-specificity (:where) so any component's own focus
+ * styles win, and :focus-visible so it shows on keyboard focus only — never on
+ * pointer clicks. This is the one intended visual delta in Step 0.
+ */
+:where(a, button, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
 }
 
 /*
@@ -109,6 +155,135 @@
   .p2e-spark {
     animation: none !important;
     opacity: 0.9;
+  }
+}
+
+/*
+ * Design-system motion library (export `p2e-*` keyframes), grouped by
+ * affordance: AI (float / drift / glow / think / aurora / scan / blink),
+ * loading (shimmer / spin / progress / slide), success (pop / checkloop /
+ * ring / fly / cartpulse), entrance (slidein / rise / count / toastin).
+ * Added here as foundation; nothing references them yet (inert — no diff).
+ * Each helper class is held steady under reduced motion at the bottom.
+ * (p2e-spark is defined above and is not redefined here.)
+ */
+@keyframes p2e-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes p2e-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(-10deg); }
+}
+@keyframes p2e-drift {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-60px); opacity: 0; }
+}
+@keyframes p2e-glow {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.95; }
+}
+@keyframes p2e-think {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+@keyframes p2e-shimmer {
+  0% { background-position: -180% 0; }
+  100% { background-position: 180% 0; }
+}
+@keyframes p2e-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+@keyframes p2e-fly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(96px, -210px) scale(0.28); opacity: 0; }
+}
+@keyframes p2e-cartpulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+}
+@keyframes p2e-aurora {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, -4%) scale(1.08); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes p2e-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes p2e-checkloop {
+  0% { stroke-dashoffset: 60; }
+  60%, 100% { stroke-dashoffset: 0; }
+}
+@keyframes p2e-slidein {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-rise {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-count {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-toastin {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-progress {
+  from { width: 0; }
+  to { width: var(--p2e-progress, 60%); }
+}
+@keyframes p2e-scan {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(168px); }
+}
+@keyframes p2e-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 50%, transparent); }
+  100% { box-shadow: 0 0 0 18px transparent; }
+}
+@keyframes p2e-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes p2e-spin {
+  to { transform: rotate(360deg); }
+}
+
+.p2e-float { animation: p2e-float 4s ease-in-out infinite; }
+.p2e-bob { animation: p2e-bob 3s ease-in-out infinite; }
+.p2e-drift { animation: p2e-drift 5s linear infinite; }
+.p2e-glow { animation: p2e-glow 2s ease-in-out infinite; }
+.p2e-think { animation: p2e-think 1.2s ease-in-out infinite; }
+.p2e-shimmer {
+  background-size: 200% 100%;
+  animation: p2e-shimmer 1.4s linear infinite;
+}
+.p2e-pop { animation: p2e-pop 0.32s ease-out both; }
+.p2e-fly { animation: p2e-fly 0.7s ease-in both; }
+.p2e-cartpulse { animation: p2e-cartpulse 0.4s ease-out; }
+.p2e-aurora { animation: p2e-aurora 18s ease-in-out infinite; }
+.p2e-draw { animation: p2e-draw 0.8s ease-out forwards; }
+.p2e-checkloop { animation: p2e-checkloop 1.6s ease-in-out infinite; }
+.p2e-slidein { animation: p2e-slidein 0.4s ease-out both; }
+.p2e-rise { animation: p2e-rise 0.3s ease-out both; }
+.p2e-count { animation: p2e-count 0.3s ease-out both; }
+.p2e-toastin { animation: p2e-toastin 0.3s ease-out both; }
+.p2e-progress { animation: p2e-progress 1s ease-out both; }
+.p2e-scan { animation: p2e-scan 2s ease-in-out infinite alternate; }
+.p2e-ring { animation: p2e-ring 1.2s ease-out infinite; }
+.p2e-blink { animation: p2e-blink 1s step-end infinite; }
+.p2e-spin { animation: p2e-spin 0.8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .p2e-float, .p2e-bob, .p2e-drift, .p2e-glow, .p2e-think, .p2e-shimmer,
+  .p2e-pop, .p2e-fly, .p2e-cartpulse, .p2e-aurora, .p2e-draw, .p2e-checkloop,
+  .p2e-slidein, .p2e-rise, .p2e-count, .p2e-toastin, .p2e-progress, .p2e-scan,
+  .p2e-ring, .p2e-blink, .p2e-spin {
+    animation: none !important;
   }
 }
 

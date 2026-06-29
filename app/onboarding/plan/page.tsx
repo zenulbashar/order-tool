@@ -39,7 +39,7 @@ export default async function PlanStepPage({ searchParams }: PlanParams) {
           <form action={advanceToLiveStep}>
             <button
               type="submit"
-              className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-brand-deep"
+              className="w-full rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep"
             >
               Continue
             </button>

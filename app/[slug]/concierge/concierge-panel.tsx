@@ -181,7 +181,7 @@ export function ConciergePanel({
             className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl text-concierge-ai-text sm:rounded-2xl"
             style={{
               background:
-                "radial-gradient(130% 70% at 50% 0%, var(--color-concierge-glow), var(--color-brand-deepest) 72%)",
+                "radial-gradient(130% 70% at 50% 0%, var(--color-concierge-glow), var(--color-forest-deepest) 72%)",
             }}
             onClick={(event) => event.stopPropagation()}
           >
@@ -198,7 +198,7 @@ export function ConciergePanel({
                     <SparkleIcon />
                   </span>
                   Prompt2Eat
-                  <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-brand">
+                  <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest">
                     AI
                   </span>
                 </h2>
@@ -311,7 +311,7 @@ export function ConciergePanel({
                   <button
                     type="button"
                     onClick={() => setPickerOpen(true)}
-                    className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-brand transition hover:opacity-90"
+                    className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-forest transition hover:opacity-90"
                   >
                     Add all ({proposedItems.length})
                   </button>
@@ -352,7 +352,7 @@ export function ConciergePanel({
                   type="submit"
                   disabled={pending || input.trim().length === 0}
                   aria-label="Send"
-                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-accent text-base font-semibold text-brand transition disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-accent text-base font-semibold text-forest transition disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {pending ? <Spinner size="sm" /> : "↑"}
                 </button>

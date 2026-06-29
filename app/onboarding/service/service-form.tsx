@@ -42,13 +42,13 @@ export function ServiceForm({ defaults }: { defaults: Defaults }) {
         {OPTIONS.map((option) => (
           <label
             key={option.name}
-            className="flex cursor-pointer items-start gap-3 rounded-lg border border-sand bg-surface-elevated p-4 transition has-[:checked]:border-brand"
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-sand bg-surface-elevated p-4 transition has-[:checked]:border-forest"
           >
             <input
               type="checkbox"
               name={option.name}
               defaultChecked={defaults[option.name]}
-              className="mt-1 h-4 w-4 accent-brand"
+              className="mt-1 h-4 w-4 accent-forest"
             />
             <span className="space-y-0.5">
               <span className="block text-sm font-medium text-ink">
@@ -71,7 +71,7 @@ export function ServiceForm({ defaults }: { defaults: Defaults }) {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-brand-deep disabled:opacity-60"
+        className="w-full rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep disabled:opacity-60"
       >
         {pending ? "Saving…" : "Continue"}
       </button>

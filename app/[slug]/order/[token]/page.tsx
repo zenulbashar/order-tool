@@ -55,7 +55,7 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
         : "Order cancelled";
 
   return (
-    <main style={brandStyle} className="mx-auto min-h-dvh max-w-2xl bg-white">
+    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-white">
       {/* Status banner — paid / processing / failed must each be unmistakable
           and, for the unhappy paths, calm and non-alarming. */}
       {isPaid ? (

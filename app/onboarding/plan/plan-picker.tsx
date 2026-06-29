@@ -46,7 +46,7 @@ export function PlanPicker() {
             onClick={() => setInterval("monthly")}
             className={`${toggleBase} ${
               interval === "monthly"
-                ? "bg-brand text-surface-elevated"
+                ? "bg-forest text-surface-elevated"
                 : "text-muted"
             }`}
           >
@@ -57,7 +57,7 @@ export function PlanPicker() {
             onClick={() => setInterval("annual")}
             className={`${toggleBase} ${
               interval === "annual"
-                ? "bg-brand text-surface-elevated"
+                ? "bg-forest text-surface-elevated"
                 : "text-muted"
             }`}
           >
@@ -72,7 +72,7 @@ export function PlanPicker() {
             key={tier.plan}
             action={createBillingCheckout}
             className={`relative flex flex-col rounded-xl border p-5 ${
-              tier.popular ? "border-brand" : "border-sand"
+              tier.popular ? "border-forest" : "border-sand"
             }`}
           >
             {tier.popular ? (
@@ -91,7 +91,7 @@ export function PlanPicker() {
             <ul className="mt-4 space-y-1.5 text-sm text-ink">
               {tier.features.map((feature) => (
                 <li key={feature} className="flex gap-2">
-                  <span aria-hidden="true" className="text-brand">
+                  <span aria-hidden="true" className="text-forest">
                     +
                   </span>
                   {feature}
@@ -100,7 +100,7 @@ export function PlanPicker() {
             </ul>
             <button
               type="submit"
-              className="mt-5 w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-brand-deep"
+              className="mt-5 w-full rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep"
             >
               Start free trial
             </button>

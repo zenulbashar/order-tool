@@ -75,7 +75,7 @@ export default async function LiveStepPage() {
             No tables yet.{" "}
             <Link
               href="/dashboard/tables"
-              className="font-medium text-brand underline"
+              className="font-medium text-forest underline"
             >
               Set up tables
             </Link>{" "}
@@ -88,7 +88,7 @@ export default async function LiveStepPage() {
         <form action={finishOnboarding}>
           <button
             type="submit"
-            className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-brand-deep"
+            className="rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep"
           >
             Go to dashboard
           </button>

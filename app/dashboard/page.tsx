@@ -15,12 +15,12 @@ export default async function DashboardPage() {
       {needsOnboarding ? (
         <Link
           href="/onboarding"
-          className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-sand bg-surface-elevated px-4 py-3 transition hover:border-brand"
+          className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-sand bg-surface-elevated px-4 py-3 transition hover:border-forest"
         >
           <span className="text-sm text-ink">
             Finish setting up your venue to go live and take orders.
           </span>
-          <span className="shrink-0 text-sm font-medium text-brand">
+          <span className="shrink-0 text-sm font-medium text-forest">
             Finish setup →
           </span>
         </Link>

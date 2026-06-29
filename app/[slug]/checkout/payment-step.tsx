@@ -46,7 +46,7 @@ export function PaymentStep({
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
 
   return (
-    <main style={brandStyle} className="mx-auto min-h-dvh max-w-2xl bg-white">
+    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-white">
       <header className="border-b border-gray-100 px-5 py-5">
         <h1 className="text-xl font-semibold tracking-tight text-gray-900">
           Payment
