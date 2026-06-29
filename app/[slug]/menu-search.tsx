@@ -3,13 +3,15 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 /**
- * Storefront menu search. Controlled by the storefront (value + onChange +
- * resultCount) — this component owns ONLY its collapsed/expanded presentation,
- * so the filter logic (search.ts) and the storefront stay untouched.
+ * Storefront menu search. Fully controlled by the storefront: value + onChange +
+ * resultCount drive the query, and expanded + onExpand + onCollapse drive whether
+ * it shows as a compact ICON or a full-width INPUT. It owns no filter logic, so
+ * search.ts and the storefront's query state stay untouched.
  *
- * Compact by default: a labelled search ICON button that expands into the input
- * on click and collapses back to the icon when the input is left empty (Esc
- * clears + collapses). A non-empty query always keeps the input visible.
+ * Compact by default: a labelled search ICON button; tapping it asks the parent
+ * to expand into the full-width input (focused on open), which collapses back to
+ * the icon when left empty (blur) or on Esc. The parent keeps it open whenever a
+ * query is present.
  * Brand-themed focus uses the venue's --brand inline (a CSS variable can't live
  * in a static class). Accessible: role=search, a visually-hidden input label, a
  * labelled expand control, a clearable input (button + Esc), and a polite live
@@ -19,21 +21,25 @@ export function MenuSearch({
   value,
   onChange,
   resultCount,
+  expanded,
+  onExpand,
+  onCollapse,
 }: {
   value: string;
   onChange: (next: string) => void;
   /** Number of matching items while searching, or null when the box is empty. */
   resultCount: number | null;
+  /** Whether the search is expanded into its full-width input (parent-owned). */
+  expanded: boolean;
+  onExpand: () => void;
+  onCollapse: () => void;
 }) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [expanded, setExpanded] = useState(false);
   const [focused, setFocused] = useState(false);
   const [triggerFocused, setTriggerFocused] = useState(false);
   const hasQuery = value.length > 0;
   const trimmed = value.trim();
-  // A non-empty query is always shown so the input never hides what was typed.
-  const showInput = expanded || hasQuery;
 
   // Focus the input whenever it expands open, so the icon → input is one tap.
   useEffect(() => {
@@ -41,12 +47,12 @@ export function MenuSearch({
   }, [expanded]);
 
   return (
-    <div role="search">
+    <div role="search" className={expanded ? "w-full" : "shrink-0"}>
       <label htmlFor={inputId} className="sr-only">
         Search the menu
       </label>
 
-      {showInput ? (
+      {expanded ? (
         <div className="relative">
           <span
             aria-hidden="true"
@@ -68,13 +74,13 @@ export function MenuSearch({
             onBlur={() => {
               setFocused(false);
               // Collapse back to the icon only when nothing was typed.
-              if (value.length === 0) setExpanded(false);
+              if (value.length === 0) onCollapse();
             }}
             onKeyDown={(event) => {
-              if (event.key === "Escape" && (hasQuery || expanded)) {
+              if (event.key === "Escape") {
                 event.preventDefault();
                 onChange("");
-                setExpanded(false);
+                onCollapse();
               }
             }}
             placeholder="Search the menu"
@@ -106,7 +112,7 @@ export function MenuSearch({
       ) : (
         <button
           type="button"
-          onClick={() => setExpanded(true)}
+          onClick={onExpand}
           onFocus={() => setTriggerFocused(true)}
           onBlur={() => setTriggerFocused(false)}
           aria-label="Search the menu"

@@ -34,7 +34,7 @@ export default async function CheckoutPage({
     return (
       <main className="mx-auto max-w-md px-6 py-16 text-center">
         <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
-          {venue.name} isn&apos;t taking orders yet
+          {venue.name}{" "}isn&apos;t taking orders yet
         </h1>
         <p className="mt-2 text-sm text-muted">
           This venue is still setting up. Please check back soon.

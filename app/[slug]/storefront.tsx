@@ -10,7 +10,7 @@ import { CartProvider, useCart } from "./cart-provider";
 import { CartReview } from "./cart-review";
 import { CategoryNav } from "./category-nav";
 import { ConciergePanel } from "./concierge/concierge-panel";
-import { DietaryFilter } from "./dietary-filter";
+import { DietaryDisclaimer, DietaryFilter } from "./dietary-filter";
 import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
@@ -75,6 +75,10 @@ function StorefrontInner({
   const [cartOpen, setCartOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<DietaryTag[]>([]);
+  // Pure UI state: whether the search control is expanded into its full-width
+  // input. Separate from `query` (the filter state) — toggling this never
+  // touches the search/filter logic below.
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
 
@@ -125,6 +129,9 @@ function StorefrontInner({
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
   const isFiltering = isSearching || activeTags.length > 0;
+  // Show the full-width input when the user expanded it OR whenever a query is
+  // present, so a non-empty search never collapses back to the icon.
+  const searchOpen = searchExpanded || query.length > 0;
 
   // The menu actually rendered: the full menu (same reference, identical order)
   // when no filter is active, otherwise each category filtered to items passing
@@ -182,40 +189,45 @@ function StorefrontInner({
             "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-brand-deep)",
         }}
       />
-      <header className="-mt-10 flex items-end gap-4 px-5 pb-2">
-        {venue.logoUrl ? (
-          // Arbitrary owner-supplied URL; next/image would need remote config.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={venue.logoUrl}
-            alt={`${venue.name} logo`}
-            className="h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface"
-          />
-        ) : (
-          <span
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-semibold text-white ring-4 ring-surface"
-            style={{ backgroundColor: "var(--brand)" }}
+      {/* Only the LOGO overlaps the band (-mt-10). The name + description sit
+          below the band in normal flow on the cream surface, fully readable. */}
+      <header className="px-5 pb-4">
+        <div className="flex items-start justify-between gap-4">
+          {venue.logoUrl ? (
+            // Arbitrary owner-supplied URL; next/image would need remote config.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={venue.logoUrl}
+              alt={`${venue.name} logo`}
+              className="-mt-10 h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface"
+            />
+          ) : (
+            <span
+              className="-mt-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-semibold text-white ring-4 ring-surface"
+              style={{ backgroundColor: "var(--brand)" }}
+            >
+              {venue.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          {/* Opt-in customer area (#7) — never blocks ordering; guests ignore it. */}
+          <Link
+            href={`/${venue.slug}/account`}
+            className="shrink-0 text-xs font-medium text-muted transition hover:text-ink"
           >
-            {venue.name.charAt(0).toUpperCase()}
-          </span>
-        )}
-        <div className="min-w-0 flex-1 pb-1">
-          <h1 className="truncate font-display text-2xl font-semibold tracking-tight text-ink">
+            Your orders
+          </Link>
+        </div>
+        {/* No truncate, so a long venue name wraps instead of clipping. */}
+        <div className="mt-3">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
             {venue.name}
           </h1>
           {venue.storefrontDescription ? (
-            <p className="truncate text-sm text-muted">
+            <p className="mt-0.5 text-sm text-muted">
               {venue.storefrontDescription}
             </p>
           ) : null}
         </div>
-        {/* Opt-in customer area (#7) — never blocks ordering; guests ignore it. */}
-        <Link
-          href={`/${venue.slug}/account`}
-          className="shrink-0 pb-1.5 text-xs font-medium text-muted transition hover:text-ink"
-        >
-          Your orders
-        </Link>
       </header>
 
       {/* Menu search pinned directly under the header (A1): the primary way to
@@ -223,17 +235,46 @@ function StorefrontInner({
           Sticky so it stays reachable while scrolling a long menu. */}
       {menu.length > 0 ? (
         <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur">
-          <div className="space-y-3 px-5 pb-3 pt-3">
-            <MenuSearch
-              value={query}
-              onChange={setQuery}
-              resultCount={isSearching ? visibleItemCount : null}
-            />
-            <DietaryFilter
-              available={availableTags}
-              selected={activeTags}
-              onToggle={toggleTag}
-            />
+          <div className="space-y-2 px-5 pb-3 pt-3">
+            {/* Search shares one row with the dietary chips: chips scroll on the
+                LEFT, the search control is pinned RIGHT (shrink-0, never pushed
+                off). Tapping the search icon expands it to a full-width input
+                (the chips yield the row); it collapses back to the icon when
+                cleared. The input still drives the same `query`/onChange and all
+                filter logic is unchanged. */}
+            <div className="flex items-start gap-2">
+              {searchOpen ? (
+                <MenuSearch
+                  expanded
+                  onExpand={() => setSearchExpanded(true)}
+                  onCollapse={() => setSearchExpanded(false)}
+                  value={query}
+                  onChange={setQuery}
+                  resultCount={isSearching ? visibleItemCount : null}
+                />
+              ) : (
+                <>
+                  <div className="min-w-0 flex-1">
+                    <DietaryFilter
+                      available={availableTags}
+                      selected={activeTags}
+                      onToggle={toggleTag}
+                    />
+                  </div>
+                  <MenuSearch
+                    expanded={false}
+                    onExpand={() => setSearchExpanded(true)}
+                    onCollapse={() => setSearchExpanded(false)}
+                    value={query}
+                    onChange={setQuery}
+                    resultCount={isSearching ? visibleItemCount : null}
+                  />
+                </>
+              )}
+            </div>
+            {/* Life-safety dietary disclaimer stays ALWAYS visible, independent
+                of the search expand state. */}
+            {availableTags.length > 0 ? <DietaryDisclaimer /> : null}
           </div>
           {navCategories.length > 0 ? (
             <CategoryNav categories={navCategories} />
