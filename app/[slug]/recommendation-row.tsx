@@ -98,7 +98,7 @@ export function RecommendationRow({
                     </span>
                     <span
                       aria-hidden="true"
-                      className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-accent text-lg font-semibold text-brand"
+                      className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-accent text-lg font-semibold text-forest"
                     >
                       +
                     </span>

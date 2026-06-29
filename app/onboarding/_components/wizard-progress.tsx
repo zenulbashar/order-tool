@@ -33,7 +33,7 @@ export function WizardProgress({ current }: { current: number }) {
             <li
               key={stepNumber}
               className={`h-1.5 flex-1 rounded-full ${
-                done ? "bg-brand" : "bg-sand"
+                done ? "bg-forest" : "bg-sand"
               }`}
             />
           );

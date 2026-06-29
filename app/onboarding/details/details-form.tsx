@@ -9,7 +9,7 @@ import { createVenueFromOnboarding, type DetailsState } from "./actions";
 const initialState: DetailsState = {};
 
 const fieldClass =
-  "w-full rounded-md border border-sand bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
+  "w-full rounded-md border border-sand bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest";
 const labelClass = "block text-sm font-medium text-ink";
 
 const VENUE_TYPE_OPTIONS = [
@@ -62,7 +62,7 @@ export function DetailsForm({ baseHost }: { baseHost: string }) {
           {VENUE_TYPE_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="cursor-pointer rounded-md border border-sand px-3 py-1.5 text-sm text-ink transition has-[:checked]:border-brand has-[:checked]:bg-brand has-[:checked]:text-surface-elevated"
+              className="cursor-pointer rounded-md border border-sand px-3 py-1.5 text-sm text-ink transition has-[:checked]:border-forest has-[:checked]:bg-forest has-[:checked]:text-surface-elevated"
             >
               <input
                 type="radio"
@@ -215,7 +215,7 @@ export function DetailsForm({ baseHost }: { baseHost: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-brand px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-brand-deep disabled:opacity-60"
+        className="w-full rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep disabled:opacity-60"
       >
         {pending ? "Saving…" : "Continue"}
       </button>

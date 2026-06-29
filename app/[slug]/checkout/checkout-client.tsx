@@ -167,7 +167,7 @@ export function CheckoutClient({
   if (count === 0) {
     return (
       <main
-        style={brandStyle}
+        style={brandStyle} data-domain="diner"
         className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center bg-white px-6 text-center"
       >
         <p className="text-sm text-gray-500">Your cart is empty.</p>
@@ -183,7 +183,7 @@ export function CheckoutClient({
   }
 
   return (
-    <main style={brandStyle} className="mx-auto min-h-dvh max-w-2xl bg-white">
+    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-white">
       <header className="border-b border-gray-100 px-5 py-5">
         <Link
           href={`/${venue.slug}`}

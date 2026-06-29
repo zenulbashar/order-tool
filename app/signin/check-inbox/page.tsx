@@ -9,8 +9,8 @@ import Link from "next/link";
  */
 export default function CheckInboxPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-brand-deep px-6 py-12 [background:radial-gradient(60%_50%_at_50%_30%,_color-mix(in_oklab,_var(--color-accent)_22%,_transparent),_transparent_70%),_var(--color-brand-deep)]">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-sand/15 bg-brand px-8 py-10 text-center">
+    <main className="flex min-h-dvh items-center justify-center bg-forest-deep px-6 py-12 [background:radial-gradient(60%_50%_at_50%_30%,_color-mix(in_oklab,_var(--color-accent)_22%,_transparent),_transparent_70%),_var(--color-forest-deep)]">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-sand/15 bg-forest px-8 py-10 text-center">
         <div className="flex items-center justify-center gap-2 text-surface">
           <span aria-hidden className="inline-block h-7 w-7 rounded-lg bg-accent" />
           <span className="font-display text-lg font-semibold tracking-tight">

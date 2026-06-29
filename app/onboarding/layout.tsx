@@ -19,7 +19,7 @@ export default async function OnboardingLayout({
     <div className="min-h-dvh bg-surface px-6 py-10">
       <div className="mx-auto w-full max-w-md">
         <header className="mb-6 text-center">
-          <span className="font-display text-xl font-semibold tracking-tight text-brand">
+          <span className="font-display text-xl font-semibold tracking-tight text-forest">
             Prompt2Eat
           </span>
         </header>

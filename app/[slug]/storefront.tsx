@@ -176,7 +176,7 @@ function StorefrontInner({
 
   return (
     <div
-      style={brandStyle}
+      style={brandStyle} data-domain="diner"
       className="mx-auto min-h-dvh max-w-3xl bg-surface pb-24"
     >
       {/* Cover band — a decorative warm glow in the venue's OWN --brand colour
@@ -186,7 +186,7 @@ function StorefrontInner({
         className="h-32 w-full sm:h-40"
         style={{
           background:
-            "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-brand-deep)",
+            "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-forest-deep)",
         }}
       />
       {/* Only the LOGO overlaps the band (-mt-10). The name + description sit
