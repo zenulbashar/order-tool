@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { readableOn } from "@/app/_components/brand-contrast";
 import { getCustomer } from "@/lib/customer/auth";
 import { isReservedSlug } from "@/lib/validation";
 
@@ -49,21 +50,24 @@ export default async function AccountPage({
         getCustomerOrders(venue.id, customer.id),
       ])
     : [[], []];
-  const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+  const brandStyle = {
+    "--brand": venue.brandColor,
+    "--brand-contrast": readableOn(venue.brandColor),
+  } as React.CSSProperties;
 
   return (
-    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-white">
-      <header className="border-b border-gray-100 px-5 py-5">
+    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-surface">
+      <header className="border-b border-line px-5 py-5">
         <Link
           href={`/${venue.slug}`}
-          className="text-xs text-gray-500 hover:text-gray-900"
+          className="text-xs text-muted hover:text-ink"
         >
           ← Back to {venue.name}
         </Link>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-gray-900">
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
           Your orders
         </h1>
-        <p className="text-sm text-gray-500">{venue.name}</p>
+        <p className="text-sm text-muted">{venue.name}</p>
       </header>
 
       {customer ? (
