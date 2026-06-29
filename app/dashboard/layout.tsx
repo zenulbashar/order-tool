@@ -54,7 +54,7 @@ export default async function DashboardLayout({
           </div>
           {hasMultiple ? null : (
             <Link
-              href="/onboarding"
+              href="/onboarding/details"
               className="shrink-0 text-sm font-medium text-gray-500 underline hover:text-gray-900"
             >
               ＋ Add location

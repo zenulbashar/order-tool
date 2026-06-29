@@ -113,6 +113,13 @@
       "when": 1782657762134,
       "tag": "0015_billing_subscription",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1782660713738,
+      "tag": "0016_onboarding_wizard",
+      "breakpoints": true
     }
   ]
 }

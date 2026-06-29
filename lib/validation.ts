@@ -39,6 +39,29 @@ export const slugSchema = z
   );
 
 /**
+ * Derive a SUGGESTED storefront slug from a venue name (Phase 3a onboarding).
+ *
+ * This fixes the old onboarding's footgun where owners hand-typed the public
+ * link field (and sometimes typed a street address into it). The wizard now
+ * pre-fills the link from the name: lower-case, strip accents, replace any run
+ * of non-alphanumerics with a single hyphen, and trim hyphens, capped at the
+ * slug's 40-char max. It is only a SUGGESTION — the owner can edit it, and
+ * slugSchema + isReservedSlug remain the authoritative validators at submit
+ * time. May return "" for an all-symbol name; the form keeps the field editable
+ * so the owner can supply one.
+ */
+export function slugify(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40)
+    .replace(/-+$/g, "");
+}
+
+/**
  * Dine-in table label (Phase 10), e.g. "1" or "Patio 3". Required and trimmed.
  * Capped at 40 to MATCH the checkout tableLabel bound (see placeOrderSchema),
  * so a label baked into a QR deep-link can never exceed what checkout accepts
