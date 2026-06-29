@@ -1,3 +1,4 @@
+import { StatusBadge, type KitchenTone } from "@/app/_components/status-badge";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
@@ -5,14 +6,19 @@ import { OrderStatusControls } from "./order-status-controls";
 import { PrintButton } from "./print-button";
 import type { FulfillmentStatus, KitchenOrder } from "./queries";
 
-const STATUS_BADGE: Record<
-  FulfillmentStatus,
-  { label: string; className: string }
-> = {
-  new: { label: "New", className: "bg-amber-100 text-amber-800" },
-  preparing: { label: "Preparing", className: "bg-blue-100 text-blue-800" },
-  ready: { label: "Ready", className: "bg-green-100 text-green-800" },
-  completed: { label: "Completed", className: "bg-gray-100 text-gray-600" },
+// Fulfillment status → StatusBadge kitchen tone + label. "completed" maps to the
+// "done" tone (muted); the others map 1:1.
+const STATUS_TONE: Record<FulfillmentStatus, KitchenTone> = {
+  new: "new",
+  preparing: "preparing",
+  ready: "ready",
+  completed: "done",
+};
+const STATUS_LABEL: Record<FulfillmentStatus, string> = {
+  new: "New",
+  preparing: "Preparing",
+  ready: "Ready",
+  completed: "Completed",
 };
 
 /**
@@ -28,55 +34,50 @@ export function OrderCard({
   timezone: string;
 }) {
   const isNew = order.fulfillmentStatus === "new";
-  const badge = STATUS_BADGE[order.fulfillmentStatus];
 
   return (
     <li
-      className={`rounded-lg border p-4 ${
+      className={`rounded-card border p-4 ${
         isNew
-          ? "border-amber-300 bg-amber-50 ring-1 ring-amber-200"
-          : "border-gray-200 bg-white"
+          ? "border-accent bg-accent/10 ring-1 ring-accent/20"
+          : "border-line bg-surface-elevated"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-semibold text-gray-900">
+            <span className="font-mono text-sm font-semibold text-ink">
               {orderReference(order.publicToken)}
             </span>
-            {isNew ? (
-              <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                New
-              </span>
-            ) : null}
           </div>
-          <p className="mt-0.5 text-xs text-gray-500">
+          <p className="mt-0.5 text-xs text-muted">
             {formatVenueTime(order.createdAt, timezone)}
           </p>
           {order.scheduledFor ? (
-            <p className="mt-0.5 text-xs font-semibold text-blue-700">
+            <p className="mt-0.5 text-xs font-semibold text-ink">
               Scheduled pickup · {formatVenueTime(order.scheduledFor, timezone)}
             </p>
           ) : null}
         </div>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${badge.className}`}
+        <StatusBadge
+          tone={STATUS_TONE[order.fulfillmentStatus]}
+          className="shrink-0"
         >
-          {badge.label}
-        </span>
+          {STATUS_LABEL[order.fulfillmentStatus]}
+        </StatusBadge>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+        <span className="rounded-sm bg-sand px-2 py-0.5 text-xs font-medium text-ink">
           {order.orderType === "dine_in"
             ? `Dine-in · Table ${order.tableLabel ?? "—"}`
             : "Pickup"}
         </span>
-        <span className="font-medium text-gray-900">{order.customerName}</span>
+        <span className="font-medium text-ink">{order.customerName}</span>
         {order.customerPhone ? (
           <a
             href={`tel:${order.customerPhone}`}
-            className="text-gray-500 underline hover:text-gray-700"
+            className="text-muted underline hover:text-ink"
           >
             {order.customerPhone}
           </a>
@@ -86,49 +87,49 @@ export function OrderCard({
       {/* Customer special request — rendered as plain (React-escaped) text so it
           can never inject markup, and visually loud so the kitchen sees it. */}
       {order.notes ? (
-        <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+        <div className="mt-3 rounded-control border border-accent/40 bg-accent/10 px-3 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink">
             Notes
           </p>
-          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-amber-900">
+          <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink">
             {order.notes}
           </p>
         </div>
       ) : null}
 
-      <ul className="mt-3 divide-y divide-gray-100 border-t border-gray-100">
+      <ul className="mt-3 divide-y divide-line border-t border-line">
         {order.items.map((item) => (
           <li
             key={item.id}
             className="flex items-start justify-between gap-3 py-2"
           >
             <div className="min-w-0">
-              <p className="text-sm text-gray-900">
-                <span className="text-gray-500">{item.quantity}×</span>{" "}
+              <p className="text-sm text-ink">
+                <span className="text-muted">{item.quantity}×</span>{" "}
                 {item.name}
                 {item.variantName ? ` (${item.variantName})` : ""}
               </p>
               {item.modifiers.length > 0 ? (
-                <p className="mt-0.5 text-xs text-gray-500">
+                <p className="mt-0.5 text-xs text-muted">
                   {item.modifiers.map((modifier) => modifier.name).join(", ")}
                 </p>
               ) : null}
             </div>
-            <span className="shrink-0 text-sm text-gray-700">
+            <span className="shrink-0 text-sm text-ink">
               ${formatCents(item.lineTotalCents)}
             </span>
           </li>
         ))}
       </ul>
 
-      <div className="mt-2 flex items-center justify-between border-t border-gray-100 pt-2">
-        <span className="text-sm font-medium text-gray-900">Total</span>
-        <span className="text-base font-semibold text-gray-900">
+      <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
+        <span className="text-sm font-medium text-ink">Total</span>
+        <span className="text-base font-semibold text-ink">
           ${formatCents(order.totalCents)}
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
         <OrderStatusControls orderId={order.id} status={order.fulfillmentStatus} />
         <PrintButton order={order} />
       </div>

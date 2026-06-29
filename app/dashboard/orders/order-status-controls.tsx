@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import { Spinner } from "@/app/_components/spinner";
+import { Button } from "@/app/_components/button";
 
 import { updateOrderFulfillmentStatus } from "./actions";
 import type { FulfillmentStatus } from "./queries";
@@ -33,12 +33,17 @@ export function OrderStatusControls({
         const isCurrent = step.value === status;
         const isTarget = isPending && target === step.value;
         return (
-          <button
+          <Button
             key={step.value}
             type="button"
+            size="sm"
+            variant={isCurrent ? "primary" : "secondary"}
             // The current status is a no-op; disable it (and all buttons while a
             // change is in flight, to prevent double-submits).
             disabled={isPending || isCurrent}
+            // Spinner only on the button being clicked, not all of them.
+            loading={isTarget && isPending}
+            loadingLabel={step.label}
             onClick={() => {
               setError(null);
               setTarget(step.value);
@@ -50,25 +55,13 @@ export function OrderStatusControls({
                 if (result?.error) setError(result.error);
               });
             }}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed ${
-              isCurrent
-                ? "bg-gray-900 text-white disabled:opacity-100"
-                : "border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            }`}
           >
-            {isTarget ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Spinner size="sm" label={`Setting ${step.label}`} />
-                {step.label}
-              </span>
-            ) : (
-              step.label
-            )}
-          </button>
+            {step.label}
+          </Button>
         );
       })}
       {error ? (
-        <p className="w-full text-xs text-red-600" role="alert">
+        <p className="w-full text-xs text-[var(--color-warm)]" role="alert">
           {error}
         </p>
       ) : null}
