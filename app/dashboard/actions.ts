@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import { isVenueMember, setSelectedVenueCookie } from "@/lib/tenant";
 
 /**
@@ -30,4 +30,13 @@ export async function setCurrentVenue(venueId: string): Promise<void> {
   // Land on the dashboard home so the switch is unambiguous; redirect() throws
   // a control-flow signal, so it stays outside any try/catch.
   redirect("/dashboard");
+}
+
+/**
+ * Sign the owner out. A thin wrapper over Auth.js signOut so the client sidebar
+ * footer can post to it without importing `@/lib/auth` (keeping the owner auth
+ * out of the client bundle and the customer↔owner firewall intact).
+ */
+export async function signOutOwner(): Promise<void> {
+  await signOut({ redirectTo: "/signin" });
 }

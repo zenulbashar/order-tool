@@ -1,20 +1,18 @@
-import Link from "next/link";
-
 import { getCurrentVenue, getUserVenues, requireUser } from "@/lib/tenant";
 
-import { VenueSwitcher } from "./venue-switcher";
+import { Sidebar } from "./sidebar";
 
 /**
- * Shared dashboard chrome. The venue switcher lives here so every dashboard page
- * inherits it with no per-page change, and so the owner can always see — and
- * change — which location they are managing.
+ * Shared dashboard chrome: a persistent forest-dark sidebar (nav + venue
+ * switcher + sign-out) on desktop, a hamburger-drawer on mobile. Every dashboard
+ * page renders in the cream content column beside it.
  */
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireUser();
+  const user = await requireUser();
   const [venues, current] = await Promise.all([
     getUserVenues(),
     getCurrentVenue(),
@@ -29,40 +27,18 @@ export default async function DashboardLayout({
   const hasMultiple = venues.length > 1;
 
   return (
-    <div>
-      {/* print:hidden so dashboard prints (the orders ticket, the tables QR
-          sheet) show only page content, never this venue-switcher chrome. */}
-      <div className="border-b border-gray-200 bg-white print:hidden">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-6 py-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-gray-400">
-              Managing
-            </span>
-            {hasMultiple ? (
-              <VenueSwitcher
-                venues={venues.map((venue) => ({
-                  id: venue.id,
-                  name: venue.name,
-                }))}
-                currentId={current.id}
-              />
-            ) : (
-              <span className="truncate text-sm font-semibold text-gray-900">
-                {current.name}
-              </span>
-            )}
-          </div>
-          {hasMultiple ? null : (
-            <Link
-              href="/onboarding/details"
-              className="shrink-0 text-sm font-medium text-gray-500 underline hover:text-gray-900"
-            >
-              ＋ Add location
-            </Link>
-          )}
-        </div>
-      </div>
-      {children}
+    <div className="lg:flex lg:h-dvh">
+      <Sidebar
+        venues={venues.map((venue) => ({ id: venue.id, name: venue.name }))}
+        currentId={current.id}
+        currentName={current.name}
+        currentSlug={current.slug}
+        plan={current.plan}
+        userName={user.name ?? null}
+        userEmail={user.email ?? null}
+        hasMultiple={hasMultiple}
+      />
+      <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }
