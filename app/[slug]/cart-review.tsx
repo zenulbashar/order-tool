@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { buttonStyles } from "@/app/_components/button-variants";
+import { Stepper } from "@/app/_components/stepper";
 import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
@@ -56,7 +58,7 @@ export function CartReview({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-surface-elevated sm:rounded-2xl"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-card bg-surface-elevated sm:rounded-card"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-sand px-5 py-4">
@@ -67,7 +69,7 @@ export function CartReview({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full p-1 text-muted hover:bg-sand hover:text-ink"
+            className="flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:bg-sand hover:text-ink"
           >
             ✕
           </button>
@@ -75,7 +77,7 @@ export function CartReview({
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {staleNotice ? (
-            <p className="mb-3 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-ink">
+            <p className="mb-3 rounded-control border border-[var(--color-warm)]/40 bg-[var(--color-warm)]/10 px-3 py-2 text-xs text-ink">
               Some items changed since your last visit and were updated.
             </p>
           ) : null}
@@ -111,31 +113,15 @@ export function CartReview({
                       <span className="text-sm text-ink">
                         ${formatCents(line.lineCents)}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setQuantity(line.lineId, line.quantity - 1)
-                          }
-                          aria-label="Decrease quantity"
-                          className="flex h-7 w-7 items-center justify-center rounded-full border border-sand text-ink"
-                        >
-                          −
-                        </button>
-                        <span className="w-5 text-center text-sm font-medium">
-                          {line.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setQuantity(line.lineId, line.quantity + 1)
-                          }
-                          aria-label="Increase quantity"
-                          className="flex h-7 w-7 items-center justify-center rounded-full border border-sand text-ink"
-                        >
-                          +
-                        </button>
-                      </div>
+                      {/* min/max UNSET: decrement at 1 emits onChange(0) ->
+                          setLineQuantity removes the line (decrement-to-remove),
+                          and the 99 cap stays provider-side. Behaviour-identical
+                          to the previous inline +/−, now a 44px Stepper. */}
+                      <Stepper
+                        value={line.quantity}
+                        onChange={(q) => setQuantity(line.lineId, q)}
+                        label="Quantity"
+                      />
                     </div>
                   </div>
                 </li>
@@ -166,8 +152,7 @@ export function CartReview({
                   ? `?type=dinein&table=${encodeURIComponent(tableLabel.trim())}`
                   : ""
               }`}
-              className="block w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white"
-              style={{ backgroundColor: "var(--brand)" }}
+              className={buttonStyles("primary", "lg", { className: "w-full" })}
             >
               Continue to checkout
             </Link>

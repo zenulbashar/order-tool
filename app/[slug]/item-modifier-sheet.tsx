@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { Button } from "@/app/_components/button";
 import { dietaryTagLabel, formatCents } from "@/lib/validation";
 
 import {
@@ -73,7 +74,7 @@ export function ItemModifierSheet({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-surface-elevated sm:rounded-2xl"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-card bg-surface-elevated sm:rounded-card"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-sand px-5 py-4">
@@ -89,7 +90,7 @@ export function ItemModifierSheet({
                 {item.tags.map((tag) => (
                   <li
                     key={tag}
-                    className="rounded-full bg-sand px-2 py-0.5 text-[11px] font-medium text-muted"
+                    className="rounded-pill bg-sand px-2 py-0.5 text-[11px] font-medium text-muted"
                   >
                     {dietaryTagLabel(tag)}
                   </li>
@@ -101,7 +102,7 @@ export function ItemModifierSheet({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="shrink-0 rounded-full p-1 text-muted hover:bg-sand hover:text-ink"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-muted hover:bg-sand hover:text-ink"
           >
             ✕
           </button>
@@ -128,17 +129,17 @@ export function ItemModifierSheet({
             />
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="primary"
             onClick={handleAdd}
             disabled={!allValid}
-            className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ backgroundColor: "var(--brand)" }}
+            className="w-full"
           >
             {hasVariants && !selectedVariant
               ? "Select a size"
               : `Add to cart · $${formatCents(totalCents)}`}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
