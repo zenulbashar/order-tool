@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/app/_components/button";
+
 import { usePrint } from "./print-context";
 import type { KitchenOrder } from "./queries";
 
@@ -13,12 +15,8 @@ export function PrintButton({ order }: { order: KitchenOrder }) {
   const { print } = usePrint();
 
   return (
-    <button
-      type="button"
-      onClick={() => print(order)}
-      className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
-    >
+    <Button variant="secondary" size="sm" onClick={() => print(order)}>
       Print
-    </button>
+    </Button>
   );
 }

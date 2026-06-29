@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { PageHeader } from "@/app/_components/page-header";
 import { requestNowMs } from "@/lib/schedule";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -48,27 +49,19 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
   return (
     <PrintProvider venueName={venue.name} timezone={venue.timezone}>
-      <main className="mx-auto max-w-3xl px-6 py-10">
-        <header className="flex items-start justify-between gap-4 border-b border-gray-200 pb-6">
-          <div className="space-y-1">
-            <Link
-              href="/dashboard"
-              className="text-sm text-gray-500 underline hover:text-gray-700"
-            >
-              ← Dashboard
-            </Link>
-            <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-            <p className="text-sm text-gray-500">{venue.name} · live kitchen queue</p>
-          </div>
-          <OrdersAutoRefresh />
-        </header>
+      <main className="mx-auto max-w-3xl">
+        <PageHeader
+          title="Orders"
+          description={`${venue.name} · live kitchen queue`}
+          action={<OrdersAutoRefresh />}
+        />
 
-        <section className="py-8">
-          <h2 className="text-sm font-semibold text-gray-900">
+        <section className="px-5 py-8">
+          <h2 className="text-sm font-semibold text-ink">
             Active{makeNowOrders.length > 0 ? ` (${makeNowOrders.length})` : ""}
           </h2>
           {makeNowOrders.length === 0 ? (
-            <p className="mt-4 rounded-lg border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
+            <p className="mt-4 rounded-card border border-dashed border-line p-8 text-center text-sm text-muted">
               No active orders
             </p>
           ) : (
@@ -81,11 +74,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         </section>
 
         {upcomingOrders.length > 0 ? (
-          <section className="border-t border-gray-100 py-8">
-            <h2 className="text-sm font-semibold text-gray-900">
+          <section className="border-t border-line px-5 py-8">
+            <h2 className="text-sm font-semibold text-ink">
               Scheduled (upcoming) ({upcomingOrders.length})
             </h2>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted">
               Pre-orders shown by pickup time. Each moves into Active when it is
               due.
             </p>
@@ -97,16 +90,16 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           </section>
         ) : null}
 
-        <section className="border-t border-gray-100 py-6">
+        <section className="border-t border-line px-5 py-6">
           <Link
             href={showCompleted ? "/dashboard/orders" : "/dashboard/orders?completed=1"}
-            className="text-sm font-medium text-gray-700 underline hover:text-gray-900"
+            className="text-sm font-medium text-[var(--action)] underline hover:opacity-80"
           >
             {showCompleted ? "Hide completed" : "Show completed"}
           </Link>
           {showCompleted ? (
             completedOrders.length === 0 ? (
-              <p className="mt-4 text-sm text-gray-500">No completed orders yet.</p>
+              <p className="mt-4 text-sm text-muted">No completed orders yet.</p>
             ) : (
               <ul className="mt-4 space-y-3 opacity-80">
                 {completedOrders.map((order) => (
