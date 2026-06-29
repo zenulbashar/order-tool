@@ -25,11 +25,11 @@ export function SignInForm() {
         required
         autoComplete="email"
         placeholder="you@example.com"
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+        className="w-full rounded-lg border border-sand bg-surface-elevated px-3 py-2.5 text-sm text-ink shadow-sm placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
       />
 
       {state.error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-error" role="alert">
           {state.error}
         </p>
       ) : null}
@@ -37,7 +37,7 @@ export function SignInForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-brand hover:text-surface disabled:cursor-not-allowed disabled:opacity-50"
       >
         <ButtonLabel pending={pending} pendingLabel="Sending link…">
           Send magic link
