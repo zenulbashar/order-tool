@@ -25,7 +25,7 @@ export function ItemCard({
     <button
       type="button"
       onClick={() => onSelect(item)}
-      className="flex w-full items-start justify-between gap-4 rounded-2xl border border-sand bg-surface-elevated p-3 text-left shadow-sm transition hover:border-muted/40 hover:shadow-md"
+      className="flex w-full items-start justify-between gap-4 rounded-card border border-sand bg-surface-elevated p-3 text-left shadow-sm transition hover:border-muted/40 hover:shadow-md"
     >
       <div className="min-w-0 flex-1">
         <p className="font-body text-sm font-semibold text-ink">{item.name}</p>
@@ -39,7 +39,7 @@ export function ItemCard({
             {item.tags.map((tag) => (
               <li
                 key={tag}
-                className="rounded-full bg-sand px-2 py-0.5 text-[11px] font-medium text-muted"
+                className="rounded-pill bg-sand px-2 py-0.5 text-[11px] font-medium text-muted"
               >
                 {dietaryTagLabel(tag)}
               </li>
@@ -66,15 +66,15 @@ export function ItemCard({
             alt={item.name}
             loading="lazy"
             decoding="async"
-            className="h-24 w-24 rounded-xl border border-sand object-cover"
+            className="h-24 w-24 rounded-control border border-sand object-cover"
           />
         ) : null}
         <span
           aria-hidden="true"
-          className={`flex h-9 w-9 items-center justify-center rounded-full text-white shadow-md ${
+          className={`flex h-9 w-9 items-center justify-center rounded-pill text-[var(--action-contrast)] shadow-md ${
             item.imageUrl ? "absolute -bottom-2 -right-2" : ""
           }`}
-          style={{ backgroundColor: "var(--brand)" }}
+          style={{ backgroundColor: "var(--action)" }}
         >
           <PlusIcon />
         </span>

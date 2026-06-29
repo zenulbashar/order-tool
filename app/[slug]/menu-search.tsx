@@ -84,12 +84,12 @@ export function MenuSearch({
               }
             }}
             placeholder="Search the menu"
-            className="w-full rounded-full border border-sand bg-surface-elevated py-2 pl-9 pr-9 text-sm text-ink shadow-sm outline-none placeholder:text-muted"
+            className="w-full rounded-pill border border-sand bg-surface-elevated py-2.5 pl-9 pr-9 text-sm text-ink shadow-sm outline-none placeholder:text-muted"
             style={
               focused
                 ? {
-                    borderColor: "var(--brand)",
-                    boxShadow: "0 0 0 1px var(--brand)",
+                    borderColor: "var(--action)",
+                    boxShadow: "0 0 0 1px var(--action)",
                   }
                 : undefined
             }
@@ -103,7 +103,7 @@ export function MenuSearch({
                 inputRef.current?.focus();
               }}
               aria-label="Clear search"
-              className="absolute inset-y-0 right-1.5 flex items-center rounded px-1 text-muted transition hover:text-ink"
+              className="absolute inset-y-0 right-1.5 flex items-center rounded-control px-2 text-muted transition hover:text-ink"
             >
               <CloseIcon />
             </button>
@@ -118,13 +118,13 @@ export function MenuSearch({
           aria-label="Search the menu"
           aria-expanded={false}
           aria-controls={inputId}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-sand bg-surface-elevated text-muted shadow-sm outline-none transition hover:text-ink"
+          className="flex h-11 w-11 items-center justify-center rounded-pill border border-sand bg-surface-elevated text-muted shadow-sm outline-none transition hover:text-ink"
           style={
             triggerFocused
               ? {
-                  borderColor: "var(--brand)",
-                  boxShadow: "0 0 0 1px var(--brand)",
-                  color: "var(--brand)",
+                  borderColor: "var(--action)",
+                  boxShadow: "0 0 0 1px var(--action)",
+                  color: "var(--action)",
                 }
               : undefined
           }

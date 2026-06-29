@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { readableOn } from "@/app/_components/brand-contrast";
 import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
 
 import { CartBar } from "./cart-bar";
@@ -80,7 +81,10 @@ function StorefrontInner({
   // touches the search/filter logic below.
   const [searchExpanded, setSearchExpanded] = useState(false);
 
-  const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+  const brandStyle = {
+    "--brand": venue.brandColor,
+    "--brand-contrast": readableOn(venue.brandColor),
+  } as React.CSSProperties;
 
   // The dietary tags actually in use across this venue's menu, in canonical
   // order — only these become filter chips, so there are never dead chips.
@@ -199,12 +203,12 @@ function StorefrontInner({
             <img
               src={venue.logoUrl}
               alt={`${venue.name} logo`}
-              className="-mt-10 h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface"
+              className="-mt-10 h-16 w-16 shrink-0 rounded-pill object-cover ring-4 ring-surface"
             />
           ) : (
             <span
-              className="-mt-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-semibold text-white ring-4 ring-surface"
-              style={{ backgroundColor: "var(--brand)" }}
+              className="-mt-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-pill text-2xl font-semibold text-[var(--action-contrast)] ring-4 ring-surface"
+              style={{ backgroundColor: "var(--action)" }}
             >
               {venue.name.charAt(0).toUpperCase()}
             </span>
@@ -300,11 +304,11 @@ function StorefrontInner({
 
       <div className="space-y-8 px-5 py-6">
         {menu.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-sand p-8 text-center text-sm text-muted">
+          <p className="rounded-card border border-dashed border-sand p-8 text-center text-sm text-muted">
             This venue hasn’t published a menu yet. Check back soon.
           </p>
         ) : visibleMenu.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-sand p-8 text-center text-sm text-muted">
+          <p className="rounded-card border border-dashed border-sand p-8 text-center text-sm text-muted">
             {isSearching
               ? `No items match “${trimmedQuery}”${activeTags.length > 0 ? " with those dietary tags" : ""}.`
               : "No items match those dietary tags."}

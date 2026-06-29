@@ -21,8 +21,8 @@ export function CartBar({ onOpen }: { onOpen: () => void }) {
       <button
         type="button"
         onClick={onOpen}
-        className="flex w-full items-center justify-between rounded-full px-5 py-3 text-sm font-semibold text-white shadow-lg"
-        style={{ backgroundColor: "var(--brand)" }}
+        className="flex w-full items-center justify-between rounded-pill px-5 py-3 text-sm font-semibold text-[var(--action-contrast)] shadow-lg"
+        style={{ backgroundColor: "var(--action)" }}
       >
         <span>
           View cart · {count} {count === 1 ? "item" : "items"}
