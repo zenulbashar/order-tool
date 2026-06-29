@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Card } from "@/app/_components/card";
+import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 import { SettingsDetailsForm } from "./settings-details-form";
@@ -10,22 +12,11 @@ export default async function SettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="border-b border-gray-200 pb-6">
-        <Link
-          href="/dashboard"
-          className="text-xs text-gray-500 hover:text-gray-900"
-        >
-          ← Back to dashboard
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          Storefront settings
-        </h1>
-        <p className="text-sm text-gray-500">{venue.name}</p>
-      </header>
+    <main className="mx-auto max-w-3xl">
+      <PageHeader title="Storefront settings" description={venue.name} />
 
-      <section className="py-8">
-        <div className="rounded-lg border border-gray-200 p-4">
+      <section className="px-5 py-8">
+        <Card>
           <SettingsForm
             settings={{
               brandColor: venue.brandColor,
@@ -33,12 +24,12 @@ export default async function SettingsPage() {
               storefrontDescription: venue.storefrontDescription,
             }}
           />
-        </div>
-        <p className="mt-4 text-xs text-gray-500">
+        </Card>
+        <p className="mt-4 text-xs text-muted">
           Your storefront is live at{" "}
           <Link
             href={`/${venue.slug}`}
-            className="font-medium text-gray-700 underline"
+            className="font-medium text-[var(--action)] underline hover:opacity-80"
             target="_blank"
           >
             /{venue.slug}
@@ -47,16 +38,16 @@ export default async function SettingsPage() {
         </p>
       </section>
 
-      <section className="border-t border-gray-200 py-8">
-        <h2 className="text-lg font-semibold tracking-tight text-gray-900">
+      <section className="border-t border-line px-5 py-8">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">
           Business details
         </h2>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted">
           These power your venue&rsquo;s Google search listing (structured data).
           Everything here is optional, and only the fields you fill in are
           published — blanks are never guessed.
         </p>
-        <div className="mt-4 rounded-lg border border-gray-200 p-4">
+        <Card className="mt-4">
           <SettingsDetailsForm
             details={{
               streetAddress: venue.streetAddress,
@@ -73,7 +64,7 @@ export default async function SettingsPage() {
               schedulingMaxDaysAhead: venue.schedulingMaxDaysAhead,
             }}
           />
-        </div>
+        </Card>
       </section>
     </main>
   );
