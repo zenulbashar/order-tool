@@ -2,10 +2,10 @@
 
 import { useMemo } from "react";
 
+import { Field } from "@/app/_components/field";
+import { Segmented } from "@/app/_components/segmented";
+import { Select } from "@/app/_components/select";
 import { buildPickupSlots, type SchedulingConfig } from "@/lib/schedule";
-
-const selectClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 /** "14:30" -> "2:30 PM" for display only (the value stays 24h "HH:MM"). */
 function formatTimeLabel(time: string): string {
@@ -54,66 +54,55 @@ export function SchedulePicker({
 
   return (
     <div className="space-y-3">
-      <span className="block text-sm font-medium text-gray-900">Pickup time</span>
-      <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
-        <button
-          type="button"
-          onClick={() => onScheduledFor(null)}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-            !isLater ? "bg-white shadow-sm" : "text-gray-500"
-          }`}
-          style={!isLater ? { color: "var(--brand)" } : undefined}
-        >
-          ASAP
-        </button>
-        <button
-          type="button"
-          onClick={() => onScheduledFor(`${days[0].date}T${days[0].times[0]}`)}
-          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-            isLater ? "bg-white shadow-sm" : "text-gray-500"
-          }`}
-          style={isLater ? { color: "var(--brand)" } : undefined}
-        >
-          Schedule for later
-        </button>
-      </div>
+      <span className="block text-sm font-medium text-ink">Pickup time</span>
+      <Segmented
+        label="Pickup time"
+        value={isLater ? "later" : "asap"}
+        onChange={(next) =>
+          next === "asap"
+            ? onScheduledFor(null)
+            : onScheduledFor(`${days[0].date}T${days[0].times[0]}`)
+        }
+        options={[
+          { value: "asap", label: "ASAP" },
+          { value: "later", label: "Schedule for later" },
+        ]}
+      />
 
       {isLater ? (
         <div className="grid grid-cols-2 gap-2">
-          <label className="block text-sm font-medium text-gray-900">
-            Day
-            <select
+          <Field label="Day" htmlFor="schedule-day">
+            <Select
+              id="schedule-day"
               value={activeDay.date}
               onChange={(event) => {
                 const day =
                   days.find((d) => d.date === event.target.value) ?? days[0];
                 onScheduledFor(`${day.date}T${day.times[0]}`);
               }}
-              className={`mt-1 ${selectClass}`}
             >
               {days.map((day) => (
                 <option key={day.date} value={day.date}>
                   {day.label}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="block text-sm font-medium text-gray-900">
-            Time
-            <select
+            </Select>
+          </Field>
+          <Field label="Time" htmlFor="schedule-time">
+            <Select
+              id="schedule-time"
               value={activeTime}
               onChange={(event) =>
                 onScheduledFor(`${activeDay.date}T${event.target.value}`)
               }
-              className={`mt-1 ${selectClass}`}
             >
               {activeDay.times.map((time) => (
                 <option key={time} value={time}>
                   {formatTimeLabel(time)}
                 </option>
               ))}
-            </select>
-          </label>
+            </Select>
+          </Field>
         </div>
       ) : null}
     </div>
