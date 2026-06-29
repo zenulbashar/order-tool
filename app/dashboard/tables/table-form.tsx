@@ -2,14 +2,12 @@
 
 import { useActionState } from "react";
 
-import { ButtonLabel } from "@/app/_components/spinner";
+import { Button } from "@/app/_components/button";
+import { Input } from "@/app/_components/input";
 
 import { createTable, updateTable, type TablesActionState } from "./actions";
 
 const initialState: TablesActionState = {};
-
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 sm:w-56";
 
 type EditableTable = {
   id: string;
@@ -19,7 +17,7 @@ type EditableTable = {
 /**
  * Create (no `table`) or rename (with `table`) a dine-in table. Mirrors the
  * menu VariantForm: useActionState on the matching server action, a hidden id
- * for edits, an inline error, and the shared ButtonLabel spinner.
+ * for edits, an inline error, and the shared primitives.
  */
 export function TableForm({ table }: { table?: EditableTable }) {
   const isEdit = Boolean(table);
@@ -32,7 +30,7 @@ export function TableForm({ table }: { table?: EditableTable }) {
     <form action={formAction} className="flex flex-wrap items-center gap-2">
       {table ? <input type="hidden" name="id" value={table.id} /> : null}
 
-      <input
+      <Input
         name="label"
         type="text"
         required
@@ -40,21 +38,15 @@ export function TableForm({ table }: { table?: EditableTable }) {
         defaultValue={table?.label ?? ""}
         placeholder="e.g. 1 or Patio 3"
         aria-label="Table name"
-        className={fieldClass}
+        className="sm:w-56"
       />
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
-      >
-        <ButtonLabel pending={pending} pendingLabel="Saving…">
-          {isEdit ? "Save" : "Add table"}
-        </ButtonLabel>
-      </button>
+      <Button type="submit" variant="primary" loading={pending} loadingLabel="Saving…">
+        {isEdit ? "Save" : "Add table"}
+      </Button>
 
       {state.error ? (
-        <p className="w-full text-sm text-red-600" role="alert">
+        <p className="w-full text-sm text-[var(--color-warm)]" role="alert">
           {state.error}
         </p>
       ) : null}

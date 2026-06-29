@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/app/_components/button";
+
 /**
  * Prints the QR sheet via the browser's native dialog. Reuses the app's
  * established print STYLE (window.print() + Tailwind `print:` utilities) rather
@@ -9,12 +11,13 @@
  */
 export function PrintButton() {
   return (
-    <button
-      type="button"
+    <Button
+      variant="primary"
+      size="sm"
       onClick={() => window.print()}
-      className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-gray-800 print:hidden"
+      className="print:hidden"
     >
       Print sheet
-    </button>
+    </Button>
   );
 }
