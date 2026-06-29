@@ -47,6 +47,17 @@ export async function createBillingCheckout(formData: FormData): Promise<void> {
   const venue = await requireVenue();
   const plan = parsePaidPlan(formData.get("plan"));
   const interval = parseInterval(formData.get("interval"));
+  // Return-URL context only (Phase 3c). When the onboarding wizard initiates
+  // Checkout it passes returnTo=wizard so success/cancel come back into the
+  // wizard; the dashboard omits it and keeps its original URLs. Nothing else
+  // about the Checkout/customer/trial setup changes.
+  const isWizard = formData.get("returnTo") === "wizard";
+  const successPath = isWizard
+    ? "/onboarding/plan?checkout=success"
+    : "/dashboard/billing?checkout=success";
+  const cancelPath = isWizard
+    ? "/onboarding/plan?checkout=cancel"
+    : "/dashboard/billing?checkout=cancel";
 
   let destination: string;
   try {
@@ -85,8 +96,8 @@ export async function createBillingCheckout(formData: FormData): Promise<void> {
         metadata: { venueId: venue.id },
       },
       metadata: { venueId: venue.id, plan, interval },
-      success_url: `${baseUrl}/dashboard/billing?checkout=success`,
-      cancel_url: `${baseUrl}/dashboard/billing?checkout=cancel`,
+      success_url: `${baseUrl}${successPath}`,
+      cancel_url: `${baseUrl}${cancelPath}`,
     });
 
     if (!session.url) {
