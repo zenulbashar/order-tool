@@ -155,14 +155,14 @@ export function ItemSelectionFields({
       {hasVariants ? (
         <fieldset>
           <legend className="flex w-full items-baseline justify-between">
-            <span className="text-sm font-medium text-gray-900">Size</span>
-            <span className="text-xs text-gray-400">Required · choose 1</span>
+            <span className="text-sm font-medium text-ink">Size</span>
+            <span className="text-xs text-muted">Required · choose 1</span>
           </legend>
           <div className="mt-2 space-y-1.5">
             {item.variants.map((variant) => (
               <label
                 key={variant.id}
-                className="flex items-center justify-between gap-3 text-sm text-gray-700"
+                className="flex items-center justify-between gap-3 text-sm text-ink"
               >
                 <span className="flex items-center gap-2">
                   <input
@@ -171,10 +171,11 @@ export function ItemSelectionFields({
                     checked={selectedVariantId === variant.id}
                     onChange={() => setSelectedVariantId(variant.id)}
                     className="h-4 w-4"
+                    style={{ accentColor: "var(--brand)" }}
                   />
                   {variant.name}
                 </span>
-                <span className="text-gray-500">
+                <span className="text-muted">
                   ${formatCents(variant.priceCents)}
                 </span>
               </label>
@@ -186,13 +187,13 @@ export function ItemSelectionFields({
       {/* LIFE-SAFETY: the tags are the venue's own labels, not a guarantee. A
           prominent, unmissable note right where the customer is about to order. */}
       {item.tags.length > 0 ? (
-        <p className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-medium text-amber-900">
+        <p className="flex items-start gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-sm font-medium text-ink">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
-            className="mt-0.5 h-5 w-5 shrink-0"
+            className="mt-0.5 h-5 w-5 shrink-0 text-accent"
           >
             <path
               fillRule="evenodd"
@@ -214,20 +215,20 @@ export function ItemSelectionFields({
         return (
           <fieldset key={group.id}>
             <legend className="flex w-full items-baseline justify-between">
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-ink">
                 {group.name}
               </span>
-              <span className="text-xs text-gray-400">{groupHint(group)}</span>
+              <span className="text-xs text-muted">{groupHint(group)}</span>
             </legend>
 
             <div className="mt-2 space-y-1.5">
               {group.options.length === 0 ? (
-                <p className="text-xs text-gray-400">No options available.</p>
+                <p className="text-xs text-muted">No options available.</p>
               ) : null}
 
               {/* Optional single-select can be cleared via a "None" radio. */}
               {isRadio && group.minSelect === 0 ? (
-                <label className="flex items-center justify-between gap-3 text-sm text-gray-700">
+                <label className="flex items-center justify-between gap-3 text-sm text-ink">
                   <span className="flex items-center gap-2">
                     <input
                       type="radio"
@@ -235,6 +236,7 @@ export function ItemSelectionFields({
                       checked={selected.length === 0}
                       onChange={() => selectRadio(group, null)}
                       className="h-4 w-4"
+                      style={{ accentColor: "var(--brand)" }}
                     />
                     None
                   </span>
@@ -246,7 +248,7 @@ export function ItemSelectionFields({
                 return (
                   <label
                     key={option.id}
-                    className="flex items-center justify-between gap-3 text-sm text-gray-700"
+                    className="flex items-center justify-between gap-3 text-sm text-ink"
                   >
                     <span className="flex items-center gap-2">
                       <input
@@ -260,11 +262,12 @@ export function ItemSelectionFields({
                             : toggleCheckbox(group, option.id)
                         }
                         className="h-4 w-4"
+                        style={{ accentColor: "var(--brand)" }}
                       />
                       {option.name}
                     </span>
                     {option.priceDeltaCents > 0 ? (
-                      <span className="text-gray-500">
+                      <span className="text-muted">
                         +${formatCents(option.priceDeltaCents)}
                       </span>
                     ) : null}
@@ -294,7 +297,7 @@ export function QuantityStepper({
         onClick={() => onChange(Math.max(1, quantity - 1))}
         disabled={quantity <= 1}
         aria-label="Decrease quantity"
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-700 disabled:opacity-40"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-sand text-ink disabled:opacity-40"
       >
         −
       </button>
@@ -303,7 +306,7 @@ export function QuantityStepper({
         type="button"
         onClick={() => onChange(quantity + 1)}
         aria-label="Increase quantity"
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-700"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-sand text-ink"
       >
         +
       </button>

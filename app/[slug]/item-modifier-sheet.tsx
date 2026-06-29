@@ -73,23 +73,23 @@ export function ItemModifierSheet({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white sm:rounded-2xl"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-surface-elevated sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-sand px-5 py-4">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold tracking-tight text-gray-900">
+            <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
               {item.name}
             </h2>
             {item.description ? (
-              <p className="mt-0.5 text-sm text-gray-500">{item.description}</p>
+              <p className="mt-0.5 text-sm text-muted">{item.description}</p>
             ) : null}
             {item.tags.length > 0 ? (
               <ul className="mt-2 flex flex-wrap gap-1">
                 {item.tags.map((tag) => (
                   <li
                     key={tag}
-                    className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+                    className="rounded-full bg-sand px-2 py-0.5 text-[11px] font-medium text-muted"
                   >
                     {dietaryTagLabel(tag)}
                   </li>
@@ -101,7 +101,7 @@ export function ItemModifierSheet({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="shrink-0 rounded-full p-1 text-muted hover:bg-sand hover:text-ink"
           >
             ✕
           </button>
@@ -119,9 +119,9 @@ export function ItemModifierSheet({
           ) : null}
         </div>
 
-        <div className="space-y-3 border-t border-gray-100 px-5 py-4">
+        <div className="space-y-3 border-t border-sand px-5 py-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-900">Quantity</span>
+            <span className="text-sm font-medium text-ink">Quantity</span>
             <QuantityStepper
               quantity={quantity}
               onChange={selection.setQuantity}
