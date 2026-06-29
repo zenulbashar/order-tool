@@ -19,6 +19,7 @@
   --color-accent-deep: #b07f1e; /* amber-as-text on cream */
   --color-secondary: #e2553a; /* tomato */
   --color-warm: #e2553a; /* terracotta — semantic warm alert / secondary */
+  --color-warm-deep: #cf4527; /* deep terracotta — destructive fill; white text = 4.63:1 (AA) */
   /* Status */
   --color-success: #3fa66a;
   --color-success-deep: #2f8a55;
@@ -71,19 +72,23 @@
 
 /*
  * Functional-accent indirection — the owner↔diner firewall in one variable.
- * Shared components reference var(--action) for every functional accent:
- *   - owner / product surfaces resolve it to the amber product signature;
- *   - the diner storefront resolves it to the per-tenant venue --brand, which
- *     is set inline on the same element that carries data-domain="diner".
+ * Shared components reference var(--action) for every functional accent, paired
+ * with var(--action-contrast) for readable text/icons on top of it:
+ *   - owner / product surfaces resolve --action to the forest signature (matches
+ *     today's owner CTAs) on cream contrast;
+ *   - the diner storefront resolves --action to the per-tenant venue --brand,
+ *     set inline on the same element that carries data-domain="diner", on
+ *     --brand-contrast.
  * AI affordances are the deliberate exception: they use bg-accent / text-accent
  * (amber) explicitly and must never read --action.
  */
 :root {
-  --action: var(--color-accent);
+  --action: var(--color-forest);
+  --action-contrast: var(--color-surface-elevated);
   /*
-   * Readable text/icon colour to pair with a functional accent. Owner default
-   * is the cream surface. Diner roots MAY override per-venue alongside --brand —
-   * deferred, NOT computed in this PR:
+   * Readable text/icon colour to pair with the venue --brand. Cream default
+   * suits dark venue brands (the brandColor default is near-black). Diner roots
+   * MAY override per-venue alongside --brand — deferred, NOT computed yet:
    *   style={{ "--brand": c, "--brand-contrast": readableOn(c) }}
    */
   --brand-contrast: var(--color-surface-elevated);
@@ -91,6 +96,7 @@
 
 [data-domain="diner"] {
   --action: var(--brand);
+  --action-contrast: var(--brand-contrast);
 }
 
 /*
