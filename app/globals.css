@@ -33,6 +33,11 @@
   --color-ink: #0e1f18; /* default text — forest near-black */
   --color-muted: #6e756b; /* muted text — sage-grey */
   --color-label: #a0987f; /* muted-tan mono eyebrow/label — new work only */
+  /* Owner sidebar (the owner's one dark chrome surface; sage-on-forest, like
+     the concierge-* tokens). Additive — used only by the dashboard sidebar. */
+  --color-sidebar: #0f241b; /* rail ground */
+  --color-sidebar-ink: #c3d3c8; /* nav label / primary text on the rail */
+  --color-sidebar-muted: #7fa890; /* group headers / secondary text */
   /* Radius scale (export: pill 999 / card 16 / control 11 / small 6). Only
      --radius-sm overrides a Tailwind default; rounded-sm is unused, so no diff. */
   --radius-pill: 999px;

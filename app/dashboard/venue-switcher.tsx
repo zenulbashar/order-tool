@@ -54,13 +54,13 @@ export function VenueSwitcher({
 
   return (
     <details ref={ref} className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-gray-900 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-sidebar-ink [&::-webkit-details-marker]:hidden">
         <span className="max-w-[12rem] truncate">{currentName}</span>
         <svg
           aria-hidden="true"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className="size-4 shrink-0 text-gray-400 transition group-open:rotate-180"
+          className="size-4 shrink-0 text-sidebar-muted transition group-open:rotate-180"
         >
           <path
             fillRule="evenodd"
@@ -70,8 +70,8 @@ export function VenueSwitcher({
         </svg>
       </summary>
 
-      <div className="absolute left-0 z-10 mt-2 w-64 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
-        <p className="px-3 pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-gray-400">
+      <div className="absolute left-0 z-10 mt-2 w-64 overflow-hidden rounded-card border border-line bg-surface-elevated shadow-lg">
+        <p className="px-3 pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted">
           Your locations
         </p>
         <ul className="pb-1">
@@ -80,7 +80,7 @@ export function VenueSwitcher({
             if (isActive) {
               return (
                 <li key={venue.id}>
-                  <span className="flex items-center justify-between gap-2 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-900">
+                  <span className="flex items-center justify-between gap-2 bg-sand px-3 py-2 text-sm font-semibold text-ink">
                     <span className="truncate">
                       <span className="sr-only">Current location: </span>
                       {venue.name}
@@ -95,7 +95,7 @@ export function VenueSwitcher({
                 <form action={setCurrentVenue.bind(null, venue.id)}>
                   <button
                     type="submit"
-                    className="flex w-full items-center px-3 py-2 text-left text-sm text-gray-600 transition hover:bg-gray-50 hover:text-gray-900"
+                    className="flex w-full items-center px-3 py-2 text-left text-sm text-muted transition hover:bg-sand hover:text-ink"
                   >
                     <span className="truncate">{venue.name}</span>
                   </button>
@@ -106,7 +106,7 @@ export function VenueSwitcher({
         </ul>
         <Link
           href="/onboarding"
-          className="block border-t border-gray-100 px-3 py-2 text-sm font-medium text-gray-500 transition hover:bg-gray-50 hover:text-gray-900"
+          className="block border-t border-line px-3 py-2 text-sm font-medium text-muted transition hover:bg-sand hover:text-ink"
         >
           ＋ Add another location
         </Link>
