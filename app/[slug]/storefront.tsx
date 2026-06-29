@@ -170,31 +170,41 @@ function StorefrontInner({
   return (
     <div
       style={brandStyle}
-      className="mx-auto min-h-dvh max-w-3xl bg-white pb-24"
+      className="mx-auto min-h-dvh max-w-3xl bg-surface pb-24"
     >
-      <header className="flex items-center gap-4 px-5 py-6">
+      {/* Cover band — a decorative warm glow in the venue's OWN --brand colour
+          (sign-in's color-mix technique). No photo or fabricated data; a real
+          venue cover image could later fill this same band as an <img>. */}
+      <div
+        className="h-32 w-full sm:h-40"
+        style={{
+          background:
+            "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-brand-deep)",
+        }}
+      />
+      <header className="-mt-10 flex items-end gap-4 px-5 pb-2">
         {venue.logoUrl ? (
           // Arbitrary owner-supplied URL; next/image would need remote config.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={venue.logoUrl}
             alt={`${venue.name} logo`}
-            className="h-12 w-12 rounded-full object-cover"
+            className="h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-surface"
           />
         ) : (
           <span
-            className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white"
+            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-semibold text-white ring-4 ring-surface"
             style={{ backgroundColor: "var(--brand)" }}
           >
             {venue.name.charAt(0).toUpperCase()}
           </span>
         )}
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-gray-900">
+        <div className="min-w-0 flex-1 pb-1">
+          <h1 className="truncate font-display text-2xl font-semibold tracking-tight text-ink">
             {venue.name}
           </h1>
           {venue.storefrontDescription ? (
-            <p className="truncate text-sm text-gray-500">
+            <p className="truncate text-sm text-muted">
               {venue.storefrontDescription}
             </p>
           ) : null}
@@ -202,7 +212,7 @@ function StorefrontInner({
         {/* Opt-in customer area (#7) — never blocks ordering; guests ignore it. */}
         <Link
           href={`/${venue.slug}/account`}
-          className="ml-auto shrink-0 self-start text-xs font-medium text-gray-500 hover:text-gray-900"
+          className="shrink-0 pb-1.5 text-xs font-medium text-muted transition hover:text-ink"
         >
           Your orders
         </Link>
@@ -212,7 +222,7 @@ function StorefrontInner({
           find an item, kept above the AI launcher rather than stacked beneath it.
           Sticky so it stays reachable while scrolling a long menu. */}
       {menu.length > 0 ? (
-        <div className="sticky top-0 z-20 border-b border-gray-100 bg-white/95 backdrop-blur">
+        <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur">
           <div className="space-y-3 px-5 pb-3 pt-3">
             <MenuSearch
               value={query}
@@ -249,11 +259,11 @@ function StorefrontInner({
 
       <div className="space-y-8 px-5 py-6">
         {menu.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+          <p className="rounded-2xl border border-dashed border-sand p-8 text-center text-sm text-muted">
             This venue hasn’t published a menu yet. Check back soon.
           </p>
         ) : visibleMenu.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+          <p className="rounded-2xl border border-dashed border-sand p-8 text-center text-sm text-muted">
             {isSearching
               ? `No items match “${trimmedQuery}”${activeTags.length > 0 ? " with those dietary tags" : ""}.`
               : "No items match those dietary tags."}
@@ -261,15 +271,15 @@ function StorefrontInner({
         ) : (
           visibleMenu.map((category) => (
             <section key={category.id} id={category.id} className="scroll-mt-32">
-              <h2 className="text-lg font-semibold tracking-tight text-gray-900">
+              <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
                 {category.name}
               </h2>
               {category.description ? (
-                <p className="mt-0.5 text-sm text-gray-500">
+                <p className="mt-0.5 text-sm text-muted">
                   {category.description}
                 </p>
               ) : null}
-              <ul className="mt-1 divide-y divide-gray-100">
+              <ul className="mt-3 space-y-3">
                 {category.items.map((item) => (
                   <li key={item.id}>
                     <ItemCard item={item} onSelect={setActiveItem} />

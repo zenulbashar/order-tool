@@ -27,7 +27,7 @@ export function CartBar({ onOpen }: { onOpen: () => void }) {
         <span>
           View cart · {count} {count === 1 ? "item" : "items"}
         </span>
-        <span>${formatCents(subtotalCents)}</span>
+        <span className="font-mono">${formatCents(subtotalCents)}</span>
       </button>
     </div>
   );

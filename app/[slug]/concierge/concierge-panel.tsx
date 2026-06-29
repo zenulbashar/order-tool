@@ -157,9 +157,11 @@ export function ConciergePanel({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-sand bg-surface-elevated px-4 py-2.5 text-sm font-medium text-ink shadow-sm transition hover:bg-sand"
       >
-        <SparkleIcon />
+        <span className="text-accent">
+          <SparkleIcon />
+        </span>
         Not sure what to get? Ask Prompt2Eat
       </button>
 

@@ -50,7 +50,7 @@ export function MenuSearch({
         <div className="relative">
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400"
+            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted"
           >
             <SearchIcon />
           </span>
@@ -78,7 +78,7 @@ export function MenuSearch({
               }
             }}
             placeholder="Search the menu"
-            className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-9 text-sm shadow-sm outline-none placeholder:text-gray-400"
+            className="w-full rounded-full border border-sand bg-surface-elevated py-2 pl-9 pr-9 text-sm text-ink shadow-sm outline-none placeholder:text-muted"
             style={
               focused
                 ? {
@@ -97,7 +97,7 @@ export function MenuSearch({
                 inputRef.current?.focus();
               }}
               aria-label="Clear search"
-              className="absolute inset-y-0 right-1.5 flex items-center rounded px-1 text-gray-400 transition hover:text-gray-600"
+              className="absolute inset-y-0 right-1.5 flex items-center rounded px-1 text-muted transition hover:text-ink"
             >
               <CloseIcon />
             </button>
@@ -112,7 +112,7 @@ export function MenuSearch({
           aria-label="Search the menu"
           aria-expanded={false}
           aria-controls={inputId}
-          className="flex h-9 w-9 items-center justify-center rounded-md border border-gray-300 text-gray-500 shadow-sm outline-none transition hover:text-gray-900"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-sand bg-surface-elevated text-muted shadow-sm outline-none transition hover:text-ink"
           style={
             triggerFocused
               ? {
