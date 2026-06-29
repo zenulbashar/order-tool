@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 
-import { ButtonLabel } from "@/app/_components/spinner";
+import { readableOn } from "@/app/_components/brand-contrast";
+import { Button } from "@/app/_components/button";
+import { Field } from "@/app/_components/field";
+import { Input } from "@/app/_components/input";
+import { Segmented } from "@/app/_components/segmented";
+import { Textarea } from "@/app/_components/textarea";
 import { type SchedulingConfig } from "@/lib/schedule";
 import { formatCents, type OrderTypeValue } from "@/lib/validation";
 
@@ -14,9 +19,6 @@ import type { PublicVenue } from "../types";
 import { placeOrder } from "./actions";
 import { PaymentStep } from "./payment-step";
 import { rememberCustomerPrefill } from "./prefill-actions";
-
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 const ORDER_TYPE_OPTIONS: { value: OrderTypeValue; label: string }[] = [
   { value: "pickup", label: "Pickup" },
@@ -63,7 +65,10 @@ export function CheckoutClient({
   const [pending, startTransition] = useTransition();
   const [payment, setPayment] = useState<PaymentSession | null>(null);
 
-  const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+  const brandStyle = {
+    "--brand": venue.brandColor,
+    "--brand-contrast": readableOn(venue.brandColor),
+  } as React.CSSProperties;
 
   // Scheduled-pickup config for the picker (Phase 8) — the same values the server
   // gate validates against. Offered only when enabled + opening hours are set.
@@ -168,13 +173,13 @@ export function CheckoutClient({
     return (
       <main
         style={brandStyle} data-domain="diner"
-        className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center bg-white px-6 text-center"
+        className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center bg-surface px-6 text-center"
       >
-        <p className="text-sm text-gray-500">Your cart is empty.</p>
+        <p className="text-sm text-muted">Your cart is empty.</p>
         <Link
           href={`/${venue.slug}`}
           className="mt-4 text-sm font-medium underline"
-          style={{ color: "var(--brand)" }}
+          style={{ color: "var(--action)" }}
         >
           ← Back to {venue.name}
         </Link>
@@ -183,49 +188,49 @@ export function CheckoutClient({
   }
 
   return (
-    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-white">
-      <header className="border-b border-gray-100 px-5 py-5">
+    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-surface">
+      <header className="border-b border-line px-5 py-5">
         <Link
           href={`/${venue.slug}`}
-          className="text-xs text-gray-500 hover:text-gray-900"
+          className="text-xs text-muted hover:text-ink"
         >
           ← Back to menu
         </Link>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-gray-900">
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
           Checkout
         </h1>
-        <p className="text-sm text-gray-500">{venue.name}</p>
+        <p className="text-sm text-muted">{venue.name}</p>
       </header>
 
       <section className="px-5 py-5">
-        <h2 className="text-sm font-semibold text-gray-900">Your order</h2>
-        <ul className="mt-2 divide-y divide-gray-100">
+        <h2 className="text-sm font-semibold text-ink">Your order</h2>
+        <ul className="mt-2 divide-y divide-line">
           {displayLines.map((line) => (
             <li
               key={line.lineId}
               className="flex items-start justify-between gap-3 py-2"
             >
               <div className="min-w-0">
-                <p className="text-sm text-gray-900">
-                  <span className="text-gray-500">{line.quantity}×</span>{" "}
+                <p className="text-sm text-ink">
+                  <span className="text-muted">{line.quantity}×</span>{" "}
                   {line.itemName}
                   {line.variantName ? ` (${line.variantName})` : ""}
                 </p>
                 {line.options.length > 0 ? (
-                  <p className="mt-0.5 text-xs text-gray-500">
+                  <p className="mt-0.5 text-xs text-muted">
                     {line.options.map((o) => o.name).join(", ")}
                   </p>
                 ) : null}
               </div>
-              <span className="shrink-0 text-sm text-gray-700">
+              <span className="shrink-0 text-sm text-ink">
                 ${formatCents(line.lineCents)}
               </span>
             </li>
           ))}
         </ul>
-        <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-sm">
-          <span className="font-medium text-gray-900">Total</span>
-          <span className="font-semibold text-gray-900">
+        <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
+          <span className="font-medium text-ink">Total</span>
+          <span className="font-semibold text-ink">
             ${formatCents(subtotalCents)}
           </span>
         </div>
@@ -233,42 +238,27 @@ export function CheckoutClient({
 
       <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-10">
         <div className="space-y-1.5">
-          <span className="block text-sm font-medium text-gray-900">
-            Order type
-          </span>
-          <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
-            {ORDER_TYPE_OPTIONS.map((option) => {
-              const isActive = option.value === orderType;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleOrderType(option.value)}
-                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                    isActive ? "bg-white shadow-sm" : "text-gray-500"
-                  }`}
-                  style={isActive ? { color: "var(--brand)" } : undefined}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+          <span className="block text-sm font-medium text-ink">Order type</span>
+          <Segmented
+            label="Order type"
+            value={orderType}
+            onChange={handleOrderType}
+            options={ORDER_TYPE_OPTIONS}
+          />
         </div>
 
         {orderType === "dine_in" ? (
-          <label className="block text-sm font-medium text-gray-900">
-            Table number
-            <input
+          <Field label="Table number" htmlFor="table">
+            <Input
+              id="table"
               type="text"
               value={tableLabel}
               onChange={(event) => setTableLabel(event.target.value)}
               maxLength={40}
               required
               placeholder="e.g. 12"
-              className={`mt-1 ${fieldClass}`}
             />
-          </label>
+          </Field>
         ) : null}
 
         {orderType === "pickup" ? (
@@ -280,61 +270,72 @@ export function CheckoutClient({
           />
         ) : null}
 
-        <label className="block text-sm font-medium text-gray-900">
-          Name
-          <input
+        <Field label="Name" htmlFor="name">
+          <Input
+            id="name"
             type="text"
             value={customerName}
             onChange={(event) => setCustomerName(event.target.value)}
             maxLength={80}
             required
             autoComplete="name"
-            className={`mt-1 ${fieldClass}`}
           />
-        </label>
+        </Field>
 
-        <label className="block text-sm font-medium text-gray-900">
-          Phone <span className="font-normal text-gray-400">(optional)</span>
-          <input
+        <Field
+          label={
+            <>
+              Phone <span className="font-normal text-muted">(optional)</span>
+            </>
+          }
+          htmlFor="phone"
+        >
+          <Input
+            id="phone"
             type="tel"
             value={customerPhone}
             onChange={(event) => setCustomerPhone(event.target.value)}
             maxLength={30}
             autoComplete="tel"
-            className={`mt-1 ${fieldClass}`}
           />
-        </label>
+        </Field>
 
-        <label className="block text-sm font-medium text-gray-900">
-          Order notes{" "}
-          <span className="font-normal text-gray-400">(optional)</span>
-          <textarea
+        <Field
+          label={
+            <>
+              Order notes{" "}
+              <span className="font-normal text-muted">(optional)</span>
+            </>
+          }
+          htmlFor="notes"
+        >
+          <Textarea
+            id="notes"
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             maxLength={280}
             rows={2}
             placeholder="Special requests, e.g. no onion"
-            className={`mt-1 resize-none ${fieldClass}`}
+            className="resize-none"
           />
-        </label>
+        </Field>
 
         {error ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-[var(--color-warm)]" role="alert">
             {error}
           </p>
         ) : null}
 
-        <button
+        <Button
           type="submit"
-          disabled={pending}
-          className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-          style={{ backgroundColor: "var(--brand)" }}
+          variant="primary"
+          loading={pending}
+          loadingLabel="Starting payment…"
+          className="w-full"
         >
-          <ButtonLabel pending={pending} pendingLabel="Starting payment…">
-            {`Continue to payment · $${formatCents(subtotalCents)}`}
-          </ButtonLabel>
-        </button>
-        <p className="text-center text-xs text-gray-400">
+          {`Continue to payment · $${formatCents(subtotalCents)}`}
+        </Button>
+        <p className="text-center text-xs text-muted">
           Next, pay securely with Stripe.
         </p>
       </form>

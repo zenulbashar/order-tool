@@ -11,7 +11,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { ButtonLabel } from "@/app/_components/spinner";
+import { readableOn } from "@/app/_components/brand-contrast";
+import { Button } from "@/app/_components/button";
 import { formatCents } from "@/lib/validation";
 
 import type { PublicVenue } from "../types";
@@ -43,22 +44,42 @@ export function PaymentStep({
     [publishableKey, stripeAccountId],
   );
 
-  const brandStyle = { "--brand": venue.brandColor } as React.CSSProperties;
+  const brandStyle = {
+    "--brand": venue.brandColor,
+    "--brand-contrast": readableOn(venue.brandColor),
+  } as React.CSSProperties;
 
   return (
-    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-white">
-      <header className="border-b border-gray-100 px-5 py-5">
-        <h1 className="text-xl font-semibold tracking-tight text-gray-900">
+    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-surface">
+      <header className="border-b border-line px-5 py-5">
+        <h1 className="text-xl font-semibold tracking-tight text-ink">
           Payment
         </h1>
-        <p className="text-sm text-gray-500">{venue.name}</p>
+        <p className="text-sm text-muted">{venue.name}</p>
       </header>
 
       <Elements
         stripe={stripePromise}
         options={{
           clientSecret,
-          appearance: { variables: { colorPrimary: venue.brandColor } },
+          // Stripe Elements render in a cross-origin iframe that can't read our
+          // CSS vars, so the cream palette is mirrored here as literal hex (the
+          // one sanctioned place). colorPrimary stays the venue brand colour.
+          appearance: {
+            variables: {
+              colorPrimary: venue.brandColor,
+              colorBackground: "#fffdf8",
+              colorText: "#0e1f18",
+              colorTextSecondary: "#6e756b",
+              colorDanger: "#cf4527",
+              borderRadius: "11px",
+            },
+            rules: {
+              ".Input": { borderColor: "#e6ddcb" },
+              ".Input:focus": { borderColor: venue.brandColor },
+              ".Label": { color: "#6e756b" },
+            },
+          },
         }}
       >
         <PaymentForm venue={venue} token={token} amountCents={amountCents} />
@@ -142,7 +163,7 @@ function PaymentForm({
       <div>
         <div className={hasWallet ? "mb-5 space-y-4" : undefined}>
           {hasWallet ? (
-            <p className="text-sm font-medium text-gray-900">Express checkout</p>
+            <p className="text-sm font-medium text-ink">Express checkout</p>
           ) : null}
           <ExpressCheckoutElement
             options={{
@@ -157,9 +178,9 @@ function PaymentForm({
           />
           {hasWallet ? (
             <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-gray-200" />
-              <span className="text-xs text-gray-400">Or pay with card</span>
-              <span className="h-px flex-1 bg-gray-200" />
+              <span className="h-px flex-1 bg-line" />
+              <span className="text-xs text-muted">Or pay with card</span>
+              <span className="h-px flex-1 bg-line" />
             </div>
           ) : null}
         </div>
@@ -168,28 +189,28 @@ function PaymentForm({
       </div>
 
       {error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-warm)]" role="alert">
           {error}
         </p>
       ) : null}
 
-      <button
+      <Button
         type="submit"
-        disabled={!stripe || submitting}
-        className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
-        style={{ backgroundColor: "var(--brand)" }}
+        variant="primary"
+        disabled={!stripe}
+        loading={submitting}
+        loadingLabel="Processing…"
+        className="w-full"
       >
-        <ButtonLabel pending={submitting} pendingLabel="Processing…">
-          {`Pay $${formatCents(amountCents)}`}
-        </ButtonLabel>
-      </button>
+        {`Pay $${formatCents(amountCents)}`}
+      </Button>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-muted">
         Payments are securely processed by Stripe.
       </p>
       <Link
         href={`/${venue.slug}`}
-        className="block text-center text-xs text-gray-500 underline hover:text-gray-700"
+        className="block text-center text-xs text-muted underline hover:text-ink"
       >
         Cancel and return to {venue.name}
       </Link>
