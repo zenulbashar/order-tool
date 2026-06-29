@@ -76,7 +76,18 @@ function itemReady(item: UiItem): boolean {
   return dollarsToCents(item.priceInput) !== null;
 }
 
-export function ImportClient() {
+/**
+ * `onPublished` (optional) parameterizes what happens after a successful publish.
+ * Omitted (the dashboard's usage), it keeps today's exact behaviour: route to
+ * the menu editor. The onboarding wizard passes a server action instead, which
+ * advances the wizard step and routes forward. Everything else — extract, the
+ * review UI, publishMenu — is identical for both surfaces.
+ */
+export function ImportClient({
+  onPublished,
+}: {
+  onPublished?: () => Promise<void>;
+} = {}) {
   const router = useRouter();
 
   const [files, setFiles] = useState<File[]>([]);
@@ -172,6 +183,12 @@ export function ImportClient() {
     startPublish(async () => {
       const result = await publishMenu(payload);
       if (result.ok) {
+        // Wizard usage hands navigation to a server action (advance the step +
+        // redirect); the dashboard path is unchanged when onPublished is absent.
+        if (onPublished) {
+          await onPublished();
+          return;
+        }
         router.push("/dashboard/menu");
         router.refresh();
       } else {
