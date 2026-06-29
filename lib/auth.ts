@@ -15,7 +15,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }),
   // Magic-link sign-in requires server-side sessions backed by the adapter.
   session: { strategy: "database" },
-  pages: { signIn: "/signin" },
+  pages: { signIn: "/signin", verifyRequest: "/signin/check-inbox" },
   providers: [
     Resend({
       apiKey: process.env.RESEND_API_KEY,
