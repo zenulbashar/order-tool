@@ -2,6 +2,8 @@
 
 import { type Dispatch, type SetStateAction, useMemo, useState } from "react";
 
+import { Checkbox, Radio } from "@/app/_components/selection-controls";
+import { Stepper } from "@/app/_components/stepper";
 import { DIETARY_DISCLAIMER, formatCents } from "@/lib/validation";
 
 import type { PublicGroup, PublicItem, PublicVariant } from "./types";
@@ -165,13 +167,10 @@ export function ItemSelectionFields({
                 className="flex items-center justify-between gap-3 text-sm text-ink"
               >
                 <span className="flex items-center gap-2">
-                  <input
-                    type="radio"
+                  <Radio
                     name={`size-${item.id}`}
                     checked={selectedVariantId === variant.id}
                     onChange={() => setSelectedVariantId(variant.id)}
-                    className="h-4 w-4"
-                    style={{ accentColor: "var(--brand)" }}
                   />
                   {variant.name}
                 </span>
@@ -187,13 +186,13 @@ export function ItemSelectionFields({
       {/* LIFE-SAFETY: the tags are the venue's own labels, not a guarantee. A
           prominent, unmissable note right where the customer is about to order. */}
       {item.tags.length > 0 ? (
-        <p className="flex items-start gap-2 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-sm font-medium text-ink">
+        <p className="flex items-start gap-2 rounded-control border border-[var(--color-warm)]/40 bg-[var(--color-warm)]/10 px-3 py-2.5 text-sm font-medium text-ink">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
-            className="mt-0.5 h-5 w-5 shrink-0 text-accent"
+            className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-warm)]"
           >
             <path
               fillRule="evenodd"
@@ -230,13 +229,10 @@ export function ItemSelectionFields({
               {isRadio && group.minSelect === 0 ? (
                 <label className="flex items-center justify-between gap-3 text-sm text-ink">
                   <span className="flex items-center gap-2">
-                    <input
-                      type="radio"
+                    <Radio
                       name={`${item.id}-${group.id}`}
                       checked={selected.length === 0}
                       onChange={() => selectRadio(group, null)}
-                      className="h-4 w-4"
-                      style={{ accentColor: "var(--brand)" }}
                     />
                     None
                   </span>
@@ -251,19 +247,19 @@ export function ItemSelectionFields({
                     className="flex items-center justify-between gap-3 text-sm text-ink"
                   >
                     <span className="flex items-center gap-2">
-                      <input
-                        type={isRadio ? "radio" : "checkbox"}
-                        name={isRadio ? `${item.id}-${group.id}` : undefined}
-                        checked={checked}
-                        disabled={!isRadio && !checked && atCap}
-                        onChange={() =>
-                          isRadio
-                            ? selectRadio(group, option.id)
-                            : toggleCheckbox(group, option.id)
-                        }
-                        className="h-4 w-4"
-                        style={{ accentColor: "var(--brand)" }}
-                      />
+                      {isRadio ? (
+                        <Radio
+                          name={`${item.id}-${group.id}`}
+                          checked={checked}
+                          onChange={() => selectRadio(group, option.id)}
+                        />
+                      ) : (
+                        <Checkbox
+                          checked={checked}
+                          disabled={!checked && atCap}
+                          onChange={() => toggleCheckbox(group, option.id)}
+                        />
+                      )}
                       {option.name}
                     </span>
                     {option.priceDeltaCents > 0 ? (
@@ -290,26 +286,9 @@ export function QuantityStepper({
   quantity: number;
   onChange: (next: number) => void;
 }) {
+  // min 1 (decrement disabled at 1, no removal), max unset — behaviour-identical
+  // to the previous inline control, now via the shared 44px Stepper primitive.
   return (
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(1, quantity - 1))}
-        disabled={quantity <= 1}
-        aria-label="Decrease quantity"
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-sand text-ink disabled:opacity-40"
-      >
-        −
-      </button>
-      <span className="w-6 text-center text-sm font-medium">{quantity}</span>
-      <button
-        type="button"
-        onClick={() => onChange(quantity + 1)}
-        aria-label="Increase quantity"
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-sand text-ink"
-      >
-        +
-      </button>
-    </div>
+    <Stepper value={quantity} onChange={onChange} min={1} label="Quantity" />
   );
 }
