@@ -83,7 +83,7 @@ export default async function StorefrontPage({
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
       {!venue.isLive ? (
         <div className="bg-accent/15 px-6 py-3 text-center text-sm text-ink">
-          This venue isn&apos;t taking orders yet. Please check back soon.
+          {venue.name}{" "}isn&apos;t taking orders yet. Please check back soon.
         </div>
       ) : null}
       <Storefront
