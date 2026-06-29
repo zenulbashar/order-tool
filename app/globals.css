@@ -26,6 +26,28 @@
   /* Text */
   --color-ink: #0e1f18; /* default text — forest near-black */
   --color-muted: #6e756b; /* muted text — sage-grey */
+  /*
+   * Concierge (storefront-c) — the AI conversation panel is the ONE forest-dark
+   * diner surface (everything else stays cream). These scoped tokens hold the
+   * exact design-source values so the components reference tokens, never raw hex.
+   * Reuses --color-brand-deepest (#0e1f18), --color-brand (#16241c), and
+   * --color-accent (#f4b43c) where the source values already match a token.
+   */
+  --color-concierge-glow: #1c4231; /* lighter-forest glow at the panel top */
+  --color-concierge-mint: #7fd6a0; /* "found N matches" status */
+  --color-concierge-sage: #a9c3b1; /* proposed-card description / no-match */
+  --color-concierge-thinking: #7fa890; /* "reading the menu" affordance */
+  --color-concierge-input: #88a896; /* dark footer input + placeholder */
+  --color-concierge-ai-text: #eaf3ec; /* AI bubble + proposed-card name */
+  --color-concierge-amber-ink: #3a2a08; /* text on the amber diner bubble */
+  --color-concierge-amber-from: #f6be4a; /* diner bubble / button gradient */
+  --color-concierge-amber-to: #efa82c;
+  --color-concierge-ai-bg: color-mix(in srgb, #fff 7%, transparent);
+  --color-concierge-ai-border: color-mix(in srgb, #fff 8%, transparent);
+  --color-concierge-card-bg: color-mix(in srgb, #fff 6%, transparent);
+  --color-concierge-card-border: color-mix(in srgb, #f4b43c 25%, transparent);
+  --color-concierge-pill-bg: color-mix(in srgb, #fff 8%, transparent);
+  --color-concierge-pill-border: color-mix(in srgb, #fff 12%, transparent);
 }
 
 @theme inline {
@@ -59,6 +81,34 @@
   .order-loading-dot {
     animation: none !important;
     opacity: 0.6;
+  }
+}
+
+/*
+ * Concierge "thinking" sparkle — a gentle amber twinkle on the AI side while the
+ * model is matching the menu. The component sets the colour (text-accent) and the
+ * class drives the keyframe; held steady under reduced motion.
+ */
+@keyframes p2e-spark {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.p2e-spark {
+  animation: p2e-spark 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p2e-spark {
+    animation: none !important;
+    opacity: 0.9;
   }
 }
 

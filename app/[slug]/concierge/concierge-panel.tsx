@@ -174,18 +174,38 @@ export function ConciergePanel({
           aria-label="Prompt2Eat"
           onClick={() => setOpen(false)}
         >
+          {/* The ONE forest-dark diner surface: a radial glow fading to deepest
+              forest, built from concierge tokens (never raw hex). Default text is
+              the light AI ink; elements override per the source spec. */}
           <div
-            className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white sm:rounded-2xl"
+            className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl text-concierge-ai-text sm:rounded-2xl"
+            style={{
+              background:
+                "radial-gradient(130% 70% at 50% 0%, var(--color-concierge-glow), var(--color-brand-deepest) 72%)",
+            }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+            <div className="flex items-start justify-between gap-4 border-b border-concierge-ai-border px-5 py-4">
               <div className="min-w-0">
-                <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-gray-900">
-                  <SparkleIcon /> Prompt2Eat
+                <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight text-white">
+                  <span
+                    className="text-accent"
+                    style={{
+                      filter:
+                        "drop-shadow(0 0 6px color-mix(in srgb, var(--color-accent) 60%, transparent))",
+                    }}
+                  >
+                    <SparkleIcon />
+                  </span>
+                  Prompt2Eat
+                  <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-brand">
+                    AI
+                  </span>
                 </h2>
-                <p className="mt-0.5 text-sm text-gray-500">
-                  Tell Prompt2Eat what you feel like. We’ll suggest items from
-                  this menu.
+                <p className="mt-1 font-mono text-xs text-concierge-mint">
+                  {proposedItems.length > 0
+                    ? `● found ${proposedItems.length} ${proposedItems.length === 1 ? "match" : "matches"}`
+                    : "Tell me what you feel like"}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -196,7 +216,7 @@ export function ConciergePanel({
                       setOpen(false);
                       onOpenCart();
                     }}
-                    className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                    className="rounded-full border border-concierge-pill-border bg-concierge-pill-bg px-3 py-1 text-xs font-medium text-concierge-ai-text transition hover:bg-concierge-ai-bg"
                   >
                     View order · {count}
                   </button>
@@ -205,7 +225,7 @@ export function ConciergePanel({
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close"
-                  className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded-full p-1 text-concierge-sage transition hover:bg-concierge-ai-bg hover:text-white"
                 >
                   ✕
                 </button>
@@ -215,7 +235,9 @@ export function ConciergePanel({
             <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
               {!asked ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-500">Try one of these:</p>
+                  <p className="font-mono text-xs uppercase tracking-wide text-concierge-thinking">
+                    Try one of these
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {EXAMPLE_PROMPTS.map((prompt) => (
                       <button
@@ -226,7 +248,7 @@ export function ConciergePanel({
                           submit(prompt);
                         }}
                         disabled={pending}
-                        className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+                        className="rounded-full border border-concierge-pill-border bg-concierge-pill-bg px-3 py-1.5 text-xs font-medium text-concierge-ai-text transition hover:bg-concierge-ai-bg disabled:opacity-50"
                       >
                         {prompt}
                       </button>
@@ -239,25 +261,37 @@ export function ConciergePanel({
                 turn.role === "user" ? (
                   <p
                     key={index}
-                    className="ml-auto max-w-[85%] rounded-2xl bg-gray-900 px-3 py-2 text-sm text-white"
+                    className="ml-auto max-w-[85%] rounded-[16px_16px_5px_16px] px-3 py-2 text-sm font-medium text-concierge-amber-ink"
+                    style={{
+                      background:
+                        "linear-gradient(var(--color-concierge-amber-from), var(--color-concierge-amber-to))",
+                    }}
                   >
                     {turn.content}
                   </p>
                 ) : (
-                  <p key={index} className="max-w-[90%] text-sm text-gray-700">
-                    {turn.content}
-                  </p>
+                  <div key={index} className="flex max-w-[90%] items-start gap-2">
+                    <span className="mt-1 shrink-0 text-accent">
+                      <SparkleIcon />
+                    </span>
+                    <p className="rounded-[16px_16px_16px_5px] border border-concierge-ai-border bg-concierge-ai-bg px-3 py-2 text-sm text-concierge-ai-text">
+                      {turn.content}
+                    </p>
+                  </div>
                 ),
               )}
 
               {pending ? (
-                <p className="flex items-center gap-2 text-sm text-gray-500">
-                  <Spinner size="sm" /> Finding options…
+                <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-wide text-concierge-thinking">
+                  <span className="p2e-spark text-accent" aria-hidden="true">
+                    ✦
+                  </span>
+                  Reading {itemsById.size} dishes · matching your taste…
                 </p>
               ) : null}
 
               {error ? (
-                <p className="text-sm text-red-600" role="alert">
+                <p className="text-sm text-error" role="alert">
                   {error}
                 </p>
               ) : null}
@@ -268,26 +302,28 @@ export function ConciergePanel({
                     title="Tap to review and add"
                     items={proposedItems}
                     onSelect={onSelectItem}
+                    surface="dark"
                   />
                   {/* Money-safe bulk path: opens one sheet to choose every
                       required size/option, then adds all via addItem. Nothing is
-                      added until the customer completes + taps "Add all". */}
+                      added until the customer completes + taps "Add all". COUNT
+                      ONLY — never a client-side total (price is server-recomputed). */}
                   <button
                     type="button"
                     onClick={() => setPickerOpen(true)}
-                    className="w-full rounded-full border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                    className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-brand transition hover:opacity-90"
                   >
-                    Review and add all ({proposedItems.length})
+                    Add all ({proposedItems.length})
                   </button>
                   {/* LIFE-SAFETY: tags are the venue's guide, never a guarantee,
                       and the concierge never asserts allergen safety. */}
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-concierge-sage">
                     Suggestions use the venue’s dietary tags as a guide, not a
                     guarantee. {DIETARY_DISCLAIMER}
                   </p>
                 </>
               ) : asked && !pending && !error ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-concierge-sage">
                   No matches this time. Try describing it a different way.
                 </p>
               ) : null}
@@ -295,27 +331,32 @@ export function ConciergePanel({
 
             <form
               onSubmit={handleSubmit}
-              className="flex items-center gap-2 border-t border-gray-100 px-5 py-4"
+              className="border-t border-concierge-ai-border px-5 py-4"
             >
-              <input
-                type="text"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                maxLength={500}
-                placeholder={
-                  asked ? "Refine, e.g. make it cheaper" : "What do you feel like?"
-                }
-                aria-label="Describe what you feel like eating"
-                className="min-w-0 flex-1 rounded-full border border-gray-300 px-4 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-              />
-              <button
-                type="submit"
-                disabled={pending || input.trim().length === 0}
-                className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ backgroundColor: "var(--brand)" }}
-              >
-                {pending ? <Spinner size="sm" /> : "Ask"}
-              </button>
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-wide text-concierge-thinking">
+                Not quite?
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  maxLength={500}
+                  placeholder={
+                    asked ? "Make it cheaper…" : "What do you feel like?"
+                  }
+                  aria-label="Describe what you feel like eating"
+                  className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-sm text-concierge-ai-text placeholder:text-concierge-input focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+                <button
+                  type="submit"
+                  disabled={pending || input.trim().length === 0}
+                  aria-label="Send"
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-accent text-base font-semibold text-brand transition disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {pending ? <Spinner size="sm" /> : "↑"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

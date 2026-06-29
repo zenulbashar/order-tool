@@ -89,15 +89,15 @@ export function MultiItemPicker({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-white sm:rounded-2xl"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-surface-elevated sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-sand px-5 py-4">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold tracking-tight text-gray-900">
+            <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
               Review and add
             </h2>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <p className="mt-0.5 text-sm text-muted">
               Choose any required size or options for each item, then add them all
               to your cart.
             </p>
@@ -106,7 +106,7 @@ export function MultiItemPicker({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="shrink-0 rounded-full p-1 text-muted hover:bg-sand hover:text-ink"
           >
             ✕
           </button>
@@ -121,13 +121,13 @@ export function MultiItemPicker({
               onReport={report}
             />
           ))}
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted">
             Suggestions use the venue’s dietary tags as a guide, not a guarantee.{" "}
             {DIETARY_DISCLAIMER}
           </p>
         </div>
 
-        <div className="border-t border-gray-100 px-5 py-4">
+        <div className="border-t border-sand px-5 py-4">
           <button
             type="button"
             onClick={handleAddAll}
@@ -186,7 +186,7 @@ function PickerRow({
       : `$${formatCents(selection.totalCents)}`;
 
   return (
-    <div className="space-y-3 border-b border-gray-100 pb-5 last:border-b-0 last:pb-0">
+    <div className="space-y-3 border-b border-sand pb-5 last:border-b-0 last:pb-0">
       <div className="flex items-start gap-3">
         {item.imageUrl ? (
           // Arbitrary owner-supplied URL; next/image would need remote config.
@@ -196,31 +196,31 @@ function PickerRow({
             alt={item.name}
             loading="lazy"
             decoding="async"
-            className="h-16 w-16 shrink-0 rounded-xl border border-gray-100 object-cover"
+            className="h-16 w-16 shrink-0 rounded-xl border border-sand object-cover"
           />
         ) : (
           <span
             aria-hidden="true"
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-xl font-semibold text-gray-300"
+            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-sand bg-sand text-xl font-semibold text-muted"
           >
             {item.name.charAt(0).toUpperCase()}
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-900">{item.name}</p>
+          <p className="text-sm font-medium text-ink">{item.name}</p>
           {item.description ? (
-            <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">
+            <p className="mt-0.5 line-clamp-2 text-xs text-muted">
               {item.description}
             </p>
           ) : null}
-          <p className="mt-0.5 text-sm text-gray-700">{priceLabel}</p>
+          <p className="mt-0.5 text-sm text-ink">{priceLabel}</p>
         </div>
       </div>
 
       <ItemSelectionFields item={item} selection={selection} />
 
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-900">Quantity</span>
+        <span className="text-sm font-medium text-ink">Quantity</span>
         <QuantityStepper quantity={quantity} onChange={selection.setQuantity} />
       </div>
     </div>
