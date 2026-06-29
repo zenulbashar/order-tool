@@ -41,12 +41,12 @@ export function DietaryFilter({
             type="button"
             aria-pressed={isActive}
             onClick={() => onToggle(tag)}
-            className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition ${
+            className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-pill border px-4 text-xs font-medium transition ${
               isActive
-                ? "border-transparent text-white"
+                ? "border-transparent text-[var(--action-contrast)]"
                 : "border-sand bg-surface-elevated text-ink hover:bg-sand"
             }`}
-            style={isActive ? { backgroundColor: "var(--brand)" } : undefined}
+            style={isActive ? { backgroundColor: "var(--action)" } : undefined}
           >
             {dietaryTagLabel(tag)}
           </button>
@@ -64,13 +64,13 @@ export function DietaryFilter({
  */
 export function DietaryDisclaimer() {
   return (
-    <p className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-ink">
+    <p className="flex items-start gap-2 rounded-control border border-[var(--color-warm)]/40 bg-[var(--color-warm)]/10 px-3 py-2 text-xs font-medium text-ink">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="currentColor"
         aria-hidden="true"
-        className="mt-px h-4 w-4 shrink-0 text-accent"
+        className="mt-px h-4 w-4 shrink-0 text-[var(--color-warm)]"
       >
         <path
           fillRule="evenodd"

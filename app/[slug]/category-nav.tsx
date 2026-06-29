@@ -58,16 +58,16 @@ export function CategoryNav({
               <button
                 type="button"
                 onClick={() => handleClick(category.id)}
-                className={`rounded-full border px-3 py-1 text-sm font-medium transition ${
+                className={`inline-flex min-h-11 items-center rounded-pill border px-4 text-sm font-medium transition ${
                   isActive
-                    ? "text-white"
+                    ? "text-[var(--action-contrast)]"
                     : "border-sand bg-surface-elevated text-muted hover:bg-sand"
                 }`}
                 style={
                   isActive
                     ? {
-                        backgroundColor: "var(--brand)",
-                        borderColor: "var(--brand)",
+                        backgroundColor: "var(--action)",
+                        borderColor: "var(--action)",
                       }
                     : undefined
                 }
