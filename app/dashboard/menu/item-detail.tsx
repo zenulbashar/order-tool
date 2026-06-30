@@ -3,7 +3,6 @@
 import { Button } from "@/app/_components/button";
 import { Card } from "@/app/_components/card";
 import type { DietaryTag } from "@/lib/validation";
-import { formatCents } from "@/lib/validation";
 
 import {
   deleteGroup,
@@ -126,9 +125,13 @@ export function ItemDetail({
 }
 
 /**
- * Item modifier groups + their options. Transplanted UNCHANGED from item-row's
- * old expanded block (same nested <details> and the same group/option server
- * actions) — the inline-editable rebuild is MD3's job, not this PR.
+ * Item modifier groups + their options (MD3, inline). Options are now ALWAYS
+ * visible — each option's form renders directly in its row (no per-option "Edit"
+ * disclosure), with the always-visible "+ new option" create row at the bottom.
+ * Group editing and group creation stay small disclosures (infrequent actions).
+ * Every server action, hidden name="id" input, and useActionState is unchanged —
+ * only the click-to-reveal wrappers were removed. There is no auto-save: each
+ * option keeps its own explicit Save submit.
  */
 function ItemModifierGroups({
   itemId,
@@ -138,159 +141,129 @@ function ItemModifierGroups({
   groups: GroupRow[];
 }) {
   return (
-    <details className="border-t border-line pt-3">
-      <summary className={summaryClass}>
+    <div className="space-y-2">
+      <p className="text-sm font-medium text-ink">
         Modifier groups ({groups.length})
-      </summary>
-      <div className="mt-3 space-y-2">
-        {groups.length === 0 ? (
-          <p className="text-xs text-muted">No modifier groups yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {groups.map((group, groupIndex) => (
-              <li
-                key={group.id}
-                className="rounded-md border border-line bg-surface-elevated"
-              >
-                <div className="flex items-center justify-between gap-3 px-3 py-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm text-ink">
-                      {group.name}
-                      {group.minSelect >= 1 ? (
-                        <span className="ml-2 rounded bg-[var(--color-accent)]/15 px-1.5 py-0.5 text-xs text-accent-deep">
-                          Required
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="text-xs text-muted">
-                      min {group.minSelect} · max {group.maxSelect}
-                    </p>
-                  </div>
-                  <MoveButtons
-                    action={moveGroup}
-                    id={group.id}
-                    isFirst={groupIndex === 0}
-                    isLast={groupIndex === groups.length - 1}
-                    label={group.name}
-                  />
+      </p>
+
+      {groups.length === 0 ? (
+        <p className="text-xs text-muted">No modifier groups yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {groups.map((group, groupIndex) => (
+            <li
+              key={group.id}
+              className="rounded-md border border-line bg-surface-elevated"
+            >
+              <div className="flex items-center justify-between gap-3 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-ink">
+                    {group.name}
+                    {group.minSelect >= 1 ? (
+                      <span className="ml-2 rounded bg-[var(--color-accent)]/15 px-1.5 py-0.5 text-xs text-accent-deep">
+                        Required
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs text-muted">
+                    min {group.minSelect} · max {group.maxSelect}
+                  </p>
                 </div>
+                <MoveButtons
+                  action={moveGroup}
+                  id={group.id}
+                  isFirst={groupIndex === 0}
+                  isLast={groupIndex === groups.length - 1}
+                  label={group.name}
+                />
+              </div>
 
-                <details className="border-t border-line px-3 py-2">
-                  <summary className={summaryClass}>
-                    Options ({group.options.length})
-                  </summary>
-                  <div className="mt-3 space-y-2">
-                    {group.options.length === 0 ? (
-                      <p className="text-xs text-muted">No options yet.</p>
-                    ) : (
-                      <ul className="space-y-1.5">
-                        {group.options.map((option, optionIndex) => (
-                          <li
-                            key={option.id}
-                            className="rounded border border-line bg-sand/40"
-                          >
-                            <div className="flex items-center justify-between gap-3 px-3 py-1.5">
-                              <p className="truncate text-sm text-ink">
-                                {option.name}
-                                {option.priceDeltaCents > 0 ? (
-                                  <span className="ml-2 text-muted">
-                                    +${formatCents(option.priceDeltaCents)}
-                                  </span>
-                                ) : null}
-                                {!option.isAvailable ? (
-                                  <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs text-muted">
-                                    Unavailable
-                                  </span>
-                                ) : null}
-                              </p>
-                              <MoveButtons
-                                action={moveOption}
-                                id={option.id}
-                                isFirst={optionIndex === 0}
-                                isLast={optionIndex === group.options.length - 1}
-                                label={option.name}
-                              />
-                            </div>
-                            <details className="border-t border-line px-3 py-1.5">
-                              <summary className={summaryClass}>Edit</summary>
-                              <div className="mt-3 space-y-4">
-                                <ModifierOptionForm
-                                  option={{
-                                    id: option.id,
-                                    name: option.name,
-                                    priceDeltaCents: option.priceDeltaCents,
-                                    isAvailable: option.isAvailable,
-                                  }}
-                                />
-                                <form
-                                  action={deleteOption}
-                                  className="border-t border-line pt-3"
-                                >
-                                  <input
-                                    type="hidden"
-                                    name="id"
-                                    value={option.id}
-                                  />
-                                  <Button
-                                    type="submit"
-                                    variant="destructive"
-                                    size="sm"
-                                  >
-                                    Delete option
-                                  </Button>
-                                </form>
-                              </div>
-                            </details>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <details className="rounded border border-dashed border-line px-3 py-1.5">
-                      <summary className={summaryClass}>Add an option</summary>
-                      <div className="mt-3">
-                        <ModifierOptionForm groupId={group.id} />
-                      </div>
-                    </details>
-                  </div>
-                </details>
-
-                <details className="border-t border-line px-3 py-2">
-                  <summary className={summaryClass}>Edit group</summary>
-                  <div className="mt-3 space-y-4">
-                    <ModifierGroupForm
-                      group={{
-                        id: group.id,
-                        name: group.name,
-                        minSelect: group.minSelect,
-                        maxSelect: group.maxSelect,
-                      }}
-                    />
-                    <form
-                      action={deleteGroup}
-                      className="border-t border-line pt-3"
-                    >
-                      <input type="hidden" name="id" value={group.id} />
-                      <ConfirmSubmit
-                        message={`Delete "${group.name}"? This also deletes its options.`}
+              {/* Options — always visible, each its own inline form + Save. */}
+              <div className="space-y-1.5 border-t border-line px-3 py-2">
+                {group.options.length === 0 ? (
+                  <p className="text-xs text-muted">No options yet.</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {group.options.map((option, optionIndex) => (
+                      <li
+                        key={option.id}
+                        className="flex flex-wrap items-start gap-2 rounded border border-line bg-sand/40 px-2 py-1.5"
                       >
-                        Delete group
-                      </ConfirmSubmit>
-                    </form>
-                  </div>
-                </details>
-              </li>
-            ))}
-          </ul>
-        )}
+                        <ModifierOptionForm
+                          option={{
+                            id: option.id,
+                            name: option.name,
+                            priceDeltaCents: option.priceDeltaCents,
+                            isAvailable: option.isAvailable,
+                          }}
+                        />
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <MoveButtons
+                            action={moveOption}
+                            id={option.id}
+                            isFirst={optionIndex === 0}
+                            isLast={optionIndex === group.options.length - 1}
+                            label={option.name}
+                          />
+                          <form action={deleteOption}>
+                            <input type="hidden" name="id" value={option.id} />
+                            <Button
+                              type="submit"
+                              variant="destructive"
+                              size="sm"
+                              aria-label={`Delete option ${option.name}`}
+                            >
+                              ✕
+                            </Button>
+                          </form>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
 
-        <details className="rounded-md border border-dashed border-line px-3 py-2">
-          <summary className={summaryClass}>Add a modifier group</summary>
-          <div className="mt-3">
-            <ModifierGroupForm itemId={itemId} />
-          </div>
-        </details>
-      </div>
-    </details>
+                {/* Always-visible create row (replaces the old "Add an option"
+                    disclosure). */}
+                <div className="rounded border border-dashed border-line px-2 py-1.5">
+                  <ModifierOptionForm groupId={group.id} />
+                </div>
+              </div>
+
+              <details className="border-t border-line px-3 py-2">
+                <summary className={summaryClass}>Edit group</summary>
+                <div className="mt-3 space-y-4">
+                  <ModifierGroupForm
+                    group={{
+                      id: group.id,
+                      name: group.name,
+                      minSelect: group.minSelect,
+                      maxSelect: group.maxSelect,
+                    }}
+                  />
+                  <form
+                    action={deleteGroup}
+                    className="border-t border-line pt-3"
+                  >
+                    <input type="hidden" name="id" value={group.id} />
+                    <ConfirmSubmit
+                      message={`Delete "${group.name}"? This also deletes its options.`}
+                    >
+                      Delete group
+                    </ConfirmSubmit>
+                  </form>
+                </div>
+              </details>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <details className="rounded-md border border-dashed border-line px-3 py-2">
+        <summary className={summaryClass}>Add a modifier group</summary>
+        <div className="mt-3">
+          <ModifierGroupForm itemId={itemId} />
+        </div>
+      </details>
+    </div>
   );
 }

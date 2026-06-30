@@ -31,62 +31,67 @@ export function ModifierOptionForm({
     initialState,
   );
 
+  // Compact single-row layout (MD3): the option's fields live inline in the
+  // group's list rather than behind a per-option "Edit" disclosure. Field
+  // name=/value wiring, the hidden id/groupId, useActionState, and the explicit
+  // Save submit are all UNCHANGED — only the visual layout (flex row + labels
+  // moved to aria-label/placeholder) differs from the old stacked form.
   return (
-    <form action={formAction} className="space-y-2.5">
+    <form action={formAction} className="min-w-0 flex-1">
       {option ? (
         <input type="hidden" name="id" value={option.id} />
       ) : (
         <input type="hidden" name="groupId" value={groupId ?? ""} />
       )}
 
-      <label className="block text-sm font-medium text-ink">
-        Name
+      <div className="flex flex-wrap items-center gap-2">
+        {isEdit ? (
+          <label className="flex shrink-0 items-center" title="Available">
+            <Checkbox
+              name="isAvailable"
+              defaultChecked={option?.isAvailable ?? true}
+            />
+            <span className="sr-only">Available</span>
+          </label>
+        ) : null}
+
         <Input
           name="name"
           type="text"
           required
           maxLength={100}
           defaultValue={option?.name ?? ""}
-          placeholder="Oat milk"
-          className="mt-1"
+          placeholder="Option name"
+          aria-label="Option name"
+          className="min-w-0 flex-1"
         />
-      </label>
 
-      <label className="block text-sm font-medium text-ink">
-        Extra charge (dollars)
         <Input
           name="priceDelta"
           type="text"
           inputMode="decimal"
           defaultValue={option ? formatCents(option.priceDeltaCents) : "0.00"}
-          className="mt-1"
+          placeholder="+$0.00"
+          aria-label="Extra charge in dollars"
+          className="w-24 shrink-0"
         />
-      </label>
 
-      {isEdit ? (
-        <label className="flex items-center gap-2 text-sm text-ink">
-          <Checkbox
-            name="isAvailable"
-            defaultChecked={option?.isAvailable ?? true}
-          />
-          Available
-        </label>
-      ) : null}
+        <Button
+          type="submit"
+          variant="primary"
+          size="sm"
+          loading={pending}
+          loadingLabel="Saving…"
+        >
+          {isEdit ? "Save" : "Add"}
+        </Button>
+      </div>
 
       {state.error ? (
-        <p className="text-sm text-[var(--color-warm)]" role="alert">
+        <p className="mt-1 text-xs text-[var(--color-warm)]" role="alert">
           {state.error}
         </p>
       ) : null}
-
-      <Button
-        type="submit"
-        variant="primary"
-        loading={pending}
-        loadingLabel="Saving…"
-      >
-        {isEdit ? "Save changes" : "Add option"}
-      </Button>
     </form>
   );
 }
