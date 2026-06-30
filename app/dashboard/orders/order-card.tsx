@@ -29,11 +29,49 @@ const STATUS_LABEL: Record<FulfillmentStatus, string> = {
 export function OrderCard({
   order,
   timezone,
+  compact = false,
 }: {
   order: KitchenOrder;
   timezone: string;
+  /** COMPLETED column: a compact, action-less summary (ref, done, type, items, total). */
+  compact?: boolean;
 }) {
   const isNew = order.fulfillmentStatus === "new";
+
+  // Compact summary for the COMPLETED column — no controls, no notes, no print:
+  // just enough to recognise a finished order at a glance.
+  if (compact) {
+    return (
+      <li className="rounded-card border border-line bg-surface-elevated p-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-sm font-semibold text-ink">
+            {orderReference(order.publicToken)}
+          </span>
+          <StatusBadge tone="done" className="shrink-0">
+            {STATUS_LABEL.completed}
+          </StatusBadge>
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+          <span className="rounded-sm bg-sand px-1.5 py-0.5 font-medium text-ink">
+            {order.orderType === "dine_in"
+              ? `Dine-in · Table ${order.tableLabel ?? "—"}`
+              : "Pickup"}
+          </span>
+          <span className="min-w-0 truncate">
+            {order.items
+              .map((item) => `${item.quantity}× ${item.name}`)
+              .join(", ")}
+          </span>
+        </div>
+        <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
+          <span className="text-xs font-medium text-muted">Total</span>
+          <span className="text-sm font-semibold text-ink">
+            ${formatCents(order.totalCents)}
+          </span>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li
