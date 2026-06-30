@@ -44,6 +44,7 @@ export default async function DashboardLayout({
         userEmail={user.email ?? null}
         hasMultiple={hasMultiple}
         activeOrderCount={activeOrderCount}
+        brandColor={current.brandColor}
       />
       <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>
