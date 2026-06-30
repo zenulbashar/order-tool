@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Button } from "@/app/_components/button";
+import { cx } from "@/app/_components/cx";
 import { Segmented, type SegmentedOption } from "@/app/_components/segmented";
 
+import {
+  playNewOrderBeep,
+  setSoundEnabled,
+  unlockAudio,
+  useSoundEnabled,
+} from "./kitchen-sound";
 import { OrderCard } from "./order-card";
 import type { FulfillmentStatus, KitchenOrder } from "./queries";
 
@@ -27,12 +35,12 @@ const BOARD_COLUMNS: { status: FulfillmentStatus; label: string }[] = [
 ];
 
 /**
- * Client board chrome: the order-type filter pills plus the Scheduled band and
- * the four status columns, all rendered over the server-fetched orders. The
- * filter is ephemeral UI state (resets on load, not persisted) and is applied
- * consistently to every section — so the column header counts reflect the
- * FILTERED population, not the totals. The make-now / upcoming split itself is
- * computed on the server and passed in unchanged.
+ * Client board chrome: the order-type filter pills, sound + fullscreen toggles,
+ * the Scheduled band, and the four status columns — all rendered over the
+ * server-fetched orders. The type filter is ephemeral UI state (resets on load)
+ * applied consistently to every section, so the column counts reflect the
+ * FILTERED population. The make-now / upcoming split itself is computed on the
+ * server and passed in unchanged.
  */
 export function OrdersBoard({
   makeNowOrders,
@@ -46,6 +54,57 @@ export function OrdersBoard({
   timezone: string;
 }) {
   const [filter, setFilter] = useState<TypeFilter>("all");
+  const soundEnabled = useSoundEnabled();
+
+  // New-order chime. CRITICAL: the diff input is the UNFILTERED make-now prop
+  // (just narrowed to status "new"), NOT the post-filter `makeNow` array below —
+  // a kitchen filtered to "Dine-in" must still hear a new Takeaway order arrive.
+  const newOrderIds = useMemo(
+    () =>
+      makeNowOrders
+        .filter((order) => order.fulfillmentStatus === "new")
+        .map((order) => order.id),
+    [makeNowOrders],
+  );
+  // Seed on mount with the orders already on screen, so a page load never blasts
+  // the chime for the existing queue — only genuinely new arrivals trigger it.
+  const seenNewIds = useRef<Set<string> | null>(null);
+  if (seenNewIds.current === null) seenNewIds.current = new Set(newOrderIds);
+
+  useEffect(() => {
+    const seen = seenNewIds.current!;
+    const fresh = newOrderIds.filter((id) => !seen.has(id));
+    if (fresh.length === 0) return;
+    // Always mark fresh IDs seen (even when muted), so toggling sound ON later
+    // never replays a backlog — only orders arriving after that point chime.
+    if (soundEnabled) playNewOrderBeep();
+    for (const id of fresh) seen.add(id);
+  }, [newOrderIds, soundEnabled]);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    // Turning ON is the user gesture that unlocks the AudioContext (autoplay).
+    if (next) unlockAudio();
+    setSoundEnabled(next);
+  };
+
+  // Fullscreen the whole board chrome (pills + scheduled + columns), so a
+  // filtered/scheduled view stays visible in fullscreen. The listener keeps the
+  // label in sync when the user exits with Esc rather than the button.
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const onChange = () =>
+      setIsFullscreen(document.fullscreenElement === boardRef.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  const toggleFullscreen = () => {
+    const el = boardRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void el.requestFullscreen?.();
+  };
 
   const matches = (order: KitchenOrder) =>
     filter === "all" || order.orderType === filter;
@@ -62,14 +121,36 @@ export function OrdersBoard({
       : makeNow.filter((order) => order.fulfillmentStatus === status);
 
   return (
-    <>
-      <div className="px-5 pt-6">
+    // bg-surface so fullscreen shows the cream board, not a black backdrop.
+    <div
+      ref={boardRef}
+      className={cx("bg-surface", isFullscreen && "h-dvh overflow-y-auto")}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-6">
         <Segmented
           options={FILTERS}
           value={filter}
           onChange={setFilter}
           label="Filter orders by type"
         />
+        <div className="flex items-center gap-2">
+          <Button
+            variant={soundEnabled ? "primary" : "secondary"}
+            size="sm"
+            aria-pressed={soundEnabled}
+            onClick={toggleSound}
+          >
+            {soundEnabled ? "🔔 Sound on" : "🔕 Sound off"}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            aria-pressed={isFullscreen}
+            onClick={toggleFullscreen}
+          >
+            {isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          </Button>
+        </div>
       </div>
 
       {upcoming.length > 0 ? (
@@ -126,6 +207,6 @@ export function OrdersBoard({
           })}
         </div>
       </section>
-    </>
+    </div>
   );
 }
