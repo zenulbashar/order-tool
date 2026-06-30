@@ -65,12 +65,25 @@ const KIND_RANK: Record<IssueKind, number> = {
 
 const SEVERITY_ORDER: Severity[] = ["high", "medium", "low"];
 
+// The anchor is `item-<id>` or `category-<id>`; map it to the master-detail
+// selection param so the link selects-and-shows (instead of expand-and-scroll).
+// A real <Link> (history push) — these deep-links are intentional navigations.
+function issueHref(anchor: string): string {
+  if (anchor.startsWith("item-")) {
+    return `/dashboard/menu?item=${anchor.slice("item-".length)}`;
+  }
+  if (anchor.startsWith("category-")) {
+    return `/dashboard/menu?category=${anchor.slice("category-".length)}`;
+  }
+  return "/dashboard/menu";
+}
+
 function IssueRow({ issue }: { issue: MenuHealthIssue }) {
   const badge = SEVERITY_BADGE[issue.severity];
   return (
     <li>
       <Link
-        href={`/dashboard/menu#${issue.anchor}`}
+        href={issueHref(issue.anchor)}
         className="flex items-start justify-between gap-3 rounded-md border border-line bg-sand/40 px-3 py-2 transition hover:bg-sand"
       >
         <div className="min-w-0">
