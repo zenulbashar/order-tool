@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { Button } from "@/app/_components/button";
+import { Checkbox } from "@/app/_components/selection-controls";
+import { Input } from "@/app/_components/input";
 import { ButtonLabel } from "@/app/_components/spinner";
+import { Textarea } from "@/app/_components/textarea";
 import {
   dollarsToCents,
   formatCents,
@@ -12,14 +16,9 @@ import {
 
 import { extractMenu, publishMenu } from "./actions";
 
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
-
-const primaryButton =
-  "rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50";
-
-const secondaryButton =
-  "rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50";
+// AI generation trigger — sanctioned amber product signature (not var(--action)).
+const aiButtonClass =
+  "rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-forest transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
 
 const MAX_IMAGES = 3;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -319,11 +318,11 @@ export function ImportClient({
   if (draft === null) {
     return (
       <section className="py-8">
-        <div className="rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900">
+        <div className="rounded-card border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink">
             Upload a photo of your menu
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted">
             Add up to {MAX_IMAGES} clear, straight-on photos (JPEG, PNG, WebP, or
             GIF; max 5MB each). We read the categories, items, and prices into a
             draft you can review and fix before anything is added to your menu.
@@ -334,26 +333,26 @@ export function ImportClient({
             accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             onChange={(event) => handleFiles(event.target.files)}
-            className="mt-4 block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border file:border-gray-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-50"
+            className="mt-4 block w-full text-sm text-ink file:mr-3 file:rounded-control file:border file:border-line file:bg-surface-elevated file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink hover:file:bg-sand"
           />
 
           {files.length > 0 ? (
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-muted">
               {files.length} photo{files.length === 1 ? "" : "s"} selected.
             </p>
           ) : null}
           {tooMany ? (
-            <p className="mt-2 text-sm text-red-600" role="alert">
+            <p className="mt-2 text-sm text-[var(--color-warm)]" role="alert">
               Add at most {MAX_IMAGES} photos.
             </p>
           ) : null}
           {tooBig ? (
-            <p className="mt-2 text-sm text-red-600" role="alert">
+            <p className="mt-2 text-sm text-[var(--color-warm)]" role="alert">
               Each photo must be 5MB or smaller.
             </p>
           ) : null}
           {error ? (
-            <p className="mt-2 text-sm text-red-600" role="alert">
+            <p className="mt-2 text-sm text-[var(--color-warm)]" role="alert">
               {error}
             </p>
           ) : null}
@@ -362,13 +361,13 @@ export function ImportClient({
             type="button"
             onClick={handleExtract}
             disabled={!canExtract}
-            className={`mt-4 ${primaryButton}`}
+            className={`mt-4 ${aiButtonClass}`}
           >
             <ButtonLabel pending={extracting} pendingLabel="Reading menu…">
               Read menu
             </ButtonLabel>
           </button>
-          <p className="mt-3 text-xs text-gray-400">
+          <p className="mt-3 text-xs text-muted">
             Reading a menu uses AI and is a small one-time cost. The photo is sent
             for reading only — it is not stored.
           </p>
@@ -380,8 +379,8 @@ export function ImportClient({
   // Stage 2: review + correct (the gate). Nothing is written until publish.
   return (
     <section className="py-8">
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm text-amber-800">
+      <div className="rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 p-4">
+        <p className="text-sm text-accent-deep">
           <strong>Review every line before adding it.</strong> Prices and sizes
           come from an AI reading a photo and can be wrong — check each one,
           especially any flagged below. For an item priced by size, confirm each
@@ -392,30 +391,30 @@ export function ImportClient({
       </div>
 
       {error ? (
-        <p className="mt-4 text-sm text-red-600" role="alert">
+        <p className="mt-4 text-sm text-[var(--color-warm)]" role="alert">
           {error}
         </p>
       ) : null}
 
       <div className="mt-5 space-y-4">
         {draft.map((category, ci) => (
-          <div key={ci} className="rounded-lg border border-gray-200 p-4">
+          <div key={ci} className="rounded-card border border-line p-4">
             <div className="flex items-start gap-3">
-              <label className="flex-1 text-sm font-medium text-gray-900">
+              <label className="flex-1 text-sm font-medium text-ink">
                 Category
-                <input
+                <Input
                   type="text"
                   value={category.name}
                   maxLength={100}
                   onChange={(event) => updateCategory(ci, event.target.value)}
                   placeholder="e.g. Mains"
-                  className={`mt-1 ${fieldClass}`}
+                  className="mt-1"
                 />
               </label>
               <button
                 type="button"
                 onClick={() => removeCategory(ci)}
-                className="mt-6 text-xs font-medium text-red-600 hover:text-red-700"
+                className="mt-6 text-xs font-medium text-[var(--color-warm)] transition hover:opacity-80"
               >
                 Remove
               </button>
@@ -431,14 +430,14 @@ export function ImportClient({
                 return (
                   <li
                     key={ii}
-                    className="rounded-md border border-gray-200 bg-gray-50/50 p-3"
+                    className="rounded-card border border-line bg-sand/40 p-3"
                   >
                     {/* Name, plus the single price when flat. A sized item hides
                         the single price — its sizes carry the prices. */}
                     {item.sized ? (
-                      <label className="block text-sm font-medium text-gray-900">
+                      <label className="block text-sm font-medium text-ink">
                         Item
-                        <input
+                        <Input
                           type="text"
                           value={item.name}
                           maxLength={100}
@@ -446,14 +445,14 @@ export function ImportClient({
                             updateItem(ci, ii, { name: event.target.value })
                           }
                           placeholder="e.g. Latte"
-                          className={`mt-1 ${fieldClass}`}
+                          className="mt-1"
                         />
                       </label>
                     ) : (
                       <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-                        <label className="text-sm font-medium text-gray-900">
+                        <label className="text-sm font-medium text-ink">
                           Item
-                          <input
+                          <Input
                             type="text"
                             value={item.name}
                             maxLength={100}
@@ -461,12 +460,12 @@ export function ImportClient({
                               updateItem(ci, ii, { name: event.target.value })
                             }
                             placeholder="e.g. Flat white"
-                            className={`mt-1 ${fieldClass}`}
+                            className="mt-1"
                           />
                         </label>
-                        <label className="text-sm font-medium text-gray-900">
+                        <label className="text-sm font-medium text-ink">
                           Price ($)
-                          <input
+                          <Input
                             type="text"
                             inputMode="decimal"
                             value={item.priceInput}
@@ -476,19 +475,15 @@ export function ImportClient({
                               })
                             }
                             placeholder="0.00"
-                            aria-invalid={priceMissing}
-                            className={`mt-1 ${fieldClass} ${
-                              priceMissing
-                                ? "border-red-400 focus:border-red-500 focus:ring-red-500"
-                                : ""
-                            }`}
+                            invalid={priceMissing}
+                            className="mt-1"
                           />
                         </label>
                       </div>
                     )}
 
                     {priceMissing ? (
-                      <p className="mt-1.5 text-xs font-medium text-red-600">
+                      <p className="mt-1.5 text-xs font-medium text-[var(--color-warm)]">
                         Set a price
                         {item.priceText
                           ? ` — the menu shows “${item.priceText}”`
@@ -499,24 +494,22 @@ export function ImportClient({
 
                     {/* Has-sizes toggle — mirrors the live editor; writes
                         nothing until publish. */}
-                    <label className="mt-2 flex items-center gap-2 text-sm font-medium text-gray-900">
-                      <input
-                        type="checkbox"
+                    <label className="mt-2 flex items-center gap-2 text-sm font-medium text-ink">
+                      <Checkbox
                         checked={item.sized}
                         onChange={() => toggleSized(ci, ii)}
-                        className="h-4 w-4 rounded border-gray-300"
                       />
                       This item has sizes
                     </label>
 
                     {item.sized ? (
-                      <div className="mt-2 space-y-2 rounded-md border border-gray-200 bg-white p-3">
-                        <p className="text-xs text-gray-500">
+                      <div className="mt-2 space-y-2 rounded-card border border-line bg-surface-elevated p-3">
+                        <p className="text-xs text-muted">
                           Sizes set the price — give each a name and price. The
                           single price above is ignored while sizes are on.
                         </p>
                         {item.priceText ? (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted">
                             The menu shows “{item.priceText}”.
                           </p>
                         ) : null}
@@ -530,9 +523,9 @@ export function ImportClient({
                                 key={si}
                                 className="grid gap-2 sm:grid-cols-[1fr_7rem_auto] sm:items-start"
                               >
-                                <label className="text-xs font-medium text-gray-700">
+                                <label className="text-xs font-medium text-muted">
                                   Size
-                                  <input
+                                  <Input
                                     type="text"
                                     value={size.name}
                                     maxLength={100}
@@ -542,12 +535,12 @@ export function ImportClient({
                                       })
                                     }
                                     placeholder="e.g. Large"
-                                    className={`mt-1 ${fieldClass}`}
+                                    className="mt-1"
                                   />
                                 </label>
-                                <label className="text-xs font-medium text-gray-700">
+                                <label className="text-xs font-medium text-muted">
                                   Price ($)
-                                  <input
+                                  <Input
                                     type="text"
                                     inputMode="decimal"
                                     value={size.priceInput}
@@ -557,23 +550,19 @@ export function ImportClient({
                                       })
                                     }
                                     placeholder="0.00"
-                                    aria-invalid={sizePriceMissing}
-                                    className={`mt-1 ${fieldClass} ${
-                                      sizePriceMissing
-                                        ? "border-red-400 focus:border-red-500 focus:ring-red-500"
-                                        : ""
-                                    }`}
+                                    invalid={sizePriceMissing}
+                                    className="mt-1"
                                   />
                                 </label>
                                 <button
                                   type="button"
                                   onClick={() => removeSize(ci, ii, si)}
-                                  className="text-xs font-medium text-red-600 hover:text-red-700 sm:mt-6"
+                                  className="text-xs font-medium text-[var(--color-warm)] transition hover:opacity-80 sm:mt-6"
                                 >
                                   Remove
                                 </button>
                                 {sizePriceMissing ? (
-                                  <p className="text-xs font-medium text-red-600 sm:col-span-3">
+                                  <p className="text-xs font-medium text-[var(--color-warm)] sm:col-span-3">
                                     Set a price for this size.
                                   </p>
                                 ) : null}
@@ -583,35 +572,36 @@ export function ImportClient({
                         </ul>
 
                         {noSizes ? (
-                          <p className="text-xs font-medium text-red-600">
+                          <p className="text-xs font-medium text-[var(--color-warm)]">
                             Add at least one size, or untick “This item has
                             sizes”.
                           </p>
                         ) : null}
 
                         {item.sizes.length < MAX_SIZES_PER_ITEM ? (
-                          <button
+                          <Button
                             type="button"
+                            variant="secondary"
+                            size="sm"
                             onClick={() => addSize(ci, ii)}
-                            className={secondaryButton}
                           >
                             + Add size
-                          </button>
+                          </Button>
                         ) : null}
                       </div>
                     ) : null}
 
-                    <label className="mt-2 block text-sm font-medium text-gray-900">
+                    <label className="mt-2 block text-sm font-medium text-ink">
                       Description{" "}
-                      <span className="font-normal text-gray-400">(optional)</span>
-                      <textarea
+                      <span className="font-normal text-muted">(optional)</span>
+                      <Textarea
                         rows={2}
                         value={item.description}
                         maxLength={500}
                         onChange={(event) =>
                           updateItem(ci, ii, { description: event.target.value })
                         }
-                        className={`mt-1 ${fieldClass}`}
+                        className="mt-1"
                       />
                     </label>
 
@@ -619,7 +609,7 @@ export function ImportClient({
                       <button
                         type="button"
                         onClick={() => removeItem(ci, ii)}
-                        className="text-xs font-medium text-red-600 hover:text-red-700"
+                        className="text-xs font-medium text-[var(--color-warm)] transition hover:opacity-80"
                       >
                         Remove item
                       </button>
@@ -629,50 +619,54 @@ export function ImportClient({
               })}
             </ul>
 
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => addItem(ci)}
-              className={`mt-3 ${secondaryButton}`}
+              className="mt-3"
             >
               + Add item
-            </button>
+            </Button>
           </div>
         ))}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         onClick={addCategory}
-        className={`mt-4 ${secondaryButton}`}
+        className="mt-4"
       >
         + Add category
-      </button>
+      </Button>
 
-      <div className="mt-8 flex items-center gap-3 border-t border-gray-200 pt-6">
-        <button
+      <div className="mt-8 flex items-center gap-3 border-t border-line pt-6">
+        <Button
           type="button"
+          variant="primary"
           onClick={handlePublish}
           disabled={!canPublish || publishing}
-          className={primaryButton}
+          loading={publishing}
+          loadingLabel="Adding to menu…"
         >
-          <ButtonLabel pending={publishing} pendingLabel="Adding…">
-            Add these to my menu
-          </ButtonLabel>
-        </button>
-        <button
+          Add these to my menu
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
           onClick={() => {
             setDraft(null);
             setFiles([]);
             setError(null);
           }}
-          className="text-sm font-medium text-gray-500 hover:text-gray-900"
         >
           Start over
-        </button>
+        </Button>
       </div>
       {!canPublish ? (
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted">
           Give every category a name, every item a name, and either a price or at
           least one named, priced size to continue.
         </p>

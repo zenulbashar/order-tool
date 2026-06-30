@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { and, eq, isNull, or } from "drizzle-orm";
 
+import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { menuItems } from "@/lib/db/schema";
 import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
@@ -25,21 +25,16 @@ export default async function FillDescriptionsPage() {
     );
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="border-b border-gray-200 pb-6">
-        <Link
-          href="/dashboard/menu"
-          className="text-xs text-gray-500 hover:text-gray-900"
-        >
-          ← Back to menu
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          Fill empty descriptions
-        </h1>
-        <p className="text-sm text-gray-500">{venue.name}</p>
-      </header>
+    <main className="mx-auto max-w-3xl">
+      <PageHeader
+        title="Fill empty descriptions"
+        description={venue.name}
+        backHref="/dashboard/menu"
+      />
 
-      <DescriptionsClient emptyCount={empties.length} />
+      <div className="px-5">
+        <DescriptionsClient emptyCount={empties.length} />
+      </div>
     </main>
   );
 }

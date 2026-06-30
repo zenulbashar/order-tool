@@ -3,16 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { Button } from "@/app/_components/button";
 import { ButtonLabel } from "@/app/_components/spinner";
+import { Textarea } from "@/app/_components/textarea";
 import { formatCents } from "@/lib/validation";
 
 import { draftEmptyDescriptions, saveItemDescriptions } from "./actions";
 
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
-
-const primaryButton =
-  "rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50";
+// AI generation trigger — sanctioned amber product signature (not var(--action)).
+const aiButtonClass =
+  "rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-forest transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
 
 // A review row: name/category/price are read-only context; only `description`
 // (the AI suggestion) is editable, and only it is ever written.
@@ -98,11 +98,11 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
     if (emptyCount === 0) {
       return (
         <section className="py-8">
-          <div className="rounded-lg border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900">
+          <div className="rounded-card border border-line p-5">
+            <h2 className="text-sm font-semibold text-ink">
               Every item already has a description
             </h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted">
               There is nothing to fill in right now. Add or import more items and
               come back any time.
             </p>
@@ -113,12 +113,12 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
 
     return (
       <section className="py-8">
-        <div className="rounded-lg border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900">
+        <div className="rounded-card border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink">
             Draft descriptions for {emptyCount} item
             {emptyCount === 1 ? "" : "s"}
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted">
             We&apos;ll write a short, appetising description for each item that
             doesn&apos;t have one yet, using its name, category, and price. You
             review and edit every line, and nothing is saved to your menu until
@@ -126,7 +126,7 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
           </p>
 
           {error ? (
-            <p className="mt-3 text-sm text-red-600" role="alert">
+            <p className="mt-3 text-sm text-[var(--color-warm)]" role="alert">
               {error}
             </p>
           ) : null}
@@ -135,13 +135,13 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
             type="button"
             onClick={handleDraft}
             disabled={drafting}
-            className={`mt-4 ${primaryButton}`}
+            className={`mt-4 ${aiButtonClass}`}
           >
             <ButtonLabel pending={drafting} pendingLabel="Drafting…">
               Draft descriptions
             </ButtonLabel>
           </button>
-          <p className="mt-3 text-xs text-gray-400">
+          <p className="mt-3 text-xs text-muted">
             Drafting uses AI and is a small one-time cost. Only items with no
             description are drafted.
           </p>
@@ -153,8 +153,8 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
   /* ----------------------- Stage 1: review + save ----------------------- */
   return (
     <section className="py-8">
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm text-amber-800">
+      <div className="rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 p-4">
+        <p className="text-sm text-accent-deep">
           <strong>Review every description before saving.</strong> These are AI
           suggestions from each item&apos;s name, category, and price, so edit
           anything that&apos;s off and remove any you don&apos;t want. Nothing is
@@ -163,20 +163,20 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
       </div>
 
       {capped ? (
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-4 text-sm text-muted">
           Showing the first {rows.length}. Save these, then run “Fill empty
           descriptions” again for the rest.
         </p>
       ) : null}
 
       {error ? (
-        <p className="mt-4 text-sm text-red-600" role="alert">
+        <p className="mt-4 text-sm text-[var(--color-warm)]" role="alert">
           {error}
         </p>
       ) : null}
 
       {rows.length === 0 ? (
-        <p className="mt-5 rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+        <p className="mt-5 rounded-card border border-dashed border-line p-6 text-center text-sm text-muted">
           No items to review.
         </p>
       ) : (
@@ -184,18 +184,18 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
           {rows.map((row, index) => (
             <li
               key={row.itemId}
-              className="rounded-lg border border-gray-200 p-4"
+              className="rounded-card border border-line p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900">
+                  <p className="truncate text-sm font-medium text-ink">
                     {row.name}
-                    <span className="ml-2 font-normal text-gray-500">
+                    <span className="ml-2 font-normal text-muted">
                       ${formatCents(row.priceCents)}
                     </span>
                   </p>
                   {row.categoryName ? (
-                    <p className="truncate text-xs text-gray-500">
+                    <p className="truncate text-xs text-muted">
                       {row.categoryName}
                     </p>
                   ) : null}
@@ -203,21 +203,21 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
                 <button
                   type="button"
                   onClick={() => removeRow(index)}
-                  className="shrink-0 text-xs font-medium text-red-600 hover:text-red-700"
+                  className="shrink-0 text-xs font-medium text-[var(--color-warm)] transition hover:opacity-80"
                 >
                   Remove
                 </button>
               </div>
 
-              <label className="mt-3 block text-sm font-medium text-gray-900">
+              <label className="mt-3 block text-sm font-medium text-ink">
                 Description
-                <textarea
+                <Textarea
                   rows={3}
                   value={row.description}
                   maxLength={500}
                   onChange={(event) => updateRow(index, event.target.value)}
                   placeholder="Write a short description…"
-                  className={`mt-1 ${fieldClass}`}
+                  className="mt-1"
                 />
               </label>
             </li>
@@ -225,31 +225,31 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
         </ul>
       )}
 
-      <div className="mt-8 flex items-center gap-3 border-t border-gray-200 pt-6">
-        <button
+      <div className="mt-8 flex items-center gap-3 border-t border-line pt-6">
+        <Button
           type="button"
+          variant="primary"
           onClick={handleSave}
           disabled={!canSave}
-          className={primaryButton}
+          loading={saving}
+          loadingLabel="Saving…"
         >
-          <ButtonLabel pending={saving} pendingLabel="Saving…">
-            Save descriptions
-          </ButtonLabel>
-        </button>
-        <button
+          Save descriptions
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
           onClick={() => {
             setRows(null);
             setCapped(false);
             setError(null);
           }}
-          className="text-sm font-medium text-gray-500 hover:text-gray-900"
         >
           Start over
-        </button>
+        </Button>
       </div>
       {!canSave && rows.length > 0 ? (
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted">
           Keep at least one description to save.
         </p>
       ) : null}
