@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { cx } from "@/app/_components/cx";
 
 import { signOutOwner } from "./actions";
+import { setSidebarCollapsed, useSidebarCollapsed } from "./sidebar-preference";
 import { VenueSwitcher } from "./venue-switcher";
 
 type NavItem = {
@@ -86,12 +87,29 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  // Desktop-only collapse preference (per-device, localStorage). Drives ONLY
+  // lg:-prefixed classes below; the mobile drawer (`open`) ignores it entirely.
+  const collapsed = useSidebarCollapsed();
 
   // Closing the drawer is driven by the nav links' onClick (close-on-navigate),
   // not a route-watching effect — keeps state changes out of effects.
   const closeDrawer = () => setOpen(false);
 
+  // ⌘\ (Mac) / Ctrl+\ (Win/Linux) toggles the desktop rail. preventDefault since
+  // we own the chord; state is set inside the handler, not the effect body.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "\\") {
+        event.preventDefault();
+        setSidebarCollapsed(!collapsed);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [collapsed]);
+
   const groups = navGroups(currentSlug, activeOrderCount);
+  const ownerLabel = userName ?? userEmail ?? "Owner";
 
   function isActive(item: NavItem): boolean {
     if (item.external) return false;
@@ -129,9 +147,10 @@ export function Sidebar({
           print:hidden so the orders ticket / tables QR sheet print clean. */}
       <aside
         className={cx(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto bg-sidebar text-sidebar-ink transition-transform print:hidden",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto bg-sidebar text-sidebar-ink transition-[transform,width] motion-reduce:transition-none print:hidden",
           "lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          collapsed && "lg:w-[76px]",
         )}
       >
         <div className="flex items-center justify-between px-4 py-4">
@@ -148,24 +167,41 @@ export function Sidebar({
 
         {/* Venue identity + switcher + plan pill. */}
         <div className="px-3 pb-2">
-          <div className="flex items-center justify-between gap-2 rounded-card bg-forest px-3 py-2.5">
+          <div
+            className={cx(
+              "flex items-center justify-between gap-2 rounded-card bg-forest px-3 py-2.5",
+              collapsed && "lg:justify-center",
+            )}
+          >
             <span className="flex min-w-0 items-center gap-2">
               {/* Decorative venue accent swatch (venue.brandColor); the ring
-                  keeps a dark brand colour legible on the forest rail. */}
+                  keeps a dark brand colour legible on the forest rail. Collapsed,
+                  it's the only identity element left, so it carries the name as a
+                  title tooltip (switching requires expanding first). */}
               <span
                 aria-hidden="true"
+                title={currentName}
                 style={{ backgroundColor: brandColor }}
                 className="h-4 w-4 shrink-0 rounded-full ring-1 ring-white/15"
               />
-              {hasMultiple ? (
-                <VenueSwitcher venues={venues} currentId={currentId} />
-              ) : (
-                <span className="min-w-0 truncate text-sm font-semibold text-sidebar-ink">
-                  {currentName}
-                </span>
-              )}
+              <span
+                className={cx("flex min-w-0 items-center", collapsed && "lg:hidden")}
+              >
+                {hasMultiple ? (
+                  <VenueSwitcher venues={venues} currentId={currentId} />
+                ) : (
+                  <span className="min-w-0 truncate text-sm font-semibold text-sidebar-ink">
+                    {currentName}
+                  </span>
+                )}
+              </span>
             </span>
-            <span className="shrink-0 rounded-sm bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest">
+            <span
+              className={cx(
+                "shrink-0 rounded-sm bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest",
+                collapsed && "lg:hidden",
+              )}
+            >
               {PLAN_LABEL[plan] ?? plan}
             </span>
           </div>
@@ -173,7 +209,10 @@ export function Sidebar({
             <Link
               href="/onboarding/details"
               onClick={closeDrawer}
-              className="mt-1 inline-flex min-h-11 items-center px-3 text-xs font-medium text-sidebar-muted transition hover:text-sidebar-ink"
+              className={cx(
+                "mt-1 inline-flex min-h-11 items-center px-3 text-xs font-medium text-sidebar-muted transition hover:text-sidebar-ink",
+                collapsed && "lg:hidden",
+              )}
             >
               ＋ Add location
             </Link>
@@ -181,14 +220,29 @@ export function Sidebar({
         </div>
 
         <nav className="flex-1 space-y-6 px-3 py-2">
-          {groups.map((group) => (
-            <div key={group.title}>
-              <p className="px-3 pb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-sidebar-muted">
+          {groups.map((group, groupIndex) => (
+            <div
+              key={group.title}
+              className={cx(
+                // Collapsed hides the group titles, so a hairline keeps the
+                // Manage / Business clusters visually separated.
+                collapsed &&
+                  groupIndex > 0 &&
+                  "lg:border-t lg:border-forest lg:pt-4",
+              )}
+            >
+              <p
+                className={cx(
+                  "px-3 pb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-sidebar-muted",
+                  collapsed && "lg:hidden",
+                )}
+              >
                 {group.title}
               </p>
               <ul className="space-y-0.5">
                 {group.items.map((item) => {
                   const active = isActive(item);
+                  const hasBadge = Boolean(item.badge && item.badge > 0);
                   return (
                     <li key={item.label}>
                       <Link
@@ -198,29 +252,53 @@ export function Sidebar({
                           ? { target: "_blank", rel: "noreferrer" }
                           : {})}
                         aria-current={active ? "page" : undefined}
+                        title={collapsed ? item.label : undefined}
                         className={cx(
                           "flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium transition",
                           active
                             ? "bg-accent text-forest"
                             : "text-sidebar-ink hover:bg-forest",
+                          collapsed && "lg:justify-center lg:gap-0 lg:px-0",
                         )}
                       >
-                        <span aria-hidden="true" className="shrink-0">
+                        <span aria-hidden="true" className="relative shrink-0">
                           {item.icon}
+                          {/* Collapsed: the numeric pill can't fit at 76px, so an
+                              active-order count shows as a dot on the icon. */}
+                          {hasBadge ? (
+                            <span
+                              aria-hidden="true"
+                              className={cx(
+                                "absolute -right-0.5 -top-0.5 hidden h-2 w-2 rounded-full bg-accent ring-2 ring-sidebar",
+                                collapsed && "lg:block",
+                              )}
+                            />
+                          ) : null}
                         </span>
-                        <span className="flex-1 truncate">{item.label}</span>
-                        {item.badge && item.badge > 0 ? (
+                        <span
+                          className={cx("flex-1 truncate", collapsed && "lg:sr-only")}
+                        >
+                          {item.label}
+                        </span>
+                        {/* Visible numeric pill (decorative — aria-hidden); the
+                            count is conveyed to screen readers by the sr-only
+                            span below, so it survives the collapsed dot too. */}
+                        {hasBadge ? (
                           <span
-                            aria-label={`${item.badge} active`}
+                            aria-hidden="true"
                             className={cx(
                               "min-w-5 shrink-0 rounded-pill px-1.5 text-center font-mono text-[10px] font-bold leading-5",
                               active
                                 ? "bg-forest text-sidebar-ink"
                                 : "bg-accent text-forest",
+                              collapsed && "lg:hidden",
                             )}
                           >
                             {item.badge}
                           </span>
+                        ) : null}
+                        {hasBadge ? (
+                          <span className="sr-only">{` — ${item.badge} active`}</span>
                         ) : null}
                       </Link>
                     </li>
@@ -231,18 +309,71 @@ export function Sidebar({
           ))}
         </nav>
 
+        {/* Desktop-only collapse toggle, just above the footer. The mobile
+            drawer has its own ✕ close, so this is hidden below lg. */}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(!collapsed)}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar (⌘\\)" : "Collapse sidebar (⌘\\)"}
+          className={cx(
+            "mx-3 mb-1 hidden min-h-11 items-center rounded-control px-3 text-sm font-medium text-sidebar-muted transition hover:bg-forest hover:text-sidebar-ink lg:flex",
+            collapsed && "lg:justify-center lg:px-0",
+          )}
+        >
+          <span aria-hidden="true" className="shrink-0">
+            {collapsed ? "»" : "«"}
+          </span>
+          <span className={cx("ml-3", collapsed && "lg:hidden")}>Collapse</span>
+        </button>
+
         {/* User footer — identity + sign-out (posts to the server action). */}
         <div className="mt-auto border-t border-forest px-3 py-3">
-          <p className="truncate px-3 text-sm font-medium text-sidebar-ink">
-            {userName ?? userEmail ?? "Owner"}
+          {/* Collapsed: an avatar initial stands in for the name/role text. */}
+          <div
+            aria-hidden="true"
+            title={ownerLabel}
+            className={cx(
+              "mx-auto mb-1 hidden h-8 w-8 items-center justify-center rounded-full bg-forest text-sm font-semibold text-sidebar-ink",
+              collapsed && "lg:flex",
+            )}
+          >
+            {ownerLabel.trim().charAt(0).toUpperCase()}
+          </div>
+          <p
+            className={cx(
+              "truncate px-3 text-sm font-medium text-sidebar-ink",
+              collapsed && "lg:hidden",
+            )}
+          >
+            {ownerLabel}
           </p>
-          <p className="px-3 text-xs text-sidebar-muted">Owner</p>
+          <p
+            className={cx(
+              "px-3 text-xs text-sidebar-muted",
+              collapsed && "lg:hidden",
+            )}
+          >
+            Owner
+          </p>
           <form action={signOutOwner}>
             <button
               type="submit"
-              className="mt-1 flex min-h-11 w-full items-center rounded-control px-3 text-sm font-medium text-sidebar-muted transition hover:bg-forest hover:text-sidebar-ink"
+              aria-label="Sign out"
+              title="Sign out"
+              className={cx(
+                "mt-1 flex min-h-11 w-full items-center rounded-control px-3 text-sm font-medium text-sidebar-muted transition hover:bg-forest hover:text-sidebar-ink",
+                collapsed && "lg:justify-center lg:px-0",
+              )}
             >
-              Sign out
+              <span
+                aria-hidden="true"
+                className={cx("hidden shrink-0", collapsed && "lg:block")}
+              >
+                <IconSignOut />
+              </span>
+              <span className={cx(collapsed && "lg:hidden")}>Sign out</span>
             </button>
           </form>
         </div>
@@ -338,4 +469,12 @@ function IconBilling() {
 }
 function IconHamburger() {
   return svg(<path d="M4 6h16M4 12h16M4 18h16" />);
+}
+function IconSignOut() {
+  return svg(
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="M16 17l5-5-5-5M21 12H9" />
+    </>,
+  );
 }
