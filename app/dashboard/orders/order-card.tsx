@@ -2,6 +2,7 @@ import { StatusBadge, type KitchenTone } from "@/app/_components/status-badge";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
+import { ElapsedTime } from "./elapsed-time";
 import { OrderStatusControls } from "./order-status-controls";
 import { PrintButton } from "./print-button";
 import type { FulfillmentStatus, KitchenOrder } from "./queries";
@@ -30,11 +31,15 @@ export function OrderCard({
   order,
   timezone,
   compact = false,
+  showElapsed = false,
 }: {
   order: KitchenOrder;
   timezone: string;
   /** COMPLETED column: a compact, action-less summary (ref, done, type, items, total). */
   compact?: boolean;
+  /** Show the elapsed-since-placed indicator (active board columns only; never
+   *  the Scheduled band — those show pickup time — or compact completed cards). */
+  showElapsed?: boolean;
 }) {
   const isNew = order.fulfillmentStatus === "new";
 
@@ -97,12 +102,17 @@ export function OrderCard({
             </p>
           ) : null}
         </div>
-        <StatusBadge
-          tone={STATUS_TONE[order.fulfillmentStatus]}
-          className="shrink-0"
-        >
-          {STATUS_LABEL[order.fulfillmentStatus]}
-        </StatusBadge>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <StatusBadge tone={STATUS_TONE[order.fulfillmentStatus]}>
+            {STATUS_LABEL[order.fulfillmentStatus]}
+          </StatusBadge>
+          {showElapsed ? (
+            <ElapsedTime
+              placedAt={order.createdAt}
+              status={order.fulfillmentStatus}
+            />
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
