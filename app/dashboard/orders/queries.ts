@@ -1,8 +1,14 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orderItemModifiers, orderItems, orders } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
+
+// How far back the always-visible COMPLETED column reaches. Completed orders
+// have no dedicated completed_at, so this windows on created_at — recent enough
+// for a kitchen "just finished" glance without loading unbounded history.
+// Hardcoded for now; a sensible candidate for a venue-tunable setting later.
+const RECENT_COMPLETED_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export type FulfillmentStatus = "new" | "preparing" | "ready" | "completed";
 
@@ -89,6 +95,76 @@ export async function getVenueOrders(
     )
     .orderBy(completed ? desc(orders.createdAt) : asc(orders.createdAt));
 
+  return hydrateKitchenOrders(orderRows, venueId);
+}
+
+/**
+ * Recently-completed orders for the always-visible COMPLETED column on the
+ * kitchen board. Same immutability + venue-scoping as getVenueOrders, but
+ * bounded to a recent window (RECENT_COMPLETED_WINDOW_MS) and newest-first, so
+ * the column stays cheap on every 12s poll instead of loading all history.
+ */
+export async function getRecentCompletedOrders(
+  venueId: string,
+): Promise<KitchenOrder[]> {
+  const since = new Date(Date.now() - RECENT_COMPLETED_WINDOW_MS);
+
+  const orderRows = await db
+    .select({
+      id: orders.id,
+      publicToken: orders.publicToken,
+      orderType: orders.orderType,
+      tableLabel: orders.tableLabel,
+      customerName: orders.customerName,
+      customerPhone: orders.customerPhone,
+      notes: orders.notes,
+      fulfillmentStatus: orders.fulfillmentStatus,
+      subtotalCents: orders.subtotalCents,
+      totalCents: orders.totalCents,
+      createdAt: orders.createdAt,
+      scheduledFor: orders.scheduledFor,
+    })
+    .from(orders)
+    .where(
+      and(
+        scopedToVenue(orders.venueId, venueId),
+        eq(orders.status, "confirmed"),
+        eq(orders.fulfillmentStatus, "completed"),
+        gte(orders.createdAt, since),
+      ),
+    )
+    .orderBy(desc(orders.createdAt));
+
+  return hydrateKitchenOrders(orderRows, venueId);
+}
+
+/** Order header row shape shared by the kitchen queries above. */
+type OrderHeaderRow = {
+  id: string;
+  publicToken: string;
+  orderType: "pickup" | "dine_in";
+  tableLabel: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  notes: string | null;
+  fulfillmentStatus: FulfillmentStatus;
+  subtotalCents: number;
+  totalCents: number;
+  createdAt: Date;
+  scheduledFor: Date | null;
+};
+
+/**
+ * Load the immutable snapshot lines (items + their modifiers) for a set of
+ * already-fetched, venue-scoped order header rows and assemble KitchenOrders.
+ * Two queries total regardless of order count; every line comes from the order
+ * snapshots, never a live-menu re-join. Shared by getVenueOrders and
+ * getRecentCompletedOrders so both stay byte-identical in how they hydrate.
+ */
+async function hydrateKitchenOrders(
+  orderRows: OrderHeaderRow[],
+  venueId: string,
+): Promise<KitchenOrder[]> {
   if (orderRows.length === 0) return [];
 
   // Snapshot lines for exactly these orders, venue-scoped. One query for all
