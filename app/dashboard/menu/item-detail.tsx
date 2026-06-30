@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/app/_components/button";
+import { Card } from "@/app/_components/card";
 import type { DietaryTag } from "@/lib/validation";
 import { formatCents } from "@/lib/validation";
 
@@ -71,40 +72,55 @@ export function ItemDetail({
   categories: { id: string; name: string }[];
 }) {
   return (
-    <div className="space-y-3">
-      {/* Photo as the image area. Its own upload/remove forms — a SIBLING of
-          ItemForm below, never nested inside it, so image_url stays owned by
-          the dedicated upload/remove actions. */}
-      <PhotoControl
-        item={{ id: item.id, name: item.name, imageUrl: item.imageUrl }}
-      />
+    <div className="space-y-4">
+      {/* Top panel: photo + core fields, two columns at lg (photo left), stacked
+          on narrow. PhotoControl is a SIBLING of ItemForm (grid columns) —
+          never nested inside the form — so image_url stays owned by the
+          dedicated upload/remove actions (the O9 invariant). */}
+      <Card>
+        <div className="grid gap-6 lg:grid-cols-[13rem_1fr]">
+          <PhotoControl
+            item={{ id: item.id, name: item.name, imageUrl: item.imageUrl }}
+          />
 
-      <ItemForm
-        categories={categories}
-        hasSizes={variants.length > 0}
-        item={{
-          id: item.id,
-          categoryId: item.categoryId,
-          name: item.name,
-          description: item.description,
-          priceCents: item.priceCents,
-          isAvailable: item.isAvailable,
-          tags,
-        }}
-      />
+          <ItemForm
+            categories={categories}
+            hasSizes={variants.length > 0}
+            item={{
+              id: item.id,
+              categoryId: item.categoryId,
+              name: item.name,
+              description: item.description,
+              priceCents: item.priceCents,
+              isAvailable: item.isAvailable,
+              tags,
+            }}
+          />
+        </div>
+      </Card>
 
-      <HasSizesEditor itemId={item.id} variants={variants} />
+      {/* Sizes panel. */}
+      <Card>
+        <HasSizesEditor itemId={item.id} variants={variants} />
+      </Card>
 
-      <ItemModifierGroups itemId={item.id} groups={groups} />
+      {/* Modifier groups panel — Card wrapper for visual separation ONLY; the
+          accordion internals (ItemModifierGroups) are byte-identical to MD1. */}
+      <Card>
+        <ItemModifierGroups itemId={item.id} groups={groups} />
+      </Card>
 
-      <form action={deleteItem} className="border-t border-line pt-3">
-        <input type="hidden" name="id" value={item.id} />
-        <ConfirmSubmit
-          message={`Delete "${item.name}"? This also deletes its modifier groups and options.`}
-        >
-          Delete item
-        </ConfirmSubmit>
-      </form>
+      {/* Quiet destructive footer. */}
+      <div className="flex justify-end">
+        <form action={deleteItem}>
+          <input type="hidden" name="id" value={item.id} />
+          <ConfirmSubmit
+            message={`Delete "${item.name}"? This also deletes its modifier groups and options.`}
+          >
+            Delete item
+          </ConfirmSubmit>
+        </form>
+      </div>
     </div>
   );
 }
