@@ -19,21 +19,36 @@ import { formatCents } from "@/lib/validation";
 /* -------------------------------------------------------------------------- */
 
 const BAND_BADGE: Record<HealthBand, { label: string; className: string }> = {
-  good: { label: "Healthy", className: "bg-green-100 text-green-800" },
-  ok: { label: "Needs work", className: "bg-amber-100 text-amber-800" },
-  poor: { label: "Needs attention", className: "bg-red-100 text-red-800" },
+  good: {
+    label: "Healthy",
+    className: "bg-[var(--color-success)]/15 text-success-deep",
+  },
+  ok: {
+    label: "Needs work",
+    className: "bg-[var(--color-accent)]/15 text-accent-deep",
+  },
+  poor: {
+    label: "Needs attention",
+    className: "bg-[var(--color-warm)]/15 text-[var(--color-warm)]",
+  },
 };
 
 const BAND_SCORE_COLOR: Record<HealthBand, string> = {
-  good: "text-green-700",
-  ok: "text-amber-700",
-  poor: "text-red-700",
+  good: "text-success-deep",
+  ok: "text-accent-deep",
+  poor: "text-[var(--color-warm)]",
 };
 
 const SEVERITY_BADGE: Record<Severity, { label: string; className: string }> = {
-  high: { label: "High", className: "bg-red-100 text-red-700" },
-  medium: { label: "Medium", className: "bg-amber-100 text-amber-700" },
-  low: { label: "Low", className: "bg-gray-100 text-gray-500" },
+  high: {
+    label: "High",
+    className: "bg-[var(--color-warm)]/15 text-[var(--color-warm)]",
+  },
+  medium: {
+    label: "Medium",
+    className: "bg-[var(--color-accent)]/15 text-accent-deep",
+  },
+  low: { label: "Low", className: "bg-sand text-muted" },
 };
 
 // Within a severity bucket, show the most actionable kinds first, then by title.
@@ -56,18 +71,18 @@ function IssueRow({ issue }: { issue: MenuHealthIssue }) {
     <li>
       <Link
         href={`/dashboard/menu#${issue.anchor}`}
-        className="flex items-start justify-between gap-3 rounded-md border border-gray-200 bg-gray-50/50 px-3 py-2 transition hover:border-gray-300 hover:bg-gray-50"
+        className="flex items-start justify-between gap-3 rounded-md border border-line bg-sand/40 px-3 py-2 transition hover:bg-sand"
       >
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-gray-900">
+          <p className="truncate text-sm font-medium text-ink">
             {issue.title}
             {typeof issue.priceCents === "number" ? (
-              <span className="ml-2 font-normal text-gray-500">
+              <span className="ml-2 font-normal text-muted">
                 ${formatCents(issue.priceCents)}
               </span>
             ) : null}
           </p>
-          <p className="text-xs text-gray-500">{issue.detail}</p>
+          <p className="text-xs text-muted">{issue.detail}</p>
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
@@ -92,7 +107,7 @@ function SeveritySection({
       KIND_RANK[a.kind] - KIND_RANK[b.kind] || a.title.localeCompare(b.title),
   );
   return (
-    <details className="group rounded-md border border-gray-200">
+    <details className="group rounded-md border border-line">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-2">
           <span
@@ -100,14 +115,14 @@ function SeveritySection({
           >
             {badge.label}
           </span>
-          <span className="text-sm text-gray-500">({sorted.length})</span>
+          <span className="text-sm text-muted">({sorted.length})</span>
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
-          className="h-4 w-4 text-gray-400 transition group-open:rotate-180"
+          className="h-4 w-4 text-muted transition group-open:rotate-180"
         >
           <path
             fillRule="evenodd"
@@ -137,21 +152,21 @@ export function MenuHealthPanel({ report }: { report: MenuHealthReport }) {
 
   return (
     <section className="py-8">
-      <h2 className="text-sm font-semibold text-gray-900">Menu health</h2>
-      <div className="mt-3 rounded-lg border border-gray-200 p-4">
+      <h2 className="text-sm font-semibold text-ink">Menu health</h2>
+      <div className="mt-3 rounded-card border border-line p-4">
         {!report.hasItems ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted">
             Add items to your menu to see its health score.
           </p>
         ) : report.isHealthy ? (
           <div>
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-semibold tracking-tight text-green-700">
+              <span className="text-3xl font-semibold tracking-tight text-success-deep">
                 100
               </span>
-              <span className="text-sm text-gray-400">/ 100</span>
+              <span className="text-sm text-muted">/ 100</span>
             </div>
-            <p className="mt-2 text-sm text-gray-700">
+            <p className="mt-2 text-sm text-muted">
               Your menu looks great. Every item has a photo, a description, and a
               sensible price.
             </p>
@@ -165,14 +180,14 @@ export function MenuHealthPanel({ report }: { report: MenuHealthReport }) {
                 >
                   {report.score}
                 </span>
-                <span className="text-sm text-gray-400">/ 100</span>
+                <span className="text-sm text-muted">/ 100</span>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${BAND_BADGE[report.band].className}`}
                 >
                   {BAND_BADGE[report.band].label}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-muted">
                 {report.passingItems} of {report.totalItems}{" "}
                 {report.totalItems === 1 ? "item has" : "items have"} no high or
                 medium issues.

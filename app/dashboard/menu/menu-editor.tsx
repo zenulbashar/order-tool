@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { Button } from "@/app/_components/button";
 import type { DietaryTag } from "@/lib/validation";
 
 import { deleteCategory, moveCategory } from "./actions";
@@ -29,12 +30,7 @@ import { MoveButtons } from "./move-buttons";
 /* -------------------------------------------------------------------------- */
 
 const summaryClass =
-  "cursor-pointer select-none text-xs font-medium text-gray-600 hover:text-gray-900";
-
-const secondaryButton =
-  "rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50";
-
-const deleteLink = "text-xs font-medium text-red-600 hover:text-red-700";
+  "cursor-pointer select-none text-xs font-medium text-muted hover:text-ink";
 
 type CategoryData = {
   id: string;
@@ -182,13 +178,13 @@ export function MenuEditor({
 
   return (
     <section className="space-y-3 pb-10">
-      <h2 className="text-sm font-semibold text-gray-900">
+      <h2 className="text-sm font-semibold text-ink">
         Categories{" "}
-        <span className="font-normal text-gray-400">({categories.length})</span>
+        <span className="font-normal text-muted">({categories.length})</span>
       </h2>
 
       {categories.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+        <p className="rounded-card border border-dashed border-line p-6 text-center text-sm text-muted">
           No categories yet. Add your first one above.
         </p>
       ) : (
@@ -200,20 +196,20 @@ export function MenuEditor({
               <li
                 key={category.id}
                 id={`category-${category.id}`}
-                className="scroll-mt-24 rounded-lg border border-gray-200"
+                className="scroll-mt-24 rounded-card border border-line"
               >
                 <div className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-gray-900">
+                    <p className="truncate text-sm font-medium text-ink">
                       {category.name}
                       {!category.isActive ? (
-                        <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+                        <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs font-normal text-muted">
                           Hidden
                         </span>
                       ) : null}
                     </p>
                     {category.description ? (
-                      <p className="truncate text-xs text-gray-500">
+                      <p className="truncate text-xs text-muted">
                         {category.description}
                       </p>
                     ) : null}
@@ -227,30 +223,31 @@ export function MenuEditor({
                   />
                 </div>
 
-                <div className="border-t border-gray-100 px-4 py-3">
+                <div className="border-t border-line px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-medium text-gray-600">
+                    <p className="text-xs font-medium text-muted">
                       Items ({categoryItems.length})
                     </p>
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={() =>
                         setAddingCategoryId(isAdding ? null : category.id)
                       }
-                      className={secondaryButton}
                     >
                       {isAdding ? "Close" : "+ Add item"}
-                    </button>
+                    </Button>
                   </div>
 
                   {isAdding ? (
-                    <div className="mt-3 rounded-md border border-dashed border-gray-300 p-3">
+                    <div className="mt-3 rounded-md border border-dashed border-line p-3">
                       <ItemForm categoryId={category.id} />
                     </div>
                   ) : null}
 
                   {categoryItems.length === 0 ? (
-                    <p className="mt-3 text-xs text-gray-500">No items yet.</p>
+                    <p className="mt-3 text-xs text-muted">No items yet.</p>
                   ) : (
                     <ul className="mt-3 space-y-2">
                       {categoryItems.map((item, itemIndex) => (
@@ -275,7 +272,7 @@ export function MenuEditor({
                   )}
                 </div>
 
-                <details className="border-t border-gray-100 px-4 py-3">
+                <details className="border-t border-line px-4 py-3">
                   <summary className={summaryClass}>Category settings</summary>
                   <div className="mt-3 space-y-4">
                     <CategoryForm
@@ -288,12 +285,11 @@ export function MenuEditor({
                     />
                     <form
                       action={deleteCategory}
-                      className="border-t border-gray-100 pt-3"
+                      className="border-t border-line pt-3"
                     >
                       <input type="hidden" name="id" value={category.id} />
                       <ConfirmSubmit
                         message={`Delete "${category.name}"? This also deletes all of its items, modifier groups, and options.`}
-                        className={deleteLink}
                       >
                         Delete category
                       </ConfirmSubmit>
