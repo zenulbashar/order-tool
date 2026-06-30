@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { Spinner } from "@/app/_components/spinner";
+import { Button } from "@/app/_components/button";
 
 import {
   removeItemPhoto,
@@ -39,14 +39,14 @@ export function PhotoControl({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-900">Photo</p>
+      <p className="text-sm font-medium text-ink">Photo</p>
 
       {item.imageUrl ? (
         <div className="space-y-3">
           {/* Square preview at the size a diner actually sees on the item card
               (object-cover, rounded-xl) so the owner gets a realistic preview,
               not a giant upload rectangle. */}
-          <div className="h-28 w-28 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+          <div className="h-28 w-28 overflow-hidden rounded-xl border border-line bg-sand">
             {/* Owner-supplied URL; next/image would need remote config. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -55,7 +55,7 @@ export function PhotoControl({
               className="h-full w-full object-cover"
             />
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted">
             Shown to diners at about this size.
           </p>
           {/* key remounts the uploader (clearing the picked file + any error)
@@ -80,13 +80,15 @@ export function PhotoControl({
 function RemoveButton() {
   const { pending } = useFormStatus();
   return (
-    <button
+    <Button
       type="submit"
-      disabled={pending}
-      className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+      variant="secondary"
+      size="sm"
+      loading={pending}
+      loadingLabel="Removing…"
     >
-      {pending ? <Spinner size="sm" label="Removing photo" /> : "Remove photo"}
-    </button>
+      Remove photo
+    </Button>
   );
 }
 
@@ -136,12 +138,12 @@ function UploadForm({
         // the size/shape a diner sees on the item card. The format hint moves
         // below the box so the square stays compact.
         <div className="space-y-1.5">
-          <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-2 text-center transition hover:border-gray-400 hover:bg-gray-100">
-            <span className="max-w-full truncate text-xs font-medium text-gray-700">
+          <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line bg-sand px-2 text-center transition hover:border-muted hover:bg-sand/70">
+            <span className="max-w-full truncate text-xs font-medium text-ink">
               {hasFile ? fileName : "Upload photo"}
             </span>
             {hasFile ? (
-              <span className="text-[11px] text-gray-400">
+              <span className="text-[11px] text-muted">
                 Click Upload to save
               </span>
             ) : null}
@@ -154,7 +156,7 @@ function UploadForm({
               className="sr-only"
             />
           </label>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted">
             Shown to diners at about this size. JPEG, PNG, or WebP · up to 5MB.
           </p>
         </div>
@@ -165,37 +167,32 @@ function UploadForm({
           accept={ACCEPT}
           disabled={pending}
           onChange={handleFile}
-          className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border file:border-gray-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-50 disabled:opacity-50"
+          className="block w-full text-sm text-ink file:mr-3 file:rounded-control file:border file:border-line file:bg-surface-elevated file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink hover:file:bg-sand disabled:opacity-50"
         />
       )}
 
       {clientError ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-warm)]" role="alert">
           {clientError}
         </p>
       ) : null}
       {state.error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-warm)]" role="alert">
           {state.error}
         </p>
       ) : null}
 
-      <button
+      <Button
         type="submit"
-        disabled={pending || !hasFile}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+        variant="primary"
+        disabled={!hasFile}
+        loading={pending}
+        loadingLabel="Uploading…"
       >
-        {pending ? (
-          <span className="inline-flex items-center gap-2">
-            <Spinner size="sm" />
-            Uploading…
-          </span>
-        ) : (
-          label
-        )}
-      </button>
+        {label}
+      </Button>
       {!empty ? (
-        <p className="text-xs text-gray-400">JPEG, PNG, or WebP · up to 5MB.</p>
+        <p className="text-xs text-muted">JPEG, PNG, or WebP · up to 5MB.</p>
       ) : null}
     </form>
   );
