@@ -2,15 +2,13 @@
 
 import { useActionState } from "react";
 
-import { ButtonLabel } from "@/app/_components/spinner";
+import { Button } from "@/app/_components/button";
+import { Input } from "@/app/_components/input";
 import { formatCents } from "@/lib/validation";
 
 import { createVariant, updateVariant, type MenuActionState } from "./actions";
 
 const initialState: MenuActionState = {};
-
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 type EditableVariant = {
   id: string;
@@ -39,49 +37,48 @@ export function VariantForm({
         <input type="hidden" name="itemId" value={itemId ?? ""} />
       )}
 
-      <label className="block text-sm font-medium text-gray-900">
+      <label className="block text-sm font-medium text-ink">
         Name
-        <input
+        <Input
           name="name"
           type="text"
           required
           maxLength={100}
           defaultValue={variant?.name ?? ""}
           placeholder="Small"
-          className={`mt-1 ${fieldClass}`}
+          className="mt-1"
         />
       </label>
 
       {/* Absolute price (this size's own price), required — mirrors the item
           price field, not the modifier option's optional delta. */}
-      <label className="block text-sm font-medium text-gray-900">
+      <label className="block text-sm font-medium text-ink">
         Price (dollars)
-        <input
+        <Input
           name="price"
           type="text"
           inputMode="decimal"
           required
           placeholder="7.30"
           defaultValue={variant ? formatCents(variant.priceCents) : ""}
-          className={`mt-1 ${fieldClass}`}
+          className="mt-1"
         />
       </label>
 
       {state.error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-warm)]" role="alert">
           {state.error}
         </p>
       ) : null}
 
-      <button
+      <Button
         type="submit"
-        disabled={pending}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
+        variant="primary"
+        loading={pending}
+        loadingLabel="Saving…"
       >
-        <ButtonLabel pending={pending} pendingLabel="Saving…">
-          {isEdit ? "Save changes" : "Add size"}
-        </ButtonLabel>
-      </button>
+        {isEdit ? "Save changes" : "Add size"}
+      </Button>
     </form>
   );
 }

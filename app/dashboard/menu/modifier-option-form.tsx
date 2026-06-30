@@ -2,15 +2,14 @@
 
 import { useActionState } from "react";
 
-import { ButtonLabel } from "@/app/_components/spinner";
+import { Button } from "@/app/_components/button";
+import { Checkbox } from "@/app/_components/selection-controls";
+import { Input } from "@/app/_components/input";
 import { formatCents } from "@/lib/validation";
 
 import { createOption, updateOption, type MenuActionState } from "./actions";
 
 const initialState: MenuActionState = {};
-
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 type EditableOption = {
   id: string;
@@ -40,57 +39,54 @@ export function ModifierOptionForm({
         <input type="hidden" name="groupId" value={groupId ?? ""} />
       )}
 
-      <label className="block text-sm font-medium text-gray-900">
+      <label className="block text-sm font-medium text-ink">
         Name
-        <input
+        <Input
           name="name"
           type="text"
           required
           maxLength={100}
           defaultValue={option?.name ?? ""}
           placeholder="Oat milk"
-          className={`mt-1 ${fieldClass}`}
+          className="mt-1"
         />
       </label>
 
-      <label className="block text-sm font-medium text-gray-900">
+      <label className="block text-sm font-medium text-ink">
         Extra charge (dollars)
-        <input
+        <Input
           name="priceDelta"
           type="text"
           inputMode="decimal"
           defaultValue={option ? formatCents(option.priceDeltaCents) : "0.00"}
-          className={`mt-1 ${fieldClass}`}
+          className="mt-1"
         />
       </label>
 
       {isEdit ? (
-        <label className="flex items-center gap-2 text-sm text-gray-900">
-          <input
-            type="checkbox"
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <Checkbox
             name="isAvailable"
             defaultChecked={option?.isAvailable ?? true}
-            className="h-4 w-4 rounded border-gray-300"
           />
           Available
         </label>
       ) : null}
 
       {state.error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-warm)]" role="alert">
           {state.error}
         </p>
       ) : null}
 
-      <button
+      <Button
         type="submit"
-        disabled={pending}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
+        variant="primary"
+        loading={pending}
+        loadingLabel="Saving…"
       >
-        <ButtonLabel pending={pending} pendingLabel="Saving…">
-          {isEdit ? "Save changes" : "Add option"}
-        </ButtonLabel>
-      </button>
+        {isEdit ? "Save changes" : "Add option"}
+      </Button>
     </form>
   );
 }
