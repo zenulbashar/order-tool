@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orderItemModifiers, orderItems, orders } from "@/lib/db/schema";
@@ -50,6 +50,26 @@ export type KitchenOrder = {
 
 /** Fulfillment statuses that belong in the live (active) kitchen queue. */
 const ACTIVE_FULFILLMENT: FulfillmentStatus[] = ["new", "preparing", "ready"];
+
+/**
+ * Count of active (new/preparing/ready), paid orders for a venue — the
+ * "needs attention" number behind the sidebar Orders badge. A single
+ * venue-scoped count(), no joins; matches the board's NEW+PREPARING+READY
+ * population. venue_id scopes the query like every other read in this app.
+ */
+export async function getActiveOrderCount(venueId: string): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(orders)
+    .where(
+      and(
+        scopedToVenue(orders.venueId, venueId),
+        eq(orders.status, "confirmed"),
+        inArray(orders.fulfillmentStatus, ACTIVE_FULFILLMENT),
+      ),
+    );
+  return row?.value ?? 0;
+}
 
 /**
  * Venue-scoped kitchen queue. Returns ONLY paid orders (status='confirmed') —

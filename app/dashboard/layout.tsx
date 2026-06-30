@@ -1,5 +1,6 @@
 import { getCurrentVenue, getUserVenues, requireUser } from "@/lib/tenant";
 
+import { getActiveOrderCount } from "./orders/queries";
 import { Sidebar } from "./sidebar";
 
 /**
@@ -26,6 +27,11 @@ export default async function DashboardLayout({
 
   const hasMultiple = venues.length > 1;
 
+  // Active-order count for the sidebar badge. router.refresh() re-runs the whole
+  // route (layouts included), so this stays current on the 12s orders poll and
+  // refreshes on navigation elsewhere.
+  const activeOrderCount = await getActiveOrderCount(current.id);
+
   return (
     <div className="lg:flex lg:h-dvh">
       <Sidebar
@@ -37,6 +43,7 @@ export default async function DashboardLayout({
         userName={user.name ?? null}
         userEmail={user.email ?? null}
         hasMultiple={hasMultiple}
+        activeOrderCount={activeOrderCount}
       />
       <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>

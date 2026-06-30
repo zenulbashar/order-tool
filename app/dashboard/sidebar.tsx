@@ -18,17 +18,27 @@ type NavItem = {
   exact?: boolean;
   /** External link (Storefront) — opens a new tab, never "active". */
   external?: boolean;
+  /** Optional live count pill (e.g. active orders); hidden when 0. */
+  badge?: number;
 };
 
 /** Two grouped sections, per the P2ESidebar reference. */
-function navGroups(slug: string): { title: string; items: NavItem[] }[] {
+function navGroups(
+  slug: string,
+  activeOrderCount: number,
+): { title: string; items: NavItem[] }[] {
   return [
     {
       title: "Manage",
       items: [
         { label: "Overview", href: "/dashboard", icon: <IconHome />, exact: true },
         { label: "Menu", href: "/dashboard/menu", icon: <IconMenu /> },
-        { label: "Orders", href: "/dashboard/orders", icon: <IconOrders /> },
+        {
+          label: "Orders",
+          href: "/dashboard/orders",
+          icon: <IconOrders />,
+          badge: activeOrderCount,
+        },
         { label: "Tables", href: "/dashboard/tables", icon: <IconTables /> },
         { label: "Storefront", href: `/${slug}`, icon: <IconStorefront />, external: true },
       ],
@@ -60,6 +70,7 @@ export function Sidebar({
   userName,
   userEmail,
   hasMultiple,
+  activeOrderCount,
 }: {
   venues: { id: string; name: string }[];
   currentId: string;
@@ -69,6 +80,7 @@ export function Sidebar({
   userName: string | null;
   userEmail: string | null;
   hasMultiple: boolean;
+  activeOrderCount: number;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -77,7 +89,7 @@ export function Sidebar({
   // not a route-watching effect — keeps state changes out of effects.
   const closeDrawer = () => setOpen(false);
 
-  const groups = navGroups(currentSlug);
+  const groups = navGroups(currentSlug, activeOrderCount);
 
   function isActive(item: NavItem): boolean {
     if (item.external) return false;
@@ -185,7 +197,20 @@ export function Sidebar({
                         <span aria-hidden="true" className="shrink-0">
                           {item.icon}
                         </span>
-                        {item.label}
+                        <span className="flex-1 truncate">{item.label}</span>
+                        {item.badge && item.badge > 0 ? (
+                          <span
+                            aria-label={`${item.badge} active`}
+                            className={cx(
+                              "min-w-5 shrink-0 rounded-pill px-1.5 text-center font-mono text-[10px] font-bold leading-5",
+                              active
+                                ? "bg-forest text-sidebar-ink"
+                                : "bg-accent text-forest",
+                            )}
+                          >
+                            {item.badge}
+                          </span>
+                        ) : null}
                       </Link>
                     </li>
                   );
