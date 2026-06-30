@@ -2,14 +2,12 @@
 
 import { useActionState } from "react";
 
-import { ButtonLabel } from "@/app/_components/spinner";
+import { Button } from "@/app/_components/button";
+import { Input } from "@/app/_components/input";
 
 import { createGroup, updateGroup, type MenuActionState } from "./actions";
 
 const initialState: MenuActionState = {};
-
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 type EditableGroup = {
   id: string;
@@ -39,64 +37,63 @@ export function ModifierGroupForm({
         <input type="hidden" name="itemId" value={itemId ?? ""} />
       )}
 
-      <label className="block text-sm font-medium text-gray-900">
+      <label className="block text-sm font-medium text-ink">
         Name
-        <input
+        <Input
           name="name"
           type="text"
           required
           maxLength={100}
           defaultValue={group?.name ?? ""}
           placeholder="Milk"
-          className={`mt-1 ${fieldClass}`}
+          className="mt-1"
         />
       </label>
 
       <div className="flex gap-3">
-        <label className="block text-sm font-medium text-gray-900">
+        <label className="block text-sm font-medium text-ink">
           Min select
-          <input
+          <Input
             name="minSelect"
             type="number"
             min={0}
             step={1}
             required
             defaultValue={group?.minSelect ?? 0}
-            className={`mt-1 ${fieldClass}`}
+            className="mt-1"
           />
         </label>
-        <label className="block text-sm font-medium text-gray-900">
+        <label className="block text-sm font-medium text-ink">
           Max select
-          <input
+          <Input
             name="maxSelect"
             type="number"
             min={1}
             step={1}
             required
             defaultValue={group?.maxSelect ?? 1}
-            className={`mt-1 ${fieldClass}`}
+            className="mt-1"
           />
         </label>
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-muted">
         Required when min select is 1 or more.
       </p>
 
       {state.error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-warm)]" role="alert">
           {state.error}
         </p>
       ) : null}
 
-      <button
+      <Button
         type="submit"
-        disabled={pending}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
+        variant="primary"
+        loading={pending}
+        loadingLabel="Saving…"
       >
-        <ButtonLabel pending={pending} pendingLabel="Saving…">
-          {isEdit ? "Save changes" : "Add group"}
-        </ButtonLabel>
-      </button>
+        {isEdit ? "Save changes" : "Add group"}
+      </Button>
     </form>
   );
 }

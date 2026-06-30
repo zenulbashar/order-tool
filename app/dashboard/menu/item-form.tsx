@@ -2,6 +2,11 @@
 
 import { useActionState, useId, useRef, useState, useTransition } from "react";
 
+import { Button } from "@/app/_components/button";
+import { controlClass } from "@/app/_components/field";
+import { Checkbox } from "@/app/_components/selection-controls";
+import { Input } from "@/app/_components/input";
+import { Select } from "@/app/_components/select";
 import { ButtonLabel } from "@/app/_components/spinner";
 import {
   DIETARY_DISCLAIMER,
@@ -13,13 +18,12 @@ import {
 import { createItem, updateItem, type MenuActionState } from "./actions";
 import { suggestItemDescription } from "./descriptions/actions";
 
+// Sanctioned AI affordance on owner chrome — amber product signature (NOT
+// var(--action)). The "Suggest description" call drafts copy; nothing auto-saves.
 const suggestButtonClass =
-  "shrink-0 rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
+  "shrink-0 rounded-control bg-[var(--color-accent)] px-2.5 py-1 text-xs font-medium text-forest transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
 
 const initialState: MenuActionState = {};
-
-const fieldClass =
-  "w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900";
 
 type EditableItem = {
   id: string;
@@ -107,19 +111,19 @@ export function ItemForm({
 
       {/* On create the parent category is fixed; on edit it can be changed. */}
       {item && categories ? (
-        <label className="block text-sm font-medium text-gray-900">
+        <label className="block text-sm font-medium text-ink">
           Category
-          <select
+          <Select
             name="categoryId"
             defaultValue={item.categoryId}
-            className={`mt-1 ${fieldClass}`}
+            className="mt-1"
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
       ) : (
         <input
@@ -129,16 +133,16 @@ export function ItemForm({
         />
       )}
 
-      <label className="block text-sm font-medium text-gray-900">
+      <label className="block text-sm font-medium text-ink">
         Name
-        <input
+        <Input
           name="name"
           type="text"
           required
           maxLength={100}
           defaultValue={item?.name ?? ""}
           placeholder="Flat white"
-          className={`mt-1 ${fieldClass}`}
+          className="mt-1"
         />
       </label>
 
@@ -146,9 +150,9 @@ export function ItemForm({
         <div className="flex items-center justify-between gap-2">
           <label
             htmlFor={descriptionId}
-            className="text-sm font-medium text-gray-900"
+            className="text-sm font-medium text-ink"
           >
-            Description <span className="text-gray-400">(optional)</span>
+            Description <span className="text-muted">(optional)</span>
           </label>
           <button
             type="button"
@@ -161,6 +165,10 @@ export function ItemForm({
             </ButtonLabel>
           </button>
         </div>
+        {/* Raw textarea (not the Textarea primitive) because the AI "Suggest
+            description" flow writes into it via descriptionRef, and the shared
+            primitive isn't ref-forwarding. Same cream field recipe via
+            controlClass so it matches the rest of the form. */}
         <textarea
           id={descriptionId}
           ref={descriptionRef}
@@ -168,34 +176,34 @@ export function ItemForm({
           rows={2}
           maxLength={500}
           defaultValue={item?.description ?? ""}
-          className={`mt-1 ${fieldClass}`}
+          className={controlClass({ className: "mt-1" })}
         />
         {suggestError ? (
-          <p className="mt-1 text-xs text-red-600" role="alert">
+          <p className="mt-1 text-xs text-[var(--color-warm)]" role="alert">
             {suggestError}
           </p>
         ) : null}
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-muted">
           AI draft from the item name, category, and price. Review and edit it,
           then save. It is never saved automatically.
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-900">
+        <label className="block text-sm font-medium text-ink">
           Price (dollars)
-          <input
+          <Input
             name="price"
             type="text"
             inputMode="decimal"
             required
             placeholder="4.50"
             defaultValue={item ? formatCents(item.priceCents) : ""}
-            className={`mt-1 ${fieldClass}`}
+            className="mt-1"
           />
         </label>
         {hasSizes ? (
-          <p className="mt-1 text-xs text-amber-700">
+          <p className="mt-1 text-xs text-muted">
             This item has sizes, so each size sets its own price — this single
             price is ignored while sizes exist.
           </p>
@@ -203,12 +211,10 @@ export function ItemForm({
       </div>
 
       {isEdit ? (
-        <label className="flex items-center gap-2 text-sm text-gray-900">
-          <input
-            type="checkbox"
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <Checkbox
             name="isAvailable"
             defaultChecked={item?.isAvailable ?? true}
-            className="h-4 w-4 rounded border-gray-300"
           />
           Available
         </label>
@@ -217,8 +223,8 @@ export function ItemForm({
       {/* Dietary/allergen tags. Owner-set suggestions, never platform
           guarantees — the storefront shows the same disclaimer to customers. */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-gray-900">
-          Dietary tags <span className="text-gray-400">(optional)</span>
+        <legend className="text-sm font-medium text-ink">
+          Dietary tags <span className="text-muted">(optional)</span>
         </legend>
         <div className="flex flex-wrap gap-2">
           {DIETARY_TAGS.map((tag) => {
@@ -226,14 +232,13 @@ export function ItemForm({
             return (
               <label
                 key={tag.value}
-                className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
+                className={`flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1 text-xs font-medium transition ${
                   checked
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                    ? "border-[var(--action)] bg-[var(--action)] text-[var(--action-contrast)]"
+                    : "border-line text-muted hover:bg-sand"
                 }`}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   name="tags"
                   value={tag.value}
                   checked={checked}
@@ -245,7 +250,7 @@ export function ItemForm({
             );
           })}
         </div>
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <p className="rounded-control border border-line bg-sand px-3 py-2 text-xs text-muted">
           Tags you set are shown to customers as a guide only. {DIETARY_DISCLAIMER}{" "}
           Use “gluten friendly” rather than “gluten free”: never state a dish is
           allergen-safe.
@@ -253,20 +258,19 @@ export function ItemForm({
       </fieldset>
 
       {state.error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-warm)]" role="alert">
           {state.error}
         </p>
       ) : null}
 
-      <button
+      <Button
         type="submit"
-        disabled={pending}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-60"
+        variant="primary"
+        loading={pending}
+        loadingLabel="Saving…"
       >
-        <ButtonLabel pending={pending} pendingLabel="Saving…">
-          {isEdit ? "Save changes" : "Add item"}
-        </ButtonLabel>
-      </button>
+        {isEdit ? "Save changes" : "Add item"}
+      </Button>
     </form>
   );
 }

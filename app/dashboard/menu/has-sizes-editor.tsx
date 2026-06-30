@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Button } from "@/app/_components/button";
+import { Checkbox } from "@/app/_components/selection-controls";
 import { formatCents } from "@/lib/validation";
 
 import { deleteVariant, moveVariant } from "./actions";
@@ -31,9 +33,7 @@ import { VariantForm } from "./variant-form";
 /* -------------------------------------------------------------------------- */
 
 const summaryClass =
-  "cursor-pointer select-none text-xs font-medium text-gray-600 hover:text-gray-900";
-
-const deleteLink = "text-xs font-medium text-red-600 hover:text-red-700";
+  "cursor-pointer select-none text-xs font-medium text-muted hover:text-ink";
 
 type VariantRow = { id: string; name: string; priceCents: number };
 
@@ -69,25 +69,20 @@ export function HasSizesEditor({
 
   return (
     <div className="space-y-3">
-      <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={handleToggle}
-          className="h-4 w-4 rounded border-gray-300"
-        />
+      <label className="flex items-center gap-2 text-sm font-medium text-ink">
+        <Checkbox checked={checked} onChange={handleToggle} />
         This item has sizes
       </label>
 
       {checked ? (
-        <div className="space-y-3 rounded-md border border-gray-200 bg-gray-50/50 p-3">
+        <div className="space-y-3 rounded-card border border-line bg-sand/40 p-3">
           {hasSizes ? (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               Sizes set the price — the single Price above is ignored while sizes
               exist.
             </p>
           ) : (
-            <p className="text-xs text-amber-700">
+            <p className="text-xs text-muted">
               Add at least one size to switch this item to size-based pricing.
               Until you do, it keeps the single Price above.
             </p>
@@ -98,12 +93,12 @@ export function HasSizesEditor({
               {variants.map((variant, variantIndex) => (
                 <li
                   key={variant.id}
-                  className="rounded border border-gray-200 bg-white"
+                  className="rounded border border-line bg-surface-elevated"
                 >
                   <div className="flex items-center justify-between gap-3 px-3 py-1.5">
-                    <p className="truncate text-sm text-gray-900">
+                    <p className="truncate text-sm text-ink">
                       {variant.name}
-                      <span className="ml-2 text-gray-500">
+                      <span className="ml-2 text-muted">
                         ${formatCents(variant.priceCents)}
                       </span>
                     </p>
@@ -115,7 +110,7 @@ export function HasSizesEditor({
                       label={variant.name}
                     />
                   </div>
-                  <details className="border-t border-gray-100 px-3 py-1.5">
+                  <details className="border-t border-line px-3 py-1.5">
                     <summary className={summaryClass}>Edit</summary>
                     <div className="mt-3 space-y-4">
                       <VariantForm
@@ -127,12 +122,12 @@ export function HasSizesEditor({
                       />
                       <form
                         action={deleteVariant}
-                        className="border-t border-gray-100 pt-3"
+                        className="border-t border-line pt-3"
                       >
                         <input type="hidden" name="id" value={variant.id} />
-                        <button type="submit" className={deleteLink}>
+                        <Button type="submit" variant="destructive" size="sm">
                           Delete size
-                        </button>
+                        </Button>
                       </form>
                     </div>
                   </details>
@@ -143,15 +138,15 @@ export function HasSizesEditor({
 
           {/* Add-a-size form, expanded inline (no buried <details>) so adding the
               first size is a single step. Reuses the existing createVariant. */}
-          <div className="rounded border border-dashed border-gray-300 p-3">
-            <p className="mb-2 text-xs font-medium text-gray-600">
+          <div className="rounded border border-dashed border-line p-3">
+            <p className="mb-2 text-xs font-medium text-muted">
               {hasSizes ? "Add another size" : "Add the first size"}
             </p>
             <VariantForm itemId={itemId} />
           </div>
 
           {hasSizes ? (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted">
               To switch back to a single price, remove every size above. Removing
               a size never affects past orders.
             </p>
