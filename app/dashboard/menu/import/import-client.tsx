@@ -8,6 +8,7 @@ import { Checkbox } from "@/app/_components/selection-controls";
 import { Input } from "@/app/_components/input";
 import { ButtonLabel } from "@/app/_components/spinner";
 import { Textarea } from "@/app/_components/textarea";
+import { ThinkingDots } from "@/app/_components/thinking-dots";
 import {
   dollarsToCents,
   formatCents,
@@ -367,6 +368,11 @@ export function ImportClient({
               Read menu
             </ButtonLabel>
           </button>
+          {extracting ? (
+            <div className="mt-3">
+              <ThinkingDots label="Reading your menu…" />
+            </div>
+          ) : null}
           <p className="mt-3 text-xs text-muted">
             Reading a menu uses AI and is a small one-time cost. The photo is sent
             for reading only — it is not stored.

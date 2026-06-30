@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/app/_components/button";
 import { ButtonLabel } from "@/app/_components/spinner";
 import { Textarea } from "@/app/_components/textarea";
+import { ThinkingDots } from "@/app/_components/thinking-dots";
 import { formatCents } from "@/lib/validation";
 
 import { draftEmptyDescriptions, saveItemDescriptions } from "./actions";
@@ -141,6 +142,11 @@ export function DescriptionsClient({ emptyCount }: { emptyCount: number }) {
               Draft descriptions
             </ButtonLabel>
           </button>
+          {drafting ? (
+            <div className="mt-3">
+              <ThinkingDots label="Drafting descriptions…" />
+            </div>
+          ) : null}
           <p className="mt-3 text-xs text-muted">
             Drafting uses AI and is a small one-time cost. Only items with no
             description are drafted.
