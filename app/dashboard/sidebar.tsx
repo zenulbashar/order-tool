@@ -71,6 +71,7 @@ export function Sidebar({
   userEmail,
   hasMultiple,
   activeOrderCount,
+  brandColor,
 }: {
   venues: { id: string; name: string }[];
   currentId: string;
@@ -81,6 +82,7 @@ export function Sidebar({
   userEmail: string | null;
   hasMultiple: boolean;
   activeOrderCount: number;
+  brandColor: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -147,13 +149,22 @@ export function Sidebar({
         {/* Venue identity + switcher + plan pill. */}
         <div className="px-3 pb-2">
           <div className="flex items-center justify-between gap-2 rounded-card bg-forest px-3 py-2.5">
-            {hasMultiple ? (
-              <VenueSwitcher venues={venues} currentId={currentId} />
-            ) : (
-              <span className="min-w-0 truncate text-sm font-semibold text-sidebar-ink">
-                {currentName}
-              </span>
-            )}
+            <span className="flex min-w-0 items-center gap-2">
+              {/* Decorative venue accent swatch (venue.brandColor); the ring
+                  keeps a dark brand colour legible on the forest rail. */}
+              <span
+                aria-hidden="true"
+                style={{ backgroundColor: brandColor }}
+                className="h-4 w-4 shrink-0 rounded-full ring-1 ring-white/15"
+              />
+              {hasMultiple ? (
+                <VenueSwitcher venues={venues} currentId={currentId} />
+              ) : (
+                <span className="min-w-0 truncate text-sm font-semibold text-sidebar-ink">
+                  {currentName}
+                </span>
+              )}
+            </span>
             <span className="shrink-0 rounded-sm bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest">
               {PLAN_LABEL[plan] ?? plan}
             </span>
