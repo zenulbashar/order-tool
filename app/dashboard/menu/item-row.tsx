@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/app/_components/button";
 import type { DietaryTag } from "@/lib/validation";
 import { formatCents } from "@/lib/validation";
 
@@ -20,9 +21,7 @@ import { MoveButtons } from "./move-buttons";
 import { PhotoControl } from "./photo-control";
 
 const summaryClass =
-  "cursor-pointer select-none text-xs font-medium text-gray-600 hover:text-gray-900";
-
-const deleteLink = "text-xs font-medium text-red-600 hover:text-red-700";
+  "cursor-pointer select-none text-xs font-medium text-muted hover:text-ink";
 
 type ItemRowData = {
   id: string;
@@ -90,7 +89,7 @@ export function ItemRow({
   return (
     <li
       id={`item-${item.id}`}
-      className="scroll-mt-24 rounded-md border border-gray-200 bg-gray-50/50"
+      className="scroll-mt-24 rounded-card border border-line bg-sand/40"
     >
       <div className="flex items-center justify-between gap-3 px-3 py-2">
         <button
@@ -99,7 +98,7 @@ export function ItemRow({
           aria-expanded={isExpanded}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
         >
-          <span className="text-gray-400" aria-hidden="true">
+          <span className="text-muted" aria-hidden="true">
             {isExpanded ? "▾" : "▸"}
           </span>
           {item.imageUrl ? (
@@ -110,30 +109,30 @@ export function ItemRow({
               alt=""
               loading="lazy"
               decoding="async"
-              className="h-10 w-10 shrink-0 rounded-md border border-gray-200 object-cover"
+              className="h-10 w-10 shrink-0 rounded-md border border-line object-cover"
             />
           ) : null}
           <span className="min-w-0">
-            <span className="block truncate text-sm text-gray-900">
+            <span className="block truncate text-sm text-ink">
               {item.name}
-              <span className="ml-2 text-gray-500">
+              <span className="ml-2 text-muted">
                 {fromPriceCents !== null
                   ? `from $${formatCents(fromPriceCents)}`
                   : `$${formatCents(item.priceCents)}`}
               </span>
               {variants.length > 0 ? (
-                <span className="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs text-muted">
                   {variants.length} size{variants.length === 1 ? "" : "s"}
                 </span>
               ) : null}
               {!item.isAvailable ? (
-                <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs text-muted">
                   Unavailable
                 </span>
               ) : null}
             </span>
             {item.description ? (
-              <span className="block truncate text-xs text-gray-500">
+              <span className="block truncate text-xs text-muted">
                 {item.description}
               </span>
             ) : null}
@@ -149,7 +148,7 @@ export function ItemRow({
       </div>
 
       {isExpanded ? (
-        <div className="space-y-3 border-t border-gray-100 px-3 py-3">
+        <div className="space-y-3 border-t border-line px-3 py-3">
           {/* Photo as the image area. Its own upload/remove forms — a SIBLING of
               ItemForm below, never nested inside it, so image_url stays owned by
               the dedicated upload/remove actions. */}
@@ -177,12 +176,11 @@ export function ItemRow({
 
           <form
             action={deleteItem}
-            className="border-t border-gray-100 pt-3"
+            className="border-t border-line pt-3"
           >
             <input type="hidden" name="id" value={item.id} />
             <ConfirmSubmit
               message={`Delete "${item.name}"? This also deletes its modifier groups and options.`}
-              className={deleteLink}
             >
               Delete item
             </ConfirmSubmit>
@@ -206,31 +204,31 @@ function ItemModifierGroups({
   groups: GroupRow[];
 }) {
   return (
-    <details className="border-t border-gray-100 pt-3">
+    <details className="border-t border-line pt-3">
       <summary className={summaryClass}>
         Modifier groups ({groups.length})
       </summary>
       <div className="mt-3 space-y-2">
         {groups.length === 0 ? (
-          <p className="text-xs text-gray-500">No modifier groups yet.</p>
+          <p className="text-xs text-muted">No modifier groups yet.</p>
         ) : (
           <ul className="space-y-2">
             {groups.map((group, groupIndex) => (
               <li
                 key={group.id}
-                className="rounded-md border border-gray-200 bg-white"
+                className="rounded-md border border-line bg-surface-elevated"
               >
                 <div className="flex items-center justify-between gap-3 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm text-gray-900">
+                    <p className="truncate text-sm text-ink">
                       {group.name}
                       {group.minSelect >= 1 ? (
-                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
+                        <span className="ml-2 rounded bg-[var(--color-accent)]/15 px-1.5 py-0.5 text-xs text-accent-deep">
                           Required
                         </span>
                       ) : null}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted">
                       min {group.minSelect} · max {group.maxSelect}
                     </p>
                   </div>
@@ -243,30 +241,30 @@ function ItemModifierGroups({
                   />
                 </div>
 
-                <details className="border-t border-gray-100 px-3 py-2">
+                <details className="border-t border-line px-3 py-2">
                   <summary className={summaryClass}>
                     Options ({group.options.length})
                   </summary>
                   <div className="mt-3 space-y-2">
                     {group.options.length === 0 ? (
-                      <p className="text-xs text-gray-500">No options yet.</p>
+                      <p className="text-xs text-muted">No options yet.</p>
                     ) : (
                       <ul className="space-y-1.5">
                         {group.options.map((option, optionIndex) => (
                           <li
                             key={option.id}
-                            className="rounded border border-gray-200 bg-gray-50/50"
+                            className="rounded border border-line bg-sand/40"
                           >
                             <div className="flex items-center justify-between gap-3 px-3 py-1.5">
-                              <p className="truncate text-sm text-gray-900">
+                              <p className="truncate text-sm text-ink">
                                 {option.name}
                                 {option.priceDeltaCents > 0 ? (
-                                  <span className="ml-2 text-gray-500">
+                                  <span className="ml-2 text-muted">
                                     +${formatCents(option.priceDeltaCents)}
                                   </span>
                                 ) : null}
                                 {!option.isAvailable ? (
-                                  <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                                  <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs text-muted">
                                     Unavailable
                                   </span>
                                 ) : null}
@@ -279,7 +277,7 @@ function ItemModifierGroups({
                                 label={option.name}
                               />
                             </div>
-                            <details className="border-t border-gray-100 px-3 py-1.5">
+                            <details className="border-t border-line px-3 py-1.5">
                               <summary className={summaryClass}>Edit</summary>
                               <div className="mt-3 space-y-4">
                                 <ModifierOptionForm
@@ -292,16 +290,20 @@ function ItemModifierGroups({
                                 />
                                 <form
                                   action={deleteOption}
-                                  className="border-t border-gray-100 pt-3"
+                                  className="border-t border-line pt-3"
                                 >
                                   <input
                                     type="hidden"
                                     name="id"
                                     value={option.id}
                                   />
-                                  <button type="submit" className={deleteLink}>
+                                  <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    size="sm"
+                                  >
                                     Delete option
-                                  </button>
+                                  </Button>
                                 </form>
                               </div>
                             </details>
@@ -310,7 +312,7 @@ function ItemModifierGroups({
                       </ul>
                     )}
 
-                    <details className="rounded border border-dashed border-gray-300 px-3 py-1.5">
+                    <details className="rounded border border-dashed border-line px-3 py-1.5">
                       <summary className={summaryClass}>Add an option</summary>
                       <div className="mt-3">
                         <ModifierOptionForm groupId={group.id} />
@@ -319,7 +321,7 @@ function ItemModifierGroups({
                   </div>
                 </details>
 
-                <details className="border-t border-gray-100 px-3 py-2">
+                <details className="border-t border-line px-3 py-2">
                   <summary className={summaryClass}>Edit group</summary>
                   <div className="mt-3 space-y-4">
                     <ModifierGroupForm
@@ -332,12 +334,11 @@ function ItemModifierGroups({
                     />
                     <form
                       action={deleteGroup}
-                      className="border-t border-gray-100 pt-3"
+                      className="border-t border-line pt-3"
                     >
                       <input type="hidden" name="id" value={group.id} />
                       <ConfirmSubmit
                         message={`Delete "${group.name}"? This also deletes its options.`}
-                        className={deleteLink}
                       >
                         Delete group
                       </ConfirmSubmit>
@@ -349,7 +350,7 @@ function ItemModifierGroups({
           </ul>
         )}
 
-        <details className="rounded-md border border-dashed border-gray-300 px-3 py-2">
+        <details className="rounded-md border border-dashed border-line px-3 py-2">
           <summary className={summaryClass}>Add a modifier group</summary>
           <div className="mt-3">
             <ModifierGroupForm itemId={itemId} />

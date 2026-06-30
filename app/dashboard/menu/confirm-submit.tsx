@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/app/_components/button";
+
 /**
  * Submit button that asks for confirmation before allowing the enclosing
  * <form> (a Server Action) to submit. Used for destructive actions whose FK
@@ -15,8 +17,10 @@ export function ConfirmSubmit({
   children: React.ReactNode;
 }) {
   return (
-    <button
+    <Button
       type="submit"
+      variant="destructive"
+      size="sm"
       className={className}
       onClick={(event) => {
         if (!window.confirm(message)) {
@@ -25,6 +29,6 @@ export function ConfirmSubmit({
       }}
     >
       {children}
-    </button>
+    </Button>
   );
 }

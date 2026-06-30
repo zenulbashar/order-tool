@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { buttonStyles } from "@/app/_components/button-variants";
+import { PageHeader } from "@/app/_components/page-header";
 import { computeMenuHealth } from "@/lib/menu-health";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -42,56 +44,50 @@ export default async function MenuPage() {
   const health = computeMenuHealth(items, categories);
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="border-b border-gray-200 pb-6">
-        <Link
-          href="/dashboard"
-          className="text-xs text-gray-500 hover:text-gray-900"
-        >
-          ← Back to dashboard
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Menu</h1>
-            <p className="text-sm text-gray-500">{venue.name}</p>
-          </div>
+    <main className="mx-auto max-w-3xl">
+      <PageHeader
+        title="Menu"
+        description={venue.name}
+        action={
           <div className="flex flex-wrap items-center gap-2">
             {emptyDescriptionCount > 0 ? (
               <Link
                 href="/dashboard/menu/descriptions"
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                className={buttonStyles("secondary", "sm")}
               >
                 Fill empty descriptions ({emptyDescriptionCount})
               </Link>
             ) : null}
             <Link
               href="/dashboard/menu/import"
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className={buttonStyles("secondary", "sm")}
             >
               Import menu from photo
             </Link>
           </div>
-        </div>
-      </header>
-
-      <MenuHealthPanel report={health} />
-
-      <section className="py-8">
-        <h2 className="text-sm font-semibold text-gray-900">Add a category</h2>
-        <div className="mt-3 rounded-lg border border-gray-200 p-4">
-          <CategoryForm />
-        </div>
-      </section>
-
-      <MenuEditor
-        categories={categories}
-        items={items}
-        groups={groups}
-        options={options}
-        variants={variants}
-        tags={tags}
-        categoryOptions={categoryOptions}
+        }
       />
+
+      <div className="px-5">
+        <MenuHealthPanel report={health} />
+
+        <section className="py-8">
+          <h2 className="text-sm font-semibold text-ink">Add a category</h2>
+          <div className="mt-3 rounded-card border border-line p-4">
+            <CategoryForm />
+          </div>
+        </section>
+
+        <MenuEditor
+          categories={categories}
+          items={items}
+          groups={groups}
+          options={options}
+          variants={variants}
+          tags={tags}
+          categoryOptions={categoryOptions}
+        />
+      </div>
     </main>
   );
 }

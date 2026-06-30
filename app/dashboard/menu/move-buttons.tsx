@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/app/_components/button";
+
 /**
  * Up/down reorder control shared by every level of the menu editor (categories,
  * items, sizes, modifier groups, options). Each arrow is its own tiny form that
@@ -7,10 +9,6 @@
  * so reordering keeps working exactly as before. Presentational only; it holds
  * no state of its own.
  */
-
-const secondaryButton =
-  "rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40";
-
 export function MoveButtons({
   action,
   id,
@@ -29,26 +27,28 @@ export function MoveButtons({
       <form action={action}>
         <input type="hidden" name="id" value={id} />
         <input type="hidden" name="direction" value="up" />
-        <button
+        <Button
           type="submit"
-          className={secondaryButton}
+          variant="secondary"
+          size="sm"
           disabled={isFirst}
           aria-label={`Move ${label} up`}
         >
           ↑
-        </button>
+        </Button>
       </form>
       <form action={action}>
         <input type="hidden" name="id" value={id} />
         <input type="hidden" name="direction" value="down" />
-        <button
+        <Button
           type="submit"
-          className={secondaryButton}
+          variant="secondary"
+          size="sm"
           disabled={isLast}
           aria-label={`Move ${label} down`}
         >
           ↓
-        </button>
+        </Button>
       </form>
     </div>
   );
