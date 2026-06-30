@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { buttonStyles } from "@/app/_components/button-variants";
 import { PageHeader } from "@/app/_components/page-header";
@@ -6,7 +7,6 @@ import { computeMenuHealth } from "@/lib/menu-health";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 import { MenuHealthPanel } from "./_components/menu-health-panel";
-import { CategoryForm } from "./category-form";
 import { MenuEditor } from "./menu-editor";
 import {
   getCategoriesForVenue,
@@ -44,7 +44,9 @@ export default async function MenuPage() {
   const health = computeMenuHealth(items, categories);
 
   return (
-    <main className="mx-auto max-w-3xl">
+    // Wider than the standard max-w-3xl owner page so the master-detail board
+    // (320px list + detail) has room; scoped to this page only.
+    <main className="mx-auto max-w-6xl">
       <PageHeader
         title="Menu"
         description={venue.name}
@@ -68,25 +70,22 @@ export default async function MenuPage() {
         }
       />
 
-      <div className="px-5">
+      <div className="px-5 py-8">
         <MenuHealthPanel report={health} />
 
-        <section className="py-8">
-          <h2 className="text-sm font-semibold text-ink">Add a category</h2>
-          <div className="mt-3 rounded-card border border-line p-4">
-            <CategoryForm />
-          </div>
-        </section>
-
-        <MenuEditor
-          categories={categories}
-          items={items}
-          groups={groups}
-          options={options}
-          variants={variants}
-          tags={tags}
-          categoryOptions={categoryOptions}
-        />
+        {/* MenuEditor reads the ?item=/?category= selection via useSearchParams,
+            which needs a Suspense boundary. */}
+        <Suspense>
+          <MenuEditor
+            categories={categories}
+            items={items}
+            groups={groups}
+            options={options}
+            variants={variants}
+            tags={tags}
+            categoryOptions={categoryOptions}
+          />
+        </Suspense>
       </div>
     </main>
   );
