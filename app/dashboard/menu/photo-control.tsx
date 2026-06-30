@@ -43,28 +43,19 @@ export function PhotoControl({
 
       {item.imageUrl ? (
         <div className="space-y-3">
-          {/* Square preview at the size a diner actually sees on the item card
-              (object-cover, rounded-xl) so the owner gets a realistic preview,
-              not a giant upload rectangle. */}
-          <div className="h-28 w-28 overflow-hidden rounded-xl border border-line bg-sand">
-            {/* Owner-supplied URL; next/image would need remote config. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <p className="text-xs text-muted">
-            Shown to diners at about this size.
-          </p>
           {/* key remounts the uploader (clearing the picked file + any error)
-              once a successful upload changes imageUrl. */}
+              once a successful upload changes imageUrl. The current photo is the
+              clickable image area now — "REPLACE" overlays it on hover/focus. */}
           <UploadForm
             key={item.imageUrl}
             itemId={item.id}
             label="Replace photo"
+            imageUrl={item.imageUrl}
+            alt={item.name}
           />
+          <p className="text-xs text-muted">
+            Shown to diners at about this size.
+          </p>
           <form action={removeItemPhoto}>
             <input type="hidden" name="id" value={item.id} />
             <RemoveButton />
@@ -96,10 +87,15 @@ function UploadForm({
   itemId,
   label,
   empty,
+  imageUrl,
+  alt,
 }: {
   itemId: string;
   label: string;
   empty?: boolean;
+  /** When set, the current photo IS the file picker — "REPLACE" overlays it. */
+  imageUrl?: string;
+  alt?: string;
 }) {
   const [state, formAction, pending] = useActionState(
     uploadItemPhoto,
@@ -133,7 +129,36 @@ function UploadForm({
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="itemId" value={itemId} />
 
-      {empty ? (
+      {imageUrl ? (
+        // Replace mode: the current photo IS the file picker. A "REPLACE"
+        // overlay appears on hover/focus; picking a file enables the submit
+        // button below (the two-step upload + name="photo" contract is unchanged).
+        <div className="space-y-1.5">
+          <label className="group relative block h-28 w-28 cursor-pointer overflow-hidden rounded-xl border border-line bg-sand">
+            {/* Owner-supplied URL; next/image would need remote config. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={alt ?? ""}
+              className="h-full w-full object-cover"
+            />
+            <span className="absolute inset-0 flex items-center justify-center bg-ink/50 text-xs font-bold uppercase tracking-wide text-white opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+              {hasFile ? "Selected" : "Replace"}
+            </span>
+            <input
+              type="file"
+              name="photo"
+              accept={ACCEPT}
+              disabled={pending}
+              onChange={handleFile}
+              className="sr-only"
+            />
+          </label>
+          {hasFile ? (
+            <p className="max-w-28 truncate text-[11px] text-muted">{fileName}</p>
+          ) : null}
+        </div>
+      ) : empty ? (
         // The empty state IS the image area: a small square dropzone matching
         // the size/shape a diner sees on the item card. The format hint moves
         // below the box so the square stays compact.
