@@ -67,7 +67,7 @@ export function OrdersAutoRefresh() {
     <p className="flex items-center gap-1.5 text-xs text-muted">
       <span
         className={`inline-block h-1.5 w-1.5 rounded-full ${
-          hidden ? "bg-line" : "bg-[var(--color-success)]"
+          hidden ? "bg-line" : "bg-[var(--color-success)] p2e-glow"
         }`}
       />
       {hidden ? "Paused" : "Live · updates every 12s"}
