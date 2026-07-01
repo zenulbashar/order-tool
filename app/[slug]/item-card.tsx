@@ -25,7 +25,7 @@ export function ItemCard({
     <button
       type="button"
       onClick={() => onSelect(item)}
-      className="flex w-full items-start justify-between gap-4 rounded-card border border-sand bg-surface-elevated p-3 text-left shadow-sm transition hover:border-muted/40 hover:shadow-md"
+      className="flex w-full items-start justify-between gap-4 rounded-card border border-sand bg-surface-elevated p-3 text-left shadow-card transition hover:border-muted/40 hover:shadow-lift"
     >
       <div className="min-w-0 flex-1">
         <p className="font-body text-sm font-semibold text-ink">{item.name}</p>
@@ -36,17 +36,26 @@ export function ItemCard({
         ) : null}
         {item.tags.length > 0 ? (
           <ul className="mt-1.5 flex flex-wrap gap-1">
-            {item.tags.map((tag) => (
-              <li
-                key={tag}
-                className="rounded-pill bg-sand px-2 py-0.5 text-[11px] font-medium text-muted"
-              >
-                {dietaryTagLabel(tag)}
-              </li>
-            ))}
+            {item.tags.map((tag) => {
+              // Firewall-safe semantic tint: plant tags read positive (green);
+              // everything else stays neutral. No amber on the diner side.
+              const plant = tag === "vegan" || tag === "vegetarian";
+              return (
+                <li
+                  key={tag}
+                  className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                    plant
+                      ? "bg-[var(--color-success)]/12 text-success-deep"
+                      : "bg-sand text-muted"
+                  }`}
+                >
+                  {dietaryTagLabel(tag)}
+                </li>
+              );
+            })}
           </ul>
         ) : null}
-        <p className="mt-1.5 text-sm font-semibold text-ink">
+        <p className="mt-1.5 font-display text-base font-semibold text-ink">
           {fromPriceCents !== null
             ? `from $${formatCents(fromPriceCents)}`
             : `$${formatCents(item.priceCents)}`}
