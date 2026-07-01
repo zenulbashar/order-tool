@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { cardStyles } from "@/app/_components/card";
+import { cx } from "@/app/_components/cx";
 import { PageHeader } from "@/app/_components/page-header";
 import { isOnboardingComplete, requireUser, requireVenue } from "@/lib/tenant";
 
@@ -102,13 +103,19 @@ export default async function DashboardPage() {
         {needsOnboarding ? (
           <Link
             href="/onboarding"
-            className="flex items-center justify-between gap-3 rounded-card border border-sand bg-surface-elevated px-4 py-3 transition hover:border-forest"
+            className="group flex items-center justify-between gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-4 py-3 transition hover:border-[var(--color-accent)]/50"
           >
             <span className="text-sm text-ink">
               Finish setting up your venue to go live and take orders.
             </span>
-            <span className="shrink-0 text-sm font-medium text-forest">
-              Finish setup →
+            <span className="shrink-0 text-sm font-medium text-[var(--action)]">
+              Finish setup{" "}
+              <span
+                aria-hidden="true"
+                className="inline-block transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+              >
+                →
+              </span>
             </span>
           </Link>
         ) : null}
@@ -118,9 +125,19 @@ export default async function DashboardPage() {
             <Link
               key={tile.href}
               href={tile.href}
-              className={cardStyles({ interactive: true })}
+              className={cx(cardStyles({ interactive: true }), "group")}
             >
-              <p className="text-sm font-medium text-ink">{tile.title}</p>
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-display text-base font-semibold text-ink">
+                  {tile.title}
+                </p>
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 text-[var(--action)] transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                >
+                  →
+                </span>
+              </div>
               <p className="mt-1 text-sm text-muted">{tile.description}</p>
             </Link>
           ))}
