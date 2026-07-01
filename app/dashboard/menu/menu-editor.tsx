@@ -177,9 +177,15 @@ export function MenuEditor({
   const clearDetail = () => navigate({ item: null, category: selectedCategoryId });
 
   return (
-    <section className="pb-10 lg:grid lg:grid-cols-[320px_1fr] lg:gap-6">
-      {/* List pane — hidden on narrow viewports while a detail is open. */}
-      <div className={cx("min-w-0", hasDetail && "hidden lg:block")}>
+    <section className="pb-10 lg:grid lg:grid-cols-[284px_1fr] lg:overflow-hidden lg:rounded-card lg:border lg:border-line">
+      {/* List pane — hidden on narrow viewports while a detail is open. On lg it
+          is the framed master column: cream fill, hairline divider, own padding. */}
+      <div
+        className={cx(
+          "min-w-0 lg:border-r lg:border-line lg:bg-hover-secondary lg:p-4",
+          hasDetail && "hidden lg:block",
+        )}
+      >
         <MenuListPane
           categories={categories}
           itemsByCategory={itemsByCategory}
@@ -195,7 +201,7 @@ export function MenuEditor({
 
       {/* Detail pane — on narrow viewports it replaces the list when something
           is selected; on lg it's always present (empty prompt when idle). */}
-      <div className={cx("min-w-0", !hasDetail && "hidden lg:block")}>
+      <div className={cx("min-w-0 lg:p-6", !hasDetail && "hidden lg:block")}>
         {hasDetail ? (
           <button
             type="button"

@@ -94,8 +94,10 @@ export function MenuListPane({
               <li
                 key={category.id}
                 className={cx(
-                  "rounded-card border",
-                  isOpen ? "border-[var(--action)]" : "border-line",
+                  "rounded-card border transition",
+                  isOpen
+                    ? "border-line-strong bg-surface-elevated shadow-card"
+                    : "border-transparent hover:border-line",
                 )}
               >
                 <div className="flex items-center justify-between gap-2 px-3 py-2.5">
@@ -105,7 +107,12 @@ export function MenuListPane({
                     aria-expanded={isOpen}
                     className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   >
-                    <span className="truncate text-sm font-medium text-ink">
+                    <span
+                      className={cx(
+                        "truncate text-sm text-ink",
+                        isOpen ? "font-semibold" : "font-medium",
+                      )}
+                    >
                       {category.name}
                     </span>
                     {!category.isActive ? (
@@ -113,7 +120,7 @@ export function MenuListPane({
                         Hidden
                       </span>
                     ) : null}
-                    <span className="ml-auto shrink-0 font-mono text-xs text-muted">
+                    <span className="ml-auto shrink-0 font-mono text-[10px] font-bold text-label">
                       {categoryItems.length}
                     </span>
                   </button>
