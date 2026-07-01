@@ -49,17 +49,17 @@ export function ItemRow({
     <li>
       <div
         className={cx(
-          "flex items-center justify-between gap-2 rounded-card border px-3 py-2 transition",
+          "flex items-center justify-between gap-2 rounded-control border-l-2 px-3 py-2 transition",
           isSelected
-            ? "border-[var(--action)] bg-surface-elevated"
-            : "border-line bg-sand/40 hover:border-muted",
+            ? "border-l-[var(--color-accent)] bg-[var(--color-accent)]/8"
+            : "border-l-transparent bg-sand/40 hover:bg-sand/70",
         )}
       >
         <button
           type="button"
           onClick={onSelect}
           aria-current={isSelected ? "true" : undefined}
-          className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           {item.imageUrl ? (
             // Owner-supplied URL; next/image would need remote config.
@@ -69,24 +69,24 @@ export function ItemRow({
               alt=""
               loading="lazy"
               decoding="async"
-              className="h-10 w-10 shrink-0 rounded-md border border-line object-cover"
+              className="h-6 w-6 shrink-0 rounded-md border border-line object-cover"
             />
           ) : null}
           <span className="min-w-0">
-            <span className="block truncate text-sm text-ink">
-              {item.name}
-              <span className="ml-2 text-muted">
+            <span className="block truncate text-sm text-ink">{item.name}</span>
+            <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-muted">
+              <span>
                 {fromPriceCents !== null
                   ? `from $${formatCents(fromPriceCents)}`
                   : `$${formatCents(item.priceCents)}`}
               </span>
               {variants.length > 0 ? (
-                <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs text-muted">
+                <span className="rounded bg-sand px-1 py-0.5 text-[10px] text-muted">
                   {variants.length} size{variants.length === 1 ? "" : "s"}
                 </span>
               ) : null}
               {!item.isAvailable ? (
-                <span className="ml-2 rounded bg-sand px-1.5 py-0.5 text-xs text-muted">
+                <span className="rounded bg-sand px-1 py-0.5 text-[10px] text-muted">
                   Unavailable
                 </span>
               ) : null}
