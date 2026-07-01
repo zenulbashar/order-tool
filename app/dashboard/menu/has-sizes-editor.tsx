@@ -93,22 +93,24 @@ export function HasSizesEditor({
               {variants.map((variant, variantIndex) => (
                 <li
                   key={variant.id}
-                  className="rounded border border-line bg-surface-elevated"
+                  className="rounded-input border border-line bg-surface-elevated"
                 >
                   <div className="flex items-center justify-between gap-3 px-3 py-1.5">
-                    <p className="truncate text-sm text-ink">
+                    <p className="min-w-0 truncate text-sm text-ink">
                       {variant.name}
-                      <span className="ml-2 text-muted">
+                    </p>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="font-mono text-sm text-ink">
                         ${formatCents(variant.priceCents)}
                       </span>
-                    </p>
-                    <MoveButtons
-                      action={moveVariant}
-                      id={variant.id}
-                      isFirst={variantIndex === 0}
-                      isLast={variantIndex === variants.length - 1}
-                      label={variant.name}
-                    />
+                      <MoveButtons
+                        action={moveVariant}
+                        id={variant.id}
+                        isFirst={variantIndex === 0}
+                        isLast={variantIndex === variants.length - 1}
+                        label={variant.name}
+                      />
+                    </div>
                   </div>
                   <details className="border-t border-line px-3 py-1.5">
                     <summary className={summaryClass}>Edit</summary>

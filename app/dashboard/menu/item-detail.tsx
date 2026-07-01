@@ -157,16 +157,20 @@ function ItemModifierGroups({
             >
               <div className="flex items-center justify-between gap-3 px-3 py-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm text-ink">
-                    {group.name}
-                    {group.minSelect >= 1 ? (
-                      <span className="ml-2 rounded bg-[var(--color-accent)]/15 px-1.5 py-0.5 text-xs text-accent-deep">
-                        Required
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-xs text-muted">
-                    min {group.minSelect} · max {group.maxSelect}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-ink">
+                      {group.name}
+                    </p>
+                    {/* Diner-facing selection constraint, surfaced from maxSelect. */}
+                    <span className="shrink-0 rounded-pill bg-sand px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+                      {group.maxSelect === 1
+                        ? "Choose 1"
+                        : `Choose up to ${group.maxSelect}`}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted">
+                    Min {group.minSelect} · Max {group.maxSelect} ·{" "}
+                    {group.minSelect >= 1 ? "required" : "optional"}
                   </p>
                 </div>
                 <MoveButtons
@@ -187,7 +191,7 @@ function ItemModifierGroups({
                     {group.options.map((option, optionIndex) => (
                       <li
                         key={option.id}
-                        className="flex flex-wrap items-start gap-2 rounded border border-line bg-sand/40 px-2 py-1.5"
+                        className="flex flex-wrap items-start gap-2 rounded-input border border-line bg-surface-elevated px-2 py-1.5"
                       >
                         <ModifierOptionForm
                           option={{
@@ -224,7 +228,7 @@ function ItemModifierGroups({
 
                 {/* Always-visible create row (replaces the old "Add an option"
                     disclosure). */}
-                <div className="rounded border border-dashed border-line px-2 py-1.5">
+                <div className="rounded-input border border-dashed border-line px-2 py-1.5">
                   <ModifierOptionForm groupId={group.id} />
                 </div>
               </div>
