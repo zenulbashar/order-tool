@@ -127,6 +127,25 @@ function groupHint(group: PublicGroup): string {
   return group.minSelect >= 1 ? `${base} · at least ${group.minSelect}` : base;
 }
 
+// Selectable size/option row — a bordered card that brand-highlights when
+// chosen (var(--action) = the venue brand, never amber). Shared by the modifier
+// sheet and the concierge picker; both render on the same cream sheet.
+const optionRowBase =
+  "flex cursor-pointer items-center justify-between gap-3 rounded-control border px-3 py-2.5 text-sm text-ink transition";
+function optionRowClass(selected: boolean): string {
+  return `${optionRowBase} ${
+    selected ? "border-[var(--action)] bg-[var(--action)]/8" : "border-line"
+  }`;
+}
+
+// Space Mono constraint hint on a group legend; warm (semantic "required"),
+// not the brand accent, when the group must be answered.
+function hintClass(required: boolean): string {
+  return `font-mono text-[9px] font-bold uppercase tracking-wider ${
+    required ? "text-[var(--color-warm)]" : "text-muted"
+  }`;
+}
+
 /**
  * The interactive selection fields for an item: the size picker (variant-priced
  * items only, no default), the life-safety dietary note, and the modifier
@@ -157,14 +176,14 @@ export function ItemSelectionFields({
       {hasVariants ? (
         <fieldset>
           <legend className="flex w-full items-baseline justify-between">
-            <span className="text-sm font-medium text-ink">Size</span>
-            <span className="text-xs text-muted">Required · choose 1</span>
+            <span className="text-sm font-semibold text-ink">Size</span>
+            <span className={hintClass(true)}>Required · choose 1</span>
           </legend>
-          <div className="mt-2 space-y-1.5">
+          <div className="mt-2 space-y-2">
             {item.variants.map((variant) => (
               <label
                 key={variant.id}
-                className="flex items-center justify-between gap-3 text-sm text-ink"
+                className={optionRowClass(selectedVariantId === variant.id)}
               >
                 <span className="flex items-center gap-2">
                   <Radio
@@ -214,20 +233,22 @@ export function ItemSelectionFields({
         return (
           <fieldset key={group.id}>
             <legend className="flex w-full items-baseline justify-between">
-              <span className="text-sm font-medium text-ink">
+              <span className="text-sm font-semibold text-ink">
                 {group.name}
               </span>
-              <span className="text-xs text-muted">{groupHint(group)}</span>
+              <span className={hintClass(group.minSelect >= 1)}>
+                {groupHint(group)}
+              </span>
             </legend>
 
-            <div className="mt-2 space-y-1.5">
+            <div className="mt-2 space-y-2">
               {group.options.length === 0 ? (
                 <p className="text-xs text-muted">No options available.</p>
               ) : null}
 
               {/* Optional single-select can be cleared via a "None" radio. */}
               {isRadio && group.minSelect === 0 ? (
-                <label className="flex items-center justify-between gap-3 text-sm text-ink">
+                <label className={optionRowClass(selected.length === 0)}>
                   <span className="flex items-center gap-2">
                     <Radio
                       name={`${item.id}-${group.id}`}
@@ -242,10 +263,7 @@ export function ItemSelectionFields({
               {group.options.map((option) => {
                 const checked = selected.includes(option.id);
                 return (
-                  <label
-                    key={option.id}
-                    className="flex items-center justify-between gap-3 text-sm text-ink"
-                  >
+                  <label key={option.id} className={optionRowClass(checked)}>
                     <span className="flex items-center gap-2">
                       {isRadio ? (
                         <Radio
