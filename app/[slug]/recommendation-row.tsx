@@ -132,7 +132,9 @@ export function RecommendationRow({
                   <span className="line-clamp-2 text-sm font-medium text-ink">
                     {item.name}
                   </span>
-                  <span className="text-sm text-ink">{priceLabel}</span>
+                  <span className="font-display text-sm font-semibold text-ink">
+                    {priceLabel}
+                  </span>
                 </button>
               )}
             </li>
