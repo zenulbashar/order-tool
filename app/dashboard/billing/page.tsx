@@ -22,7 +22,7 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${classes[tone]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${classes[tone]}`}
     >
       {label}
     </span>
@@ -33,7 +33,11 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
 // stacked form), so kept native + tokenized rather than the full-width Select
 // primitive — same rationale as the settings time inputs.
 const selectClass =
-  "rounded-control border border-line bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--action)]";
+  "rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
+
+// Space Mono micro-eyebrow, matching the reconciled owner forms.
+const microLabel =
+  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
 
 const PLAN_LABELS: Record<string, string> = {
   trial: "Trial",
@@ -66,6 +70,12 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
+// Whole days remaining until `date` (never negative). Derived from the existing
+// trialEndsAt — the page is force-dynamic, so this reflects the current day.
+function daysLeft(date: Date): number {
+  return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86_400_000));
+}
+
 export default async function BillingPage({ searchParams }: BillingParams) {
   await requireUser();
   const venue = await requireVenue();
@@ -91,11 +101,16 @@ export default async function BillingPage({ searchParams }: BillingParams) {
             <StatusBadge tone={statusTone(venue.planStatus)} label={statusLabel} />
           </div>
           {isTrialing && venue.trialEndsAt ? (
-            <p className="mt-2 text-sm text-muted">
-              Your trial includes every feature and ends{" "}
-              {formatDate(venue.trialEndsAt)}. Choose a plan before then to keep
-              going without interruption.
-            </p>
+            <div className="mt-3 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2.5">
+              <span className="inline-flex items-center rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent-deep">
+                {daysLeft(venue.trialEndsAt)} days left
+              </span>
+              <p className="mt-1.5 text-sm text-ink">
+                Your trial includes every feature and ends{" "}
+                {formatDate(venue.trialEndsAt)}. Choose a plan before then to keep
+                going without interruption.
+              </p>
+            </div>
           ) : (
             <p className="mt-2 text-sm text-muted">
               Manage your subscription, switch plans, or update your payment
@@ -105,7 +120,7 @@ export default async function BillingPage({ searchParams }: BillingParams) {
         </Card>
 
         <Card>
-          <h2 className="text-sm font-medium text-ink">
+          <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
             {hasCustomer ? "Change plan" : "Choose a plan"}
           </h2>
           <p className="mt-1 text-sm text-muted">
@@ -114,27 +129,32 @@ export default async function BillingPage({ searchParams }: BillingParams) {
           </p>
           <form
             action={createBillingCheckout}
-            className="mt-4 flex flex-wrap items-center gap-3"
+            className="mt-4 flex flex-wrap items-end gap-3"
           >
-            <label className="sr-only" htmlFor="plan">
-              Plan
+            <label className="block">
+              <span className={microLabel}>Plan</span>
+              <select
+                id="plan"
+                name="plan"
+                defaultValue="pro"
+                className={selectClass}
+              >
+                <option value="pro">Pro</option>
+                <option value="scale">Scale</option>
+              </select>
             </label>
-            <select id="plan" name="plan" defaultValue="pro" className={selectClass}>
-              <option value="pro">Pro</option>
-              <option value="scale">Scale</option>
-            </select>
-            <label className="sr-only" htmlFor="interval">
-              Billing interval
+            <label className="block">
+              <span className={microLabel}>Billing interval</span>
+              <select
+                id="interval"
+                name="interval"
+                defaultValue="monthly"
+                className={selectClass}
+              >
+                <option value="monthly">Billed monthly</option>
+                <option value="annual">Billed annually</option>
+              </select>
             </label>
-            <select
-              id="interval"
-              name="interval"
-              defaultValue="monthly"
-              className={selectClass}
-            >
-              <option value="monthly">Billed monthly</option>
-              <option value="annual">Billed annually</option>
-            </select>
             <Button type="submit" variant="primary">
               {hasCustomer ? "Update subscription" : "Start subscription"}
             </Button>
@@ -143,7 +163,9 @@ export default async function BillingPage({ searchParams }: BillingParams) {
 
         {hasCustomer ? (
           <Card>
-            <h2 className="text-sm font-medium text-ink">Manage billing</h2>
+            <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+              Manage billing
+            </h2>
             <p className="mt-1 text-sm text-muted">
               Update your card, view invoices, or cancel in the Stripe billing
               portal.
