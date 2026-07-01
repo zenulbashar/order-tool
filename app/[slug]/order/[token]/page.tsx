@@ -3,19 +3,152 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { readableOn } from "@/app/_components/brand-contrast";
-import { StatusBadge, type PaymentTone } from "@/app/_components/status-badge";
+import {
+  StatusBadge,
+  type KitchenTone,
+  type PaymentTone,
+} from "@/app/_components/status-badge";
 import { getCustomer } from "@/lib/customer/auth";
+import { formatVenueTime } from "@/lib/time";
 import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
 
 import { getPublicVenueBySlug } from "../../queries";
 import { PaymentStatusPoller } from "./payment-status-poller";
-import { getOrderByToken } from "./queries";
+import { getOrderByToken, type ConfirmedOrder } from "./queries";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Your order" };
 
 type OrderParams = { params: Promise<{ slug: string; token: string }> };
+
+type Fulfillment = ConfirmedOrder["fulfillmentStatus"];
+type StepState = "complete" | "active" | "upcoming";
+
+// Kitchen lifecycle → the header pill's tone, reusing the same tones the owner
+// board renders so the diner sees the identical status language.
+const kitchenTone: Record<Fulfillment, KitchenTone> = {
+  new: "new",
+  preparing: "preparing",
+  ready: "ready",
+  completed: "done",
+};
+
+/**
+ * The three-step Placed → Preparing → Ready tracker, shown ONLY once payment is
+ * confirmed. Placed is complete the moment the order is paid; Preparing/Ready
+ * advance with the kitchen's fulfillmentStatus. We deliberately show NO ETA —
+ * the app stores no time estimate, so the hero is an honest status phrase (and,
+ * for scheduled pickups, the real pickup time) rather than a fabricated "~8 min".
+ */
+function OrderTracker({
+  order,
+  timeZone,
+}: {
+  order: ConfirmedOrder;
+  timeZone: string;
+}) {
+  const f = order.fulfillmentStatus;
+  const isDineIn = order.orderType === "dine_in";
+
+  const steps: { label: string; glyph: string; state: StepState }[] = [
+    { label: "Placed", glyph: "🧾", state: "complete" },
+    {
+      label: "Preparing",
+      glyph: "🍳",
+      state:
+        f === "preparing"
+          ? "active"
+          : f === "ready" || f === "completed"
+            ? "complete"
+            : "upcoming",
+    },
+    {
+      label: "Ready",
+      glyph: isDineIn ? "🍽️" : "🛍️",
+      state: f === "ready" ? "active" : f === "completed" ? "complete" : "upcoming",
+    },
+  ];
+
+  const hero: Record<Fulfillment, { title: string; sub: string }> = {
+    new: {
+      title: "Order received",
+      sub: "The kitchen has your order and will start it shortly.",
+    },
+    preparing: {
+      title: "In the kitchen",
+      sub: "Your order is being prepared right now.",
+    },
+    ready: {
+      title: "Ready to collect",
+      sub: isDineIn
+        ? "It's on its way to your table."
+        : "Come grab it at the counter.",
+    },
+    completed: { title: "All done", sub: "Enjoy — thanks for ordering." },
+  };
+
+  return (
+    <div className="rounded-card border border-line bg-surface p-5 shadow-sm">
+      <div className="mb-5 text-center">
+        <p className="font-display text-3xl font-extrabold tracking-tight text-ink">
+          {hero[f].title}
+        </p>
+        <p className="mt-1 text-sm text-muted">{hero[f].sub}</p>
+        {order.scheduledFor ? (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-control bg-sand px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted">
+            Scheduled pickup · {formatVenueTime(order.scheduledFor, timeZone)}
+          </p>
+        ) : null}
+      </div>
+
+      <ol className="flex items-start">
+        {steps.map((step, i) => (
+          <li key={step.label} className="contents">
+            {i > 0 ? (
+              <span
+                aria-hidden
+                className={`mt-[15px] h-0.5 flex-[0_0_1.5rem] rounded-full ${
+                  steps[i - 1].state === "complete" ? "bg-ink" : "bg-sand"
+                }`}
+              />
+            ) : null}
+            <div className="flex flex-1 flex-col items-center">
+              <span
+                aria-hidden
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm ${
+                  step.state === "complete"
+                    ? "bg-ink text-accent"
+                    : step.state === "active"
+                      ? "bg-accent text-forest p2e-ring"
+                      : "border border-line bg-surface text-muted"
+                }`}
+              >
+                {step.state === "complete" ? "✓" : step.glyph}
+              </span>
+              <span
+                className={`mt-2 text-[11px] font-bold ${
+                  step.state === "upcoming" ? "text-muted" : "text-ink"
+                }`}
+              >
+                {step.label}
+              </span>
+              {step.state === "active" ? (
+                <span className="font-mono text-[9px] uppercase tracking-wide text-accent-deep">
+                  now
+                </span>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ol>
+      {/* Screen-reader summary of the same progress the circles convey visually. */}
+      <p className="sr-only" aria-live="polite">
+        Order status: {hero[f].title}.
+      </p>
+    </div>
+  );
+}
 
 export default async function OrderConfirmationPage({ params }: OrderParams) {
   const { slug, token } = await params;
@@ -89,47 +222,84 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
         </div>
       )}
 
-      <header className="border-b border-line px-5 py-6">
-        <p className="text-sm font-medium" style={{ color: "var(--action)" }}>
-          {eyebrow}
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
-          Thanks, {order.customerName.split(" ")[0]}!
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          {venue.name} · Reference{" "}
-          <span className="font-mono text-ink">{reference}</span>
-        </p>
+      <header className="flex items-start justify-between gap-3 border-b border-line px-5 py-6">
+        <div className="min-w-0">
+          <p className="text-sm font-medium" style={{ color: "var(--action)" }}>
+            {eyebrow}
+          </p>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">
+            Thanks, {order.customerName.split(" ")[0]}!
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            {venue.name}
+            {isPaid
+              ? order.orderType === "dine_in"
+                ? ` · Table ${order.tableLabel ?? "—"}`
+                : " · Pickup"
+              : ""}{" "}
+            · Reference <span className="font-mono text-ink">{reference}</span>
+          </p>
+        </div>
+        {isPaid ? (
+          <StatusBadge
+            tone={kitchenTone[order.fulfillmentStatus]}
+            className="mt-1 shrink-0"
+          />
+        ) : null}
       </header>
 
-      <section className="grid gap-3 px-5 py-5 text-sm sm:grid-cols-2">
-        <div className="rounded-card border border-line p-3">
-          <p className="text-xs uppercase tracking-wide text-muted">Status</p>
-          <p className="mt-1">
-            <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
-          </p>
-          {isPending ? <PaymentStatusPoller /> : null}
-          {isFailed ? (
-            <p className="mt-2 text-sm text-muted">
-              No payment was taken. You can try again from the menu.
-            </p>
+      {isPaid ? (
+        /* Paid → the live kitchen tracker replaces the payment-status card. */
+        <section className="space-y-4 px-5 py-5">
+          <OrderTracker order={order} timeZone={venue.timezone} />
+          {order.fulfillmentStatus !== "completed" ? (
+            <div className="flex items-start gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-4 py-3">
+              <span
+                aria-hidden
+                className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
+              />
+              <p className="text-xs leading-relaxed text-accent-deep">
+                <b className="text-ink">The kitchen&apos;s on it.</b> We&apos;ll
+                let you know the moment it&apos;s ready — no need to watch this
+                screen.
+              </p>
+            </div>
           ) : null}
-        </div>
-        <div className="rounded-card border border-line p-3">
-          <p className="text-xs uppercase tracking-wide text-muted">
-            {order.orderType === "dine_in" ? "Dine-in" : "Pickup"}
-          </p>
-          <p className="mt-0.5 font-medium text-ink">
-            {order.orderType === "dine_in"
-              ? `Table ${order.tableLabel ?? "—"}`
-              : "Collect at the counter"}
-          </p>
-        </div>
-      </section>
+        </section>
+      ) : (
+        /* Pre-payment states keep the payment-status card + bounded poller. */
+        <section className="grid gap-3 px-5 py-5 text-sm sm:grid-cols-2">
+          <div className="rounded-card border border-line p-3">
+            <p className="text-xs uppercase tracking-wide text-muted">Status</p>
+            <p className="mt-1">
+              <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
+            </p>
+            {isPending ? <PaymentStatusPoller /> : null}
+            {isFailed ? (
+              <p className="mt-2 text-sm text-muted">
+                No payment was taken. You can try again from the menu.
+              </p>
+            ) : null}
+          </div>
+          <div className="rounded-card border border-line p-3">
+            <p className="text-xs uppercase tracking-wide text-muted">
+              {order.orderType === "dine_in" ? "Dine-in" : "Pickup"}
+            </p>
+            <p className="mt-0.5 font-medium text-ink">
+              {order.orderType === "dine_in"
+                ? `Table ${order.tableLabel ?? "—"}`
+                : "Collect at the counter"}
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className="px-5 pb-6">
-        <h2 className="text-sm font-semibold text-ink">Items</h2>
-        <ul className="mt-2 divide-y divide-line">
+        <div className="rounded-card border border-line bg-surface p-4">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+            Your order
+          </p>
+          <ul className="mt-2 divide-y divide-line">
           {order.items.map((item) => (
             <li key={item.id} className="flex items-start justify-between gap-3 py-3">
               <div className="min-w-0">
@@ -151,11 +321,12 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
           ))}
         </ul>
 
-        <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-          <span className="text-sm font-medium text-ink">Total</span>
-          <span className="text-base font-semibold text-ink">
-            ${formatCents(order.totalCents)}
-          </span>
+          <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
+            <span className="text-sm font-medium text-ink">Total</span>
+            <span className="font-display text-lg font-extrabold text-ink">
+              ${formatCents(order.totalCents)}
+            </span>
+          </div>
         </div>
 
         {/* Special request the customer left, echoed back. Plain (React-escaped)
