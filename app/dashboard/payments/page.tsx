@@ -23,7 +23,7 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${classes[tone]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${classes[tone]}`}
     >
       {label}
     </span>
@@ -97,7 +97,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 tone="amber"
                 label={detailsSubmitted ? "Under review" : "Onboarding incomplete"}
               />
-              <p className="text-sm text-muted">
+              <p className="rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-ink">
                 {detailsSubmitted
                   ? "Stripe is verifying your details. You'll be able to accept payments once your account is approved."
                   : "Finish Stripe onboarding to start accepting payments."}
