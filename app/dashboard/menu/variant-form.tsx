@@ -37,8 +37,10 @@ export function VariantForm({
         <input type="hidden" name="itemId" value={itemId ?? ""} />
       )}
 
-      <label className="block text-sm font-medium text-ink">
-        Name
+      <label className="block">
+        <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          Name
+        </span>
         <Input
           name="name"
           type="text"
@@ -46,14 +48,15 @@ export function VariantForm({
           maxLength={100}
           defaultValue={variant?.name ?? ""}
           placeholder="Small"
-          className="mt-1"
         />
       </label>
 
       {/* Absolute price (this size's own price), required — mirrors the item
           price field, not the modifier option's optional delta. */}
-      <label className="block text-sm font-medium text-ink">
-        Price (dollars)
+      <label className="block">
+        <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          Price (dollars)
+        </span>
         <Input
           name="price"
           type="text"
@@ -61,7 +64,6 @@ export function VariantForm({
           required
           placeholder="7.30"
           defaultValue={variant ? formatCents(variant.priceCents) : ""}
-          className="mt-1"
         />
       </label>
 
