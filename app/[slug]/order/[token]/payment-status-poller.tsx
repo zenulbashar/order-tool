@@ -40,7 +40,7 @@ export function PaymentStatusPoller() {
 
   if (timedOut) {
     return (
-      <p className="mt-2 text-sm text-gray-600">
+      <p className="mt-2 text-sm text-muted">
         Your payment is still processing. You&apos;ll receive confirmation
         shortly — if you&apos;re unsure whether it went through, please check
         with the venue before paying again.
@@ -49,7 +49,7 @@ export function PaymentStatusPoller() {
   }
 
   return (
-    <p className="mt-2 text-sm text-gray-500" aria-live="polite">
+    <p className="mt-2 text-sm text-muted" aria-live="polite">
       Confirming your payment… this page updates automatically.
     </p>
   );
