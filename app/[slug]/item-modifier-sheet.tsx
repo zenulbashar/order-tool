@@ -87,14 +87,23 @@ export function ItemModifierSheet({
             ) : null}
             {item.tags.length > 0 ? (
               <ul className="mt-2 flex flex-wrap gap-1">
-                {item.tags.map((tag) => (
-                  <li
-                    key={tag}
-                    className="rounded-pill bg-sand px-2 py-0.5 text-[11px] font-medium text-muted"
-                  >
-                    {dietaryTagLabel(tag)}
-                  </li>
-                ))}
+                {item.tags.map((tag) => {
+                  // Firewall-safe semantic tint (matches the item card): plant
+                  // tags read positive green, everything else neutral. No amber.
+                  const plant = tag === "vegan" || tag === "vegetarian";
+                  return (
+                    <li
+                      key={tag}
+                      className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                        plant
+                          ? "bg-[var(--color-success)]/12 text-success-deep"
+                          : "bg-sand text-muted"
+                      }`}
+                    >
+                      {dietaryTagLabel(tag)}
+                    </li>
+                  );
+                })}
               </ul>
             ) : null}
           </div>
