@@ -39,7 +39,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="border-t border-line px-5 py-8">
-        <h2 className="text-lg font-semibold tracking-tight text-ink">
+        <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
           Business details
         </h2>
         <p className="mt-1 text-sm text-muted">

@@ -12,8 +12,14 @@ import { updateVenueDetails, type VenueSettingsState } from "./actions";
 
 const initialState: VenueSettingsState = {};
 
+// Space Mono micro-eyebrow, matching the menu editor's field labels.
+const microLabel =
+  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+
+// Compact time input on the foundation focus recipe (amber focus-visible border
+// + subtle ring), matching every other control — but not w-full (stays compact).
 const timeClass =
-  "rounded-md border border-line px-2 py-1.5 text-sm shadow-sm focus:border-[var(--action)] focus:outline-none focus:ring-1 focus:ring-[var(--action)]";
+  "rounded-input border border-line bg-surface-elevated px-2 py-1.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
 
 type VenueDetails = {
   streetAddress: string | null;
@@ -42,85 +48,82 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
 
   return (
     <form action={formAction} className="space-y-5">
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-ink">
+      <label className="block">
+        <span className={microLabel}>
           Street address{" "}
-          <span className="font-normal text-muted">(optional)</span>
-          <Input
-            name="streetAddress"
-            type="text"
-            maxLength={120}
-            defaultValue={details.streetAddress ?? ""}
-            placeholder="12 Sturt St"
-            className="mt-1"
-          />
-        </label>
-      </div>
+          <span className="font-normal normal-case text-muted">(optional)</span>
+        </span>
+        <Input
+          name="streetAddress"
+          type="text"
+          maxLength={120}
+          defaultValue={details.streetAddress ?? ""}
+          placeholder="12 Sturt St"
+        />
+      </label>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <label className="block text-sm font-medium text-ink">
-          Suburb
+        <label className="block">
+          <span className={microLabel}>Suburb</span>
           <Input
             name="suburb"
             type="text"
             maxLength={80}
             defaultValue={details.suburb ?? ""}
             placeholder="Townsville"
-            className="mt-1"
           />
         </label>
-        <label className="block text-sm font-medium text-ink">
-          State
+        <label className="block">
+          <span className={microLabel}>State</span>
           <Input
             name="state"
             type="text"
             maxLength={60}
             defaultValue={details.state ?? ""}
             placeholder="QLD"
-            className="mt-1"
           />
         </label>
-        <label className="block text-sm font-medium text-ink">
-          Postcode
+        <label className="block">
+          <span className={microLabel}>Postcode</span>
           <Input
             name="postcode"
             type="text"
             maxLength={16}
             defaultValue={details.postcode ?? ""}
             placeholder="4810"
-            className="mt-1"
           />
         </label>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-ink">
-          Country
+        <label className="block">
+          <span className={microLabel}>Country</span>
           <Input
             name="country"
             type="text"
             maxLength={56}
             defaultValue={details.country ?? "AU"}
-            className="mt-1"
           />
         </label>
-        <label className="block text-sm font-medium text-ink">
-          Phone <span className="font-normal text-muted">(optional)</span>
+        <label className="block">
+          <span className={microLabel}>
+            Phone{" "}
+            <span className="font-normal normal-case text-muted">(optional)</span>
+          </span>
           <Input
             name="phone"
             type="tel"
             maxLength={32}
             defaultValue={details.phone ?? ""}
             placeholder="+61 7 4700 0000"
-            className="mt-1"
           />
         </label>
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-ink">
+        <legend className={microLabel}>
           Opening hours{" "}
-          <span className="font-normal text-muted">
+          <span className="font-normal normal-case text-muted">
             (optional — leave a day blank if it has no set hours)
           </span>
         </legend>
@@ -152,27 +155,30 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
       </fieldset>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-ink">
-          Latitude <span className="font-normal text-muted">(optional)</span>
+        <label className="block">
+          <span className={microLabel}>
+            Latitude{" "}
+            <span className="font-normal normal-case text-muted">(optional)</span>
+          </span>
           <Input
             name="latitude"
             type="text"
             inputMode="decimal"
             defaultValue={details.latitude ?? ""}
             placeholder="-19.2589"
-            className="mt-1"
           />
         </label>
-        <label className="block text-sm font-medium text-ink">
-          Longitude{" "}
-          <span className="font-normal text-muted">(optional)</span>
+        <label className="block">
+          <span className={microLabel}>
+            Longitude{" "}
+            <span className="font-normal normal-case text-muted">(optional)</span>
+          </span>
           <Input
             name="longitude"
             type="text"
             inputMode="decimal"
             defaultValue={details.longitude ?? ""}
             placeholder="146.8169"
-            className="mt-1"
           />
         </label>
       </div>
@@ -198,8 +204,8 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
         </label>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-ink">
-            Earliest pickup (minutes from now)
+          <label className="block">
+            <span className={microLabel}>Earliest pickup (minutes from now)</span>
             <Input
               name="schedulingLeadMinutes"
               type="number"
@@ -207,11 +213,10 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
               max={1440}
               step={5}
               defaultValue={details.schedulingLeadMinutes}
-              className="mt-1"
             />
           </label>
-          <label className="block text-sm font-medium text-ink">
-            Schedule up to (days ahead)
+          <label className="block">
+            <span className={microLabel}>Schedule up to (days ahead)</span>
             <Input
               name="schedulingMaxDaysAhead"
               type="number"
@@ -219,7 +224,6 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
               max={30}
               step={1}
               defaultValue={details.schedulingMaxDaysAhead}
-              className="mt-1"
             />
           </label>
         </div>
@@ -237,7 +241,7 @@ export function SettingsDetailsForm({ details }: { details: VenueDetails }) {
       ) : null}
 
       <Button type="submit" variant="primary" loading={pending} loadingLabel="Saving…">
-        Save details
+        Save details <span aria-hidden="true">→</span>
       </Button>
     </form>
   );
