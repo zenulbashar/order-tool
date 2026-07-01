@@ -4,7 +4,7 @@ import { useActionState, useId, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/app/_components/button";
 import { controlClass } from "@/app/_components/field";
-import { Checkbox } from "@/app/_components/selection-controls";
+import { Checkbox, Toggle } from "@/app/_components/selection-controls";
 import { Input } from "@/app/_components/input";
 import { Select } from "@/app/_components/select";
 import { ButtonLabel } from "@/app/_components/spinner";
@@ -18,10 +18,17 @@ import {
 import { createItem, updateItem, type MenuActionState } from "./actions";
 import { suggestItemDescription } from "./descriptions/actions";
 
+// Space Mono micro-eyebrow used for every field label in this form (design
+// export). Applied to a <span> inside each wrapping <label> so implicit label
+// association is preserved.
+const microLabel =
+  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+
 // Sanctioned AI affordance on owner chrome — amber product signature (NOT
-// var(--action)). The "Suggest description" call drafts copy; nothing auto-saves.
-const suggestButtonClass =
-  "shrink-0 rounded-control bg-[var(--color-accent)] px-2.5 py-1 text-xs font-medium text-forest transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
+// var(--action)). Now the export's inline sparkle "Generate with AI" text link
+// (amber TEXT, not a fill). Same suggestItemDescription call; nothing auto-saves.
+const generateButtonClass =
+  "inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-accent-deep transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50";
 
 const initialState: MenuActionState = {};
 
@@ -71,6 +78,12 @@ export function ItemForm({
     () => new Set(item?.tags ?? []),
   );
 
+  // Availability as the "LIVE" switch. The Toggle is presentational, so a
+  // conditionally-rendered hidden input carries the wire contract: it posts
+  // isAvailable=on only when on, and nothing when off — byte-identical to the
+  // previous checkbox (the action reads formData.get("isAvailable") === "on").
+  const [available, setAvailable] = useState(item?.isAvailable ?? true);
+
   function toggleTag(tag: DietaryTag) {
     setSelectedTags((current) => {
       const next = new Set(current);
@@ -106,35 +119,20 @@ export function ItemForm({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-2.5">
+    <form ref={formRef} action={formAction} className="space-y-3">
       {item ? <input type="hidden" name="id" value={item.id} /> : null}
-
-      {/* On create the parent category is fixed; on edit it can be changed. */}
-      {item && categories ? (
-        <label className="block text-sm font-medium text-ink">
-          Category
-          <Select
-            name="categoryId"
-            defaultValue={item.categoryId}
-            className="mt-1"
-          >
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </Select>
-        </label>
-      ) : (
+      {/* On create the parent category is fixed (hidden); on edit it's a field
+          in the row below. */}
+      {!item || !categories ? (
         <input
           type="hidden"
           name="categoryId"
           value={item?.categoryId ?? categoryId ?? ""}
         />
-      )}
+      ) : null}
 
-      <label className="block text-sm font-medium text-ink">
-        Name
+      <label className="block">
+        <span className={microLabel}>Name</span>
         <Input
           name="name"
           type="text"
@@ -142,31 +140,95 @@ export function ItemForm({
           maxLength={100}
           defaultValue={item?.name ?? ""}
           placeholder="Flat white"
-          className="mt-1"
         />
       </label>
 
+      {/* Category (edit only) + price on one row, per the design's top panel. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {item && categories ? (
+          <label className="block">
+            <span className={microLabel}>Category</span>
+            <Select name="categoryId" defaultValue={item.categoryId}>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </Select>
+          </label>
+        ) : null}
+        <div>
+          <label className="block">
+            <span className={microLabel}>Price (dollars)</span>
+            <Input
+              name="price"
+              type="text"
+              inputMode="decimal"
+              required
+              placeholder="4.50"
+              defaultValue={item ? formatCents(item.priceCents) : ""}
+            />
+          </label>
+          {hasSizes ? (
+            <p className="mt-1 text-xs text-muted">
+              This item has sizes, so each size sets its own price — this single
+              price is ignored while sizes exist.
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Availability as the "LIVE" switch (edit only). --action track = a
+          functional state, not amber. The hidden input carries the wire. */}
+      {isEdit ? (
+        <div className="flex items-center justify-between gap-3 rounded-input border border-line bg-sand/40 px-3 py-2.5">
+          <div className="min-w-0">
+            <span className={microLabel}>Availability</span>
+            <p className="text-sm text-ink">
+              {available ? "Live — orderable now" : "Hidden from the menu"}
+            </p>
+          </div>
+          {available ? (
+            <input type="hidden" name="isAvailable" value="on" />
+          ) : null}
+          <div className="flex shrink-0 items-center gap-2">
+            <span
+              className={`font-mono text-[10px] font-bold uppercase tracking-wider ${
+                available ? "text-success-deep" : "text-label"
+              }`}
+            >
+              {available ? "Live" : "Off"}
+            </span>
+            <Toggle
+              checked={available}
+              onChange={setAvailable}
+              label="Item available to order"
+            />
+          </div>
+        </div>
+      ) : null}
+
       <div>
         <div className="flex items-center justify-between gap-2">
-          <label
-            htmlFor={descriptionId}
-            className="text-sm font-medium text-ink"
-          >
-            Description <span className="text-muted">(optional)</span>
+          <label htmlFor={descriptionId} className={microLabel}>
+            Description <span className="normal-case text-muted">(optional)</span>
           </label>
           <button
             type="button"
             onClick={handleSuggest}
             disabled={suggesting}
-            className={suggestButtonClass}
+            className={generateButtonClass}
           >
-            <ButtonLabel pending={suggesting} pendingLabel="Suggesting…">
-              Suggest description
+            <span aria-hidden="true" className="p2e-spark">
+              ✦
+            </span>
+            <ButtonLabel pending={suggesting} pendingLabel="Generating…">
+              Generate with AI
             </ButtonLabel>
           </button>
         </div>
-        {/* Raw textarea (not the Textarea primitive) because the AI "Suggest
-            description" flow writes into it via descriptionRef, and the shared
+        {/* Raw textarea (not the Textarea primitive) because the AI "Generate
+            with AI" flow writes into it via descriptionRef, and the shared
             primitive isn't ref-forwarding. Same cream field recipe via
             controlClass so it matches the rest of the form. */}
         <textarea
@@ -189,42 +251,25 @@ export function ItemForm({
         </p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-ink">
-          Price (dollars)
-          <Input
-            name="price"
-            type="text"
-            inputMode="decimal"
-            required
-            placeholder="4.50"
-            defaultValue={item ? formatCents(item.priceCents) : ""}
-            className="mt-1"
-          />
-        </label>
-        {hasSizes ? (
-          <p className="mt-1 text-xs text-muted">
-            This item has sizes, so each size sets its own price — this single
-            price is ignored while sizes exist.
-          </p>
-        ) : null}
-      </div>
-
-      {isEdit ? (
-        <label className="flex items-center gap-2 text-sm text-ink">
-          <Checkbox
-            name="isAvailable"
-            defaultChecked={item?.isAvailable ?? true}
-          />
-          Available
-        </label>
-      ) : null}
-
       {/* Dietary/allergen tags. Owner-set suggestions, never platform
           guarantees — the storefront shows the same disclaimer to customers. */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-ink">
-          Dietary tags <span className="text-muted">(optional)</span>
+        <legend className="flex w-full items-center justify-between gap-2">
+          <span className="block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            Dietary tags <span className="normal-case text-muted">(optional)</span>
+          </span>
+          {/* PLACEHOLDER — UI only (ME-2, decision C). Static "AI-SUGGESTED"
+              badge with NO logic behind it yet. When the allergen/dietary
+              suggestion feature ships (a server action that proposes tags), gate
+              this badge on real per-item "suggested" state and wire a
+              confirm/pending flow onto the tags below. Tracked in the plan file
+              under "Static placeholders (wire later)". Non-interactive <span>. */}
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-[var(--color-accent)]/12 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-accent-deep">
+            <span aria-hidden="true" className="p2e-spark">
+              ✦
+            </span>
+            AI-suggested
+          </span>
         </legend>
         <div className="flex flex-wrap gap-2">
           {DIETARY_TAGS.map((tag) => {
@@ -234,7 +279,7 @@ export function ItemForm({
                 key={tag.value}
                 className={`flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1 text-xs font-medium transition ${
                   checked
-                    ? "border-[var(--action)] bg-[var(--action)] text-[var(--action-contrast)]"
+                    ? "border-[var(--color-success)] bg-[var(--color-success)]/12 text-success-deep"
                     : "border-line text-muted hover:bg-sand"
                 }`}
               >
@@ -245,12 +290,17 @@ export function ItemForm({
                   onChange={() => toggleTag(tag.value)}
                   className="sr-only"
                 />
+                {checked ? (
+                  <span aria-hidden="true" className="text-success-deep">
+                    ✓
+                  </span>
+                ) : null}
                 {tag.label}
               </label>
             );
           })}
         </div>
-        <p className="rounded-control border border-line bg-sand px-3 py-2 text-xs text-muted">
+        <p className="rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-ink">
           Tags you set are shown to customers as a guide only. {DIETARY_DISCLAIMER}{" "}
           Use “gluten friendly” rather than “gluten free”: never state a dish is
           allergen-safe.
@@ -269,7 +319,8 @@ export function ItemForm({
         loading={pending}
         loadingLabel="Saving…"
       >
-        {isEdit ? "Save changes" : "Add item"}
+        {isEdit ? "Save changes" : "Add item"}{" "}
+        <span aria-hidden="true">→</span>
       </Button>
     </form>
   );
