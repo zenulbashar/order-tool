@@ -16,7 +16,7 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 const base =
   "inline-flex select-none items-center justify-center gap-2 font-medium " +
-  "transition disabled:cursor-not-allowed disabled:opacity-60";
+  "transition motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60";
 
 const sizeStyles: Record<ButtonSize, string> = {
   sm: "h-9 px-3 text-xs", // 36px — compact, secondary use
@@ -24,14 +24,26 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: "h-12 px-5 text-base", // 48px
 };
 
+// Per-size radius (export: sm 9 / md 11 / lg 13).
+const radiusStyles: Record<ButtonSize, string> = {
+  sm: "rounded-control-sm",
+  md: "rounded-control",
+  lg: "rounded-control-lg",
+};
+
+// Hover = a 1px lift + soft shadow (export). Fills stay var(--action) (owner
+// forest / diner brand); amber never appears here — it's AI-fills-only.
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: "bg-[var(--action)] text-[var(--action-contrast)] hover:opacity-90",
-  secondary: "border border-line bg-surface-elevated text-ink hover:bg-sand",
-  ghost: "text-ink hover:bg-sand",
+  primary:
+    "bg-[var(--action)] text-[var(--action-contrast)] hover:-translate-y-px hover:shadow-lift",
+  secondary:
+    "border border-line-strong bg-surface-elevated text-ink hover:-translate-y-px hover:bg-hover-secondary hover:shadow-lift",
+  ghost: "text-ink hover:bg-hover-ghost",
   // Deep terracotta so white label clears AA (white on #cf4527 ≈ 4.63:1); hover
-  // darkens (never lightens) to keep the label readable in the hover state.
+  // darkens (never lightens) to keep the label readable. Red focus ring per the
+  // export, overriding the global amber ring for destructive intent.
   destructive:
-    "bg-[var(--color-warm-deep)] text-white hover:brightness-90",
+    "bg-[var(--color-warm-deep)] text-white hover:-translate-y-px hover:brightness-90 hover:shadow-lift-danger focus-visible:shadow-[var(--focus-ring-danger)]",
 };
 
 /** Build the class string for a button-styled element. */
@@ -42,7 +54,7 @@ export function buttonStyles(
 ): string {
   return cx(
     base,
-    options?.pill ? "rounded-pill" : "rounded-control",
+    options?.pill ? "rounded-pill" : radiusStyles[size],
     sizeStyles[size],
     variantStyles[variant],
     options?.className,

@@ -17,9 +17,9 @@ export function cardStyles(opts?: {
   className?: string;
 }): string {
   return cx(
-    "rounded-card border border-line bg-surface-elevated p-5",
+    "rounded-card border border-line bg-surface-elevated p-5 shadow-card",
     opts?.interactive &&
-      "block transition hover:border-muted/40 hover:shadow-md",
+      "block transition motion-reduce:transition-none hover:-translate-y-px hover:shadow-lift",
     opts?.className,
   );
 }

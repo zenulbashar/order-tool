@@ -13,11 +13,14 @@ export function controlClass(opts?: {
   className?: string;
 }): string {
   return cx(
-    "w-full rounded-control border bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm",
+    "w-full rounded-input border bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm",
     "placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-60",
-    "read-only:bg-sand/40",
-    "focus-visible:border-[var(--action)]",
-    opts?.invalid ? "border-[var(--color-warm)]" : "border-line",
+    "read-only:bg-sand/40 focus-visible:outline-none",
+    // Focus = amber border + subtle amber glow (export); the invalid state keeps
+    // the warm border and shows the red ring instead.
+    opts?.invalid
+      ? "border-[var(--color-warm)] focus-visible:shadow-[var(--focus-ring-danger)]"
+      : "border-line focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)]",
     opts?.className,
   );
 }
