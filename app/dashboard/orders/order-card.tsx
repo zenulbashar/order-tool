@@ -47,7 +47,7 @@ export function OrderCard({
   // just enough to recognise a finished order at a glance.
   if (compact) {
     return (
-      <li className="rounded-card border border-line bg-surface-elevated p-3">
+      <li className="rounded-card border border-line bg-surface-elevated p-3 shadow-card">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-sm font-semibold text-ink">
             {orderReference(order.publicToken)}
@@ -82,8 +82,8 @@ export function OrderCard({
     <li
       className={`rounded-card border p-4 ${
         isNew
-          ? "border-accent bg-accent/10 ring-1 ring-accent/20"
-          : "border-line bg-surface-elevated"
+          ? "border-accent bg-accent/10 p2e-ring"
+          : "border-line bg-surface-elevated shadow-card"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -93,7 +93,7 @@ export function OrderCard({
               {orderReference(order.publicToken)}
             </span>
           </div>
-          <p className="mt-0.5 text-xs text-muted">
+          <p className="mt-0.5 font-mono text-xs text-muted">
             {formatVenueTime(order.createdAt, timezone)}
           </p>
           {order.scheduledFor ? (

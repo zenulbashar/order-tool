@@ -177,11 +177,11 @@ export function OrdersBoard({
             const isCompleted = column.status === "completed";
             return (
               <div key={column.status} className="min-w-0">
-                <div className="flex items-baseline justify-between gap-2 border-b border-line pb-2">
-                  <h2 className="text-sm font-semibold text-ink">
+                <div className="flex items-center justify-between gap-2 border-b border-line pb-2">
+                  <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
                     {column.label}
                   </h2>
-                  <span className="font-mono text-xs font-bold text-muted">
+                  <span className="rounded-pill bg-sand px-2 py-0.5 font-mono text-[10px] font-bold text-muted">
                     {orders.length}
                   </span>
                 </div>
