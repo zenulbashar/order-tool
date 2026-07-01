@@ -138,7 +138,7 @@ export function CartReview({
         <div className="space-y-3 border-t border-sand px-5 py-4">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium text-ink">Subtotal</span>
-            <span className="font-semibold text-ink">
+            <span className="font-display font-semibold text-ink">
               ${formatCents(subtotalCents)}
             </span>
           </div>
@@ -154,7 +154,7 @@ export function CartReview({
               }`}
               className={buttonStyles("primary", "lg", { className: "w-full" })}
             >
-              Continue to checkout
+              Continue to checkout · ${formatCents(subtotalCents)}
             </Link>
           ) : null}
         </div>
