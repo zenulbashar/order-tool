@@ -18,8 +18,14 @@ export type ConfirmedOrderItem = {
 export type ConfirmedOrder = {
   publicToken: string;
   status: "pending_payment" | "confirmed" | "cancelled" | "payment_failed";
+  // Kitchen lifecycle, separate from `status` (payment). Read-only here — drives
+  // the diner's Placed → Preparing → Ready tracker once the order is paid; the
+  // owner board is the only writer.
+  fulfillmentStatus: "new" | "preparing" | "ready" | "completed";
   orderType: "pickup" | "dine_in";
   tableLabel: string | null;
+  // Absolute pickup instant for scheduled pickups; null for ASAP / dine-in.
+  scheduledFor: Date | null;
   customerName: string;
   // Optional customer special request; rendered as plain (escaped) text.
   notes: string | null;
@@ -46,8 +52,10 @@ export async function getOrderByToken(
       id: orders.id,
       publicToken: orders.publicToken,
       status: orders.status,
+      fulfillmentStatus: orders.fulfillmentStatus,
       orderType: orders.orderType,
       tableLabel: orders.tableLabel,
+      scheduledFor: orders.scheduledFor,
       customerName: orders.customerName,
       notes: orders.notes,
       subtotalCents: orders.subtotalCents,
@@ -109,8 +117,10 @@ export async function getOrderByToken(
   return {
     publicToken: order.publicToken,
     status: order.status,
+    fulfillmentStatus: order.fulfillmentStatus,
     orderType: order.orderType,
     tableLabel: order.tableLabel,
+    scheduledFor: order.scheduledFor,
     customerName: order.customerName,
     notes: order.notes,
     subtotalCents: order.subtotalCents,
