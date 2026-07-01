@@ -196,14 +196,16 @@ export function CheckoutClient({
         >
           ← Back to menu
         </Link>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
+        <h1 className="mt-2 font-display text-xl font-semibold tracking-tight text-ink">
           Checkout
         </h1>
         <p className="text-sm text-muted">{venue.name}</p>
       </header>
 
       <section className="px-5 py-5">
-        <h2 className="text-sm font-semibold text-ink">Your order</h2>
+        <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+          Your order
+        </h2>
         <ul className="mt-2 divide-y divide-line">
           {displayLines.map((line) => (
             <li
@@ -230,7 +232,7 @@ export function CheckoutClient({
         </ul>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
           <span className="font-medium text-ink">Total</span>
-          <span className="font-semibold text-ink">
+          <span className="font-display font-semibold text-ink">
             ${formatCents(subtotalCents)}
           </span>
         </div>
@@ -238,7 +240,9 @@ export function CheckoutClient({
 
       <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-10">
         <div className="space-y-1.5">
-          <span className="block text-sm font-medium text-ink">Order type</span>
+          <span className="block font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+            Order type
+          </span>
           <Segmented
             label="Order type"
             value={orderType}

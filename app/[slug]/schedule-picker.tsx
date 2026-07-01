@@ -2,10 +2,12 @@
 
 import { useMemo } from "react";
 
-import { Field } from "@/app/_components/field";
 import { Segmented } from "@/app/_components/segmented";
-import { Select } from "@/app/_components/select";
 import { buildPickupSlots, type SchedulingConfig } from "@/lib/schedule";
+
+// Space Mono section eyebrow, matching the reconciled diner surfaces.
+const sectionLabel =
+  "block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
 
 /** "14:30" -> "2:30 PM" for display only (the value stays 24h "HH:MM"). */
 function formatTimeLabel(time: string): string {
@@ -54,7 +56,7 @@ export function SchedulePicker({
 
   return (
     <div className="space-y-3">
-      <span className="block text-sm font-medium text-ink">Pickup time</span>
+      <span className={sectionLabel}>Pickup time</span>
       <Segmented
         label="Pickup time"
         value={isLater ? "later" : "asap"}
@@ -70,39 +72,66 @@ export function SchedulePicker({
       />
 
       {isLater ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Day" htmlFor="schedule-day">
-            <Select
-              id="schedule-day"
-              value={activeDay.date}
-              onChange={(event) => {
-                const day =
-                  days.find((d) => d.date === event.target.value) ?? days[0];
-                onScheduledFor(`${day.date}T${day.times[0]}`);
-              }}
-            >
-              {days.map((day) => (
-                <option key={day.date} value={day.date}>
-                  {day.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="Time" htmlFor="schedule-time">
-            <Select
-              id="schedule-time"
-              value={activeTime}
-              onChange={(event) =>
-                onScheduledFor(`${activeDay.date}T${event.target.value}`)
-              }
-            >
-              {activeDay.times.map((time) => (
-                <option key={time} value={time}>
-                  {formatTimeLabel(time)}
-                </option>
-              ))}
-            </Select>
-          </Field>
+        <div className="space-y-3">
+          {/* DAY — chip row. Same value the Day <select> emitted: picking a day
+              selects its first available time. */}
+          <div className="space-y-2">
+            <span className={sectionLabel}>Day</span>
+            <div className="flex flex-wrap gap-2">
+              {days.map((day) => {
+                const selected = day.date === activeDay.date;
+                return (
+                  <button
+                    key={day.date}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() =>
+                      onScheduledFor(`${day.date}T${day.times[0]}`)
+                    }
+                    className={`rounded-control border px-4 py-2 text-sm font-medium transition ${
+                      selected
+                        ? "border-transparent text-[var(--action-contrast)]"
+                        : "border-line bg-surface-elevated text-muted hover:bg-sand"
+                    }`}
+                    style={
+                      selected
+                        ? { backgroundColor: "var(--action)" }
+                        : undefined
+                    }
+                  >
+                    {day.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PICKUP TIME — slot grid. Same value the Time <select> emitted. */}
+          <div className="space-y-2">
+            <span className={sectionLabel}>Pickup time</span>
+            <div className="grid grid-cols-3 gap-2">
+              {activeDay.times.map((time) => {
+                const selected = time === activeTime;
+                return (
+                  <button
+                    key={time}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() =>
+                      onScheduledFor(`${activeDay.date}T${time}`)
+                    }
+                    className={`rounded-control border px-2 py-2.5 text-center text-sm font-medium text-ink transition ${
+                      selected
+                        ? "border-[var(--action)] bg-[var(--action)]/8"
+                        : "border-line bg-surface-elevated hover:bg-sand"
+                    }`}
+                  >
+                    {formatTimeLabel(time)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

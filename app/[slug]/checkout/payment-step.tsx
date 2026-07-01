@@ -52,7 +52,7 @@ export function PaymentStep({
   return (
     <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-surface">
       <header className="border-b border-line px-5 py-5">
-        <h1 className="text-xl font-semibold tracking-tight text-ink">
+        <h1 className="font-display text-xl font-semibold tracking-tight text-ink">
           Payment
         </h1>
         <p className="text-sm text-muted">{venue.name}</p>
