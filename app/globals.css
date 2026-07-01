@@ -42,8 +42,21 @@
      --radius-sm overrides a Tailwind default; rounded-sm is unused, so no diff. */
   --radius-pill: 999px;
   --radius-card: 16px;
-  --radius-control: 11px;
+  --radius-control: 11px; /* button md */
+  --radius-control-sm: 9px; /* button sm (export) */
+  --radius-control-lg: 13px; /* button lg (export) */
+  --radius-input: 12px; /* text inputs (export) */
   --radius-sm: 6px;
+  /* Design-export shadows — soft warm-grey drop, hover lift, amber CTA. Literal
+     rgb() lives here in the token layer; components reference shadow-* only. */
+  --shadow-card: 0 1px 3px rgb(20 30 25 / 0.05), 0 20px 40px -20px rgb(20 30 25 / 0.14);
+  --shadow-lift: 0 9px 18px -8px rgb(22 36 28 / 0.55);
+  --shadow-lift-danger: 0 9px 18px -8px rgb(226 85 58 / 0.6);
+  --shadow-cta: 0 12px 22px -10px rgb(239 168 44 / 0.55);
+  /* Warmer control borders + button hover fills (export). */
+  --color-line-strong: #d8cbb0; /* button border — warmer than the input hairline */
+  --color-hover-secondary: #fbf8f1; /* secondary button hover fill */
+  --color-hover-ghost: #f1ead9; /* ghost button hover fill */
   /*
    * Concierge (storefront-c) — the AI conversation panel is the ONE forest-dark
    * diner surface (everything else stays cream). These scoped tokens hold the
@@ -91,6 +104,15 @@
   --action: var(--color-forest);
   --action-contrast: var(--color-surface-elevated);
   /*
+   * Focus glow (design export). A 4px soft ring: amber by default, red for
+   * destructive/error, subtle on inputs. Token-referenced via color-mix over
+   * accent/warm — this is a focus AFFORDANCE only and never a functional fill,
+   * so the amber-for-AI-fills-only rule and the --action firewall are untouched.
+   */
+  --focus-ring: 0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --focus-ring-danger: 0 0 0 4px color-mix(in srgb, var(--color-warm) 30%, transparent);
+  --focus-ring-input: 0 0 0 4px color-mix(in srgb, var(--color-accent) 16%, transparent);
+  /*
    * Readable text/icon colour to pair with the venue --brand. Cream default
    * suits dark venue brands (the brandColor default is near-black). Diner roots
    * MAY override per-venue alongside --brand — deferred, NOT computed yet:
@@ -105,13 +127,16 @@
 }
 
 /*
- * Keyboard-focus ring. Zero-specificity (:where) so any component's own focus
- * styles win, and :focus-visible so it shows on keyboard focus only — never on
- * pointer clicks. This is the one intended visual delta in Step 0.
+ * Keyboard-focus ring — the amber glow from the design export. Zero-specificity
+ * (:where) so a component's own focus styles win, :focus-visible so it shows on
+ * keyboard focus only. Form controls (input/select/textarea) are handled in
+ * controlClass instead — they carry a base shadow-sm, which would override a
+ * box-shadow set here, so they apply their own (subtle) ring + amber border.
+ * Destructive buttons override this with the red ring in button-variants.
  */
-:where(a, button, [role="button"], input, select, textarea):focus-visible {
-  outline: 2px solid var(--action);
-  outline-offset: 2px;
+:where(a, button, [role="button"]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /*
