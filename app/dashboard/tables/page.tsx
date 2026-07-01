@@ -43,14 +43,16 @@ export default async function TablesPage() {
         />
 
         <section className="px-5 py-6">
-          <h2 className="text-sm font-medium text-ink">Add a table</h2>
+          <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+            Add a table
+          </h2>
           <div className="mt-3">
             <TableForm />
           </div>
         </section>
 
         <section className="border-t border-line px-5 py-6">
-          <h2 className="text-sm font-medium text-ink">
+          <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
             Your tables{tables.length > 0 ? ` (${tables.length})` : ""}
           </h2>
           {tables.length === 0 ? (
@@ -58,11 +60,11 @@ export default async function TablesPage() {
               No tables yet. Add your first table above.
             </p>
           ) : (
-            <ul className="mt-3 divide-y divide-line">
+            <ul className="mt-3 space-y-2">
               {tables.map((table, index) => (
                 <li
                   key={table.id}
-                  className="flex flex-wrap items-center gap-3 py-3"
+                  className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface-elevated px-3 py-2.5 shadow-card"
                 >
                   <div className="flex items-center gap-1">
                     <form action={moveTable}>
@@ -113,7 +115,7 @@ export default async function TablesPage() {
       {/* ---- Printable QR sheet (also shown on screen as a preview) ---- */}
       {cells.length > 0 ? (
         <section className="border-t border-line px-5 py-6 print:border-0 print:py-0">
-          <h2 className="mb-4 text-sm font-medium text-ink print:hidden">
+          <h2 className="mb-4 font-mono text-[11px] font-bold uppercase tracking-wider text-label print:hidden">
             Printable sheet preview
           </h2>
 
