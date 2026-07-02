@@ -59,6 +59,7 @@ export function ConciergePanel({
   menu,
   onSelectItem,
   onOpenCart,
+  prefill,
 }: {
   slug: string;
   menu: PublicMenu;
@@ -69,6 +70,11 @@ export function ConciergePanel({
   // Open the storefront's cart-review drawer (its open-state lives in
   // StorefrontInner). Used by the "View order" control and after "Add all".
   onOpenCart: () => void;
+  // External open request (e.g. the search no-results "Ask the concierge
+  // instead" CTA): each nonce bump opens the panel with `text` typed into the
+  // input. Prefill ONLY — the diner still taps send, so no AI call happens
+  // without their explicit action. nonce 0 = initial mount, ignored.
+  prefill?: { text: string; nonce: number };
 }) {
   // addItem is the ONLY cart write; count drives the "View order" control.
   const { addItem, count } = useCart();
@@ -80,6 +86,18 @@ export function ConciergePanel({
   const [error, setError] = useState<string | null>(null);
   const [asked, setAsked] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  // Honour an external open request (search no-results → concierge handoff)
+  // with the derive-state-during-render pattern (no effect): a nonce bump —
+  // not the text — triggers, so asking about the same query twice still
+  // reopens; only the input is prefilled, never a submit.
+  const prefillNonce = prefill?.nonce ?? 0;
+  const [seenPrefillNonce, setSeenPrefillNonce] = useState(prefillNonce);
+  if (prefillNonce !== seenPrefillNonce) {
+    setSeenPrefillNonce(prefillNonce);
+    setInput(prefill?.text ?? "");
+    setOpen(true);
+  }
 
   // Resolve proposed ids to the live PublicItem the menu already holds — the
   // same id-resolution as recommendations. Anything not present is skipped; the
