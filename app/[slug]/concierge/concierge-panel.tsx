@@ -174,9 +174,10 @@ export function ConciergePanel({
           aria-label="Prompt2Eat"
           onClick={() => setOpen(false)}
         >
-          {/* The ONE forest-dark diner surface: a radial glow fading to deepest
-              forest, built from concierge tokens (never raw hex). Default text is
-              the light AI ink; elements override per the source spec. */}
+          {/* The primary forest-dark diner surface (the account "YOUR USUAL"
+              hero is the other): a radial glow fading to deepest forest, built
+              from concierge tokens (never raw hex). Default text is the light
+              AI ink; elements override per the source spec. */}
           <div
             className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl text-concierge-ai-text sm:rounded-2xl"
             style={{

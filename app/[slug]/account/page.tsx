@@ -8,7 +8,7 @@ import { isReservedSlug } from "@/lib/validation";
 
 import { getPublicVenueBySlug } from "../queries";
 import { OrderHistory } from "./order-history";
-import { getCustomerOrders, getRecentCustomerOrders } from "./queries";
+import { getCustomerOrders, getCustomerUsual } from "./queries";
 import { SignInForm } from "./signin-form";
 
 // Reads the customer session + live order history per request; never prerendered.
@@ -42,14 +42,14 @@ export default async function AccountPage({
 
   const customer = await getCustomer(venue.id);
   // Both reads are IDOR-safe: venue-scoped AND keyed on the session-derived
-  // customer id. recentOrders powers the quick-reorder cards; orders is the
-  // full history list below.
-  const [recentOrders, orders] = customer
+  // customer id. usual powers the "YOUR USUAL" hero (null when nothing
+  // repeats); orders is the full history list below.
+  const [usual, orders] = customer
     ? await Promise.all([
-        getRecentCustomerOrders(venue.id, customer.id),
+        getCustomerUsual(venue.id, customer.id),
         getCustomerOrders(venue.id, customer.id),
       ])
-    : [[], []];
+    : [null, []];
   const brandStyle = {
     "--brand": venue.brandColor,
     "--brand-contrast": readableOn(venue.brandColor),
@@ -74,7 +74,7 @@ export default async function AccountPage({
         <OrderHistory
           slug={venue.slug}
           customerEmail={customer.email}
-          recentOrders={recentOrders}
+          usual={usual}
           orders={orders}
         />
       ) : (

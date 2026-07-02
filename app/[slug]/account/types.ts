@@ -28,28 +28,21 @@ export type CustomerOrderSummary = {
   itemSummary: string;
 };
 
-/** One item line on a "favourite" card, from the immutable order snapshots. */
-export type RecentOrderItem = {
-  name: string;
-  // Chosen size for a variant-priced line (snapshot), else null.
-  variantName: string | null;
-  quantity: number;
-  // Add-on / modifier names in stored order, e.g. ["Oat Milk", "Single Shot"].
-  modifierNames: string[];
-};
-
 /**
- * A recent order rendered as a prominent quick-reorder "favourite" card at the
- * top of the account view. Same IDOR-safe, session-scoped, snapshot-only data as
- * the history list — just carrying each line's add-ons + the order notes for the
- * richer card. Reorder reuses the existing ids-only action (re-prices live).
+ * The customer's most-repeated identical order — the "YOUR USUAL" hero card.
+ * Computed from the soft-ref ids of their own recent CONFIRMED orders (same
+ * IDOR-safe scoping as the history list); rendered from the snapshots of the
+ * newest matching order. Reorder reuses the existing ids-only action via that
+ * order's publicToken, so it re-prices live like any other reorder.
  */
-export type RecentCustomerOrder = {
-  publicToken: string;
-  status: "pending_payment" | "confirmed" | "cancelled" | "payment_failed";
-  orderType: "pickup" | "dine_in";
+export type CustomerUsual = {
+  // e.g. "Green Goddess Bowl + Flat White" — snapshot names of the newest
+  // matching order's lines.
+  title: string;
+  // How many recent confirmed orders match (>= 2 by construction).
+  count: number;
+  // What they paid last time — display only; checkout re-prices live.
   totalCents: number;
-  createdAt: Date;
-  notes: string | null;
-  items: RecentOrderItem[];
+  // Token of the newest matching order — fed to the existing reorder action.
+  publicToken: string;
 };
