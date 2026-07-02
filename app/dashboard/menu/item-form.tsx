@@ -17,6 +17,7 @@ import {
 
 import { createItem, updateItem, type MenuActionState } from "./actions";
 import { suggestItemDescription } from "./descriptions/actions";
+import { suggestItemTags } from "./tag-actions";
 
 // Space Mono micro-eyebrow used for every field label in this form (design
 // export). Applied to a <span> inside each wrapping <label> so implicit label
@@ -78,6 +79,15 @@ export function ItemForm({
     () => new Set(item?.tags ?? []),
   );
 
+  // "Suggest tags" — same accept gate as the description draft: suggestions
+  // only restyle the pills below as pending (dashed); the owner accepts one by
+  // checking it, and nothing is saved until the form itself is saved.
+  const [suggestedTags, setSuggestedTags] = useState<Set<DietaryTag>>(
+    () => new Set(),
+  );
+  const [suggestingTags, startSuggestTags] = useTransition();
+  const [tagNotice, setTagNotice] = useState<string | null>(null);
+
   // Availability as the "LIVE" switch. The Toggle is presentational, so a
   // conditionally-rendered hidden input carries the wire contract: it posts
   // isAvailable=on only when on, and nothing when off — byte-identical to the
@@ -114,6 +124,34 @@ export function ItemForm({
         descriptionRef.current.focus();
       } else if (!result.ok) {
         setSuggestError(result.error);
+      }
+    });
+  }
+
+  function handleSuggestTags() {
+    setTagNotice(null);
+    const form = formRef.current;
+    if (!form) return;
+    // Same live read as handleSuggest: the in-progress name/description off the
+    // form, so suggestions work before the item is even saved.
+    const data = new FormData(form);
+    const name = String(data.get("name") ?? "").trim();
+    if (name.length === 0) {
+      setTagNotice("Add an item name first, then suggest tags.");
+      return;
+    }
+    const description = String(data.get("description") ?? "");
+    startSuggestTags(async () => {
+      const result = await suggestItemTags({ name, description });
+      if (result.ok) {
+        setSuggestedTags(new Set(result.tags));
+        if (result.tags.length === 0) {
+          setTagNotice(
+            "No tags suggested. Nothing in the name or description clearly supports one.",
+          );
+        }
+      } else {
+        setTagNotice(result.error);
       }
     });
   }
@@ -258,29 +296,36 @@ export function ItemForm({
           <span className="block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
             Dietary tags <span className="normal-case text-muted">(optional)</span>
           </span>
-          {/* PLACEHOLDER — UI only (ME-2, decision C). Static "AI-SUGGESTED"
-              badge with NO logic behind it yet. When the allergen/dietary
-              suggestion feature ships (a server action that proposes tags), gate
-              this badge on real per-item "suggested" state and wire a
-              confirm/pending flow onto the tags below. Tracked in the plan file
-              under "Static placeholders (wire later)". Non-interactive <span>. */}
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-[var(--color-accent)]/12 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-accent-deep">
+          <button
+            type="button"
+            onClick={handleSuggestTags}
+            disabled={suggestingTags}
+            className={generateButtonClass}
+          >
             <span aria-hidden="true" className="p2e-spark">
               ✦
             </span>
-            AI-suggested
-          </span>
+            <ButtonLabel pending={suggestingTags} pendingLabel="Suggesting…">
+              Suggest tags
+            </ButtonLabel>
+          </button>
         </legend>
         <div className="flex flex-wrap gap-2">
           {DIETARY_TAGS.map((tag) => {
             const checked = selectedTags.has(tag.value);
+            // AI-suggested but not yet accepted: the SAME checkbox pill in the
+            // design's pending look (dashed amber, "+"). Checking it accepts —
+            // the submit contract is untouched either way.
+            const suggested = !checked && suggestedTags.has(tag.value);
             return (
               <label
                 key={tag.value}
                 className={`flex cursor-pointer items-center gap-1.5 rounded-pill border px-3 py-1 text-xs font-medium transition ${
                   checked
                     ? "border-[var(--color-success)] bg-[var(--color-success)]/12 text-success-deep"
-                    : "border-line text-muted hover:bg-sand"
+                    : suggested
+                      ? "border-dashed border-[var(--color-accent)] bg-[var(--color-accent)]/8 text-accent-deep hover:bg-[var(--color-accent)]/15"
+                      : "border-line text-muted hover:bg-sand"
                 }`}
               >
                 <Checkbox
@@ -294,12 +339,30 @@ export function ItemForm({
                   <span aria-hidden="true" className="text-success-deep">
                     ✓
                   </span>
+                ) : suggested ? (
+                  <span aria-hidden="true" className="text-accent-deep">
+                    +
+                  </span>
                 ) : null}
                 {tag.label}
               </label>
             );
           })}
         </div>
+        {tagNotice ? (
+          <p className="text-xs text-[var(--color-warm)]" role="alert">
+            {tagNotice}
+          </p>
+        ) : null}
+        {[...suggestedTags].some((tag) => !selectedTags.has(tag)) ? (
+          <p className="text-xs font-semibold text-accent-deep">
+            <span aria-hidden="true" className="p2e-spark">
+              ✦
+            </span>{" "}
+            Suggestions only. Confirm with your kitchen, then tap a dashed tag
+            to accept it.
+          </p>
+        ) : null}
         <p className="rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-ink">
           Tags you set are shown to customers as a guide only. {DIETARY_DISCLAIMER}{" "}
           Use “gluten friendly” rather than “gluten free”: never state a dish is
