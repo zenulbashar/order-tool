@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { readableOn } from "@/app/_components/brand-contrast";
 import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
@@ -17,6 +17,7 @@ import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
 import { RecommendationsProvider } from "./recommendations";
 import { itemSearchText, matchesQuery } from "./search";
+import { SearchEmptyState } from "./search-empty-state";
 import type {
   PublicItem,
   PublicMenu,
@@ -80,6 +81,31 @@ function StorefrontInner({
   // input. Separate from `query` (the filter state) — toggling this never
   // touches the search/filter logic below.
   const [searchExpanded, setSearchExpanded] = useState(false);
+  // Search no-results → concierge handoff: each nonce bump asks the mounted
+  // ConciergePanel to open with the text prefilled (never auto-submitted).
+  const [conciergePrefill, setConciergePrefill] = useState({
+    text: "",
+    nonce: 0,
+  });
+  // A category chosen from the no-results "maybe try" chips. Clearing the
+  // filters and scrolling must happen across a re-render (the section only
+  // exists once the full menu is back), so the target is parked in a ref and
+  // the scroll — a pure DOM read/write, no state — runs after the commit.
+  const pendingCategoryRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingCategoryRef.current) return;
+    document
+      .getElementById(pendingCategoryRef.current)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    pendingCategoryRef.current = null;
+  });
+
+  function clearFilters() {
+    setQuery("");
+    setSelectedTags([]);
+    setSearchExpanded(false);
+  }
 
   const brandStyle = {
     "--brand": venue.brandColor,
@@ -298,6 +324,7 @@ function StorefrontInner({
             menu={menu}
             onSelectItem={setActiveItem}
             onOpenCart={() => setCartOpen(true)}
+            prefill={conciergePrefill}
           />
         </div>
       ) : null}
@@ -308,11 +335,26 @@ function StorefrontInner({
             This venue hasn’t published a menu yet. Check back soon.
           </p>
         ) : visibleMenu.length === 0 ? (
-          <p className="rounded-card border border-dashed border-sand p-8 text-center text-sm text-muted">
-            {isSearching
-              ? `No items match “${trimmedQuery}”${activeTags.length > 0 ? " with those dietary tags" : ""}.`
-              : "No items match those dietary tags."}
-          </p>
+          <SearchEmptyState
+            query={trimmedQuery}
+            venueName={venue.name}
+            conciergeEnabled={conciergeEnabled}
+            categories={menu.map((category) => ({
+              id: category.id,
+              name: category.name,
+            }))}
+            onAskConcierge={(text) =>
+              setConciergePrefill((current) => ({
+                text,
+                nonce: current.nonce + 1,
+              }))
+            }
+            onClearFilters={clearFilters}
+            onGoToCategory={(id) => {
+              pendingCategoryRef.current = id;
+              clearFilters();
+            }}
+          />
         ) : (
           visibleMenu.map((category) => (
             <section key={category.id} id={category.id} className="scroll-mt-32">
