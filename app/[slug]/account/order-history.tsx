@@ -9,7 +9,7 @@ import { formatCents, orderReference } from "@/lib/validation";
 
 import { seedStoredCart } from "../cart-provider";
 import { reorder, signOutCustomer } from "./actions";
-import type { CustomerOrderSummary, RecentCustomerOrder } from "./types";
+import type { CustomerOrderSummary, CustomerUsual } from "./types";
 
 const STATUS_LABEL: Record<CustomerOrderSummary["status"], string> = {
   confirmed: "Paid",
@@ -32,16 +32,18 @@ const STATUS_TONE: Record<CustomerOrderSummary["status"], PaymentTone> = {
  * to the storefront, where the cart's existing reconciliation drops/updates any
  * unavailable items (surfaced as the "items changed" notice) and checkout
  * re-prices live. So a reorder is just a normal new order with a pre-filled cart.
+ * The "YOUR USUAL" hero reorders through the SAME path — its publicToken is the
+ * newest order matching the customer's most-repeated fingerprint.
  */
 export function OrderHistory({
   slug,
   customerEmail,
-  recentOrders,
+  usual,
   orders,
 }: {
   slug: string;
   customerEmail: string;
-  recentOrders: RecentCustomerOrder[];
+  usual: CustomerUsual | null;
   orders: CustomerOrderSummary[];
 }) {
   const router = useRouter();
@@ -99,83 +101,38 @@ export function OrderHistory({
         </p>
       ) : null}
 
-      {/* Favourites — the last few orders as prominent one-tap reorder cards,
-          rendered from the immutable snapshots (add-ons + notes). Reorder reuses
-          the SAME handleReorder as the list below (ids-only, re-prices live). */}
-      {recentOrders.length > 0 ? (
+      {/* YOUR USUAL — the customer's most-repeated identical order as a
+          forest-dark hero (the concierge dark-surface idiom: forest tokens,
+          amber-on-dark accents). Reorder reuses the SAME handleReorder as the
+          list below (ids-only, re-prices live). */}
+      {usual ? (
         <section className="px-5 pb-1 pt-2">
-          <h2 className="text-sm font-semibold text-ink">Quick reorder</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Your most recent orders — reorder in one tap.
-          </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {recentOrders.map((order) => {
-              const reordering = pendingToken === order.publicToken;
-              return (
-                <div
-                  key={order.publicToken}
-                  className="flex flex-col rounded-card border border-line p-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-muted">
-                      {orderReference(order.publicToken)}
-                    </span>
-                    <StatusBadge tone={STATUS_TONE[order.status]}>
-                      {STATUS_LABEL[order.status]}
-                    </StatusBadge>
-                  </div>
-
-                  <ul className="mt-2 space-y-1">
-                    {order.items.map((item, index) => (
-                      <li
-                        key={`${index}-${item.name}`}
-                        className="text-sm text-ink"
-                      >
-                        <span className="text-muted">{item.quantity}×</span>{" "}
-                        {item.name}
-                        {item.variantName ? ` (${item.variantName})` : ""}
-                        {item.modifierNames.length > 0 ? (
-                          <span className="text-muted">
-                            {" "}
-                            — {item.modifierNames.join(", ")}
-                          </span>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {order.notes ? (
-                    <p className="mt-2 whitespace-pre-wrap break-words rounded-control bg-surface px-2 py-1 text-xs text-muted">
-                      <span className="font-medium text-muted">Notes: </span>
-                      {order.notes}
-                    </p>
-                  ) : null}
-
-                  <p className="mt-2 text-xs text-muted">
-                    <span suppressHydrationWarning>
-                      {new Date(order.createdAt).toLocaleDateString("en-AU", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </span>{" "}
-                    · {order.orderType === "dine_in" ? "Dine-in" : "Pickup"} · $
-                    {formatCents(order.totalCents)}
-                  </p>
-
-                  <Button
-                    variant="primary"
-                    onClick={() => handleReorder(order.publicToken)}
-                    disabled={isPending}
-                    loading={reordering}
-                    loadingLabel="Adding…"
-                    className="mt-3 w-full"
-                  >
-                    Reorder
-                  </Button>
-                </div>
-              );
-            })}
+          <div className="relative overflow-hidden rounded-card bg-[linear-gradient(135deg,var(--color-forest-deep),var(--color-concierge-glow))] p-4 shadow-card">
+            <div
+              aria-hidden
+              className="p2e-glow absolute -right-6 -top-9 h-28 w-28 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-accent)_30%,transparent),transparent_65%)]"
+            />
+            <p className="relative font-mono text-[10px] font-bold uppercase tracking-wider text-accent">
+              Your usual
+            </p>
+            <p className="relative mt-1.5 text-[15px] font-bold text-white">
+              {usual.title}
+            </p>
+            <div className="relative mt-3 flex items-center justify-between gap-3">
+              <span className="text-xs font-medium text-concierge-sage">
+                Ordered {usual.count} times
+              </span>
+              <button
+                type="button"
+                onClick={() => handleReorder(usual.publicToken)}
+                disabled={isPending}
+                className="shrink-0 rounded-control bg-accent px-3.5 py-2 text-xs font-bold text-forest transition hover:opacity-90 disabled:opacity-60"
+              >
+                {pendingToken === usual.publicToken
+                  ? "Adding…"
+                  : `↻ Reorder · $${formatCents(usual.totalCents)}`}
+              </button>
+            </div>
           </div>
         </section>
       ) : null}
@@ -188,25 +145,31 @@ export function OrderHistory({
           </p>
         </section>
       ) : (
-        <ul className="divide-y divide-line px-5 pb-10">
-          {orders.map((order) => {
-            const reordering = pendingToken === order.publicToken;
-            return (
-              <li key={order.publicToken} className="py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted">
-                        {orderReference(order.publicToken)}
-                      </span>
-                      <StatusBadge tone={STATUS_TONE[order.status]}>
-                        {STATUS_LABEL[order.status]}
-                      </StatusBadge>
-                    </div>
-                    <p className="mt-1 text-sm text-ink">
-                      {order.itemSummary || "—"}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted">
+        <section className="px-5 pb-10 pt-3">
+          <h2 className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            Earlier
+          </h2>
+          <ul className="mt-2 space-y-2.5">
+            {orders.map((order) => {
+              const reordering = pendingToken === order.publicToken;
+              return (
+                <li
+                  key={order.publicToken}
+                  className="rounded-card border border-line bg-surface-elevated p-4 shadow-card"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs text-muted">
+                      {orderReference(order.publicToken)}
+                    </span>
+                    <StatusBadge tone={STATUS_TONE[order.status]}>
+                      {STATUS_LABEL[order.status]}
+                    </StatusBadge>
+                  </div>
+                  <p className="mt-1.5 text-sm text-ink">
+                    {order.itemSummary || "—"}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="font-mono text-[11px] font-bold uppercase text-label">
                       <span suppressHydrationWarning>
                         {new Date(order.createdAt).toLocaleDateString("en-AU", {
                           day: "numeric",
@@ -214,26 +177,25 @@ export function OrderHistory({
                           year: "numeric",
                         })}
                       </span>{" "}
-                      · {order.orderType === "dine_in" ? "Dine-in" : "Pickup"} · $
-                      {formatCents(order.totalCents)}
-                    </p>
+                      · ${formatCents(order.totalCents)}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleReorder(order.publicToken)}
+                      disabled={isPending}
+                      loading={reordering}
+                      loadingLabel="Adding…"
+                      className="shrink-0"
+                    >
+                      ↻ Reorder
+                    </Button>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleReorder(order.publicToken)}
-                    disabled={isPending}
-                    loading={reordering}
-                    loadingLabel="Adding…"
-                    className="shrink-0"
-                  >
-                    Reorder
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
     </>
   );

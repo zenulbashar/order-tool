@@ -59,9 +59,10 @@
   --color-hover-secondary: #fbf8f1; /* secondary button hover fill */
   --color-hover-ghost: #f1ead9; /* ghost button hover fill */
   /*
-   * Concierge (storefront-c) — the AI conversation panel is the ONE forest-dark
-   * diner surface (everything else stays cream). These scoped tokens hold the
-   * exact design-source values so the components reference tokens, never raw hex.
+   * Concierge (storefront-c) — the AI conversation panel is one of the TWO
+   * forest-dark diner surfaces (the account "YOUR USUAL" hero is the other;
+   * everything else stays cream). These scoped tokens hold the exact
+   * design-source values so the components reference tokens, never raw hex.
    * Reuses --color-forest-deepest (#0e1f18), --color-forest (#16241c), and
    * --color-accent (#f4b43c) where the source values already match a token.
    */
