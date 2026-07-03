@@ -1051,3 +1051,30 @@ export const recipeLines = pgTable(
 );
 
 export type RecipeLine = typeof recipeLines.$inferSelect;
+
+/**
+ * A completed invoice-cost import (Track D · D3). One row per applied supplier
+ * invoice scan — a lightweight audit/history record backing the "recent scans"
+ * list, NOT the source of any cost (costs live on `ingredients`). We store only
+ * the counts the owner sees; the scanned images are never persisted. Analytics
+ * only — no order money-path involvement.
+ */
+export const invoiceScans = pgTable(
+  "invoice_scans",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // Supplier read from the invoice header (nullable — some invoices omit it).
+    supplier: text("supplier"),
+    // How many lines the review gate carried, and what was applied from them.
+    lineCount: integer("line_count").notNull().default(0),
+    updatedCount: integer("updated_count").notNull().default(0),
+    createdCount: integer("created_count").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (table) => [index("invoice_scans_venue_idx").on(table.venueId)],
+);
+
+export type InvoiceScan = typeof invoiceScans.$inferSelect;
