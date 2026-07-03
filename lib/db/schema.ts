@@ -1142,6 +1142,14 @@ export const stockMovements = pgTable(
   (table) => [
     index("stock_movements_venue_idx").on(table.venueId),
     index("stock_movements_ingredient_idx").on(table.ingredientId),
+    // Depletion idempotency (Track D · D4b): at most ONE depletion movement per
+    // (order, ingredient). Makes the order-consumption apply safe under webhook
+    // replays, sweep overlaps, and concurrent kicks — insert ON CONFLICT DO
+    // NOTHING and only newly-inserted rows bump the on-hand counter. Partial, so
+    // it constrains nothing about the owner-initiated movements.
+    uniqueIndex("stock_movements_order_depletion_uniq")
+      .on(table.orderId, table.ingredientId)
+      .where(sql`${table.reason} = 'depletion' AND ${table.orderId} IS NOT NULL`),
   ],
 );
 

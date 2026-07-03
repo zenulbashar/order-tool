@@ -6,6 +6,7 @@ import type Stripe from "stripe";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
+import { depleteStockForOrder } from "@/lib/stock/depletion";
 import { getStripe } from "@/lib/stripe";
 
 // Stripe signature verification uses Node crypto, and the Neon pool needs Node —
@@ -75,6 +76,19 @@ export async function POST(request: Request): Promise<Response> {
             // Kick processing after the response is sent (Vercel waitUntil).
             after(() => processDueJobs(enqueued).catch(() => {}));
           }
+        } catch {
+          // Swallowed by design — the sweep is the guarantee.
+        }
+        // ADDITIVE (Track D · D4b) — stock depletion, a SECOND independent
+        // integrations-style touch, held to the SAME contract as the block
+        // above: it runs strictly AFTER the confirm UPDATE (unchanged), is
+        // fully isolated in its own try/catch, and does all its work in after()
+        // so it can never delay or fail this response. It is a latency
+        // optimization only — sweepStockDepletion() (cron) re-derives any
+        // missed depletion from order state, so even deleting this block loses
+        // nothing. A stock failure and an integrations failure are independent.
+        try {
+          after(() => depleteStockForOrder(paymentIntent.id).catch(() => {}));
         } catch {
           // Swallowed by design — the sweep is the guarantee.
         }

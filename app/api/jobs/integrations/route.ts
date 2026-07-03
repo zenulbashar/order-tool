@@ -3,6 +3,7 @@ import {
   runMaintenance,
   sweepMissedOrders,
 } from "@/lib/integrations/dispatch";
+import { sweepStockDepletion } from "@/lib/stock/depletion";
 
 // The dispatch engine uses the Neon pool + node crypto — keep off Edge.
 export const runtime = "nodejs";
@@ -33,5 +34,14 @@ export async function GET(request: Request): Promise<Response> {
   const swept = await sweepMissedOrders();
   const processed = await processDueJobs(BATCH_SIZE);
   await runMaintenance();
-  return Response.json({ ok: true, swept, processed });
+  // Stock depletion backstop (Track D · D4b) — re-derives any missed depletion
+  // from confirmed-order state. Independent of the integrations outbox above;
+  // isolated so its failure can't fail the integrations tick.
+  let depleted = 0;
+  try {
+    depleted = await sweepStockDepletion();
+  } catch {
+    // Advisory backstop — surfaces on the next tick.
+  }
+  return Response.json({ ok: true, swept, processed, depleted });
 }
