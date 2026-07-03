@@ -1207,3 +1207,37 @@ export const nudges = pgTable(
 );
 
 export type Nudge = typeof nudges.$inferSelect;
+
+/**
+ * Platform-level settings (Track E). Key-value rows owned by the ADMIN CONSOLE,
+ * never by venue owners — the D1 decision made concrete: platform knobs (first:
+ * `square_fee_mode`) are DATA, not code branches, switchable without a deploy.
+ * Values are plain strings; each accessor in lib/platform-settings.ts owns its
+ * key's parsing + default, so an absent row always means "the default".
+ */
+export const platformSettings = pgTable("platform_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: updatedAt(),
+});
+
+export type PlatformSetting = typeof platformSettings.$inferSelect;
+
+/**
+ * Audit trail for admin-console actions (Track E). Every platform-setting
+ * change writes a row: who (the allowlisted admin email), what, and the detail
+ * of the change. Append-only — nothing in the app updates or deletes rows.
+ */
+export const platformAuditLog = pgTable(
+  "platform_audit_log",
+  {
+    id: id(),
+    actorEmail: text("actor_email").notNull(),
+    action: text("action").notNull(),
+    detail: text("detail"),
+    createdAt: createdAt(),
+  },
+  (table) => [index("platform_audit_created_idx").on(table.createdAt)],
+);
+
+export type PlatformAuditEntry = typeof platformAuditLog.$inferSelect;
