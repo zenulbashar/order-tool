@@ -66,6 +66,27 @@ type VariantData = {
 
 type TagData = { itemId: string; tag: DietaryTag };
 
+// Recipe line joined to its ingredient's cost data (D2).
+type RecipeLineData = {
+  id: string;
+  menuItemId: string;
+  ingredientId: string;
+  qty: number;
+  ingredientName: string;
+  unit: "g" | "ml" | "each";
+  packSize: number | null;
+  packCostCents: number | null;
+  yieldPct: number;
+  isPackaging: boolean;
+};
+
+type IngredientOption = {
+  id: string;
+  name: string;
+  unit: "g" | "ml" | "each";
+  isPackaging: boolean;
+};
+
 export function MenuEditor({
   categories,
   items,
@@ -73,6 +94,8 @@ export function MenuEditor({
   options,
   variants,
   tags,
+  recipeLines,
+  ingredientOptions,
   categoryOptions,
 }: {
   categories: CategoryData[];
@@ -81,6 +104,8 @@ export function MenuEditor({
   options: OptionData[];
   variants: VariantData[];
   tags: TagData[];
+  recipeLines: RecipeLineData[];
+  ingredientOptions: IngredientOption[];
   categoryOptions: { id: string; name: string }[];
 }) {
   const router = useRouter();
@@ -126,6 +151,16 @@ export function MenuEditor({
     }
     return map;
   }, [variants]);
+
+  const recipeByItem = useMemo(() => {
+    const map = new Map<string, RecipeLineData[]>();
+    for (const line of recipeLines) {
+      const list = map.get(line.menuItemId) ?? [];
+      list.push(line);
+      map.set(line.menuItemId, list);
+    }
+    return map;
+  }, [recipeLines]);
 
   const tagsByItem = useMemo(() => {
     const map = new Map<string, DietaryTag[]>();
@@ -220,6 +255,8 @@ export function MenuEditor({
             variants={variantsByItem.get(selectedItem.id) ?? []}
             groups={groupsByItem.get(selectedItem.id) ?? []}
             tags={tagsByItem.get(selectedItem.id) ?? []}
+            recipeLines={recipeByItem.get(selectedItem.id) ?? []}
+            ingredientOptions={ingredientOptions}
             categories={categoryOptions}
           />
         ) : (

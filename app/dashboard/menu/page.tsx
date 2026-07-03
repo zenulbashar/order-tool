@@ -11,8 +11,10 @@ import { MenuEditor } from "./menu-editor";
 import {
   getCategoriesForVenue,
   getGroupsForVenue,
+  getIngredientsForVenue,
   getItemsForVenue,
   getOptionsForVenue,
+  getRecipeLinesForVenue,
   getTagsForVenue,
   getVariantsForVenue,
 } from "./queries";
@@ -21,15 +23,32 @@ export default async function MenuPage() {
   await requireUser();
   const venue = await requireVenue();
 
-  const [categories, items, groups, options, variants, tags] =
-    await Promise.all([
-      getCategoriesForVenue(venue.id),
-      getItemsForVenue(venue.id),
-      getGroupsForVenue(venue.id),
-      getOptionsForVenue(venue.id),
-      getVariantsForVenue(venue.id),
-      getTagsForVenue(venue.id),
-    ]);
+  const [
+    categories,
+    items,
+    groups,
+    options,
+    variants,
+    tags,
+    recipeLines,
+    ingredientRows,
+  ] = await Promise.all([
+    getCategoriesForVenue(venue.id),
+    getItemsForVenue(venue.id),
+    getGroupsForVenue(venue.id),
+    getOptionsForVenue(venue.id),
+    getVariantsForVenue(venue.id),
+    getTagsForVenue(venue.id),
+    getRecipeLinesForVenue(venue.id),
+    getIngredientsForVenue(venue.id),
+  ]);
+
+  const ingredientOptions = ingredientRows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    unit: row.unit,
+    isPackaging: row.isPackaging,
+  }));
 
   const categoryOptions = categories.map((c) => ({ id: c.id, name: c.name }));
 
@@ -83,6 +102,8 @@ export default async function MenuPage() {
             options={options}
             variants={variants}
             tags={tags}
+            recipeLines={recipeLines}
+            ingredientOptions={ingredientOptions}
             categoryOptions={categoryOptions}
           />
         </Suspense>

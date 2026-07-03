@@ -3,8 +3,13 @@ import { asc } from "drizzle-orm";
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { ingredients } from "@/lib/db/schema";
-import { isCosted } from "@/lib/stock/cost";
+import { dishCost, isCosted, marginOf } from "@/lib/stock/cost";
 import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+
+import {
+  getItemsForVenue,
+  getRecipeLinesForVenue,
+} from "../menu/queries";
 
 import { AddIngredient } from "./add-ingredient";
 import { IngredientRow } from "./ingredient-row";
@@ -45,11 +50,48 @@ export default async function StockPage() {
   await requireUser();
   const venue = await requireVenue();
 
-  const rows = await db
-    .select()
-    .from(ingredients)
-    .where(scopedToVenue(ingredients.venueId, venue.id))
-    .orderBy(asc(ingredients.name));
+  const [rows, recipeLines, items] = await Promise.all([
+    db
+      .select()
+      .from(ingredients)
+      .where(scopedToVenue(ingredients.venueId, venue.id))
+      .orderBy(asc(ingredients.name)),
+    getRecipeLinesForVenue(venue.id),
+    getItemsForVenue(venue.id),
+  ]);
+
+  // Average dish margin across items that have BOTH a recipe and a price
+  // (D2) — the design's AVG DISH MARGIN. Uncosted lines are excluded from a
+  // dish's cost, so the figure is honest for what's costed.
+  const linesByItem = new Map<string, typeof recipeLines>();
+  for (const line of recipeLines) {
+    const list = linesByItem.get(line.menuItemId) ?? [];
+    list.push(line);
+    linesByItem.set(line.menuItemId, list);
+  }
+  const margins: number[] = [];
+  for (const item of items) {
+    const itemLines = linesByItem.get(item.id);
+    if (!itemLines || itemLines.length === 0) continue;
+    const cost = dishCost(
+      itemLines.map((line) => ({
+        qty: line.qty,
+        ingredient: {
+          packSize: line.packSize,
+          packCostCents: line.packCostCents,
+          yieldPct: line.yieldPct,
+        },
+      })),
+    );
+    const margin = marginOf(item.priceCents, cost.totalCents);
+    if (margin) margins.push(margin.fraction);
+  }
+  const avgMarginPct =
+    margins.length > 0
+      ? Math.round(
+          (margins.reduce((sum, m) => sum + m, 0) / margins.length) * 100,
+        )
+      : null;
 
   const now = new Date().getTime();
   const dayMs = 86_400_000;
@@ -91,9 +133,13 @@ export default async function StockPage() {
             sub={`Updated in the last ${FRESH_WINDOW_DAYS} days`}
           />
           <Kpi
-            label="Uncosted"
-            value={String(uncostedCount)}
-            sub="Add a pack size and cost to include them"
+            label="Avg dish margin"
+            value={avgMarginPct === null ? "—" : `${avgMarginPct}%`}
+            sub={
+              margins.length > 0
+                ? `Across ${margins.length} costed ${margins.length === 1 ? "dish" : "dishes"}`
+                : `${uncostedCount} uncosted · add recipes in the menu editor`
+            }
           />
         </div>
 

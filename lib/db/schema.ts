@@ -1011,3 +1011,43 @@ export const ingredients = pgTable(
 );
 
 export type Ingredient = typeof ingredients.$inferSelect;
+
+/**
+ * A recipe line: how much of an ingredient a menu item uses per serve (Track D
+ * · D2). Dish COGS = Σ qty × ingredient cost-per-unit (lib/stock/cost.ts) — all
+ * derived, never stored, so an ingredient price change re-costs every dish.
+ * Both refs are hard FKs with ON DELETE CASCADE: deleting the item or the
+ * ingredient removes its recipe lines (a recipe line is meaningless without
+ * both). Analytics only — no order money-path involvement.
+ */
+export const recipeLines = pgTable(
+  "recipe_lines",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    menuItemId: text("menu_item_id")
+      .notNull()
+      .references(() => menuItems.id, { onDelete: "cascade" }),
+    ingredientId: text("ingredient_id")
+      .notNull()
+      .references(() => ingredients.id, { onDelete: "cascade" }),
+    // Quantity in the ingredient's recipe unit (may be fractional, e.g. 0.5 each).
+    qty: doublePrecision("qty").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("recipe_lines_venue_idx").on(table.venueId),
+    index("recipe_lines_item_idx").on(table.menuItemId),
+    // One line per (item, ingredient) — edit the qty, don't duplicate.
+    uniqueIndex("recipe_lines_item_ingredient_idx").on(
+      table.menuItemId,
+      table.ingredientId,
+    ),
+    check("recipe_lines_qty_pos", sql`${table.qty} > 0`),
+  ],
+);
+
+export type RecipeLine = typeof recipeLines.$inferSelect;
