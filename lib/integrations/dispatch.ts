@@ -35,17 +35,35 @@ type Provider = VenueIntegration["provider"];
  * A provider's mirror worker. Receives the claimed job + its integration row
  * (with encrypted credentials) and performs the provider calls; returns the
  * provider-side reference to store. Throwing = retryable failure (backoff).
- * Registered by each provider module (Square arrives with Track A) — Track 0
- * ships the engine with an empty registry, which is unreachable in practice
- * because jobs are only enqueued for venues with an ACTIVE integration row,
- * and no connect flow exists until a provider module ships.
  */
 export type JobProcessor = (
   job: IntegrationJob,
   integration: VenueIntegration,
 ) => Promise<{ providerRef?: string }>;
 
-const PROCESSORS: Partial<Record<Provider, JobProcessor>> = {};
+// Registered lazily inside runClaimedJob/runMaintenance via dynamic import so
+// this engine module stays import-cycle-free and provider code loads only
+// when a job for that provider actually runs.
+async function getProcessor(provider: Provider): Promise<JobProcessor | null> {
+  if (provider === "square") {
+    const { mirrorOrderToSquare } = await import("./square/mirror");
+    return mirrorOrderToSquare;
+  }
+  return null;
+}
+
+/**
+ * Provider maintenance duties run from the cron route each tick (e.g. the
+ * Square ≤7-day token refresh). Best-effort: a maintainer must never throw.
+ */
+export async function runMaintenance(): Promise<void> {
+  try {
+    const { maintainSquareTokens } = await import("./square/mirror");
+    await maintainSquareTokens();
+  } catch {
+    // Maintenance is advisory; failures surface via integration health rows.
+  }
+}
 
 /** Exponential backoff schedule (seconds); attempts beyond it go dead. */
 const BACKOFF_SECONDS = [60, 300, 1_800, 7_200, 43_200];
@@ -218,7 +236,7 @@ async function runClaimedJob(job: IntegrationJob): Promise<void> {
       return;
     }
 
-    const processor = PROCESSORS[job.provider];
+    const processor = await getProcessor(job.provider);
     if (!processor) {
       throw new Error(`No processor installed for ${job.provider}.`);
     }

@@ -1,5 +1,6 @@
 import {
   processDueJobs,
+  runMaintenance,
   sweepMissedOrders,
 } from "@/lib/integrations/dispatch";
 
@@ -31,5 +32,6 @@ export async function GET(request: Request): Promise<Response> {
 
   const swept = await sweepMissedOrders();
   const processed = await processDueJobs(BATCH_SIZE);
+  await runMaintenance();
   return Response.json({ ok: true, swept, processed });
 }
