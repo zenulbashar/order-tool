@@ -148,6 +148,13 @@
       "when": 1783055785281,
       "tag": "0020_luxuriant_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1783063263670,
+      "tag": "0021_short_the_stranger",
+      "breakpoints": true
     }
   ]
 }
