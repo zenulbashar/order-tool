@@ -204,6 +204,13 @@
       "when": 1783081733774,
       "tag": "0028_eminent_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1783085026098,
+      "tag": "0029_lean_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

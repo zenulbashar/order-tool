@@ -1241,3 +1241,99 @@ export const platformAuditLog = pgTable(
 );
 
 export type PlatformAuditEntry = typeof platformAuditLog.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* Hardware marketplace (Track F). A PLATFORM catalog (curated in the admin      */
+/* console) that venues order from. Not venue-scoped: products are global; only  */
+/* orders belong to a venue. v1 is request-to-order (invoice later) — no card    */
+/* charge here, so it never touches the diner money path; a Stripe platform      */
+/* checkout is a later gated build.                                              */
+/* -------------------------------------------------------------------------- */
+
+export const marketplaceCategory = pgEnum("marketplace_category", [
+  "signage",
+  "tablet",
+  "stand",
+  "consumable",
+  "banner",
+  "other",
+]);
+
+export const marketplaceOrderStatus = pgEnum("marketplace_order_status", [
+  "requested",
+  "confirmed",
+  "shipped",
+  "cancelled",
+]);
+
+export const marketplaceProducts = pgTable(
+  "marketplace_products",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    description: text("description"),
+    category: marketplaceCategory("category").notNull().default("other"),
+    priceCents: integer("price_cents").notNull(),
+    // Optional pack/unit note (e.g. "per 100") + supplier + image URL. No upload
+    // flow in v1 — the admin pastes a URL.
+    unitLabel: text("unit_label"),
+    supplier: text("supplier"),
+    imageUrl: text("image_url"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("marketplace_products_active_idx").on(table.isActive),
+    check("marketplace_products_price_nonneg", sql`${table.priceCents} >= 0`),
+  ],
+);
+
+export type MarketplaceProduct = typeof marketplaceProducts.$inferSelect;
+
+export const marketplaceOrders = pgTable(
+  "marketplace_orders",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    status: marketplaceOrderStatus("status").notNull().default("requested"),
+    // Snapshot of the order total at submission (sum of line snapshots).
+    totalCents: integer("total_cents").notNull(),
+    note: text("note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("marketplace_orders_venue_idx").on(table.venueId),
+    index("marketplace_orders_status_idx").on(table.status),
+    check("marketplace_orders_total_nonneg", sql`${table.totalCents} >= 0`),
+  ],
+);
+
+export type MarketplaceOrder = typeof marketplaceOrders.$inferSelect;
+
+export const marketplaceOrderItems = pgTable(
+  "marketplace_order_items",
+  {
+    id: id(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => marketplaceOrders.id, { onDelete: "cascade" }),
+    // Soft ref (nullable, no FK) — snapshots below are the truth, so a later
+    // catalog edit/removal never rewrites a placed order.
+    productId: text("product_id"),
+    nameSnapshot: text("name_snapshot").notNull(),
+    unitPriceCentsSnapshot: integer("unit_price_cents_snapshot").notNull(),
+    quantity: integer("quantity").notNull(),
+    lineTotalCents: integer("line_total_cents").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("marketplace_order_items_order_idx").on(table.orderId),
+    check("marketplace_order_items_qty_pos", sql`${table.quantity} > 0`),
+  ],
+);
+
+export type MarketplaceOrderItem = typeof marketplaceOrderItems.$inferSelect;
