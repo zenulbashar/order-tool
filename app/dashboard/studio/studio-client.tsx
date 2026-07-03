@@ -49,12 +49,19 @@ export function StudioClient({
   const [subtext, setSubtext] = useState("Order ahead — skip the queue.");
   const [offerText, setOfferText] = useState("");
 
+  // Caption shared alongside the image. Blank = use the suggested caption
+  // derived from the current content, so it always reflects what's on screen
+  // until the owner overrides it.
+  const [caption, setCaption] = useState("");
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+
   const holderRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
 
   function switchMode(next: StudioMode) {
     setMode(next);
     setPresetId(presetsFor(next)[0].id);
+    setShareMsg(null);
   }
 
   const bannerData: BannerArtworkData = {
@@ -64,6 +71,14 @@ export function StudioClient({
     subtext,
     offerText,
   };
+
+  const suggestedCaption =
+    mode === "banner"
+      ? [offerText, headline, subtext, `— ${menuData.venueName}`]
+          .filter(Boolean)
+          .join("\n")
+      : `Our menu at ${menuData.venueName} — order ahead and skip the queue.`;
+  const effectiveCaption = caption.trim() || suggestedCaption;
 
   const baseName = `${slug}-${mode}-${preset.id}`;
 
@@ -80,35 +95,104 @@ export function StudioClient({
     );
   }
 
-  function downloadPng() {
+  // Rasterize the current SVG to a PNG Blob at the preset's exact pixel size.
+  // Resolves null on any failure. No remote images in the artwork ⇒ the canvas
+  // never taints, so toBlob always succeeds.
+  function renderPng(): Promise<Blob | null> {
     const svg = currentSvg();
-    if (!svg) return;
-    setBusy(true);
-    const svgString = serializeSvg(svg);
-    const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = preset.width;
-      canvas.height = preset.height;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
+    if (!svg) return Promise.resolve(null);
+    const url = URL.createObjectURL(
+      new Blob([serializeSvg(svg)], { type: "image/svg+xml" }),
+    );
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = preset.width;
+        canvas.height = preset.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          URL.revokeObjectURL(url);
+          resolve(null);
+          return;
+        }
         ctx.drawImage(img, 0, 0, preset.width, preset.height);
         canvas.toBlob((out) => {
-          if (out) triggerDownload(out, `${baseName}.png`);
-          setBusy(false);
+          URL.revokeObjectURL(url);
+          resolve(out);
         }, "image/png");
-      } else {
-        setBusy(false);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
+  }
+
+  async function downloadPng() {
+    setBusy(true);
+    const blob = await renderPng();
+    if (blob) triggerDownload(blob, `${baseName}.png`);
+    setBusy(false);
+  }
+
+  // Share the banner/menu PNG straight to any installed app (Instagram,
+  // Facebook, Messages, Gmail…) via the Web Share API — the no-account path that
+  // works today on phones. Desktop browsers without file-share fall back to a
+  // PNG download + the caption to paste.
+  async function shareImage() {
+    setShareMsg(null);
+    setBusy(true);
+    const blob = await renderPng();
+    setBusy(false);
+    if (!blob) {
+      setShareMsg("Couldn't render the image — try Download instead.");
+      return;
+    }
+    const file = new File([blob], `${baseName}.png`, { type: "image/png" });
+    const nav = navigator as Navigator & {
+      canShare?: (data?: ShareData) => boolean;
+    };
+    if (nav.canShare?.({ files: [file] }) && nav.share) {
+      try {
+        await nav.share({ files: [file], text: effectiveCaption });
+        setShareMsg("Shared.");
+      } catch {
+        // User cancelled the share sheet — say nothing.
       }
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () => {
-      setBusy(false);
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
+      return;
+    }
+    // No file-share support (most desktops): download + copy the caption.
+    triggerDownload(blob, `${baseName}.png`);
+    await copyCaption();
+    setShareMsg(
+      "Your browser can't share files — the image downloaded and the caption is copied. Upload it in your app.",
+    );
+  }
+
+  // Google Business Profile has no share-target, so hand off: save the PNG and
+  // open the GBP composer for the owner to attach it with the caption.
+  async function postToGoogle() {
+    setShareMsg(null);
+    setBusy(true);
+    const blob = await renderPng();
+    setBusy(false);
+    if (blob) triggerDownload(blob, `${baseName}.png`);
+    await copyCaption();
+    window.open("https://business.google.com/posts", "_blank", "noopener");
+    setShareMsg(
+      "Image saved and caption copied — attach it in the Google Business Profile post.",
+    );
+  }
+
+  async function copyCaption() {
+    try {
+      await navigator.clipboard.writeText(effectiveCaption);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // Print via a hidden iframe (no popup blocker), sized to the preset so
@@ -242,6 +326,44 @@ export function StudioClient({
             PNG &amp; SVG export at the exact pixel size. Print opens your
             browser&apos;s dialog — choose &ldquo;Save as PDF&rdquo; for print
             formats.
+          </p>
+        </div>
+
+        {/* Publish — push the image straight to social apps + Google. */}
+        <div className="space-y-2 border-t border-line pt-4">
+          <p className={microLabel}>Publish</p>
+          <label className="block">
+            <span className="mb-1 block text-[11px] text-muted">
+              Caption (shared with the image)
+            </span>
+            <textarea
+              rows={3}
+              value={caption}
+              placeholder={suggestedCaption}
+              onChange={(event) => setCaption(event.target.value)}
+              className={cx(controlClass, "resize-none")}
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="primary" size="sm" onClick={shareImage} loading={busy}>
+              Share to apps
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={postToGoogle}>
+              Post to Google
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={copyCaption}>
+              Copy caption
+            </Button>
+          </div>
+          {shareMsg ? (
+            <p className="text-[11px] font-medium text-success-deep" role="status">
+              {shareMsg}
+            </p>
+          ) : null}
+          <p className="text-[11px] text-muted">
+            On a phone, &ldquo;Share to apps&rdquo; posts straight to Instagram,
+            Facebook, and more. &ldquo;Post to Google&rdquo; saves the image and
+            opens your Business Profile to attach it.
           </p>
         </div>
       </div>
