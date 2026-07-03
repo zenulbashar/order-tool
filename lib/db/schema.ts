@@ -93,6 +93,14 @@ export const venueType = pgEnum("venue_type", [
   "food_truck",
 ]);
 
+// Pay-by-bank discount mode (Track B · 3b-ii). off = none; flat = a fixed cents
+// saving; percent = a percentage of subtotal.
+export const paytoDiscountMode = pgEnum("payto_discount_mode", [
+  "off",
+  "flat",
+  "percent",
+]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -155,6 +163,17 @@ export const venues = pgTable(
     // path change). This column is OUR intent/copy state; Stripe's live
     // capability status is the runtime truth (mirrored like charges_enabled).
     paytoEnabled: boolean("payto_enabled").notNull().default(false),
+    // Pay-by-bank discount steering (Track B · 3b-ii). A venue may pass a small
+    // saving to customers who pay by bank (cheaper for the venue than cards).
+    // `mode` off = no discount (default); `flat` = paytoDiscountValue cents off;
+    // `percent` = paytoDiscountValue percent of subtotal off. Applied ONLY as a
+    // server-recomputed discount line on the PaymentIntent AFTER the customer
+    // picks PayTo — never a card surcharge (RBA-safe). placeOrder is unchanged;
+    // the discount is a separate, method-triggered update.
+    paytoDiscountMode: paytoDiscountMode("payto_discount_mode")
+      .notNull()
+      .default("off"),
+    paytoDiscountValue: integer("payto_discount_value").notNull().default(0),
     // Billing entitlement (Phase 1). `plan` is the ONLY field gated on now; it is
     // the single value hasFeature() reads (see lib/billing/plans.ts). Existing
     // rows backfill to 'trial' so every current venue keeps full access, matching
@@ -707,6 +726,12 @@ export const orders = pgTable(
       .default("new"),
     subtotalCents: integer("subtotal_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
+    // Pay-by-bank discount applied to THIS order (Track B · 3b-ii). Default 0 —
+    // placeOrder always writes the full (card) price and leaves this 0. A
+    // separate, method-triggered server action (applyBankDiscount) sets it and
+    // lowers total_cents when the customer chooses PayTo; total = subtotal −
+    // discount. Never a surcharge.
+    discountCents: integer("discount_cents").notNull().default(0),
     // Stripe PaymentIntent backing this order (direct charge on the venue's
     // connected account). Set server-side after the order row is written; the
     // webhook resolves orders to confirm/fail by THIS id only — never a
@@ -740,6 +765,7 @@ export const orders = pgTable(
     index("orders_customer_created_idx").on(table.customerId, table.createdAt),
     check("orders_subtotal_cents_nonneg", sql`${table.subtotalCents} >= 0`),
     check("orders_total_cents_nonneg", sql`${table.totalCents} >= 0`),
+    check("orders_discount_cents_nonneg", sql`${table.discountCents} >= 0`),
   ],
 );
 

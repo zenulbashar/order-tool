@@ -30,6 +30,8 @@ export type ConfirmedOrder = {
   // Optional customer special request; rendered as plain (escaped) text.
   notes: string | null;
   subtotalCents: number;
+  // Pay-by-bank saving applied to this order (Track B · 3b-ii); 0 when none.
+  discountCents: number;
   totalCents: number;
   createdAt: Date;
   items: ConfirmedOrderItem[];
@@ -59,6 +61,7 @@ export async function getOrderByToken(
       customerName: orders.customerName,
       notes: orders.notes,
       subtotalCents: orders.subtotalCents,
+      discountCents: orders.discountCents,
       totalCents: orders.totalCents,
       createdAt: orders.createdAt,
     })
@@ -124,6 +127,7 @@ export async function getOrderByToken(
     customerName: order.customerName,
     notes: order.notes,
     subtotalCents: order.subtotalCents,
+    discountCents: order.discountCents,
     totalCents: order.totalCents,
     createdAt: order.createdAt,
     items: items.map((item) => ({

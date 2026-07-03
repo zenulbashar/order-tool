@@ -33,6 +33,12 @@ export type PublicVenue = {
   schedulingEnabled: boolean;
   schedulingLeadMinutes: number;
   schedulingMaxDaysAhead: number;
+  // Pay-by-bank saving (Track B · 3b-ii). Display only — the checkout shows a
+  // "Save $X paying by bank" callout; the discount is server-recomputed and
+  // applied to the PaymentIntent at pay time, never trusted from the client.
+  paytoEnabled: boolean;
+  paytoDiscountMode: "off" | "flat" | "percent";
+  paytoDiscountValue: number;
   // Whether the venue has finished onboarding and is live (Phase 3c). A DERIVED
   // boolean (onboarding_completed_at !== null) — never the raw timestamp — so the
   // storefront can show a graceful "not taking orders yet" state. The server-side
