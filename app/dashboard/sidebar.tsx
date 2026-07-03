@@ -34,6 +34,7 @@ function navGroups(
       items: [
         { label: "Overview", href: "/dashboard", icon: <IconHome />, exact: true },
         { label: "Menu", href: "/dashboard/menu", icon: <IconMenu /> },
+        { label: "Stock", href: "/dashboard/stock", icon: <IconStock /> },
         {
           label: "Orders",
           href: "/dashboard/orders",
@@ -440,6 +441,15 @@ function IconTables() {
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="M3 10h18M9 10v10" />
+    </>,
+  );
+}
+// 3D box — the design bundle's stock glyph (P2ESidebar).
+function IconStock() {
+  return svg(
+    <>
+      <path d="M4 7.6 12 3.6l8 4v8.8l-8 4-8-4z" />
+      <path d="M4 7.6l8 4 8-4M12 11.6v8.8" />
     </>,
   );
 }

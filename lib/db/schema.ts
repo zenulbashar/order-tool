@@ -957,3 +957,57 @@ export const integrationJobs = pgTable(
 
 export type VenueIntegration = typeof venueIntegrations.$inferSelect;
 export type IntegrationJob = typeof integrationJobs.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* Stock & recipe costing (Track D)                                            */
+/*                                                                            */
+/* Venue-scoped ingredient library. Cost-per-recipe-unit is DERIVED, never    */
+/* stored: pack_cost / pack_size / yield (lib/stock/cost.ts), so updating a    */
+/* pack price re-costs every recipe automatically. Purely owner-side analytics */
+/* — nothing here touches the order money path.                               */
+/* -------------------------------------------------------------------------- */
+
+/** The unit a recipe measures this ingredient in. */
+export const recipeUnit = pgEnum("recipe_unit", ["g", "ml", "each"]);
+
+export const ingredients = pgTable(
+  "ingredients",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    unit: recipeUnit("unit").notNull(),
+    // Purchase pack expressed IN the recipe unit (e.g. 12×1 L = 12000 for a
+    // "ml" ingredient) + its cost. BOTH nullable: an ingredient can be added
+    // name-only and costed later ("uncosted"). cost-per-unit is null until both
+    // are set.
+    packSize: doublePrecision("pack_size"),
+    packCostCents: integer("pack_cost_cents"),
+    // Usable fraction after trim/waste, 1–100; defaults to 100 (no loss).
+    yieldPct: integer("yield_pct").notNull().default(100),
+    supplier: text("supplier"),
+    // Packaging (cups, lids…) vs food — a display/report distinction only.
+    isPackaging: boolean("is_packaging").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("ingredients_venue_idx").on(table.venueId),
+    check(
+      "ingredients_pack_size_pos",
+      sql`${table.packSize} IS NULL OR ${table.packSize} > 0`,
+    ),
+    check(
+      "ingredients_pack_cost_nonneg",
+      sql`${table.packCostCents} IS NULL OR ${table.packCostCents} >= 0`,
+    ),
+    check(
+      "ingredients_yield_pct_range",
+      sql`${table.yieldPct} >= 1 AND ${table.yieldPct} <= 100`,
+    ),
+  ],
+);
+
+export type Ingredient = typeof ingredients.$inferSelect;

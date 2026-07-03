@@ -52,6 +52,11 @@ const TILES = [
     description: "Manage categories, items, and modifiers for your venue.",
   },
   {
+    href: "/dashboard/stock",
+    title: "Stock",
+    description: "Track ingredient costs and see the true cost of every dish.",
+  },
+  {
     href: "/dashboard/tables",
     title: "Tables",
     description: "Name your dine-in tables and print a QR code for each one.",
