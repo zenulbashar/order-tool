@@ -195,6 +195,12 @@ export default async function StockOverviewPage() {
           >
             Invoices
           </Link>
+          <Link
+            href="/dashboard/stock/suggestions"
+            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
+          >
+            Suggestions
+          </Link>
         </div>
 
         {!hasLedger ? (
