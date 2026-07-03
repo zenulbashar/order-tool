@@ -134,6 +134,13 @@
       "when": 1783042016876,
       "tag": "0018_square_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1783054488999,
+      "tag": "0019_steady_stellaris",
+      "breakpoints": true
     }
   ]
 }

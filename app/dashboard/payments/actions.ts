@@ -76,3 +76,43 @@ export async function refreshStripeStatus(): Promise<void> {
   }
   revalidatePath("/dashboard/payments");
 }
+
+/**
+ * Toggle pay-by-bank (PayTo) for this venue. Turning it ON requests the
+ * `payto_payments` capability on the venue's Stripe connected account; once
+ * Stripe activates it (PayTo is gated: the PLATFORM must have PayTo access +
+ * identity verification, and the account may need extra info), PayTo appears
+ * automatically in the existing Payment Element via automatic_payment_methods
+ * — placeOrder, the confirm path, and the webhook are all UNCHANGED.
+ *
+ * The capability request is best-effort: if the platform doesn't yet have
+ * PayTo enabled, Stripe rejects the request — we still record the owner's
+ * intent (payto_enabled) and the Payments page shows a "pending Stripe
+ * verification" note, exactly how the Square connector shipped before its
+ * commercial enablement. This never touches the money path.
+ */
+export async function setPayToEnabled(formData: FormData): Promise<void> {
+  await requireUser();
+  const venue = await requireVenue();
+  const enable = formData.get("enable") === "on";
+
+  // PayTo lives on the connected account; only meaningful once charges work.
+  if (venue.stripeAccountId && venue.stripeChargesEnabled) {
+    try {
+      await getStripe().accounts.update(venue.stripeAccountId, {
+        capabilities: { payto_payments: { requested: enable } },
+      });
+    } catch {
+      // Platform PayTo access not live yet (or the capability can't be
+      // released) — record intent anyway; the page surfaces the pending state.
+    }
+  }
+
+  await db
+    .update(venues)
+    .set({ paytoEnabled: enable })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/payments");
+  revalidatePath(`/${venue.slug}`);
+}
