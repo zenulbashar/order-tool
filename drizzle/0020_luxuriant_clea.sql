@@ -1,0 +1,1 @@
+ALTER TABLE "venues" ADD COLUMN "roster_entitled" boolean DEFAULT false NOT NULL;

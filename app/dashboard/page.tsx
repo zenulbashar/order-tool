@@ -77,6 +77,11 @@ const TILES = [
     description: "Mirror orders into the POS and tools your venue already runs on.",
   },
   {
+    href: "/dashboard/apps",
+    title: "Apps",
+    description: "Open Roster and the rest of the Zale suite with one login.",
+  },
+  {
     href: "/dashboard/billing",
     title: "Billing",
     description: "Manage your plan and subscription for this venue.",

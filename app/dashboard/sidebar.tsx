@@ -54,6 +54,7 @@ function navGroups(
           href: "/dashboard/integrations",
           icon: <IconIntegrations />,
         },
+        { label: "Apps", href: "/dashboard/apps", icon: <IconApps /> },
         { label: "Billing", href: "/dashboard/billing", icon: <IconBilling /> },
       ],
     },
@@ -479,6 +480,17 @@ function IconIntegrations() {
       <circle cx="6.4" cy="17.6" r="3" />
       <circle cx="17.6" cy="6.4" r="3" />
       <path d="M8.8 15.2 15.2 8.8" />
+    </>,
+  );
+}
+// 2×2 app grid, the fourth cell a circle — the design bundle's apps glyph.
+function IconApps() {
+  return svg(
+    <>
+      <rect x="3.2" y="3.2" width="7.2" height="7.2" rx="2" />
+      <rect x="13.6" y="3.2" width="7.2" height="7.2" rx="2" />
+      <rect x="3.2" y="13.6" width="7.2" height="7.2" rx="2" />
+      <circle cx="17.2" cy="17.2" r="3.8" />
     </>,
   );
 }
