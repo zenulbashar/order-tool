@@ -122,12 +122,15 @@ export default async function StockPage() {
       />
 
       <section className="space-y-4 px-5 py-8">
-        {/* Tab bar — Ingredients is live; Invoices is the AI scan flow (D3).
-            Overview lands in a later Stock build (D4), shown muted. */}
+        {/* Tab bar — Ingredients is live here; Overview (D4c) + Invoices (D3)
+            link out to their own surfaces. */}
         <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
-          <span className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label">
+          <Link
+            href="/dashboard/stock/overview"
+            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
+          >
             Overview
-          </span>
+          </Link>
           <span className="rounded-[7px] bg-surface-elevated px-3 py-1.5 text-xs font-bold text-ink shadow-sm">
             Ingredients
           </span>
