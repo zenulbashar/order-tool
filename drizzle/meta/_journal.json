@@ -162,6 +162,13 @@
       "when": 1783064339157,
       "tag": "0022_low_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1783065122910,
+      "tag": "0023_lowly_hellcat",
+      "breakpoints": true
     }
   ]
 }

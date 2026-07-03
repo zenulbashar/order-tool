@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { asc } from "drizzle-orm";
 
 import { PageHeader } from "@/app/_components/page-header";
@@ -105,10 +106,22 @@ export default async function StockPage() {
 
   return (
     <main className="mx-auto max-w-5xl">
-      <PageHeader title="Stock" description={venue.name} />
+      <PageHeader
+        title="Stock"
+        description={venue.name}
+        action={
+          <Link
+            href="/dashboard/stock/scan"
+            className="inline-flex items-center gap-1.5 rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-forest transition hover:opacity-90"
+          >
+            <span aria-hidden="true">✦</span> Scan invoice
+          </Link>
+        }
+      />
 
       <section className="space-y-4 px-5 py-8">
-        {/* Tab bar — Ingredients is live; the others land in later Stock builds. */}
+        {/* Tab bar — Ingredients is live; Invoices is the AI scan flow (D3).
+            Overview lands in a later Stock build (D4), shown muted. */}
         <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
           <span className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label">
             Overview
@@ -116,9 +129,12 @@ export default async function StockPage() {
           <span className="rounded-[7px] bg-surface-elevated px-3 py-1.5 text-xs font-bold text-ink shadow-sm">
             Ingredients
           </span>
-          <span className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label">
+          <Link
+            href="/dashboard/stock/scan"
+            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
+          >
             Invoices
-          </span>
+          </Link>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
