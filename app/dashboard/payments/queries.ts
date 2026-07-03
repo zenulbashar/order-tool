@@ -37,3 +37,27 @@ export async function syncStripeAccountStatus(
 
   return { accountId, chargesEnabled, detailsSubmitted };
 }
+
+export type PayToCapability = "active" | "pending" | "inactive" | "unavailable";
+
+/**
+ * Live status of the connected account's `payto_payments` capability, for the
+ * Payments page badge. "active" ⇒ PayTo shows at checkout; "pending" ⇒ Stripe
+ * is still verifying (owner opted in but customers don't see it yet);
+ * "unavailable" ⇒ the platform can't offer PayTo (e.g. access not granted) or
+ * Stripe is unreachable — treated as a soft, non-alarming state. Read-only.
+ */
+export async function getPayToCapabilityStatus(
+  accountId: string,
+): Promise<PayToCapability> {
+  try {
+    const account = await getStripe().accounts.retrieve(accountId);
+    const status = account.capabilities?.payto_payments;
+    if (status === "active") return "active";
+    if (status === "pending") return "pending";
+    if (status === "inactive") return "inactive";
+    return "unavailable";
+  } catch {
+    return "unavailable";
+  }
+}

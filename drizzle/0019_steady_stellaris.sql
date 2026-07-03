@@ -1,0 +1,1 @@
+ALTER TABLE "venues" ADD COLUMN "payto_enabled" boolean DEFAULT false NOT NULL;

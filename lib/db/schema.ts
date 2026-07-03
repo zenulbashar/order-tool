@@ -148,6 +148,13 @@ export const venues = pgTable(
     schedulingMaxDaysAhead: integer("scheduling_max_days_ahead")
       .notNull()
       .default(7),
+    // Pay-by-bank (PayTo) opt-in (Track B). Default false — nothing changes
+    // until an owner turns it on, which requests the `payto_payments`
+    // capability on the venue's Stripe connected account; PayTo then appears
+    // in the existing Payment Element via automatic_payment_methods (no money-
+    // path change). This column is OUR intent/copy state; Stripe's live
+    // capability status is the runtime truth (mirrored like charges_enabled).
+    paytoEnabled: boolean("payto_enabled").notNull().default(false),
     // Billing entitlement (Phase 1). `plan` is the ONLY field gated on now; it is
     // the single value hasFeature() reads (see lib/billing/plans.ts). Existing
     // rows backfill to 'trial' so every current venue keeps full access, matching

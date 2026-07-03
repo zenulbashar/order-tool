@@ -4,7 +4,12 @@ import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 import { connectStripe, refreshStripeStatus } from "./actions";
-import { syncStripeAccountStatus } from "./queries";
+import {
+  getPayToCapabilityStatus,
+  type PayToCapability,
+  syncStripeAccountStatus,
+} from "./queries";
+import { PayToToggle } from "./payto-toggle";
 
 // Authed + reads live Stripe status on return from onboarding; never prerendered.
 export const dynamic = "force-dynamic";
@@ -57,6 +62,14 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
 
   const connected = venue.stripeAccountId !== null;
   const connectError = sp.error === "connect";
+
+  // PayTo capability status (owner-only page, low traffic) — read live only
+  // when the owner has opted in and can actually charge, so non-PayTo venues
+  // pay nothing. Drives the honest "active / pending verification" copy.
+  let paytoCapability: PayToCapability = "unavailable";
+  if (venue.paytoEnabled && venue.stripeAccountId && chargesEnabled) {
+    paytoCapability = await getPayToCapabilityStatus(venue.stripeAccountId);
+  }
 
   return (
     <main className="mx-auto max-w-3xl">
@@ -117,6 +130,48 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
             </div>
           )}
         </Card>
+
+        {/* Pay by bank (PayTo) — only relevant once the venue can charge.
+            Turning it on requests the capability; PayTo then appears at
+            checkout automatically. Australia-only; opt-in, default off. */}
+        {connected && chargesEnabled ? (
+          <Card className="mt-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                    Pay by bank (PayTo)
+                  </h2>
+                  {venue.paytoEnabled ? (
+                    paytoCapability === "active" ? (
+                      <StatusBadge tone="green" label="Active" />
+                    ) : paytoCapability === "pending" ? (
+                      <StatusBadge tone="amber" label="Pending verification" />
+                    ) : (
+                      <StatusBadge tone="amber" label="Awaiting Stripe" />
+                    )
+                  ) : (
+                    <StatusBadge tone="gray" label="Off" />
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm text-muted">
+                  Let customers pay straight from their bank account via PayTo —
+                  they approve once in their banking app, no card needed.
+                  Australia only. Payments still settle through your Stripe
+                  account.
+                </p>
+                {venue.paytoEnabled && paytoCapability !== "active" ? (
+                  <p className="mt-2 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-ink">
+                    You&apos;ve turned PayTo on. Stripe is still verifying it for
+                    your account — customers will see &ldquo;Pay by bank&rdquo;
+                    at checkout once it&apos;s active.
+                  </p>
+                ) : null}
+              </div>
+              <PayToToggle enabled={venue.paytoEnabled} />
+            </div>
+          </Card>
+        ) : null}
 
         {connectError ? (
           <p className="mt-4 text-sm text-[var(--color-warm)]" role="alert">
