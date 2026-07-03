@@ -169,6 +169,13 @@
       "when": 1783065122910,
       "tag": "0023_lowly_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1783066030898,
+      "tag": "0024_light_texas_twister",
+      "breakpoints": true
     }
   ]
 }

@@ -25,6 +25,21 @@ export function isCosted(
 }
 
 /**
+ * Whether an ingredient is below its reorder threshold (Track D · D4) — low
+ * stock only when BOTH on-hand and par are set (an untracked ingredient is
+ * never "low"). Pure — safe in client and server components.
+ */
+export function isLowStock(
+  ingredient: Pick<Ingredient, "onHandQty" | "parLevel">,
+): boolean {
+  return (
+    ingredient.parLevel != null &&
+    ingredient.onHandQty != null &&
+    ingredient.onHandQty < ingredient.parLevel
+  );
+}
+
+/**
  * Format a fractional-cents-per-unit value as a dollar string with sensible
  * precision — matching the design ($0.0024, $0.185, $1.74): 4 dp below 10c,
  * 3 dp below $1, else 2 dp.

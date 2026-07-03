@@ -990,6 +990,16 @@ export const ingredients = pgTable(
     supplier: text("supplier"),
     // Packaging (cups, lids…) vs food — a display/report distinction only.
     isPackaging: boolean("is_packaging").notNull().default(false),
+    // Perpetual inventory (Track D · D4). on_hand_qty is a CACHED counter kept
+    // in lockstep with the stock_movements ledger (the audit source of truth) —
+    // never written directly except through recordStockMovement in the same
+    // transaction as the ledger row. NULL = the owner hasn't started tracking
+    // this ingredient's stock (distinct from 0 on hand); may go negative when
+    // depletion outruns recorded receipts (a tracking-gap signal). par_level is
+    // the reorder threshold — low-stock when on_hand < par. Both in the recipe
+    // unit. Analytics only — no order money-path involvement.
+    onHandQty: doublePrecision("on_hand_qty"),
+    parLevel: doublePrecision("par_level"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -1006,6 +1016,10 @@ export const ingredients = pgTable(
     check(
       "ingredients_yield_pct_range",
       sql`${table.yieldPct} >= 1 AND ${table.yieldPct} <= 100`,
+    ),
+    check(
+      "ingredients_par_level_nonneg",
+      sql`${table.parLevel} IS NULL OR ${table.parLevel} >= 0`,
     ),
   ],
 );
@@ -1078,3 +1092,57 @@ export const invoiceScans = pgTable(
 );
 
 export type InvoiceScan = typeof invoiceScans.$inferSelect;
+
+/**
+ * Why an ingredient's on-hand quantity changed. `depletion` is produced by the
+ * order-consumption job (Track D · D4b); the rest are owner-initiated stock
+ * events. `stocktake` reconciles to a counted absolute (its delta = counted −
+ * current). All values defined up front so later builds add rows, not enum
+ * members.
+ */
+export const stockMovementReason = pgEnum("stock_movement_reason", [
+  "opening",
+  "receiving",
+  "adjustment",
+  "wastage",
+  "stocktake",
+  "depletion",
+]);
+
+/**
+ * The perpetual-inventory ledger (Track D · D4). One row per change to an
+ * ingredient's on-hand quantity — the audit source of truth; `ingredients.
+ * on_hand_qty` is a cached running sum maintained in the SAME transaction (see
+ * lib/stock/movements.ts). `delta_qty` is signed (in the recipe unit): positive
+ * = stock in (receiving), negative = stock out (wastage/depletion); a stocktake
+ * carries whatever delta reconciles the count. `order_id` links a depletion row
+ * to its order (SET NULL if the order is later removed — the movement still
+ * happened). Analytics only — no order money-path involvement.
+ */
+export const stockMovements = pgTable(
+  "stock_movements",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    ingredientId: text("ingredient_id")
+      .notNull()
+      .references(() => ingredients.id, { onDelete: "cascade" }),
+    deltaQty: doublePrecision("delta_qty").notNull(),
+    reason: stockMovementReason("reason").notNull(),
+    // Source order for a depletion movement (D4b); null for owner-initiated
+    // events. SET NULL keeps the ledger intact if the order is ever deleted.
+    orderId: text("order_id").references(() => orders.id, {
+      onDelete: "set null",
+    }),
+    note: text("note"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("stock_movements_venue_idx").on(table.venueId),
+    index("stock_movements_ingredient_idx").on(table.ingredientId),
+  ],
+);
+
+export type StockMovement = typeof stockMovements.$inferSelect;

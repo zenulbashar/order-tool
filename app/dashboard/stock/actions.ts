@@ -9,6 +9,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ingredients } from "@/lib/db/schema";
+import { recordStockMovement } from "@/lib/stock/movements";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import { idSchema } from "@/lib/validation";
 
@@ -64,6 +65,18 @@ const ingredientSchema = z.object({
     .trim()
     .max(120)
     .transform((v) => (v.length > 0 ? v : null)),
+  // Reorder threshold (recipe unit) — low-stock when on-hand drops below it.
+  // Optional; empty normalises to null. On-hand itself is NEVER set here — it
+  // is ledger-managed (adjustStock), so a plain form edit can't corrupt it.
+  parLevel: z
+    .string()
+    .trim()
+    .transform((v) => (v.length > 0 ? v : null))
+    .refine(
+      (v) => v === null || (/^\d+(\.\d+)?$/.test(v) && Number(v) >= 0),
+      "Par level must be a non-negative number.",
+    )
+    .transform((v) => (v === null ? null : Number(v))),
 });
 
 function parseIngredient(formData: FormData) {
@@ -74,6 +87,7 @@ function parseIngredient(formData: FormData) {
     packCost: formData.get("packCost") ?? "",
     yieldPct: formData.get("yieldPct") ?? "",
     supplier: formData.get("supplier") ?? "",
+    parLevel: formData.get("parLevel") ?? "",
   });
 }
 
@@ -91,6 +105,7 @@ export async function createIngredient(formData: FormData): Promise<void> {
     packCostCents: parsed.data.packCost,
     yieldPct: parsed.data.yieldPct,
     supplier: parsed.data.supplier,
+    parLevel: parsed.data.parLevel,
     isPackaging,
   });
   revalidatePath(STOCK_PATH);
@@ -116,6 +131,7 @@ export async function updateIngredient(formData: FormData): Promise<void> {
       packCostCents: parsed.data.packCost,
       yieldPct: parsed.data.yieldPct,
       supplier: parsed.data.supplier,
+      parLevel: parsed.data.parLevel,
       isPackaging,
     })
     .where(
@@ -124,6 +140,91 @@ export async function updateIngredient(formData: FormData): Promise<void> {
         scopedToVenue(ingredients.venueId, venue.id),
       ),
     );
+  revalidatePath(STOCK_PATH);
+  redirect(STOCK_PATH);
+}
+
+/**
+ * Adjust an ingredient's on-hand stock through the ledger (Track D · D4a). Three
+ * owner modes:
+ *   - receive: a delivery arrived (+qty, "receiving")
+ *   - remove:  waste / spoilage / usage taken off (−qty, "wastage")
+ *   - set:     reconcile to a counted absolute (delta = count − current;
+ *              "opening" the first time this ingredient is counted, else
+ *              "stocktake")
+ * Every write goes through recordStockMovement so the ledger and the cached
+ * on_hand_qty move together. Venue-scoped: the ingredient is re-loaded under the
+ * venue before any write, so a forged id touches nothing.
+ */
+const adjustSchema = z.object({
+  mode: z.enum(["receive", "remove", "set"]),
+  qty: z
+    .string()
+    .trim()
+    .refine(
+      (v) => /^\d+(\.\d+)?$/.test(v) && Number(v) >= 0,
+      "Enter a quantity like 12 or 0.5.",
+    )
+    .transform((v) => Number(v)),
+  note: z
+    .string()
+    .trim()
+    .max(200)
+    .transform((v) => (v.length > 0 ? v : null)),
+});
+
+export async function adjustStock(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  const idParsed = idSchema.safeParse(formData.get("id"));
+  const parsed = adjustSchema.safeParse({
+    mode: formData.get("mode") ?? "",
+    qty: formData.get("qty") ?? "",
+    note: formData.get("note") ?? "",
+  });
+  if (!idParsed.success || !parsed.success) {
+    redirect(`${STOCK_PATH}?error=stock`);
+  }
+
+  // Re-load the ingredient under this venue — the ownership gate AND the source
+  // of the current on-hand a "set" reconciles against.
+  const [ingredient] = await db
+    .select({ id: ingredients.id, onHandQty: ingredients.onHandQty })
+    .from(ingredients)
+    .where(
+      and(
+        eq(ingredients.id, idParsed.data),
+        scopedToVenue(ingredients.venueId, venue.id),
+      ),
+    )
+    .limit(1);
+  if (!ingredient) redirect(`${STOCK_PATH}?error=stock`);
+
+  const { mode, qty, note } = parsed.data;
+  let deltaQty: number;
+  let reason: "receiving" | "wastage" | "opening" | "stocktake";
+  if (mode === "receive") {
+    deltaQty = qty;
+    reason = "receiving";
+  } else if (mode === "remove") {
+    deltaQty = -qty;
+    reason = "wastage";
+  } else {
+    // set: reconcile to the counted absolute.
+    const current = ingredient.onHandQty ?? 0;
+    deltaQty = qty - current;
+    reason = ingredient.onHandQty == null ? "opening" : "stocktake";
+  }
+
+  await db.transaction((tx) =>
+    recordStockMovement(tx, {
+      venueId: venue.id,
+      ingredientId: ingredient.id,
+      deltaQty,
+      reason,
+      note,
+    }),
+  );
+
   revalidatePath(STOCK_PATH);
   redirect(STOCK_PATH);
 }

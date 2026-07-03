@@ -4,7 +4,7 @@ import { asc } from "drizzle-orm";
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { ingredients } from "@/lib/db/schema";
-import { dishCost, isCosted, marginOf } from "@/lib/stock/cost";
+import { dishCost, isCosted, isLowStock, marginOf } from "@/lib/stock/cost";
 import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
 
 import {
@@ -103,6 +103,8 @@ export default async function StockPage() {
   const freshCount = costed.filter(
     (row) => (now - row.updatedAt.getTime()) / dayMs < FRESH_WINDOW_DAYS,
   ).length;
+  const lowStockCount = rows.filter((row) => isLowStock(row)).length;
+  const trackedCount = rows.filter((row) => row.onHandQty != null).length;
 
   return (
     <main className="mx-auto max-w-5xl">
@@ -137,11 +139,20 @@ export default async function StockPage() {
           </Link>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi
             label="Ingredients"
             value={String(total)}
             sub={`${packagingCount} are packaging`}
+          />
+          <Kpi
+            label="Low stock"
+            value={String(lowStockCount)}
+            sub={
+              trackedCount > 0
+                ? `Below par · ${trackedCount} tracked`
+                : "Set counts + par to track"
+            }
           />
           <Kpi
             label="Costs fresh"
@@ -168,8 +179,8 @@ export default async function StockPage() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-card border border-line bg-surface-elevated shadow-card">
-            <div className="grid grid-cols-[1.9fr_0.5fr_1.4fr_1.3fr_0.5fr_1.1fr_auto] gap-3 border-b border-line bg-hover-secondary px-4 py-2.5">
-              {["Ingredient", "Unit", "Pack", "Cost per unit", "Yield", "Supplier", ""].map(
+            <div className="grid grid-cols-[1.7fr_0.4fr_1.3fr_1.2fr_1.1fr_0.5fr_1fr_auto] gap-3 border-b border-line bg-hover-secondary px-4 py-2.5">
+              {["Ingredient", "Unit", "Pack", "Cost per unit", "On hand", "Yield", "Supplier", ""].map(
                 (heading, i) => (
                   <span
                     key={heading || i}
