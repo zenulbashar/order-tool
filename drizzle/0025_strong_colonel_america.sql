@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "stock_movements_order_depletion_uniq" ON "stock_movements" USING btree ("order_id","ingredient_id") WHERE "stock_movements"."reason" = 'depletion' AND "stock_movements"."order_id" IS NOT NULL;
