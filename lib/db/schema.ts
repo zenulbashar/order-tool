@@ -1154,3 +1154,30 @@ export const stockMovements = pgTable(
 );
 
 export type StockMovement = typeof stockMovements.$inferSelect;
+
+/**
+ * Dismissed suggestions (Track D · D5). The Suggestions inbox is DERIVED LIVE
+ * from current state (low stock, stale costs, thin margins…), never stored — so
+ * it can't go stale. This table persists only the owner's DISMISSALS, keyed by a
+ * stable per-suggestion `dedupe_key`; a dismissal suppresses that suggestion for
+ * a cooldown window (see lib/nudges.ts) and then lets it resurface if the
+ * condition still holds. Owner analytics only — no order money-path involvement.
+ */
+export const nudges = pgTable(
+  "nudges",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // Stable identity of the suggestion, e.g. "reorder:<ingredientId>".
+    dedupeKey: text("dedupe_key").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    // One dismissal per (venue, suggestion) — re-dismissing refreshes createdAt.
+    uniqueIndex("nudges_venue_key_idx").on(table.venueId, table.dedupeKey),
+  ],
+);
+
+export type Nudge = typeof nudges.$inferSelect;
