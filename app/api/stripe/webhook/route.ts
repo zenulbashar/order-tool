@@ -1,8 +1,11 @@
+import { after } from "next/server";
+
 import { and, eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
+import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
 import { getStripe } from "@/lib/stripe";
 
 // Stripe signature verification uses Node crypto, and the Neon pool needs Node —
@@ -60,6 +63,21 @@ export async function POST(request: Request): Promise<Response> {
               eq(orders.status, "pending_payment"),
             ),
           );
+        // ADDITIVE (Track 0) — the SINGLE integrations touch in this handler.
+        // Runs strictly AFTER the confirm UPDATE above (which is unchanged),
+        // and its try/catch swallows EVERYTHING: an integrations failure can
+        // never turn this response into a 500 or delay confirmation. It is a
+        // latency optimization only — the cron sweep re-derives any missing
+        // job from order state, so even deleting this block loses nothing.
+        try {
+          const enqueued = await enqueueJobsForOrder(paymentIntent.id);
+          if (enqueued > 0) {
+            // Kick processing after the response is sent (Vercel waitUntil).
+            after(() => processDueJobs(enqueued).catch(() => {}));
+          }
+        } catch {
+          // Swallowed by design — the sweep is the guarantee.
+        }
         break;
       }
       case "payment_intent.payment_failed": {

@@ -49,6 +49,11 @@ function navGroups(
       items: [
         { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
         { label: "Payments", href: "/dashboard/payments", icon: <IconPayments /> },
+        {
+          label: "Integrations",
+          href: "/dashboard/integrations",
+          icon: <IconIntegrations />,
+        },
         { label: "Billing", href: "/dashboard/billing", icon: <IconBilling /> },
       ],
     },
@@ -464,6 +469,16 @@ function IconBilling() {
   return svg(
     <>
       <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" />
+    </>,
+  );
+}
+// Two linked nodes — the design bundle's integrations glyph (P2ESidebar).
+function IconIntegrations() {
+  return svg(
+    <>
+      <circle cx="6.4" cy="17.6" r="3" />
+      <circle cx="17.6" cy="6.4" r="3" />
+      <path d="M8.8 15.2 15.2 8.8" />
     </>,
   );
 }
