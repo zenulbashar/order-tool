@@ -3,21 +3,37 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-const POLL_INTERVAL_MS = 4000;
-const POLL_TIMEOUT_MS = 75_000;
+// Card / wallet: resolves in seconds, so a short bounded poll is right.
+const DEFAULT_INTERVAL_MS = 4000;
+const DEFAULT_TIMEOUT_MS = 75_000;
+// Bank (PayTo): the customer approves a mandate in their banking app, which can
+// take minutes, and Stripe has no published approval timeout — so poll gently
+// for much longer before the calm fallback.
+const BANK_INTERVAL_MS = 6000;
+const BANK_TIMEOUT_MS = 600_000;
 
 /**
  * While an order is awaiting payment confirmation, softly re-fetch the page so
- * it flips to "Paid" the moment the webhook lands. Polling is BOUNDED: after
- * ~75s it stops and shows a calm, non-alarming "still processing" message
- * rather than spinning forever. There is no owner order view yet, so a stuck
- * payment has no operator recourse — this copy is the customer's only safety
- * net, so it must never read as an error or an endless spinner.
+ * it flips to "Paid" the moment the webhook lands. Polling is BOUNDED and
+ * method-aware: a card/wallet payment resolves in seconds; a bank (PayTo)
+ * payment is approved out-of-band and can take minutes, so the "bank" variant
+ * polls gently for far longer and its copy reassures rather than alarms. After
+ * the window it stops and shows a calm "still processing" message — never an
+ * error, never an endless spinner (there is no owner order view to recover a
+ * stuck payment, so this copy is the customer's only safety net).
  */
-export function PaymentStatusPoller() {
+export function PaymentStatusPoller({
+  variant = "default",
+}: {
+  variant?: "default" | "bank";
+}) {
   const router = useRouter();
   const startedAt = useRef<number | null>(null);
   const [timedOut, setTimedOut] = useState(false);
+
+  const isBank = variant === "bank";
+  const intervalMs = isBank ? BANK_INTERVAL_MS : DEFAULT_INTERVAL_MS;
+  const timeoutMs = isBank ? BANK_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
 
   useEffect(() => {
     if (startedAt.current === null) {
@@ -25,7 +41,7 @@ export function PaymentStatusPoller() {
     }
     const interval = setInterval(() => {
       const elapsed = Date.now() - (startedAt.current ?? Date.now());
-      if (elapsed >= POLL_TIMEOUT_MS) {
+      if (elapsed >= timeoutMs) {
         clearInterval(interval);
         setTimedOut(true);
         return;
@@ -34,9 +50,9 @@ export function PaymentStatusPoller() {
       // status) while preserving this component's state, so the timer keeps
       // counting across refreshes.
       router.refresh();
-    }, POLL_INTERVAL_MS);
+    }, intervalMs);
     return () => clearInterval(interval);
-  }, [router]);
+  }, [router, intervalMs, timeoutMs]);
 
   if (timedOut) {
     return (
@@ -50,7 +66,9 @@ export function PaymentStatusPoller() {
 
   return (
     <p className="mt-2 text-sm text-muted" aria-live="polite">
-      Confirming your payment… this page updates automatically.
+      {isBank
+        ? "Waiting for your bank to confirm… this page updates automatically once you approve."
+        : "Confirming your payment… this page updates automatically."}
     </p>
   );
 }

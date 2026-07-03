@@ -20,7 +20,87 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Your order" };
 
-type OrderParams = { params: Promise<{ slug: string; token: string }> };
+type OrderParams = {
+  params: Promise<{ slug: string; token: string }>;
+  // `pm` is a display-only hint from the payment step (the method the customer
+  // chose). It tailors the waiting UX (bank vs card) and is never trusted for
+  // anything financial — the order's own status is the source of truth.
+  searchParams: Promise<{ pm?: string }>;
+};
+
+// Async bank methods that show the "approve in your banking app" waiting screen.
+const BANK_METHODS = new Set(["payto", "au_becs_debit"]);
+
+/**
+ * The forest-dark "approve in your banking app" waiting screen (PayTo). Shown
+ * only while a bank payment is pending — the customer has confirmed the mandate
+ * and now approves it out-of-band, which can take a minute or two. Three honest
+ * steps: request sent → approve in app → we start your order. The poller flips
+ * the page to the paid tracker the moment the webhook confirms.
+ */
+function PayToWaiting({ amountCents }: { amountCents: number }) {
+  const steps: { title: string; sub: string; state: StepState }[] = [
+    {
+      title: "Request sent",
+      sub: "We've sent a payment request to your bank.",
+      state: "complete",
+    },
+    {
+      title: "Approve in your banking app",
+      sub: "Open your banking app and approve the request to pay.",
+      state: "active",
+    },
+    {
+      title: "We start your order",
+      sub: "The kitchen begins the moment your bank confirms.",
+      state: "upcoming",
+    },
+  ];
+
+  return (
+    <div className="rounded-card bg-forest-deep p-6 text-concierge-sage shadow-card">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-concierge-mint">
+        Pay by bank
+      </p>
+      <p className="mt-2 font-display text-2xl font-extrabold text-white">
+        Approve ${formatCents(amountCents)} in your banking app
+      </p>
+      <p className="mt-1 text-sm text-concierge-sage">
+        Your bank sends you a request to approve — it can take a minute or two.
+        Keep this page open; it updates on its own.
+      </p>
+
+      <ol className="mt-5 space-y-3">
+        {steps.map((step) => (
+          <li key={step.title} className="flex items-start gap-3">
+            <span
+              aria-hidden
+              className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                step.state === "complete"
+                  ? "bg-concierge-mint text-forest"
+                  : step.state === "active"
+                    ? "bg-concierge-mint/20 text-concierge-mint p2e-ring"
+                    : "border border-concierge-sage/30 text-concierge-sage/60"
+              }`}
+            >
+              {step.state === "complete" ? "✓" : ""}
+            </span>
+            <div className="min-w-0">
+              <p
+                className={`text-sm font-bold ${
+                  step.state === "upcoming" ? "text-concierge-sage/60" : "text-white"
+                }`}
+              >
+                {step.title}
+              </p>
+              <p className="text-xs text-concierge-sage">{step.sub}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 type Fulfillment = ConfirmedOrder["fulfillmentStatus"];
 type StepState = "complete" | "active" | "upcoming";
@@ -150,8 +230,12 @@ function OrderTracker({
   );
 }
 
-export default async function OrderConfirmationPage({ params }: OrderParams) {
+export default async function OrderConfirmationPage({
+  params,
+  searchParams,
+}: OrderParams) {
   const { slug, token } = await params;
+  const { pm } = await searchParams;
   if (isReservedSlug(slug)) notFound();
 
   const venue = await getPublicVenueBySlug(slug);
@@ -175,6 +259,9 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
   const isPaid = order.status === "confirmed";
   const isPending = order.status === "pending_payment";
   const isFailed = order.status === "payment_failed";
+  // Bank (PayTo) payments approve out-of-band — show the waiting screen + the
+  // gentler, longer poll while pending. Hint only; the order status still rules.
+  const isBankPending = isPending && pm != null && BANK_METHODS.has(pm);
 
   const statusLabel = isPaid
     ? "Paid"
@@ -265,6 +352,23 @@ export default async function OrderConfirmationPage({ params }: OrderParams) {
               </p>
             </div>
           ) : null}
+        </section>
+      ) : isBankPending ? (
+        /* Bank (PayTo) pending → the forest-dark approve-in-your-bank-app screen
+           with the gentler, longer poll. */
+        <section className="space-y-3 px-5 py-5">
+          <PayToWaiting amountCents={order.totalCents} />
+          <PaymentStatusPoller variant="bank" />
+          <div className="rounded-card border border-line p-3 text-sm">
+            <p className="text-xs uppercase tracking-wide text-muted">
+              {order.orderType === "dine_in" ? "Dine-in" : "Pickup"}
+            </p>
+            <p className="mt-0.5 font-medium text-ink">
+              {order.orderType === "dine_in"
+                ? `Table ${order.tableLabel ?? "—"}`
+                : "Collect at the counter"}
+            </p>
+          </div>
         </section>
       ) : (
         /* Pre-payment states keep the payment-status card + bounded poller. */
