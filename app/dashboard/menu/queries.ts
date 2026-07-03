@@ -1,13 +1,15 @@
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
+  ingredients,
   menuCategories,
   menuItems,
   menuItemTags,
   menuItemVariants,
   modifierGroups,
   modifierOptions,
+  recipeLines,
 } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 
@@ -69,4 +71,39 @@ export async function getTagsForVenue(venueId: string) {
     .from(menuItemTags)
     .where(scopedToVenue(menuItemTags.venueId, venueId))
     .orderBy(asc(menuItemTags.createdAt));
+}
+
+/**
+ * All recipe lines for the venue, joined to the ingredient data needed to cost
+ * them (D2). Flat + venue-scoped; the editor groups them per item. The join
+ * carries pack size/cost/yield so dish cost is derived client-side from the
+ * same lib/stock/cost.ts helpers the ingredients library uses.
+ */
+export async function getRecipeLinesForVenue(venueId: string) {
+  return db
+    .select({
+      id: recipeLines.id,
+      menuItemId: recipeLines.menuItemId,
+      ingredientId: recipeLines.ingredientId,
+      qty: recipeLines.qty,
+      ingredientName: ingredients.name,
+      unit: ingredients.unit,
+      packSize: ingredients.packSize,
+      packCostCents: ingredients.packCostCents,
+      yieldPct: ingredients.yieldPct,
+      isPackaging: ingredients.isPackaging,
+    })
+    .from(recipeLines)
+    .innerJoin(ingredients, eq(ingredients.id, recipeLines.ingredientId))
+    .where(scopedToVenue(recipeLines.venueId, venueId))
+    .orderBy(asc(recipeLines.createdAt));
+}
+
+/** Ingredient picker options for the recipe editor (name + unit + cost data). */
+export async function getIngredientsForVenue(venueId: string) {
+  return db
+    .select()
+    .from(ingredients)
+    .where(scopedToVenue(ingredients.venueId, venueId))
+    .orderBy(asc(ingredients.name));
 }

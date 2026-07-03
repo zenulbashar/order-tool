@@ -18,6 +18,11 @@ import { ModifierGroupForm } from "./modifier-group-form";
 import { ModifierOptionForm } from "./modifier-option-form";
 import { MoveButtons } from "./move-buttons";
 import { PhotoControl } from "./photo-control";
+import {
+  type IngredientOption,
+  type RecipeLineData,
+  RecipeEditor,
+} from "./recipe-editor";
 
 const summaryClass =
   "cursor-pointer select-none text-xs font-medium text-muted hover:text-ink";
@@ -62,12 +67,16 @@ export function ItemDetail({
   variants,
   groups,
   tags,
+  recipeLines,
+  ingredientOptions,
   categories,
 }: {
   item: ItemDetailData;
   variants: VariantRow[];
   groups: GroupRow[];
   tags: DietaryTag[];
+  recipeLines: RecipeLineData[];
+  ingredientOptions: IngredientOption[];
   categories: { id: string; name: string }[];
 }) {
   return (
@@ -107,6 +116,20 @@ export function ItemDetail({
           accordion internals (ItemModifierGroups) are byte-identical to MD1. */}
       <Card>
         <ItemModifierGroups itemId={item.id} groups={groups} />
+      </Card>
+
+      {/* Recipe & cost panel (D2). Its own recipe-line actions — the item's core
+          FormData contract is untouched. Cost derives from the ingredient
+          library. */}
+      <Card>
+        <p className="mb-3 text-sm font-medium text-ink">Recipe &amp; cost</p>
+        <RecipeEditor
+          itemId={item.id}
+          priceCents={item.priceCents}
+          lines={recipeLines}
+          ingredientOptions={ingredientOptions}
+          variants={variants.map((v) => ({ name: v.name, priceCents: v.priceCents }))}
+        />
       </Card>
 
       {/* Quiet destructive footer. */}

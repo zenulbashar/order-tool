@@ -34,3 +34,54 @@ export function formatUnitCost(cents: number): string {
   const decimals = dollars < 0.1 ? 4 : dollars < 1 ? 3 : 2;
   return `$${dollars.toFixed(decimals)}`;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Recipe / dish costing (D2) — all derived from ingredient costs above.       */
+/* -------------------------------------------------------------------------- */
+
+export type RecipeLineCost = {
+  ingredient: Pick<
+    Ingredient,
+    "packSize" | "packCostCents" | "yieldPct"
+  >;
+  qty: number;
+};
+
+/** Cost of one recipe line = qty × cost-per-unit, or null when uncosted. */
+export function recipeLineCostCents(line: RecipeLineCost): number | null {
+  const perUnit = costPerUnitCents(line.ingredient);
+  return perUnit === null ? null : perUnit * line.qty;
+}
+
+export type DishCost = {
+  /** Sum of the COSTED lines' cost, in cents (rounded). */
+  totalCents: number;
+  /** How many lines couldn't be costed (ingredient has no pack data yet). */
+  uncostedLines: number;
+  lineCount: number;
+};
+
+/** Aggregate a dish's cost from its recipe lines. Uncosted lines are counted, not guessed. */
+export function dishCost(lines: RecipeLineCost[]): DishCost {
+  let totalCents = 0;
+  let uncostedLines = 0;
+  for (const line of lines) {
+    const cost = recipeLineCostCents(line);
+    if (cost === null) uncostedLines += 1;
+    else totalCents += cost;
+  }
+  return { totalCents: Math.round(totalCents), uncostedLines, lineCount: lines.length };
+}
+
+/**
+ * Margin of a sell price over a dish cost. Returns the margin fraction (0–1)
+ * and the absolute profit in cents. Null price/zero → null (can't divide).
+ */
+export function marginOf(
+  priceCents: number,
+  costCents: number,
+): { fraction: number; profitCents: number } | null {
+  if (priceCents <= 0) return null;
+  const profitCents = priceCents - costCents;
+  return { fraction: profitCents / priceCents, profitCents };
+}
