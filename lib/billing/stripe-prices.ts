@@ -31,6 +31,29 @@ export const PLAN_PRICE_LOOKUP_KEYS: Record<
   scale: { monthly: "scale_monthly", annual: "scale_annual" },
 };
 
+/**
+ * Roster ADD-ON lookup keys (Track C consolidated billing). Roster is an extra
+ * price ON the venue's existing plan subscription — one invoice — so it must
+ * match the subscription's interval (classic billing mode = one interval per
+ * subscription). Same "keys not amounts" discipline as the plan prices; the two
+ * Roster Price objects live in Stripe tagged with these keys.
+ */
+export const ROSTER_PRICE_LOOKUP_KEYS: Record<BillingInterval, string> = {
+  monthly: "roster_monthly",
+  annual: "roster_annual",
+};
+
+const ROSTER_LOOKUP_KEYS: ReadonlySet<string> = new Set(
+  Object.values(ROSTER_PRICE_LOOKUP_KEYS),
+);
+
+/** Whether a subscription item's lookup key is the Roster add-on. */
+export function isRosterLookupKey(
+  lookupKey: string | null | undefined,
+): boolean {
+  return lookupKey ? ROSTER_LOOKUP_KEYS.has(lookupKey) : false;
+}
+
 /** Reverse map: lookup key -> plan tier, for the webhook to derive the tier. */
 const LOOKUP_KEY_TO_PLAN: Record<string, PaidPlan> = {
   pro_monthly: "pro",
@@ -63,16 +86,11 @@ const PRICE_ID_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const priceIdCache = new Map<string, { priceId: string; expiresAt: number }>();
 
 /**
- * Resolve a plan + interval to its live Stripe Price ID via its lookup key.
- * Throws when no active price carries the key (a misconfiguration worth failing
- * loudly on at checkout, never silently charging the wrong thing).
+ * Resolve any lookup key to its live Stripe Price ID. Throws when no active
+ * price carries the key (a misconfiguration worth failing loudly on rather than
+ * silently charging the wrong thing).
  */
-export async function resolvePriceId(
-  plan: PaidPlan,
-  interval: BillingInterval,
-): Promise<string> {
-  const lookupKey = PLAN_PRICE_LOOKUP_KEYS[plan][interval];
-
+async function resolvePriceIdByLookupKey(lookupKey: string): Promise<string> {
   const cached = priceIdCache.get(lookupKey);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.priceId;
@@ -95,4 +113,19 @@ export async function resolvePriceId(
     expiresAt: Date.now() + PRICE_ID_CACHE_TTL_MS,
   });
   return priceId;
+}
+
+/** Resolve a plan + interval to its live Stripe Price ID via its lookup key. */
+export async function resolvePriceId(
+  plan: PaidPlan,
+  interval: BillingInterval,
+): Promise<string> {
+  return resolvePriceIdByLookupKey(PLAN_PRICE_LOOKUP_KEYS[plan][interval]);
+}
+
+/** Resolve the Roster add-on price for an interval (Track C). */
+export async function resolveRosterPriceId(
+  interval: BillingInterval,
+): Promise<string> {
+  return resolvePriceIdByLookupKey(ROSTER_PRICE_LOOKUP_KEYS[interval]);
 }

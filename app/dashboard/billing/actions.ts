@@ -1,10 +1,14 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { syncVenueFromSubscription } from "@/lib/billing/sync";
 import {
+  isRosterLookupKey,
   resolvePriceId,
+  resolveRosterPriceId,
   type BillingInterval,
   type PaidPlan,
 } from "@/lib/billing/stripe-prices";
@@ -109,6 +113,94 @@ export async function createBillingCheckout(formData: FormData): Promise<void> {
   }
 
   redirect(destination);
+}
+
+/**
+ * Add the Roster add-on as an extra line on the venue's EXISTING plan
+ * subscription — one invoice (Track C consolidated billing). The Roster price
+ * MUST match the subscription's interval (classic billing mode = one interval
+ * per subscription), so we read the plan item's interval and resolve the
+ * matching Roster price. Checkout can't add to an existing subscription, so this
+ * is the SubscriptionItems create path, prorated. Re-syncs the venue from the
+ * updated subscription so entitlements.roster is immediately true (the webhook
+ * also reconciles). Redirect stays OUTSIDE try/catch.
+ *
+ * This is the PLATFORM subscription — entirely separate from the diner money
+ * path (Connect direct charges).
+ */
+export async function addRosterAddon(): Promise<void> {
+  await requireUser();
+  const venue = await requireVenue();
+
+  try {
+    if (!venue.stripeSubscriptionId) {
+      throw new Error("No active subscription to add Roster to.");
+    }
+    const stripe = getStripe();
+    const subscription = await stripe.subscriptions.retrieve(
+      venue.stripeSubscriptionId,
+    );
+
+    // Already present? No-op (idempotent).
+    const existing = subscription.items.data.find((item) =>
+      isRosterLookupKey(item.price.lookup_key),
+    );
+    if (!existing) {
+      // Match the subscription's interval from its plan item.
+      const planItem = subscription.items.data[0];
+      const interval: BillingInterval =
+        planItem?.price.recurring?.interval === "year" ? "annual" : "monthly";
+      const rosterPriceId = await resolveRosterPriceId(interval);
+
+      await stripe.subscriptionItems.create({
+        subscription: subscription.id,
+        price: rosterPriceId,
+        quantity: 1,
+        proration_behavior: "create_prorations",
+      });
+
+      const updated = await stripe.subscriptions.retrieve(subscription.id);
+      await syncVenueFromSubscription(venue.id, updated);
+    }
+  } catch {
+    revalidatePath("/dashboard/billing");
+    redirect("/dashboard/billing?error=roster");
+  }
+
+  revalidatePath("/dashboard/billing");
+  redirect("/dashboard/billing?roster=added");
+}
+
+/** Remove the Roster add-on line from the venue's subscription (prorated). */
+export async function removeRosterAddon(): Promise<void> {
+  await requireUser();
+  const venue = await requireVenue();
+
+  try {
+    if (!venue.stripeSubscriptionId) {
+      throw new Error("No subscription.");
+    }
+    const stripe = getStripe();
+    const subscription = await stripe.subscriptions.retrieve(
+      venue.stripeSubscriptionId,
+    );
+    const rosterItem = subscription.items.data.find((item) =>
+      isRosterLookupKey(item.price.lookup_key),
+    );
+    if (rosterItem) {
+      await stripe.subscriptionItems.del(rosterItem.id, {
+        proration_behavior: "create_prorations",
+      });
+      const updated = await stripe.subscriptions.retrieve(subscription.id);
+      await syncVenueFromSubscription(venue.id, updated);
+    }
+  } catch {
+    revalidatePath("/dashboard/billing");
+    redirect("/dashboard/billing?error=roster");
+  }
+
+  revalidatePath("/dashboard/billing");
+  redirect("/dashboard/billing?roster=removed");
 }
 
 /**

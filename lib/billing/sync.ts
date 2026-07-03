@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
 
 import type { Plan } from "./plans";
-import { planFromLookupKey } from "./stripe-prices";
+import { isRosterLookupKey, planFromLookupKey } from "./stripe-prices";
 
 /**
  * The plan/status sync logic the SEPARATE billing webhook delegates to (Phase 2).
@@ -67,10 +67,31 @@ export function planStatusFromStripe(
 export function planFromSubscription(subscription: Stripe.Subscription): Plan {
   if (subscription.status === "trialing") return "trial";
   if (DOWNGRADE_STATUSES.has(subscription.status)) return "free";
-  const tier = planFromLookupKey(
-    subscription.items.data[0]?.price.lookup_key,
+  // Consolidated billing (Track C): the subscription may carry multiple items
+  // (plan + Roster add-on), so the plan tier must come from the item whose
+  // lookup key IS a plan key — NOT items.data[0], which could be the Roster
+  // line. Scanning here is what stops "add Roster" from silently downgrading a
+  // venue to free.
+  const planItem = subscription.items.data.find(
+    (item) => planFromLookupKey(item.price.lookup_key) !== null,
   );
+  const tier = planFromLookupKey(planItem?.price.lookup_key);
   return tier ?? "free";
+}
+
+/**
+ * Whether the subscription currently entitles the venue to the Roster add-on:
+ * a Roster-keyed item is present AND the subscription hasn't lapsed. Feeds
+ * venue.roster_entitled, which the Roster SSO handoff reads into its
+ * entitlements.roster claim (Build 4).
+ */
+export function rosterEntitledFromSubscription(
+  subscription: Stripe.Subscription,
+): boolean {
+  if (DOWNGRADE_STATUSES.has(subscription.status)) return false;
+  return subscription.items.data.some((item) =>
+    isRosterLookupKey(item.price.lookup_key),
+  );
 }
 
 /**
@@ -120,6 +141,7 @@ export async function syncVenueFromSubscription(
 ): Promise<void> {
   const plan = planFromSubscription(subscription);
   const planStatus = planStatusFromStripe(subscription.status);
+  const rosterEntitled = rosterEntitledFromSubscription(subscription);
   const trialEndsAt = subscription.trial_end
     ? new Date(subscription.trial_end * 1000)
     : null;
@@ -130,6 +152,7 @@ export async function syncVenueFromSubscription(
     .set({
       plan,
       planStatus,
+      rosterEntitled,
       trialEndsAt,
       stripeSubscriptionId: subscription.id,
       ...(customerId ? { stripeCustomerId: customerId } : {}),
