@@ -72,6 +72,11 @@ const TILES = [
     description: "Watch incoming paid orders and move them through the kitchen.",
   },
   {
+    href: "/dashboard/integrations",
+    title: "Integrations",
+    description: "Mirror orders into the POS and tools your venue already runs on.",
+  },
+  {
     href: "/dashboard/billing",
     title: "Billing",
     description: "Manage your plan and subscription for this venue.",

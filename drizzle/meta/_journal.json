@@ -127,6 +127,13 @@
       "when": 1782699954243,
       "tag": "0017_grandfather_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1783042016876,
+      "tag": "0018_square_chimera",
+      "breakpoints": true
     }
   ]
 }

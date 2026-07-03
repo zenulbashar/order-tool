@@ -807,3 +807,141 @@ export const orderItemModifiers = pgTable(
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type OrderItemModifier = typeof orderItemModifiers.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* Integrations (Track 0)                                                      */
+/*                                                                            */
+/* Third-party connectors (Square POS first) that MIRROR order state OUTWARD  */
+/* after confirmation. Nothing here participates in the money path: orders    */
+/* are confirmed solely by the Stripe webhook, and integration work is        */
+/* re-derivable from order state (outbox pattern), so a provider outage can   */
+/* never delay or fail an order.                                              */
+/* -------------------------------------------------------------------------- */
+
+export const integrationProvider = pgEnum("integration_provider", [
+  "square",
+  // Future connectors extend this enum additively: 'doshii', 'ordermentum'…
+]);
+
+/**
+ * Connection lifecycle. `needs_attention` = connected but recent mirror work
+ * is failing (surfaced on the integrations hub); `revoked` = the provider
+ * grant was revoked (by the venue on the provider side, or token failure);
+ * `disabled` = the owner paused/disconnected it in prompt2eat.
+ */
+export const integrationStatus = pgEnum("integration_status", [
+  "active",
+  "needs_attention",
+  "revoked",
+  "disabled",
+]);
+
+export const integrationJobKind = pgEnum("integration_job_kind", [
+  "order_mirror",
+  // Reserved seams (Tracks A follow-ups + D): 'refund_mirror',
+  // 'inventory_depletion' — added additively when their arcs build.
+]);
+
+export const integrationJobStatus = pgEnum("integration_job_status", [
+  "pending",
+  "processing",
+  "succeeded",
+  "failed",
+  "dead",
+]);
+
+/**
+ * One row per (venue, provider) connection. OAuth tokens are stored ONLY
+ * encrypted (AES-256-GCM via lib/crypto.ts) — no plaintext token column
+ * exists. Health fields power the hub's quiet-error surfacing.
+ */
+export const venueIntegrations = pgTable(
+  "venue_integrations",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    provider: integrationProvider("provider").notNull(),
+    status: integrationStatus("status").notNull().default("active"),
+    // Encrypted (v1.<iv>.<ct>.<tag>) — never log, never select into client code.
+    accessTokenEnc: text("access_token_enc"),
+    refreshTokenEnc: text("refresh_token_enc"),
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    // Last successful token refresh — drives the ≤7-day refresh duty.
+    tokenRefreshedAt: timestamp("token_refreshed_at", { withTimezone: true }),
+    // Provider-side account + chosen location (e.g. Square merchant_id and the
+    // location this venue maps to; one venue ↔ one provider location).
+    providerAccountId: text("provider_account_id"),
+    providerLocationId: text("provider_location_id"),
+    providerLocationName: text("provider_location_name"),
+    // Space-separated OAuth scopes actually granted (for health/debug display).
+    scopes: text("scopes"),
+    lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+    // Scrubbed, human-readable summary only — NEVER raw provider payloads or
+    // anything token-shaped.
+    lastError: text("last_error"),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("venue_integrations_venue_provider_idx").on(
+      table.venueId,
+      table.provider,
+    ),
+    index("venue_integrations_venue_idx").on(table.venueId),
+    check(
+      "venue_integrations_failures_nonneg",
+      sql`${table.consecutiveFailures} >= 0`,
+    ),
+  ],
+);
+
+/**
+ * The integrations OUTBOX. A job = "mirror order X to provider P". Jobs are
+ * derivable from order state (the cron sweep re-creates any missing row), so
+ * the webhook's fast-path enqueue is a latency optimization, never a
+ * correctness dependency. UNIQUE (order, provider, kind) makes enqueueing
+ * idempotent under Stripe replays, sweep overlaps, and manual retries.
+ */
+export const integrationJobs = pgTable(
+  "integration_jobs",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    provider: integrationProvider("provider").notNull(),
+    kind: integrationJobKind("kind").notNull(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    status: integrationJobStatus("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    // Exponential backoff pointer; the processor only claims due jobs.
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    // Scrubbed summary only (same rule as venue_integrations.last_error).
+    lastError: text("last_error"),
+    // Provider-side id created by this job (e.g. the Square order id). Its
+    // presence lets a retried job resume after a partial success.
+    providerRef: text("provider_ref"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("integration_jobs_order_provider_kind_idx").on(
+      table.orderId,
+      table.provider,
+      table.kind,
+    ),
+    index("integration_jobs_due_idx").on(table.status, table.nextAttemptAt),
+    index("integration_jobs_venue_idx").on(table.venueId),
+    check("integration_jobs_attempts_nonneg", sql`${table.attempts} >= 0`),
+  ],
+);
+
+export type VenueIntegration = typeof venueIntegrations.$inferSelect;
+export type IntegrationJob = typeof integrationJobs.$inferSelect;
