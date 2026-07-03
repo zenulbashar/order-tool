@@ -59,6 +59,12 @@ export const getPublicVenueBySlug = cache(
         schedulingEnabled: venues.schedulingEnabled,
         schedulingLeadMinutes: venues.schedulingLeadMinutes,
         schedulingMaxDaysAhead: venues.schedulingMaxDaysAhead,
+        // Pay-by-bank saving (Track B · 3b-ii) — powers the checkout "Save $X"
+        // callout. Display only; the discount is always server-recomputed at
+        // pay time by applyBankDiscount.
+        paytoEnabled: venues.paytoEnabled,
+        paytoDiscountMode: venues.paytoDiscountMode,
+        paytoDiscountValue: venues.paytoDiscountValue,
         // Live-ready signal (Phase 3c). Derived to a boolean in SQL so the raw
         // onboarding_completed_at timestamp never reaches the client shape.
         isLive: sql<boolean>`${venues.onboardingCompletedAt} is not null`,

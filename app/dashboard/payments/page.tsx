@@ -9,6 +9,7 @@ import {
   type PayToCapability,
   syncStripeAccountStatus,
 } from "./queries";
+import { PaytoDiscountForm } from "./payto-discount-form";
 import { PayToToggle } from "./payto-toggle";
 
 // Authed + reads live Stripe status on return from onboarding; never prerendered.
@@ -170,6 +171,14 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
               </div>
               <PayToToggle enabled={venue.paytoEnabled} />
             </div>
+
+            {/* Pay-by-bank saving — only meaningful once PayTo is on. */}
+            {venue.paytoEnabled ? (
+              <PaytoDiscountForm
+                mode={venue.paytoDiscountMode}
+                value={venue.paytoDiscountValue}
+              />
+            ) : null}
           </Card>
         ) : null}
 

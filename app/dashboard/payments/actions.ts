@@ -116,3 +116,40 @@ export async function setPayToEnabled(formData: FormData): Promise<void> {
   revalidatePath("/dashboard/payments");
   revalidatePath(`/${venue.slug}`);
 }
+
+/**
+ * Configure the pay-by-bank saving passed to customers who choose PayTo
+ * (Track B · 3b-ii). off = none; flat = a fixed dollar amount → stored cents;
+ * percent = a whole percentage of subtotal. A zero/invalid value normalises to
+ * off. This is owner intent only — the diner-side discount is always
+ * server-recomputed at pay time (applyBankDiscount) and never a card surcharge.
+ */
+export async function setPaytoDiscount(formData: FormData): Promise<void> {
+  await requireUser();
+  const venue = await requireVenue();
+
+  const modeRaw = formData.get("mode");
+  const mode = modeRaw === "flat" || modeRaw === "percent" ? modeRaw : "off";
+  const valueRaw = String(formData.get("value") ?? "").trim();
+
+  let value = 0;
+  if (mode === "flat") {
+    // Entered in dollars (e.g. 0.30) → integer cents.
+    const dollars = Number(valueRaw);
+    value =
+      Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0;
+  } else if (mode === "percent") {
+    // Whole percent, 1–100.
+    const pct = Number(valueRaw);
+    value = Number.isInteger(pct) && pct >= 1 && pct <= 100 ? pct : 0;
+  }
+  const finalMode = value > 0 ? mode : "off";
+
+  await db
+    .update(venues)
+    .set({ paytoDiscountMode: finalMode, paytoDiscountValue: value })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/payments");
+  revalidatePath(`/${venue.slug}`);
+}

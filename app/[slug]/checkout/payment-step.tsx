@@ -9,11 +9,14 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { readableOn } from "@/app/_components/brand-contrast";
 import { Button } from "@/app/_components/button";
+import { bankDiscountCents } from "@/lib/payments/bank-discount";
 import { formatCents } from "@/lib/validation";
+
+import { applyBankDiscount } from "./discount-actions";
 
 import type { PublicVenue } from "../types";
 
@@ -111,6 +114,50 @@ function PaymentForm({
   // never affects the amount, the fee, or confirmation — the webhook remains the
   // sole source of truth.
   const [selectedMethod, setSelectedMethod] = useState<string>("card");
+  // The amount currently shown on the Pay button. Starts at the full (card)
+  // price and drops to the discounted total when the customer selects a bank
+  // method — the number comes back from the SERVER (applyBankDiscount), which is
+  // authoritative; the client never computes the charged amount.
+  const [displayAmount, setDisplayAmount] = useState(amountCents);
+  // True while the discount is being applied/reverted server-side — the Pay
+  // button is disabled so a payment can't be confirmed at a stale amount.
+  const [recomputing, setRecomputing] = useState(false);
+  const lastMethodRef = useRef<string>("card");
+
+  // The saving on offer for this order (0 when the venue hasn't configured one).
+  // Display only; the server recompute is the source of truth.
+  const offerDiscountCents =
+    venue.paytoEnabled
+      ? bankDiscountCents(
+          amountCents,
+          venue.paytoDiscountMode,
+          venue.paytoDiscountValue,
+        )
+      : 0;
+
+  // When the customer switches payment method, apply (bank) or revert (card) the
+  // discount on the server, then re-sync the Payment Element to the new PI
+  // amount. Only fires on an actual method-type change; a no-op when no discount
+  // is configured.
+  async function handleMethodChange(type: string) {
+    setSelectedMethod(type);
+    if (offerDiscountCents <= 0 || type === lastMethodRef.current) return;
+    lastMethodRef.current = type;
+    setRecomputing(true);
+    try {
+      const result = await applyBankDiscount(venue.slug, token, type);
+      if (result.ok) {
+        setDisplayAmount(result.totalCents);
+        try {
+          await elements?.fetchUpdates();
+        } catch {
+          // Element re-sync is best-effort; the charged amount is the PI's.
+        }
+      }
+    } finally {
+      setRecomputing(false);
+    }
+  }
 
   // SINGLE confirmation path. BOTH the card form submit and the Express Checkout
   // Element's onConfirm call this one helper, which confirms the SAME
@@ -119,7 +166,7 @@ function PaymentForm({
   // and no second confirm path; the order is still confirmed ONLY by the
   // signature-verified webhook on payment_intent.succeeded.
   async function confirmAgainstIntent(methodHint?: string) {
-    if (!stripe || !elements || submitting) return;
+    if (!stripe || !elements || submitting || recomputing) return;
     setSubmitting(true);
     setError(null);
 
@@ -202,8 +249,24 @@ function PaymentForm({
           ) : null}
         </div>
 
+        {offerDiscountCents > 0 ? (
+          <div className="mb-3 flex items-center gap-2 rounded-input border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-2">
+            <span
+              aria-hidden
+              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-success-deep"
+            >
+              Save ${formatCents(offerDiscountCents)}
+            </span>
+            <span className="text-xs text-ink">
+              {displayAmount < amountCents
+                ? "Applied — you're paying by bank."
+                : "Pay by bank instead of card."}
+            </span>
+          </div>
+        ) : null}
+
         <PaymentElement
-          onChange={(event) => setSelectedMethod(event.value.type)}
+          onChange={(event) => handleMethodChange(event.value.type)}
         />
       </div>
 
@@ -216,12 +279,12 @@ function PaymentForm({
       <Button
         type="submit"
         variant="primary"
-        disabled={!stripe}
+        disabled={!stripe || recomputing}
         loading={submitting}
         loadingLabel="Processing…"
         className="w-full"
       >
-        {`Pay $${formatCents(amountCents)}`}
+        {recomputing ? "Updating total…" : `Pay $${formatCents(displayAmount)}`}
       </Button>
 
       <p className="text-center text-xs text-muted">
