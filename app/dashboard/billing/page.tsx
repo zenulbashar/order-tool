@@ -1,11 +1,24 @@
+import Link from "next/link";
+
 import { Button } from "@/app/_components/button";
 import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
+import {
+  type BillingOverview,
+  getBillingOverview,
+  getRosterAddonPriceCents,
+} from "@/lib/billing/overview";
 import { requireUser, requireVenue } from "@/lib/tenant";
+import { formatCents } from "@/lib/validation";
 
-import { createBillingCheckout, createBillingPortalSession } from "./actions";
+import {
+  addRosterAddon,
+  createBillingCheckout,
+  createBillingPortalSession,
+  removeRosterAddon,
+} from "./actions";
 
-// Authed + reads the live plan/status on return from Stripe; never prerendered.
+// Authed + reads the live plan/status + subscription/invoices; never prerendered.
 export const dynamic = "force-dynamic";
 
 type BillingParams = {
@@ -29,13 +42,9 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
   );
 }
 
-// Inline auto-width selects (the change-plan row is a flex-wrap line, not a
-// stacked form), so kept native + tokenized rather than the full-width Select
-// primitive — same rationale as the settings time inputs.
 const selectClass =
   "rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
 
-// Space Mono micro-eyebrow, matching the reconciled owner forms.
 const microLabel =
   "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
 
@@ -70,10 +79,87 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-// Whole days remaining until `date` (never negative). Derived from the existing
-// trialEndsAt — the page is force-dynamic, so this reflects the current day.
 function daysLeft(date: Date): number {
   return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86_400_000));
+}
+
+/** The consolidated subscription card — line items, one total, next charge. */
+function SubscriptionCard({ overview }: { overview: BillingOverview }) {
+  const cadence = overview.interval === "annual" ? "yearly" : "monthly";
+  return (
+    <div className="overflow-hidden rounded-card border border-line bg-surface-elevated shadow-card">
+      <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
+        <div>
+          <h2 className="font-display text-base font-extrabold tracking-tight text-ink">
+            Your subscription
+          </h2>
+          <p className="mt-0.5 text-xs text-muted">
+            Billed {cadence} · one invoice for everything Zale
+          </p>
+        </div>
+        {overview.nextChargeAt ? (
+          <div className="text-right">
+            <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              Next charge
+            </p>
+            <p className="mt-0.5 text-xs font-bold text-ink">
+              {formatDate(overview.nextChargeAt)}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      <ul className="px-5">
+        {overview.lines.map((line) => (
+          <li
+            key={line.key}
+            className="flex items-center gap-3 border-b border-line/60 py-3 last:border-0"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-ink">{line.label}</span>
+                {line.isRoster ? (
+                  <span className="rounded-[5px] bg-sand px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider text-muted">
+                    Add-on · by Zale
+                  </span>
+                ) : null}
+              </div>
+              {line.description ? (
+                <p className="text-[11px] text-muted">{line.description}</p>
+              ) : null}
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="font-display text-sm font-extrabold text-ink">
+                ${formatCents(line.amountCents)}
+              </p>
+              <p className="font-mono text-[9px] uppercase text-label">
+                /{overview.interval === "annual" ? "yr" : "mo"}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex items-center gap-3 border-t border-line bg-hover-secondary px-5 py-4">
+        <div className="flex-1">
+          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            One total · billed {cadence}
+          </p>
+          {overview.interval === "annual" ? (
+            <p className="text-[11px] text-muted">
+              ${formatCents(overview.totalCents)} charged annually
+            </p>
+          ) : null}
+        </div>
+        <div className="text-right">
+          <span className="font-display text-2xl font-extrabold text-ink">
+            ${formatCents(overview.perMonthCents)}
+          </span>
+          <span className="text-xs text-muted">/mo</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default async function BillingPage({ searchParams }: BillingParams) {
@@ -84,13 +170,36 @@ export default async function BillingPage({ searchParams }: BillingParams) {
   const planLabel = PLAN_LABELS[venue.plan] ?? venue.plan;
   const statusLabel = STATUS_LABELS[venue.planStatus] ?? venue.planStatus;
   const hasCustomer = venue.stripeCustomerId !== null;
+  const hasSubscription = venue.stripeSubscriptionId !== null;
   const isTrialing = venue.planStatus === "trialing";
   const checkoutCanceled = sp.checkout === "cancel";
-  const errored = sp.error === "checkout" || sp.error === "portal";
+  const errored =
+    sp.error === "checkout" || sp.error === "portal" || sp.error === "roster";
+  const rosterAdded = sp.roster === "added";
+  const rosterRemoved = sp.roster === "removed";
+
+  // Live subscription + invoices (best-effort; falls back to the minimal UI).
+  let overview: BillingOverview | null = null;
+  if (venue.stripeSubscriptionId && venue.stripeCustomerId) {
+    try {
+      overview = await getBillingOverview(
+        venue.stripeSubscriptionId,
+        venue.stripeCustomerId,
+      );
+    } catch {
+      overview = null;
+    }
+  }
+
+  // Roster add-on price for the CTA (null = not configured in Stripe yet).
+  const rosterPriceCents =
+    hasSubscription && overview && !overview.rosterPresent
+      ? await getRosterAddonPriceCents(overview.interval)
+      : null;
 
   return (
     <main className="mx-auto max-w-3xl">
-      <PageHeader title="Billing" description={venue.name} />
+      <PageHeader title="Billing & plan" description={venue.name} />
 
       <section className="space-y-6 px-5 py-8">
         <Card>
@@ -99,6 +208,9 @@ export default async function BillingPage({ searchParams }: BillingParams) {
               {planLabel} plan
             </span>
             <StatusBadge tone={statusTone(venue.planStatus)} label={statusLabel} />
+            {venue.rosterEntitled ? (
+              <StatusBadge tone="green" label="+ Roster" />
+            ) : null}
           </div>
           {isTrialing && venue.trialEndsAt ? (
             <div className="mt-3 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2.5">
@@ -119,6 +231,63 @@ export default async function BillingPage({ searchParams }: BillingParams) {
           )}
         </Card>
 
+        {rosterAdded ? (
+          <p className="text-sm text-success-deep" role="status">
+            Roster added — it&apos;s on this same invoice from now on.
+          </p>
+        ) : null}
+        {rosterRemoved ? (
+          <p className="text-sm text-muted" role="status">
+            Roster removed from your subscription.
+          </p>
+        ) : null}
+
+        {/* Consolidated subscription — real line items from Stripe. */}
+        {overview ? <SubscriptionCard overview={overview} /> : null}
+
+        {/* Roster add-on control. */}
+        {hasSubscription && overview ? (
+          <Card>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                    Roster add-on
+                  </h2>
+                  {overview.rosterPresent ? (
+                    <StatusBadge tone="green" label="Included" />
+                  ) : null}
+                </div>
+                <p className="mt-1.5 text-sm text-muted">
+                  Rostering &amp; wage costs for your team, billed as a line on
+                  this same invoice — one charge, one receipt. Your staff sign in
+                  with the venue login they already use.
+                </p>
+              </div>
+              <div className="shrink-0">
+                {overview.rosterPresent ? (
+                  <form action={removeRosterAddon}>
+                    <Button type="submit" variant="secondary" size="sm">
+                      Remove
+                    </Button>
+                  </form>
+                ) : rosterPriceCents !== null ? (
+                  <form action={addRosterAddon}>
+                    <Button type="submit" variant="primary" size="sm">
+                      Add Roster · ${formatCents(rosterPriceCents)}/
+                      {overview.interval === "annual" ? "yr" : "mo"}
+                    </Button>
+                  </form>
+                ) : (
+                  <span className="text-xs text-muted">
+                    Pricing is being set up.
+                  </span>
+                )}
+              </div>
+            </div>
+          </Card>
+        ) : null}
+
         <Card>
           <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
             {hasCustomer ? "Change plan" : "Choose a plan"}
@@ -133,12 +302,7 @@ export default async function BillingPage({ searchParams }: BillingParams) {
           >
             <label className="block">
               <span className={microLabel}>Plan</span>
-              <select
-                id="plan"
-                name="plan"
-                defaultValue="pro"
-                className={selectClass}
-              >
+              <select id="plan" name="plan" defaultValue="pro" className={selectClass}>
                 <option value="pro">Pro</option>
                 <option value="scale">Scale</option>
               </select>
@@ -159,7 +323,68 @@ export default async function BillingPage({ searchParams }: BillingParams) {
               {hasCustomer ? "Update subscription" : "Start subscription"}
             </Button>
           </form>
+          {overview?.rosterPresent ? (
+            <p className="mt-3 text-xs text-muted">
+              Changing your plan or interval while Roster is added is done from
+              the &ldquo;Manage billing&rdquo; portal below, so both lines stay
+              in sync on one invoice.
+            </p>
+          ) : null}
         </Card>
+
+        {/* Invoice history — real Stripe invoices. */}
+        {overview && overview.invoices.length > 0 ? (
+          <Card>
+            <h2 className="font-display text-base font-extrabold tracking-tight text-ink">
+              Invoice history
+            </h2>
+            <ul className="mt-3 divide-y divide-line">
+              {overview.invoices.map((invoice) => (
+                <li
+                  key={invoice.id}
+                  className="flex items-center gap-3 py-3 text-sm"
+                >
+                  <span className="flex-1 font-medium text-ink">
+                    {formatDate(invoice.date)}
+                  </span>
+                  <span className="font-display font-extrabold text-ink">
+                    ${formatCents(invoice.amountCents)}
+                  </span>
+                  <StatusBadge
+                    tone={invoice.status === "paid" ? "green" : "amber"}
+                    label={invoice.status}
+                  />
+                  {invoice.url ? (
+                    <a
+                      href={invoice.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-[var(--action)] hover:opacity-80"
+                    >
+                      View
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
+
+        {/* Cross-sell to the Apps launcher — tinted callout, forest CTA. */}
+        {overview && !overview.rosterPresent ? (
+          <div className="flex items-center gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-4 py-3">
+            <p className="flex-1 text-sm text-ink">
+              <b>Add another Zale app and it joins this same bill.</b> No new
+              card, no separate invoice — just one more line here.
+            </p>
+            <Link
+              href="/dashboard/apps"
+              className="shrink-0 text-sm font-bold text-[var(--action)] hover:opacity-80"
+            >
+              Browse apps →
+            </Link>
+          </div>
+        ) : null}
 
         {hasCustomer ? (
           <Card>
@@ -167,8 +392,8 @@ export default async function BillingPage({ searchParams }: BillingParams) {
               Manage billing
             </h2>
             <p className="mt-1 text-sm text-muted">
-              Update your card, view invoices, or cancel in the Stripe billing
-              portal.
+              Update your card, view all invoices, or cancel in the Stripe
+              billing portal.
             </p>
             <form action={createBillingPortalSession} className="mt-4">
               <Button type="submit" variant="secondary">
