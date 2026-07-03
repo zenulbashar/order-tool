@@ -105,6 +105,12 @@ function PaymentForm({
   // reported by the Express Checkout Element's onReady. Gates ONLY that element's
   // heading + divider, so when no wallet exists the card form below is unchanged.
   const [hasWallet, setHasWallet] = useState(false);
+  // The payment method the customer has selected in the Payment Element (e.g.
+  // "card", "payto"). Carried to the order page as a DISPLAY-ONLY hint so a bank
+  // (PayTo) payment shows the "approve in your banking app" waiting screen. It
+  // never affects the amount, the fee, or confirmation — the webhook remains the
+  // sole source of truth.
+  const [selectedMethod, setSelectedMethod] = useState<string>("card");
 
   // SINGLE confirmation path. BOTH the card form submit and the Express Checkout
   // Element's onConfirm call this one helper, which confirms the SAME
@@ -112,31 +118,42 @@ function PaymentForm({
   // connected-account clientSecret + stripeAccount). There is no second intent
   // and no second confirm path; the order is still confirmed ONLY by the
   // signature-verified webhook on payment_intent.succeeded.
-  async function confirmAgainstIntent() {
+  async function confirmAgainstIntent(methodHint?: string) {
     if (!stripe || !elements || submitting) return;
     setSubmitting(true);
     setError(null);
+
+    // Display-only hint so the order page can tailor its waiting copy (bank vs
+    // card). Not trusted for anything financial. Wallet confirmations pass their
+    // own hint; the card form uses the Payment Element's current selection.
+    const pm = methodHint ?? selectedMethod;
+    const returnUrl = `${window.location.origin}/${venue.slug}/order/${token}?pm=${encodeURIComponent(pm)}`;
 
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         // After payment Stripe redirects here; the order page reflects the live
         // status (processing → paid via the webhook, or failed).
-        return_url: `${window.location.origin}/${venue.slug}/order/${token}`,
+        return_url: returnUrl,
       },
     });
 
-    // We only reach this point when confirmation did NOT redirect — i.e. an
-    // immediate error (declined card, cancelled/failed wallet, validation). Keep
-    // the customer on this step with a clear, non-alarming message so they can
-    // retry (card OR wallet). On success, Stripe has already redirected to
-    // return_url.
+    // We reach this point only when confirmation did NOT redirect. Two cases:
+    //  - confirmError: an immediate failure (declined card, cancelled/failed
+    //    wallet, validation) — keep the customer here with a calm retry message.
+    //  - no error: an async method (PayTo) that confirmed a mandate without a
+    //    redirect and is now `processing` out-of-band. Send the customer to the
+    //    order page (same return_url), where the waiting screen + poller take
+    //    over until the webhook confirms. This is NOT a second confirm path —
+    //    the single confirmPayment above already ran; we only navigate.
     if (confirmError) {
       setError(
         confirmError.message ??
           "We couldn't process that payment. Please check your details and try again.",
       );
       setSubmitting(false);
+    } else {
+      window.location.assign(returnUrl);
     }
   }
 
@@ -174,7 +191,7 @@ function PaymentForm({
             onReady={({ availablePaymentMethods }) =>
               setHasWallet(Boolean(availablePaymentMethods))
             }
-            onConfirm={() => confirmAgainstIntent()}
+            onConfirm={() => confirmAgainstIntent("card")}
           />
           {hasWallet ? (
             <div className="flex items-center gap-3">
@@ -185,7 +202,9 @@ function PaymentForm({
           ) : null}
         </div>
 
-        <PaymentElement />
+        <PaymentElement
+          onChange={(event) => setSelectedMethod(event.value.type)}
+        />
       </div>
 
       {error ? (
