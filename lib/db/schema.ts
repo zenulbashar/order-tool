@@ -174,6 +174,11 @@ export const venues = pgTable(
     // subscribes) and written server-side only, never from client input.
     stripeCustomerId: text("stripe_customer_id"),
     stripeSubscriptionId: text("stripe_subscription_id"),
+    // Roster add-on entitlement (Track C). Default false — set true by Build 5's
+    // consolidated billing when the Roster line is added to the venue's
+    // subscription. Read into the signed Roster SSO handoff token's
+    // entitlements.roster claim; Roster decides what a false claim means.
+    rosterEntitled: boolean("roster_entitled").notNull().default(false),
     // Onboarding wizard (Phase 3a). venue_type is the owner-picked category.
     // onboarding_completed_at is the SINGLE "this venue is live-ready" signal —
     // null until the wizard finishes (Step 5, a later sub-phase); the go-live /
