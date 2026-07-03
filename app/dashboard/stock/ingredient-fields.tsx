@@ -20,7 +20,14 @@ export function IngredientFields({
 }: {
   defaults?: Pick<
     Ingredient,
-    "name" | "unit" | "packSize" | "packCostCents" | "yieldPct" | "supplier" | "isPackaging"
+    | "name"
+    | "unit"
+    | "packSize"
+    | "packCostCents"
+    | "yieldPct"
+    | "supplier"
+    | "isPackaging"
+    | "parLevel"
   >;
 }) {
   return (
@@ -75,6 +82,16 @@ export function IngredientFields({
           inputMode="numeric"
           defaultValue={defaults?.yieldPct ?? 100}
           placeholder="100"
+          className={control}
+        />
+      </label>
+      <label className="block">
+        <span className={label}>Par (reorder at)</span>
+        <input
+          name="parLevel"
+          inputMode="decimal"
+          defaultValue={defaults?.parLevel ?? ""}
+          placeholder="2000"
           className={control}
         />
       </label>
