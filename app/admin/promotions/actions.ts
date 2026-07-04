@@ -4,13 +4,18 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { platformAuditLog, promotions } from "@/lib/db/schema";
+import {
+  platformAuditLog,
+  promotions,
+  promotionVenues,
+} from "@/lib/db/schema";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 
 const PATH = "/admin/promotions";
 
 const TYPES = ["percent", "amount"] as const;
 const FUNDING = ["merchant", "platform", "cofunded"] as const;
+const AUDIENCES = ["all", "new"] as const;
 
 function parseDate(raw: FormDataEntryValue | null): Date | null {
   const s = String(raw ?? "").trim();
@@ -52,21 +57,53 @@ export async function createPromotion(formData: FormData): Promise<void> {
     ? (fundingRaw as (typeof FUNDING)[number])
     : "merchant";
 
-  await db.insert(promotions).values({
-    name,
-    type,
-    value,
-    minBasketCents,
-    startsAt: parseDate(formData.get("startsAt")),
-    endsAt: parseDate(formData.get("endsAt")),
-    fundingSource,
-    isActive: true,
-  });
+  const audienceRaw = String(formData.get("audience") ?? "all");
+  const audience = (AUDIENCES as readonly string[]).includes(audienceRaw)
+    ? (audienceRaw as (typeof AUDIENCES)[number])
+    : "all";
+
+  const budgetDollars = Number(String(formData.get("budget") ?? "").trim());
+  const budgetCents =
+    Number.isFinite(budgetDollars) && budgetDollars > 0
+      ? Math.round(budgetDollars * 100)
+      : null;
+
+  // Targeting: selected venues come from checkboxes. scope=selected requires at
+  // least one; an empty selection falls back to platform-wide.
+  const venueIds = formData
+    .getAll("venues")
+    .map((v) => String(v).trim())
+    .filter((v) => v.length > 0);
+  const scope = venueIds.length > 0 ? "selected" : "all";
+
+  const [created] = await db
+    .insert(promotions)
+    .values({
+      name,
+      type,
+      value,
+      minBasketCents,
+      startsAt: parseDate(formData.get("startsAt")),
+      endsAt: parseDate(formData.get("endsAt")),
+      fundingSource,
+      scope,
+      audience,
+      budgetCents,
+      isActive: true,
+    })
+    .returning({ id: promotions.id });
+
+  if (scope === "selected" && created) {
+    await db
+      .insert(promotionVenues)
+      .values(venueIds.map((venueId) => ({ promotionId: created.id, venueId })))
+      .onConflictDoNothing();
+  }
 
   await db.insert(platformAuditLog).values({
     actorEmail: admin.email,
     action: "promotion_create",
-    detail: `${name} · ${type === "percent" ? `${value}%` : `$${(value / 100).toFixed(2)}`} off`,
+    detail: `${name} · ${type === "percent" ? `${value}%` : `$${(value / 100).toFixed(2)}`} off · ${scope}`,
   });
 
   revalidatePath(PATH);

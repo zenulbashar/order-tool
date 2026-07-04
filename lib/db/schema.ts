@@ -124,6 +124,14 @@ export const promotionFunding = pgEnum("promotion_funding", [
   "cofunded",
 ]);
 
+// Promotion reach (Track E2d-2). all = every venue; selected = only the venues
+// listed in promotion_venues.
+export const promotionScope = pgEnum("promotion_scope", ["all", "selected"]);
+
+// Promotion audience (Track E2d-2). all = anyone; new = customers with no prior
+// confirmed order at the venue (guests, being untracked, count as new).
+export const promotionAudience = pgEnum("promotion_audience", ["all", "new"]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -801,6 +809,9 @@ export const orders = pgTable(
     check("orders_subtotal_cents_nonneg", sql`${table.subtotalCents} >= 0`),
     check("orders_total_cents_nonneg", sql`${table.totalCents} >= 0`),
     check("orders_discount_cents_nonneg", sql`${table.discountCents} >= 0`),
+    // Supports the promotion budget aggregation (Track E2d-2): sum of
+    // promo_discount_cents by applied_promo_id over confirmed orders.
+    index("orders_applied_promo_idx").on(table.appliedPromoId),
   ],
 );
 
@@ -1300,6 +1311,13 @@ export const promotions = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
     fundingSource: promotionFunding("funding_source").notNull().default("merchant"),
+    // Targeting + guardrails (Track E2d-2). scope=selected restricts to the
+    // venues in promotion_venues; audience=new restricts to first-time
+    // customers; budget_cents (nullable = uncapped) is a soft spend cap — once
+    // confirmed orders' promo discount reaches it, the promo stops applying.
+    scope: promotionScope("scope").notNull().default("all"),
+    audience: promotionAudience("audience").notNull().default("all"),
+    budgetCents: integer("budget_cents"),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -1308,10 +1326,37 @@ export const promotions = pgTable(
     index("promotions_active_idx").on(table.isActive),
     check("promotions_value_pos", sql`${table.value} > 0`),
     check("promotions_min_basket_nonneg", sql`${table.minBasketCents} >= 0`),
+    check(
+      "promotions_budget_pos",
+      sql`${table.budgetCents} IS NULL OR ${table.budgetCents} > 0`,
+    ),
   ],
 );
 
 export type Promotion = typeof promotions.$inferSelect;
+
+/**
+ * Venues a `scope=selected` promotion targets (Track E2d-2). Cascade on both
+ * sides — removing a promo or a venue drops the link, never a placed order.
+ */
+export const promotionVenues = pgTable(
+  "promotion_venues",
+  {
+    id: id(),
+    promotionId: text("promotion_id")
+      .notNull()
+      .references(() => promotions.id, { onDelete: "cascade" }),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("promotion_venues_pair_idx").on(table.promotionId, table.venueId),
+    index("promotion_venues_venue_idx").on(table.venueId),
+  ],
+);
+
+export type PromotionVenue = typeof promotionVenues.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /* Hardware marketplace (Track F). A PLATFORM catalog (curated in the admin      */
