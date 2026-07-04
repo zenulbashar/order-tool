@@ -157,10 +157,13 @@ model of "exactly ONE block" predates D4b — the second block was explicitly ga
     actions so a theme save can't clobber it). Plus **content flexibility** in the studio: pick which
     categories appear, toggle prices, toggle descriptions, toggle the logo. No schema, no writes to
     order data, money-path 0.
-  - ⏭ NEXT — PR-c: **AI-copy banner (option A, user-chosen).** "✦ Generate with AI" → Haiku
-    (MENU_COPY_MODEL) writes headline/subtext/offer from venue name + description + menu highlights
-    + an optional occasion prompt, rendered in the existing branded banner (brand colour + logo +
-    amber AI affordance). Reuses the AI rate-limit discipline; no new dependency, money-path 0.
+  - ✅ DONE — PR-c (this branch): **AI-copy banner (option A, user-chosen).** "✦ Generate with AI"
+    on the studio banner mode → Haiku (MENU_COPY_MODEL, `studio/actions.ts::generateBannerCopy`)
+    writes headline/subtext/offer from venue name + description + live menu highlights (read
+    server-side) + an optional occasion prompt, into the editable fields; rendered in the existing
+    branded banner (brand colour + logo + amber AI affordance). Metered via the `aiCopy` rate-limit
+    bucket (fail-open); drafts only, never writes, never auto-invents a discount the owner didn't
+    type. No new dependency, no migration, money-path 0.
     ⚠ REALITY CHECK — Claude writes TEXT, it does NOT paint raster images. Actual AI-generated
     imagery would need a 3rd-party image-gen API (external, gated) — registered as a separate future
     arc if the user later wants painted backgrounds.

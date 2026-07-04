@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
 
+import { generateBannerCopy } from "./actions";
 import {
   BannerArtwork,
   type BannerArtworkData,
@@ -48,6 +49,27 @@ export function StudioClient({
   const [headline, setHeadline] = useState("Today at " + menuData.venueName);
   const [subtext, setSubtext] = useState("Order ahead — skip the queue.");
   const [offerText, setOfferText] = useState("");
+
+  // AI banner copy (option A): Haiku drafts headline/subtext/offer from the
+  // venue + an optional occasion, into the editable fields. Owner-initiated,
+  // metered, and never auto-saved (there is nothing to save — it's artwork).
+  const [occasion, setOccasion] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiPending, startAi] = useTransition();
+
+  function generateWithAi() {
+    setAiError(null);
+    startAi(async () => {
+      const result = await generateBannerCopy({ occasion });
+      if (!result.ok) {
+        setAiError(result.error);
+        return;
+      }
+      if (result.headline) setHeadline(result.headline);
+      setSubtext(result.subtext);
+      setOfferText(result.offer);
+    });
+  }
 
   // Caption shared alongside the image. Blank = use the suggested caption
   // derived from the current content, so it always reflects what's on screen
@@ -303,6 +325,40 @@ export function StudioClient({
 
         {mode === "banner" ? (
           <>
+            {/* AI copy (option A) — amber is the sanctioned AI signature. Haiku
+                writes the fields below from your brand + this occasion; you edit
+                and export. It never invents a discount you didn't type. */}
+            <div className="space-y-2 rounded-card border border-accent/40 bg-accent/10 p-3">
+              <label className="block">
+                <span className={microLabel}>Occasion or theme (optional)</span>
+                <input
+                  value={occasion}
+                  maxLength={160}
+                  onChange={(event) => setOccasion(event.target.value)}
+                  placeholder="e.g. weekend brunch, 20% off pastries"
+                  className={controlClass}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={generateWithAi}
+                disabled={aiPending}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-deep transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span aria-hidden="true">✦</span>
+                {aiPending ? "Writing…" : "Generate with AI"}
+              </button>
+              {aiError ? (
+                <p className="text-xs text-[var(--color-warm)]" role="alert">
+                  {aiError}
+                </p>
+              ) : (
+                <p className="text-[11px] text-muted">
+                  Writes a headline, subtext, and offer in your brand voice. Edit
+                  anything before you export.
+                </p>
+              )}
+            </div>
             <label className="block">
               <span className={microLabel}>Headline</span>
               <input
