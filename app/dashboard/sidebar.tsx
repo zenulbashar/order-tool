@@ -57,6 +57,7 @@ function navGroups(
           icon: <IconIntegrations />,
         },
         { label: "Apps", href: "/dashboard/apps", icon: <IconApps /> },
+        { label: "Shop", href: "/dashboard/marketplace", icon: <IconShop /> },
         { label: "Billing", href: "/dashboard/billing", icon: <IconBilling /> },
       ],
     },
@@ -461,6 +462,15 @@ function IconStudio() {
       <rect x="4" y="4" width="16" height="16" rx="2" />
       <path d="M4 15l4-4 3 3 4-5 5 6" />
       <circle cx="9" cy="9" r="1.4" />
+    </>,
+  );
+}
+
+function IconShop() {
+  return svg(
+    <>
+      <path d="M4 8h16l-1 4H5z" />
+      <path d="M5 12v7h14v-7M4 8l1.5-4h13L20 8" />
     </>,
   );
 }

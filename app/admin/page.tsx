@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { and, count, desc, eq, gt, sql } from "drizzle-orm";
 
 import { StatusBadge } from "@/app/_components/status-badge";
@@ -131,6 +132,14 @@ export default async function AdminConsolePage() {
           {venueRows.length} venue{venueRows.length === 1 ? "" : "s"} ·{" "}
           {liveCount} live · {payingCount} paying
         </p>
+        <nav className="mt-3">
+          <Link
+            href="/admin/marketplace"
+            className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+          >
+            Marketplace →
+          </Link>
+        </nav>
       </header>
 
       {/* Fleet integrations health — the cross-venue view Track 0's health
