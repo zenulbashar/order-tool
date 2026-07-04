@@ -32,6 +32,55 @@ function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+/** iOS-style switch for the studio content toggles (design: Show prices…). */
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between gap-3 text-sm font-medium text-ink"
+    >
+      <span>{label}</span>
+      <span
+        className={cx(
+          "relative h-5 w-9 shrink-0 rounded-full transition-colors",
+          checked ? "bg-forest" : "bg-line-strong",
+        )}
+      >
+        <span
+          className={cx(
+            "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all",
+            checked ? "left-[18px]" : "left-0.5",
+          )}
+        />
+      </span>
+    </button>
+  );
+}
+
+/** A little aspect-ratio glyph for a size tile (portrait/landscape rectangle). */
+function AspectGlyph({ width, height }: { width: number; height: number }) {
+  const ar = width / height;
+  const w = ar >= 1 ? 22 : Math.round(22 * ar);
+  const h = ar >= 1 ? Math.round(22 / ar) : 22;
+  return (
+    <span
+      className="block rounded-[2px] border-[1.5px] border-ink/55"
+      style={{ width: w, height: h }}
+    />
+  );
+}
+
 export function StudioClient({
   slug,
   menuData,
@@ -284,20 +333,22 @@ export function StudioClient({
   const controlClass =
     "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
   const microLabel =
-    "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+    "mb-2 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  const popBtn =
+    "w-full justify-start rounded-control px-3 py-2 text-left text-sm font-semibold transition disabled:opacity-50";
 
   return (
-    <section className="grid gap-6 px-5 py-8 lg:grid-cols-[300px_1fr]">
-      {/* Controls */}
-      <div className="space-y-4">
-        <div className="inline-flex w-full gap-1 rounded-[10px] bg-sand p-1">
+    <section className="px-5 py-6">
+      {/* Toolbar — mode tabs (left), Download + Publish actions (right). */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
           {(["menu", "banner"] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => switchMode(m)}
               className={cx(
-                "flex-1 rounded-[7px] px-3 py-1.5 text-xs font-bold capitalize transition",
+                "rounded-[7px] px-4 py-1.5 text-xs font-bold capitalize transition",
                 mode === m
                   ? "bg-surface-elevated text-ink shadow-sm"
                   : "text-label hover:text-ink",
@@ -308,233 +359,254 @@ export function StudioClient({
           ))}
         </div>
 
-        <label className="block">
-          <span className={microLabel}>Size</span>
-          <select
-            value={presetId}
-            onChange={(event) => setPresetId(event.target.value)}
-            className={controlClass}
-          >
-            {presets.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label} · {p.width}×{p.height}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="ml-auto flex items-center gap-2">
+          {/* Download disclosure (PNG / SVG / Print). */}
+          <details className="relative">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-control border border-line-strong bg-surface-elevated px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary [&::-webkit-details-marker]:hidden">
+              <span aria-hidden="true">↓</span> Download
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 w-56 space-y-1 rounded-card border border-line bg-surface-elevated p-2 shadow-card">
+              <button type="button" onClick={downloadPng} disabled={busy} className={cx(popBtn, "text-ink hover:bg-hover-secondary")}>
+                PNG image
+              </button>
+              <button type="button" onClick={downloadSvg} className={cx(popBtn, "text-ink hover:bg-hover-secondary")}>
+                SVG (vector)
+              </button>
+              <button type="button" onClick={printArtwork} className={cx(popBtn, "text-ink hover:bg-hover-secondary")}>
+                Print / PDF
+              </button>
+              <p className="px-3 pb-1 pt-1.5 text-[11px] text-muted">
+                Exports at the exact pixel size. Print → choose &ldquo;Save as
+                PDF&rdquo;.
+              </p>
+            </div>
+          </details>
 
-        {mode === "banner" ? (
-          <>
-            {/* AI copy (option A) — amber is the sanctioned AI signature. Haiku
-                writes the fields below from your brand + this occasion; you edit
-                and export. It never invents a discount you didn't type. */}
-            <div className="space-y-2 rounded-card border border-accent/40 bg-accent/10 p-3">
+          {/* Publish disclosure (caption + share). */}
+          <details className="relative">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-control bg-forest px-3.5 py-2 text-sm font-semibold text-white transition hover:opacity-90 [&::-webkit-details-marker]:hidden">
+              Publish <span aria-hidden="true" className="text-[var(--color-accent)]">→</span>
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 w-72 space-y-2 rounded-card border border-line bg-surface-elevated p-3 shadow-card">
               <label className="block">
-                <span className={microLabel}>Occasion or theme (optional)</span>
-                <input
-                  value={occasion}
-                  maxLength={160}
-                  onChange={(event) => setOccasion(event.target.value)}
-                  placeholder="e.g. weekend brunch, 20% off pastries"
-                  className={controlClass}
+                <span className="mb-1 block text-[11px] text-muted">
+                  Caption (shared with the image)
+                </span>
+                <textarea
+                  rows={3}
+                  value={caption}
+                  placeholder={suggestedCaption}
+                  onChange={(event) => setCaption(event.target.value)}
+                  className={cx(controlClass, "resize-none")}
                 />
               </label>
-              <button
-                type="button"
-                onClick={generateWithAi}
-                disabled={aiPending}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-deep transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span aria-hidden="true">✦</span>
-                {aiPending ? "Writing…" : "Generate with AI"}
-              </button>
-              {aiError ? (
-                <p className="text-xs text-[var(--color-warm)]" role="alert">
-                  {aiError}
+              <div className="grid grid-cols-1 gap-1.5">
+                <Button type="button" variant="primary" size="sm" onClick={shareImage} loading={busy}>
+                  Share to apps
+                </Button>
+                <div className="flex gap-1.5">
+                  <Button type="button" variant="secondary" size="sm" onClick={postToGoogle}>
+                    Post to Google
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" onClick={copyCaption}>
+                    Copy caption
+                  </Button>
+                </div>
+              </div>
+              {shareMsg ? (
+                <p className="text-[11px] font-medium text-success-deep" role="status">
+                  {shareMsg}
                 </p>
               ) : (
                 <p className="text-[11px] text-muted">
-                  Writes a headline, subtext, and offer in your brand voice. Edit
-                  anything before you export.
+                  On a phone this posts straight to Instagram, Facebook and more.
                 </p>
               )}
             </div>
-            <label className="block">
-              <span className={microLabel}>Headline</span>
-              <input
-                value={headline}
-                maxLength={80}
-                onChange={(event) => setHeadline(event.target.value)}
-                className={controlClass}
-              />
-            </label>
-            <label className="block">
-              <span className={microLabel}>Subtext</span>
-              <input
-                value={subtext}
-                maxLength={120}
-                onChange={(event) => setSubtext(event.target.value)}
-                className={controlClass}
-              />
-            </label>
-            <label className="block">
-              <span className={microLabel}>Offer badge (optional)</span>
-              <input
-                value={offerText}
-                maxLength={24}
-                onChange={(event) => setOfferText(event.target.value)}
-                placeholder="e.g. 20% OFF"
-                className={controlClass}
-              />
-            </label>
-            {hasLogo ? (
-              <label className="flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={showLogo}
-                  onChange={(event) => setShowLogo(event.target.checked)}
-                  className="accent-[var(--color-forest)]"
-                />
-                Show logo
-              </label>
-            ) : null}
-          </>
-        ) : (
-          <div className="space-y-3 border-t border-line pt-4">
-            <p className={microLabel}>Menu content</p>
-            {/* Category picker — uncheck any you don't want on this artwork. */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] text-muted">Categories</span>
-              <div className="max-h-40 space-y-1 overflow-y-auto rounded-input border border-line bg-surface-elevated p-2">
-                {menuData.categories.map((category) => (
-                  <label
-                    key={category.name}
-                    className="flex items-center gap-2 text-sm text-ink"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={includedCats.has(category.name)}
-                      onChange={() => toggleCategory(category.name)}
-                      className="accent-[var(--color-forest)]"
-                    />
-                    <span className="truncate">{category.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <label className="flex items-center gap-2 text-sm text-ink">
-              <input
-                type="checkbox"
-                checked={showPrices}
-                onChange={(event) => setShowPrices(event.target.checked)}
-                className="accent-[var(--color-forest)]"
-              />
-              Show prices
-            </label>
-            <label className="flex items-center gap-2 text-sm text-ink">
-              <input
-                type="checkbox"
-                checked={showDescriptions}
-                onChange={(event) => setShowDescriptions(event.target.checked)}
-                className="accent-[var(--color-forest)]"
-              />
-              Show descriptions
-            </label>
-            {hasLogo ? (
-              <label className="flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={showLogo}
-                  onChange={(event) => setShowLogo(event.target.checked)}
-                  className="accent-[var(--color-forest)]"
-                />
-                Show logo
-              </label>
-            ) : null}
-            <p className="text-[11px] text-muted">
-              Built from your live menu — edit items in the Menu editor and
-              regenerate. Long menus auto-fit across columns; only if they still
-              won&apos;t fit does a small &ldquo;+ N more&rdquo; appear.
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-2 border-t border-line pt-4">
-          <p className={microLabel}>Download</p>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="primary" size="sm" onClick={downloadPng} loading={busy}>
-              PNG
-            </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={downloadSvg}>
-              SVG
-            </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={printArtwork}>
-              Print / PDF
-            </Button>
-          </div>
-          <p className="text-[11px] text-muted">
-            PNG &amp; SVG export at the exact pixel size. Print opens your
-            browser&apos;s dialog — choose &ldquo;Save as PDF&rdquo; for print
-            formats.
-          </p>
-        </div>
-
-        {/* Publish — push the image straight to social apps + Google. */}
-        <div className="space-y-2 border-t border-line pt-4">
-          <p className={microLabel}>Publish</p>
-          <label className="block">
-            <span className="mb-1 block text-[11px] text-muted">
-              Caption (shared with the image)
-            </span>
-            <textarea
-              rows={3}
-              value={caption}
-              placeholder={suggestedCaption}
-              onChange={(event) => setCaption(event.target.value)}
-              className={cx(controlClass, "resize-none")}
-            />
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="primary" size="sm" onClick={shareImage} loading={busy}>
-              Share to apps
-            </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={postToGoogle}>
-              Post to Google
-            </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={copyCaption}>
-              Copy caption
-            </Button>
-          </div>
-          {shareMsg ? (
-            <p className="text-[11px] font-medium text-success-deep" role="status">
-              {shareMsg}
-            </p>
-          ) : null}
-          <p className="text-[11px] text-muted">
-            On a phone, &ldquo;Share to apps&rdquo; posts straight to Instagram,
-            Facebook, and more. &ldquo;Post to Google&rdquo; saves the image and
-            opens your Business Profile to attach it.
-          </p>
+          </details>
         </div>
       </div>
 
-      {/* Live preview */}
-      <div className="min-w-0">
-        <div className="rounded-card border border-line bg-[repeating-conic-gradient(#f0ece1_0%_25%,transparent_0%_50%)] bg-[length:24px_24px] p-4">
-          <div
-            ref={holderRef}
-            className="mx-auto flex max-h-[70vh] items-center justify-center overflow-hidden [&>svg]:h-auto [&>svg]:max-h-[70vh] [&>svg]:w-auto [&>svg]:max-w-full [&>svg]:shadow-card"
-          >
-            {mode === "menu" ? (
-              <MenuArtwork
-                data={filteredMenuData}
-                preset={preset}
-                showPrices={showPrices}
-                showDescriptions={showDescriptions}
-              />
-            ) : (
-              <BannerArtwork data={bannerData} preset={preset} />
-            )}
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+        {/* Controls */}
+        <div className="space-y-6">
+          {mode === "banner" ? (
+            <>
+              {/* AI copy (option A) — amber is the sanctioned AI signature. */}
+              <div className="space-y-2 rounded-card border border-accent/40 bg-accent/10 p-3">
+                <div className="flex items-center gap-1.5">
+                  <span aria-hidden="true" className="text-accent-deep">✦</span>
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-accent-deep">
+                    Generate with AI
+                  </span>
+                </div>
+                <textarea
+                  value={occasion}
+                  rows={2}
+                  maxLength={160}
+                  onChange={(event) => setOccasion(event.target.value)}
+                  placeholder="Occasion or theme — e.g. weekend brunch, 20% off pastries"
+                  className={cx(controlClass, "resize-none")}
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                    Writes headline · subtext · offer
+                  </span>
+                  <button
+                    type="button"
+                    onClick={generateWithAi}
+                    disabled={aiPending}
+                    className="inline-flex items-center gap-1.5 rounded-control bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-forest transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span aria-hidden="true">✦</span>
+                    {aiPending ? "Writing…" : "Generate"}
+                  </button>
+                </div>
+                {aiError ? (
+                  <p className="text-xs text-[var(--color-warm)]" role="alert">
+                    {aiError}
+                  </p>
+                ) : null}
+              </div>
+
+              <label className="block">
+                <span className={microLabel}>Headline</span>
+                <input
+                  value={headline}
+                  maxLength={80}
+                  onChange={(event) => setHeadline(event.target.value)}
+                  className={controlClass}
+                />
+              </label>
+              <label className="block">
+                <span className={microLabel}>Subtext</span>
+                <input
+                  value={subtext}
+                  maxLength={120}
+                  onChange={(event) => setSubtext(event.target.value)}
+                  className={controlClass}
+                />
+              </label>
+              <label className="block">
+                <span className={microLabel}>Offer badge (optional)</span>
+                <input
+                  value={offerText}
+                  maxLength={24}
+                  onChange={(event) => setOfferText(event.target.value)}
+                  placeholder="e.g. 2 FOR 1"
+                  className={controlClass}
+                />
+              </label>
+              {hasLogo ? (
+                <Toggle checked={showLogo} onChange={setShowLogo} label="Show logo" />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <div>
+                <p className={microLabel}>Format &amp; size</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {presets.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPresetId(p.id)}
+                      aria-pressed={p.id === presetId}
+                      className={cx(
+                        "flex flex-col items-center justify-center gap-2 rounded-[11px] border p-3 transition",
+                        p.id === presetId
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                          : "border-line hover:border-line-strong",
+                      )}
+                    >
+                      <span className="flex h-6 items-center justify-center">
+                        <AspectGlyph width={p.width} height={p.height} />
+                      </span>
+                      <span className="text-center text-[10px] font-semibold leading-tight text-ink">
+                        {p.short}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 border-t border-line pt-4">
+                <p className={microLabel}>Content</p>
+                <Toggle checked={showPrices} onChange={setShowPrices} label="Show prices" />
+                <Toggle checked={showDescriptions} onChange={setShowDescriptions} label="Show descriptions" />
+                {hasLogo ? (
+                  <Toggle checked={showLogo} onChange={setShowLogo} label="Show logo" />
+                ) : null}
+              </div>
+
+              <div className="border-t border-line pt-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className={cx(microLabel, "mb-0")}>Categories</span>
+                  <span className="font-mono text-[9px] font-bold text-label">
+                    {includedCats.size}/{menuData.categories.length}
+                  </span>
+                </div>
+                <div className="space-y-0.5 rounded-input border border-line bg-surface-elevated p-1.5">
+                  {menuData.categories.map((category) => {
+                    const on = includedCats.has(category.name);
+                    return (
+                      <button
+                        key={category.name}
+                        type="button"
+                        onClick={() => toggleCategory(category.name)}
+                        aria-pressed={on}
+                        className="flex w-full items-center gap-2.5 rounded-[8px] px-2 py-1.5 text-left transition hover:bg-hover-secondary"
+                      >
+                        <span
+                          className={cx(
+                            "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border",
+                            on ? "border-forest bg-forest text-white" : "border-line-strong",
+                          )}
+                        >
+                          {on ? (
+                            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                              <path d="M2.5 6.5 5 9l4.5-5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : null}
+                        </span>
+                        <span className="flex-1 truncate text-sm text-ink">{category.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] text-muted">
+                  Built from your live menu. Long menus auto-fit across columns;
+                  only if they still won&apos;t fit does a small &ldquo;+ N
+                  more&rdquo; appear.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Live preview */}
+        <div className="min-w-0">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              {preset.short} · {preset.width} × {preset.height} px
+            </span>
+          </div>
+          <div className="rounded-card border border-line bg-[repeating-conic-gradient(#f0ece1_0%_25%,transparent_0%_50%)] bg-[length:24px_24px] p-4">
+            <div
+              ref={holderRef}
+              className="mx-auto flex max-h-[70vh] items-center justify-center overflow-hidden [&>svg]:h-auto [&>svg]:max-h-[70vh] [&>svg]:w-auto [&>svg]:max-w-full [&>svg]:shadow-card"
+            >
+              {mode === "menu" ? (
+                <MenuArtwork
+                  data={filteredMenuData}
+                  preset={preset}
+                  showPrices={showPrices}
+                  showDescriptions={showDescriptions}
+                />
+              ) : (
+                <BannerArtwork data={bannerData} preset={preset} />
+              )}
+            </div>
           </div>
         </div>
       </div>
