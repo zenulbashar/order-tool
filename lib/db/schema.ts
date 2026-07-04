@@ -775,6 +775,12 @@ export const orders = pgTable(
     // a promo never rewrites a placed order. bank portion = discount − promo.
     promoDiscountCents: integer("promo_discount_cents").notNull().default(0),
     appliedPromoId: text("applied_promo_id"),
+    // The platform's co-funded share of this order's promo discount (Track
+    // E2d-3), recorded at apply time = round(promo_discount_cents ×
+    // promotion.platform_funded_percent ÷ 100). A tracked liability the platform
+    // owes the venue for a co-/platform-funded promo, reconciled out of band —
+    // it does NOT change the charge or the application fee.
+    platformFundedCents: integer("platform_funded_cents").notNull().default(0),
     // Stripe PaymentIntent backing this order (direct charge on the venue's
     // connected account). Set server-side after the order row is written; the
     // webhook resolves orders to confirm/fail by THIS id only — never a
@@ -1311,6 +1317,13 @@ export const promotions = pgTable(
     startsAt: timestamp("starts_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
     fundingSource: promotionFunding("funding_source").notNull().default("merchant"),
+    // Co-funding split (Track E2d-3): the % of each order's promo discount the
+    // PLATFORM absorbs (0 = merchant funds it all, 100 = platform funds it all,
+    // in between = co-funded). Drives the per-order platform_funded_cents
+    // liability recorded at apply time; settled with venues OUT OF BAND (no
+    // automated transfer). funding_source is the human label; this is the number
+    // the accounting uses.
+    platformFundedPercent: integer("platform_funded_percent").notNull().default(0),
     // Targeting + guardrails (Track E2d-2). scope=selected restricts to the
     // venues in promotion_venues; audience=new restricts to first-time
     // customers; budget_cents (nullable = uncapped) is a soft spend cap — once
@@ -1329,6 +1342,10 @@ export const promotions = pgTable(
     check(
       "promotions_budget_pos",
       sql`${table.budgetCents} IS NULL OR ${table.budgetCents} > 0`,
+    ),
+    check(
+      "promotions_platform_funded_range",
+      sql`${table.platformFundedPercent} >= 0 AND ${table.platformFundedPercent} <= 100`,
     ),
   ],
 );

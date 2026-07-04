@@ -57,6 +57,17 @@ export async function createPromotion(formData: FormData): Promise<void> {
     ? (fundingRaw as (typeof FUNDING)[number])
     : "merchant";
 
+  // Co-funding split → the % the platform absorbs. merchant=0, platform=100,
+  // cofunded=the entered share (clamped to a real split, 1–99, default 50).
+  let platformFundedPercent = 0;
+  if (fundingSource === "platform") {
+    platformFundedPercent = 100;
+  } else if (fundingSource === "cofunded") {
+    const pct = Number(String(formData.get("platformPercent") ?? "").trim());
+    platformFundedPercent =
+      Number.isFinite(pct) && pct >= 1 && pct <= 99 ? Math.round(pct) : 50;
+  }
+
   const audienceRaw = String(formData.get("audience") ?? "all");
   const audience = (AUDIENCES as readonly string[]).includes(audienceRaw)
     ? (audienceRaw as (typeof AUDIENCES)[number])
@@ -86,6 +97,7 @@ export async function createPromotion(formData: FormData): Promise<void> {
       startsAt: parseDate(formData.get("startsAt")),
       endsAt: parseDate(formData.get("endsAt")),
       fundingSource,
+      platformFundedPercent,
       scope,
       audience,
       budgetCents,
