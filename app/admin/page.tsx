@@ -132,7 +132,13 @@ export default async function AdminConsolePage() {
           {venueRows.length} venue{venueRows.length === 1 ? "" : "s"} ·{" "}
           {liveCount} live · {payingCount} paying
         </p>
-        <nav className="mt-3">
+        <nav className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href="/admin/stats"
+            className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+          >
+            Stats →
+          </Link>
           <Link
             href="/admin/marketplace"
             className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
