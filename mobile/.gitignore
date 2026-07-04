@@ -1,0 +1,22 @@
+# Node
+node_modules/
+*.log
+
+# macOS
+.DS_Store
+
+# Capacitor / native build outputs (the ios/ and android/ project folders
+# themselves CAN be committed once generated with `cap add`; these are the heavy,
+# machine-specific build artifacts that should not be.)
+ios/App/Pods/
+ios/App/build/
+ios/App/output/
+ios/DerivedData/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/app/release/
+*.keystore
+*.jks

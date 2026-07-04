@@ -1,0 +1,28 @@
+{
+  "name": "prompt2eat-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prompt2Eat owner app — Capacitor native shell over the hosted dashboard (hybrid phase 1).",
+  "scripts": {
+    "add:ios": "cap add ios",
+    "add:android": "cap add android",
+    "sync": "cap sync",
+    "update": "cap update",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android",
+    "assets": "npx @capacitor/assets@3 generate --iconBackgroundColor '#0f241b' --iconBackgroundColorDark '#0f241b' --splashBackgroundColor '#0f241b' --splashBackgroundColorDark '#0f241b'"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.4.1",
+    "@capacitor/app": "8.1.0",
+    "@capacitor/browser": "8.0.3",
+    "@capacitor/core": "8.4.1",
+    "@capacitor/ios": "8.4.1",
+    "@capacitor/push-notifications": "8.1.1",
+    "@capacitor/splash-screen": "8.0.1",
+    "@capacitor/status-bar": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.4.1"
+  }
+}
