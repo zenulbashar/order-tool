@@ -251,6 +251,7 @@ export function MenuEditor({
           <ItemForm categoryId={selectedCategoryId} />
         ) : selectedItem ? (
           <ItemDetail
+            key={selectedItem.id}
             item={selectedItem}
             variants={variantsByItem.get(selectedItem.id) ?? []}
             groups={groupsByItem.get(selectedItem.id) ?? []}
