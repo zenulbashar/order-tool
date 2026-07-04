@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design handoff bundle — reference assets only (the vendored .dc.html
+    // viewer JS is not our code and is never imported or shipped).
+    "design/**",
   ]),
 ]);
 

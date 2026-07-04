@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Hanken Grotesk', sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  @keyframes p2e-glow { 0%,100% { opacity:.45; } 50% { opacity:.95; } }
+  @keyframes p2e-spark { 0%,100% { transform: scale(1) rotate(0deg); opacity:.85; } 50% { transform: scale(1.18) rotate(45deg); opacity:1; } }
+  @keyframes p2e-think { 0%,80%,100% { transform: translateY(0); opacity:.35; } 40% { transform: translateY(-6px); opacity:1; } }
+  @keyframes p2e-shimmer { 0% { background-position: -180% 0; } 100% { background-position: 180% 0; } }
+  @keyframes p2e-blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+  @keyframes p2e-rise { 0% { transform: translateY(10px); opacity:0; } 100% { transform: translateY(0); opacity:1; } }
+  @keyframes p2e-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes p2e-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(63,166,106,.5); } 50% { box-shadow:0 0 0 9px rgba(63,166,106,0); } }
+  @keyframes p2e-draw { to { stroke-dashoffset: 0; } }
+</style>
+</helmet>
+
+<div data-drags-parent="1" style="position:absolute; left:80px; top:40px; width:1240px;">
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span style="font:800 36px 'Bricolage Grotesque',sans-serif; letter-spacing:-.035em; color:#16241C;">Prompt<span style="color:#F4B43C;">2</span>Eat</span>
+    <span style="font:700 10px 'Space Mono',monospace; letter-spacing:.2em; color:#8a9384; border:1px solid #dfe4d8; border-radius:999px; padding:5px 11px;">D · ROADMAP</span>
+  </div>
+  <div style="font:500 15px 'Hanken Grotesk',sans-serif; color:#6E756B; margin-top:8px; white-space:nowrap;">Designed ahead — genuinely planned. The system already has a visual home for each. Concept fidelity, same identity, clearly flagged future.</div>
+  <div style="display:flex; gap:7px; margin-top:13px; flex-wrap:wrap;"><a href="Prompt2Eat.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Identity</a><a href="P2E-Components.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Components</a><a href="P2E-Owner.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Owner</a><a href="P2E-Diner.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Diner</a><a href="P2E-Roadmap.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border:1px solid #F4B43C; border-radius:999px; padding:6px 13px;">Roadmap</a></div>
+</div>
+
+<!-- ===== AI SALES ANALYTICS ===== -->
+<div style="position:absolute; left:80px; top:200px; width:700px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">AI sales analytics · ask your data</div>
+  <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:20px; box-shadow:0 1px 3px rgba(20,30,25,.05),0 24px 46px -18px rgba(20,30,25,.16); padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;"><div style="font:800 18px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Insights</div><span style="display:inline-flex; align-items:center; gap:5px; font:700 9px 'Space Mono'; color:#16241C; background:#F4B43C; border-radius:6px; padding:3px 7px;">✦ AI</span><span style="margin-left:auto; font:700 8px 'Space Mono'; letter-spacing:.12em; color:#b07f1e; background:#fbf0d8; border:1px solid #f0d49a; border-radius:999px; padding:4px 9px;">◷ PLANNED</span></div>
+    <div style="align-self:flex-end; background:linear-gradient(180deg,#F6BE4A,#EFA82C); border-radius:14px 14px 4px 14px; padding:11px 15px; max-width:80%; font:600 13px 'Hanken Grotesk'; color:#3a2a08;">How did dinner sales do this week?</div>
+    <div style="display:flex; gap:9px; align-items:flex-start;">
+      <dc-import name="P2EMark" variant="amber" size="26" hint-size="26px,26px"></dc-import>
+      <div style="flex:1; background:#F6F0E2; border:1px solid #efe7d6; border-radius:4px 14px 14px 14px; padding:14px 16px;">
+        <div style="font:500 13px/1.5 'Hanken Grotesk'; color:#3a443c;">Dinner sales are up <b style="color:#16241C;">14%</b> on last week — your strongest evening yet. Friday led with <b style="color:#16241C;">$1,420</b>. Bowls and the new salad drove most of it.</div>
+        <div style="display:flex; align-items:flex-end; gap:9px; height:120px; margin-top:16px;">
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="width:60%; height:46px; background:#F4D08A; border-radius:5px 5px 0 0;"></div><span style="font:600 9px 'Space Mono'; color:#a0987f;">M</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="width:60%; height:62px; background:#F4D08A; border-radius:5px 5px 0 0;"></div><span style="font:600 9px 'Space Mono'; color:#a0987f;">T</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="width:60%; height:54px; background:#F4D08A; border-radius:5px 5px 0 0;"></div><span style="font:600 9px 'Space Mono'; color:#a0987f;">W</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="width:60%; height:74px; background:#F4B43C; border-radius:5px 5px 0 0;"></div><span style="font:600 9px 'Space Mono'; color:#a0987f;">T</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="width:60%; height:98px; background:#13301f; border-radius:5px 5px 0 0; position:relative;"><span style="position:absolute; top:-20px; left:50%; transform:translateX(-50%); font:700 8px 'Space Mono'; color:#16241C; background:#F4B43C; border-radius:4px; padding:2px 5px; white-space:nowrap;">$1.4k</span></div><span style="font:700 9px 'Space Mono'; color:#16241C;">F</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="width:60%; height:88px; background:#F4B43C; border-radius:5px 5px 0 0;"></div><span style="font:600 9px 'Space Mono'; color:#a0987f;">S</span></div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;"><div style="width:60%; height:50px; background:#e7dcc4; border-radius:5px 5px 0 0;"></div><span style="font:600 9px 'Space Mono'; color:#a0987f;">S</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; gap:7px; flex-wrap:wrap;"><span style="font:600 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #EAE2D2; border-radius:999px; padding:7px 12px;">Which item grew most?</span><span style="font:600 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #EAE2D2; border-radius:999px; padding:7px 12px;">Compare to last month</span><span style="font:600 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #EAE2D2; border-radius:999px; padding:7px 12px;">Slowest hours?</span></div>
+    <div style="display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #e6ddcb; border-radius:13px; padding:8px 8px 8px 15px;"><span style="flex:1; font:400 13px 'Space Mono'; color:#b6ab92;">Ask anything about your venue…</span><span style="width:36px; height:36px; border-radius:10px; background:#16241C; color:#F4B43C; display:flex; align-items:center; justify-content:center; font-size:17px;">↑</span></div>
+  </div>
+</div>
+
+<!-- ===== AI MARKETING GENERATOR ===== -->
+<div style="position:absolute; left:820px; top:200px; width:620px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">AI marketing · social + promo generator</div>
+  <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:20px; box-shadow:0 1px 3px rgba(20,30,25,.05),0 24px 46px -18px rgba(20,30,25,.16); padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;"><div style="font:800 18px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Marketing studio</div><span style="display:inline-flex; align-items:center; gap:5px; font:700 9px 'Space Mono'; color:#16241C; background:#F4B43C; border-radius:6px; padding:3px 7px;">✦ AI</span><span style="margin-left:auto; font:700 8px 'Space Mono'; letter-spacing:.12em; color:#b07f1e; background:#fbf0d8; border:1px solid #f0d49a; border-radius:999px; padding:4px 9px;">◷ PLANNED</span></div>
+    <div style="background:#F6F0E2; border:1px solid #efe7d6; border-radius:12px; padding:12px 14px; font:500 13px/1.5 'Hanken Grotesk'; color:#3a443c;">"Promote the new <b style="color:#16241C;">Roast Pumpkin Salad</b> — sunny weekend brunch energy."</div>
+    <div style="display:flex; gap:7px;"><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:6px 12px;">Instagram</span><span style="font:600 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #EAE2D2; border-radius:999px; padding:6px 12px;">Facebook</span><span style="font:600 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #EAE2D2; border-radius:999px; padding:6px 12px;">Poster</span></div>
+    <div style="display:flex; gap:14px;">
+      <div style="width:180px; flex-shrink:0;">
+        <div style="position:relative; width:180px; height:180px; border-radius:14px; overflow:hidden; background:repeating-linear-gradient(135deg,#dcb36a 0 14px,#d3a85e 14px 28px); border:1px solid #efe7d6;">
+          <div style="position:absolute; inset:0; background:linear-gradient(180deg,rgba(14,31,24,.05),rgba(14,31,24,.4));"></div>
+          <span style="position:absolute; top:10px; left:10px; font:700 8px 'Space Mono'; color:#16241C; background:#F4B43C; border-radius:5px; padding:3px 7px;">✦ AI IMAGE</span>
+          <div style="position:absolute; bottom:12px; left:12px; right:12px; font:800 15px 'Bricolage Grotesque'; color:#fff;">Roast Pumpkin Salad</div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:8px;"><div style="flex:1; height:34px; border-radius:8px; background:repeating-linear-gradient(135deg,#cdb074 0 7px,#c3a567 7px 14px); border:1.5px solid #F4B43C;"></div><div style="flex:1; height:34px; border-radius:8px; background:repeating-linear-gradient(135deg,#bcc78f 0 7px,#b3bf84 7px 14px);"></div><div style="flex:1; height:34px; border-radius:8px; background:repeating-linear-gradient(135deg,#d8b98a 0 7px,#cfae7d 7px 14px);"></div></div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a0987f; margin-bottom:7px;">CAPTION</div>
+        <div style="background:#fff; border:1px solid #e6ddcb; border-radius:12px; padding:12px 14px; font:400 13px/1.55 'Hanken Grotesk'; color:#3a443c; flex:1;">Weekend just got greener 🍂 Our new Roast Pumpkin Salad is here — maple-roasted, peppery rocket, toasted seeds. Sunlit brunch sorted.</div>
+        <div style="font:500 12px 'Hanken Grotesk'; color:#c08a2e; margin-top:9px;">#CamberwellEats · #BrunchGoals · #MapleAndThyme</div>
+        <div style="display:flex; gap:9px; margin-top:13px;"><span style="flex:1; text-align:center; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:10px; padding:9px;">↻ Regenerate</span><span style="flex:1; text-align:center; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:9px;">Schedule post</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MULTI-VENUE (SCALE) ===== -->
+<div style="position:absolute; left:1480px; top:200px; width:700px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Multi-venue · cross-venue overview</div>
+  <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:20px; box-shadow:0 1px 3px rgba(20,30,25,.05),0 24px 46px -18px rgba(20,30,25,.16); padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;"><div style="font:800 18px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">All venues</div><span style="margin-left:auto; font:700 8px 'Space Mono'; letter-spacing:.12em; color:#16241C; background:#F4B43C; border-radius:999px; padding:4px 9px;">SCALE TIER</span></div>
+    <div style="display:flex; align-items:center; gap:11px; background:#13301f; border-radius:13px; padding:11px 14px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:repeating-linear-gradient(135deg,#caa15f 0 6px,#bf9352 6px 12px);"></div>
+      <div style="flex:1;"><div style="font:700 13px 'Hanken Grotesk'; color:#fff;">Maple &amp; Thyme · all locations</div><div style="font:500 10px 'Hanken Grotesk'; color:#7fa890;">3 venues · London</div></div>
+      <span style="font:700 11px 'Hanken Grotesk'; color:#F4B43C;">Switch ⌄</span>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:11px;">
+      <div style="background:#fff; border:1px solid #eee3cf; border-radius:13px; padding:14px;"><div style="font:700 9px 'Space Mono'; color:#a0987f; letter-spacing:.1em;">TODAY · ALL</div><div style="font:800 24px 'Bricolage Grotesque'; color:#16241C; margin-top:5px;">$9,840</div><div style="font:700 10px 'Hanken Grotesk'; color:#2f8a55; margin-top:3px;">▲ 9%</div></div>
+      <div style="background:#fff; border:1px solid #eee3cf; border-radius:13px; padding:14px;"><div style="font:700 9px 'Space Mono'; color:#a0987f; letter-spacing:.1em;">ORDERS</div><div style="font:800 24px 'Bricolage Grotesque'; color:#16241C; margin-top:5px;">386</div><div style="font:700 10px 'Hanken Grotesk'; color:#2f8a55; margin-top:3px;">▲ 12%</div></div>
+      <div style="background:#fff; border:1px solid #eee3cf; border-radius:13px; padding:14px;"><div style="font:700 9px 'Space Mono'; color:#a0987f; letter-spacing:.1em;">AVG HEALTH</div><div style="font:800 24px 'Bricolage Grotesque'; color:#16241C; margin-top:5px;">86</div><div style="font:700 10px 'Hanken Grotesk'; color:#2f8a55; margin-top:3px;">Good</div></div>
+    </div>
+    <div style="background:#fff; border:1px solid #eee3cf; border-radius:14px; overflow:hidden;">
+      <div style="display:grid; grid-template-columns:1.7fr 1fr 1fr 0.8fr; gap:10px; padding:9px 15px; background:#FBF8F1; border-bottom:1px solid #ece3d1; font:700 9px 'Space Mono'; letter-spacing:.08em; color:#a0987f;"><span>VENUE</span><span>ORDERS</span><span>REVENUE</span><span>HEALTH</span></div>
+      <div style="display:grid; grid-template-columns:1.7fr 1fr 1fr 0.8fr; gap:10px; padding:11px 15px; border-bottom:1px solid #f1ead9; align-items:center;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C;">Camberwell</span><span style="font:600 12px 'Hanken Grotesk'; color:#5d655b;">142</span><span style="font:800 12px 'Bricolage Grotesque'; color:#16241C;">$3,480</span><span style="font:700 11px 'Hanken Grotesk'; color:#2f8a55;">96</span></div>
+      <div style="display:grid; grid-template-columns:1.7fr 1fr 1fr 0.8fr; gap:10px; padding:11px 15px; border-bottom:1px solid #f1ead9; align-items:center;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C;">Shoreditch</span><span style="font:600 12px 'Hanken Grotesk'; color:#5d655b;">128</span><span style="font:800 12px 'Bricolage Grotesque'; color:#16241C;">$3,210</span><span style="font:700 11px 'Hanken Grotesk'; color:#b07f1e;">78</span></div>
+      <div style="display:grid; grid-template-columns:1.7fr 1fr 1fr 0.8fr; gap:10px; padding:11px 15px; align-items:center;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C;">Peckham</span><span style="font:600 12px 'Hanken Grotesk'; color:#5d655b;">116</span><span style="font:800 12px 'Bricolage Grotesque'; color:#16241C;">$3,150</span><span style="font:700 11px 'Hanken Grotesk'; color:#2f8a55;">84</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== REVIEWS & RATINGS ===== -->
+<div style="position:absolute; left:80px; top:820px; width:700px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Reviews &amp; ratings · owner responses</div>
+  <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:20px; box-shadow:0 1px 3px rgba(20,30,25,.05),0 24px 46px -18px rgba(20,30,25,.16); padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;"><div style="font:800 18px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Reviews</div><span style="margin-left:auto; font:700 8px 'Space Mono'; letter-spacing:.12em; color:#b07f1e; background:#fbf0d8; border:1px solid #f0d49a; border-radius:999px; padding:4px 9px;">◷ PLANNED</span></div>
+    <div style="display:flex; gap:18px; align-items:center;">
+      <div style="text-align:center; flex-shrink:0;"><div style="font:800 40px 'Bricolage Grotesque'; color:#16241C; line-height:.9;">4.8</div><div style="font:700 12px 'Hanken Grotesk'; color:#F4B43C; margin-top:4px;">★★★★★</div><div style="font:600 10px 'Space Mono'; color:#a0987f; margin-top:4px;">128 REVIEWS</div></div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:5px;">
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font:600 10px 'Space Mono'; color:#a0987f; width:14px;">5</span><span style="flex:1; height:6px; border-radius:999px; background:#EFE7D6; overflow:hidden;"><span style="display:block; width:86%; height:100%; background:#F4B43C;"></span></span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font:600 10px 'Space Mono'; color:#a0987f; width:14px;">4</span><span style="flex:1; height:6px; border-radius:999px; background:#EFE7D6; overflow:hidden;"><span style="display:block; width:10%; height:100%; background:#F4B43C;"></span></span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font:600 10px 'Space Mono'; color:#a0987f; width:14px;">3</span><span style="flex:1; height:6px; border-radius:999px; background:#EFE7D6; overflow:hidden;"><span style="display:block; width:3%; height:100%; background:#F4B43C;"></span></span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font:600 10px 'Space Mono'; color:#a0987f; width:14px;">2</span><span style="flex:1; height:6px; border-radius:999px; background:#EFE7D6; overflow:hidden;"><span style="display:block; width:1%; height:100%; background:#e7dcc4;"></span></span></div>
+      </div>
+    </div>
+    <div style="background:#fff; border:1px solid #eee3cf; border-radius:14px; padding:14px 16px;">
+      <div style="display:flex; align-items:center; gap:10px;"><div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#F4B43C,#E2553A);display:flex;align-items:center;justify-content:center;font:800 13px 'Hanken Grotesk';color:#fff;">J</div><div style="flex:1;"><div style="font:700 13px 'Hanken Grotesk'; color:#16241C;">Jordan M.</div><div style="font:700 11px 'Hanken Grotesk'; color:#F4B43C;">★★★★★ <span style="color:#a0987f; font-weight:500;">· Green Goddess Bowl</span></div></div><span style="font:600 10px 'Space Mono'; color:#a0987f;">2 DAYS AGO</span></div>
+      <div style="font:400 13px/1.5 'Hanken Grotesk'; color:#3a443c; margin-top:9px;">"Genuinely the best bowl in Camberwell. The concierge picked it for me and it was spot on."</div>
+      <div style="display:flex; gap:9px; margin-top:11px; padding-left:12px; border-left:2px solid #F4B43C;">
+        <dc-import name="P2EMark" variant="amber" size="22" hint-size="22px,22px"></dc-import>
+        <div><div style="font:700 11px 'Hanken Grotesk'; color:#16241C;">Maple &amp; Thyme replied</div><div style="font:400 12px/1.45 'Hanken Grotesk'; color:#5d655b;">Thanks Jordan! The kitchen's blushing. See you soon 🌿</div></div>
+      </div>
+    </div>
+    <div style="background:#fff; border:1px solid #f0d49a; border-radius:14px; padding:13px 16px; display:flex; align-items:center; gap:12px;">
+      <div style="flex:1;"><div style="display:flex; align-items:center; gap:8px;"><span style="font:700 13px 'Hanken Grotesk'; color:#16241C;">Priya R.</span><span style="font:700 11px 'Hanken Grotesk'; color:#F4B43C;">★★★★☆</span></div><div style="font:400 12px 'Hanken Grotesk'; color:#5d655b; margin-top:3px;">"Lovely food, wished the wrap was warmer."</div></div>
+      <span style="display:inline-flex; align-items:center; gap:5px; font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:9px; padding:8px 12px; white-space:nowrap;"><span style="animation:p2e-spark 3s ease-in-out infinite;">✦</span> Draft reply</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AGENT / MCP SURFACE ===== -->
+<div style="position:absolute; left:820px; top:820px; width:620px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Agent commerce · MCP / JSON-LD surface</div>
+  <div style="background:radial-gradient(120% 90% at 80% 0%,#163528,#0c1f17 72%); border:1px solid #1c3a2c; border-radius:20px; box-shadow:0 1px 3px rgba(20,30,25,.1),0 28px 50px -20px rgba(13,29,22,.5); padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+    <div style="display:flex; align-items:center; gap:10px;"><div style="font:800 18px 'Bricolage Grotesque'; color:#fff; letter-spacing:-.02em;">Agent commerce</div><span style="font:700 8px 'Space Mono'; color:#7fd6a0; background:rgba(127,214,160,.14); border:1px solid rgba(127,214,160,.3); border-radius:6px; padding:3px 7px;">MCP · JSON-LD</span><span style="margin-left:auto; font:700 8px 'Space Mono'; letter-spacing:.12em; color:#F4B43C; background:rgba(244,180,60,.12); border:1px solid rgba(244,180,60,.3); border-radius:999px; padding:4px 9px;">◷ PLANNED</span></div>
+    <div style="font:500 12px/1.5 'Hanken Grotesk'; color:#a9c3b1;">Every storefront publishes a machine-readable menu, so an external AI agent can browse and order on a diner's behalf.</div>
+    <div style="background:rgba(0,0,0,.32); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:13px 15px; font-family:'Space Mono',monospace;">
+      <div style="font:700 8px 'Space Mono'; color:#7fa890; letter-spacing:.12em; margin-bottom:8px;">GET /maple-thyme/menu.jsonld</div>
+      <div style="font:400 11px/1.7 'Space Mono'; color:#cfe6d4;"><span style="color:#7fd6a0;">"@type"</span>: <span style="color:#F4B43C;">"Restaurant"</span>,<br><span style="color:#7fd6a0;">"name"</span>: <span style="color:#F4B43C;">"Maple &amp; Thyme"</span>,<br><span style="color:#7fd6a0;">"hasMenuItem"</span>: [{<br>&nbsp;&nbsp;<span style="color:#7fd6a0;">"name"</span>: <span style="color:#F4B43C;">"Quinoa Power Bowl"</span>,<br>&nbsp;&nbsp;<span style="color:#7fd6a0;">"price"</span>: <span style="color:#F4B43C;">11.00</span>, <span style="color:#7fd6a0;">"diet"</span>: <span style="color:#F4B43C;">"Vegan"</span><br>}]</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <div style="align-self:flex-start; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1); border-radius:12px 12px 12px 4px; padding:9px 13px; max-width:88%; font:500 12px 'Hanken Grotesk'; color:#eaf3ec;"><span style="font:700 9px 'Space Mono'; color:#7fa890;">AGENT ▸</span> Find vegan mains under $15, pickup 12:40.</div>
+      <div style="align-self:flex-end; display:flex; align-items:center; gap:8px; background:linear-gradient(110deg,#1d4a35,#13301f); border:1px solid rgba(244,180,60,.25); border-radius:12px 12px 4px 12px; padding:9px 13px; max-width:88%;"><dc-import name="P2EMark" variant="glow" size="20" hint-size="20px,20px"></dc-import><span style="font:500 12px 'Hanken Grotesk'; color:#fff;">1 match — Quinoa Power Bowl, $11. Confirm order?</span></div>
+      <div style="display:flex; align-items:center; gap:9px; background:rgba(63,166,106,.14); border:1px solid rgba(63,166,106,.3); border-radius:11px; padding:10px 13px;"><span style="width:20px;height:20px;border-radius:50%;background:#3FA66A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;">✓</span><span style="flex:1; font:700 11px 'Space Mono'; color:#7fd6a0;">ORDER #A-2207 PLACED VIA AGENT</span><span style="font:500 10px 'Space Mono'; color:#7fa890;">$11.00</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AUTO-TRANSLATED MENU (phone) ===== -->
+<div style="position:absolute; left:2220px; top:200px; width:392px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Auto-translated menus</div>
+  <div style="width:392px; height:852px; border-radius:46px; background:#0e1f18; padding:11px; box-shadow:0 1px 3px rgba(20,30,25,.18),0 44px 74px -30px rgba(13,29,22,.45); position:relative;">
+    <div style="width:100%; height:100%; border-radius:36px; overflow:hidden; background:#F7F3EA; position:relative; display:flex; flex-direction:column;">
+      <div style="height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; color:#16241C; font:700 13px 'Hanken Grotesk'; flex-shrink:0;"><span>9:41</span><span style="font-size:9px; letter-spacing:.14em;">●●●</span></div>
+      <div style="padding:4px 18px 12px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:12px;"><span style="color:#16241C; font-size:22px;">‹</span><div style="flex:1;"><div style="font:800 18px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Maple &amp; Thyme</div><div style="font:600 11px 'Hanken Grotesk'; color:#8a9384;">Desayuno · Menú</div></div></div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:12px; background:#fff; border:1px solid #EAE2D2; border-radius:12px; padding:9px 12px;"><span style="font-size:15px;">🌐</span><span style="flex:1; font:700 12px 'Hanken Grotesk'; color:#16241C;">Español</span><span style="font:700 8px 'Space Mono'; color:#16241C; background:#F4B43C; border-radius:5px; padding:3px 7px;">AUTO</span><span style="color:#a0987f;">⌄</span></div>
+        <div style="display:flex; gap:6px; margin-top:9px;"><span style="font:700 11px 'Hanken Grotesk'; color:#F7F3EA; background:#13301f; border-radius:999px; padding:6px 12px;">EN</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:6px 12px;">ES</span><span style="font:600 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #EAE2D2; border-radius:999px; padding:6px 12px;">FR</span><span style="font:600 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #EAE2D2; border-radius:999px; padding:6px 12px;">中文</span></div>
+      </div>
+      <div style="flex:1; overflow:hidden; padding:0 18px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; gap:13px; background:#fff; border:1px solid #efe7d6; border-radius:17px; padding:12px; box-shadow:0 4px 12px -6px rgba(20,30,25,.08);">
+          <div style="flex:1;"><div style="font:700 15px 'Hanken Grotesk'; color:#16241C;">Bol Green Goddess</div><div style="font:400 12px/1.4 'Hanken Grotesk'; color:#8a9384; margin-top:3px;">Aguacate, col rizada, huevo, tahini.</div><div style="font:800 15px 'Bricolage Grotesque'; color:#16241C; margin-top:9px;">$13.00</div></div>
+          <div style="position:relative; width:84px; height:84px; border-radius:13px; background:repeating-linear-gradient(135deg,#e9c88a 0 12px,#e0bd7c 12px 24px); flex-shrink:0;"><div style="position:absolute; bottom:-8px; right:-8px; width:32px; height:32px; border-radius:50%; background:#F4B43C; color:#16241C; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700;">+</div></div>
+        </div>
+        <div style="display:flex; gap:13px; background:#fff; border:1px solid #efe7d6; border-radius:17px; padding:12px; box-shadow:0 4px 12px -6px rgba(20,30,25,.08);">
+          <div style="flex:1;"><div style="font:700 15px 'Hanken Grotesk'; color:#16241C;">Huevos con Chili Crujiente</div><div style="font:400 12px/1.4 'Hanken Grotesk'; color:#8a9384; margin-top:3px;">Masa madre, dos huevos, cebollino.</div><div style="font:800 15px 'Bricolage Grotesque'; color:#16241C; margin-top:9px;">$11.50</div></div>
+          <div style="position:relative; width:84px; height:84px; border-radius:13px; background:repeating-linear-gradient(135deg,#e3a98a 0 12px,#dba07f 12px 24px); flex-shrink:0;"><div style="position:absolute; bottom:-8px; right:-8px; width:32px; height:32px; border-radius:50%; background:#F4B43C; color:#16241C; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700;">+</div></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; background:#f1f7f0; border:1px solid #d9ead7; border-radius:11px; padding:10px 13px;"><span style="color:#2f8a55;">🌐</span><span style="font:500 11px 'Hanken Grotesk'; color:#2f6a48;">Traducido automáticamente · toca EN para el original.</span></div>
+      </div>
+      <div style="flex-shrink:0; padding:0 18px 18px;"><div style="background:#13301f; border-radius:16px; padding:13px 18px; display:flex; align-items:center; justify-content:space-between;"><div style="display:flex; align-items:center; gap:10px;"><span style="width:24px;height:24px;border-radius:7px;background:#F4B43C;color:#16241C;display:flex;align-items:center;justify-content:center;font:700 12px 'Hanken Grotesk';">2</span><span style="font:700 14px 'Hanken Grotesk'; color:#fff;">Ver pedido</span></div><span style="font:800 15px 'Bricolage Grotesque'; color:#F4B43C;">$24.50</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PWA / PUSH (phone) ===== -->
+<div style="position:absolute; left:2220px; top:1090px; width:392px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">PWA · install + order-ready push</div>
+  <div style="width:392px; height:852px; border-radius:46px; background:#0e1f18; padding:11px; box-shadow:0 1px 3px rgba(20,30,25,.18),0 44px 74px -30px rgba(13,29,22,.45); position:relative;">
+    <div style="width:100%; height:100%; border-radius:36px; overflow:hidden; background:radial-gradient(130% 80% at 50% 10%,#1d4636,#0c1f17 75%); position:relative; display:flex; flex-direction:column;">
+      <div style="height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; color:#fff; font:700 13px 'Hanken Grotesk'; flex-shrink:0;"><span>9:41</span><span style="font-size:9px; letter-spacing:.14em;">●●●</span></div>
+      <div style="text-align:center; margin-top:26px; flex-shrink:0;"><div style="font:300 64px 'Hanken Grotesk'; color:#fff; letter-spacing:-.02em;">9:49</div><div style="font:600 13px 'Hanken Grotesk'; color:#cfe6d4;">Saturday, 28 June</div></div>
+      <div style="padding:22px 16px 0; flex-shrink:0;">
+        <div style="background:rgba(255,255,255,.14); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.18); border-radius:18px; padding:13px 15px; display:flex; align-items:center; gap:12px; box-shadow:0 14px 30px -12px rgba(0,0,0,.4);">
+          <div style="width:38px;height:38px;border-radius:11px;background:radial-gradient(120% 120% at 30% 18%,#1d4636,#0e1f18);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><dc-import name="P2EMark" variant="glow" size="22" hint-size="22px,22px"></dc-import></div>
+          <div style="flex:1;"><div style="display:flex; align-items:center; justify-content:space-between;"><span style="font:700 12px 'Hanken Grotesk'; color:#fff;">Prompt2Eat</span><span style="font:500 10px 'Space Mono'; color:rgba(255,255,255,.7);">now</span></div><div style="font:700 13px 'Hanken Grotesk'; color:#fff; margin-top:2px;">Your order's ready! 🛍</div><div style="font:500 12px 'Hanken Grotesk'; color:rgba(255,255,255,.85);">Table 12 — come grab it while it's hot.</div></div>
+        </div>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="flex-shrink:0; padding:0 14px 22px;">
+        <div style="background:#FBF8F1; border-radius:22px; padding:18px; box-shadow:0 -10px 30px -12px rgba(0,0,0,.4);">
+          <div style="width:38px; height:4px; border-radius:999px; background:#d8cbb0; margin:0 auto 14px;"></div>
+          <div style="display:flex; align-items:center; gap:13px;">
+            <div style="width:54px;height:54px;border-radius:14px;background:radial-gradient(120% 120% at 30% 18%,#1d4636,#0e1f18);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><dc-import name="P2EMark" variant="glow" size="30" hint-size="30px,30px"></dc-import></div>
+            <div style="flex:1;"><div style="font:800 16px 'Bricolage Grotesque'; color:#16241C;">Add Prompt2Eat to Home</div><div style="font:500 12px/1.4 'Hanken Grotesk'; color:#8a9384;">One-tap ordering &amp; live order alerts — no app store.</div></div>
+          </div>
+          <div style="display:flex; gap:9px; margin-top:15px;"><span style="flex:1; text-align:center; font:700 13px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:12px; padding:12px;">Not now</span><span style="flex:1; text-align:center; font:800 13px 'Bricolage Grotesque'; color:#16241C; background:#F4B43C; border-radius:12px; padding:12px;">Add to Home</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
