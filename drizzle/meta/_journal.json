@@ -225,6 +225,13 @@
       "when": 1783141142399,
       "tag": "0031_outstanding_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1783141864695,
+      "tag": "0032_crazy_tyger_tiger",
+      "breakpoints": true
     }
   ]
 }

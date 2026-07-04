@@ -77,6 +77,7 @@ export async function applyOrderDiscounts(
       subtotalCents: orders.subtotalCents,
       status: orders.status,
       pi: orders.stripePaymentIntentId,
+      customerId: orders.customerId,
     })
     .from(orders)
     .where(
@@ -85,7 +86,11 @@ export async function applyOrderDiscounts(
     .limit(1);
   if (!pre || pre.status !== "pending_payment" || !pre.pi) return { ok: false };
 
-  const promo = await resolveActivePromo(pre.subtotalCents);
+  const promo = await resolveActivePromo(
+    venue.id,
+    pre.subtotalCents,
+    pre.customerId,
+  );
   const promoRaw = promo?.raw ?? 0;
   const bankRaw =
     BANK_METHODS.has(method) && venue.paytoEnabled
