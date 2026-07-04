@@ -157,7 +157,7 @@ export default async function AdminPromotionsPage() {
 
           <button
             type="submit"
-            className="rounded-control bg-forest px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            className="rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-forest transition hover:opacity-90"
           >
             Create promotion
           </button>

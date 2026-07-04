@@ -34,7 +34,7 @@ function BarRow({ label, value, max, display }: { label: string; value: number; 
     <div className="flex items-center gap-3 py-1.5">
       <span className="w-28 shrink-0 truncate text-xs font-medium text-ink">{label}</span>
       <span className="h-3 flex-1 overflow-hidden rounded-pill bg-line">
-        <span className="block h-full rounded-pill bg-forest" style={{ width: `${pct}%` }} />
+        <span className="block h-full rounded-pill bg-[var(--color-accent)]" style={{ width: `${pct}%` }} />
       </span>
       <span className="w-16 shrink-0 text-right font-mono text-[11px] text-muted">{display}</span>
     </div>
@@ -177,7 +177,7 @@ export default async function PlatformStatsPage() {
           {trend.map((t, i) => (
             <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
               <div
-                className="w-full rounded-t-[3px] bg-forest transition-all"
+                className="w-full rounded-t-[3px] bg-[var(--color-accent)] transition-all"
                 style={{ height: `${Math.max(3, (t.count / trendMax) * 100)}%` }}
                 title={`${t.label}: ${t.count}`}
               />

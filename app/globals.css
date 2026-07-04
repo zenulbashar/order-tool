@@ -326,6 +326,28 @@
 }
 
 /*
+ * Admin (platform-operator) console — a dark "ops" surface (P2E-Admin design).
+ * The admin pages use the same token-backed utilities as the rest of the app,
+ * so scoping a dark override of those tokens here recolours the entire console
+ * (surfaces, text, borders) without editing each page's markup. Only the
+ * operator console opts in via the .admin-dark wrapper (see app/admin/layout).
+ * The amber accent + status colours are intentionally left untouched.
+ */
+.admin-dark {
+  --color-surface: #0e1f18;
+  --color-surface-elevated: #16261e;
+  --color-sand: #1c2c24;
+  --color-line: #26362d;
+  --color-line-strong: #33473c;
+  --color-ink: #eaf3ec;
+  --color-muted: #a9c3b1;
+  --color-label: #7fa890;
+  --color-hover-secondary: #1c2c24;
+  --action: var(--color-accent);
+  --action-contrast: #16241c;
+}
+
+/*
  * Print: page-level setup only. The dashboard/ticket show-hide is done with
  * Tailwind `print:` utilities at the component (see PrintProvider); @page
  * margins and the paper background can't be expressed as utilities.
