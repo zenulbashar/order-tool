@@ -78,6 +78,17 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
 
       <section className="px-5 py-8">
         <Card>
+          <div className="mb-3 flex items-center gap-3 border-b border-line pb-3">
+            <span
+              aria-hidden="true"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#635bff] text-sm font-bold text-white"
+            >
+              S
+            </span>
+            <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+              Stripe Connect
+            </h2>
+          </div>
           {!connected ? (
             <div className="space-y-3">
               <StatusBadge tone="gray" label="Not connected" />
@@ -138,38 +149,62 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
         {connected && chargesEnabled ? (
           <Card className="mt-4">
             <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-base font-semibold tracking-tight text-ink">
-                    Pay by bank (PayTo)
-                  </h2>
-                  {venue.paytoEnabled ? (
-                    paytoCapability === "active" ? (
-                      <StatusBadge tone="green" label="Active" />
-                    ) : paytoCapability === "pending" ? (
-                      <StatusBadge tone="amber" label="Pending verification" />
+              <div className="flex min-w-0 gap-3">
+                <span
+                  aria-hidden="true"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-forest text-base text-[var(--color-accent)]"
+                >
+                  ⇄
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                      PayTo — pay by bank
+                    </h2>
+                    {venue.paytoEnabled ? (
+                      paytoCapability === "active" ? (
+                        <StatusBadge tone="green" label="Active" />
+                      ) : paytoCapability === "pending" ? (
+                        <StatusBadge tone="amber" label="Pending verification" />
+                      ) : (
+                        <StatusBadge tone="amber" label="Awaiting Stripe" />
+                      )
                     ) : (
-                      <StatusBadge tone="amber" label="Awaiting Stripe" />
-                    )
-                  ) : (
-                    <StatusBadge tone="gray" label="Off" />
-                  )}
-                </div>
-                <p className="mt-1.5 text-sm text-muted">
-                  Let customers pay straight from their bank account via PayTo —
-                  they approve once in their banking app, no card needed.
-                  Australia only. Payments still settle through your Stripe
-                  account.
-                </p>
-                {venue.paytoEnabled && paytoCapability !== "active" ? (
-                  <p className="mt-2 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-ink">
-                    You&apos;ve turned PayTo on. Stripe is still verifying it for
-                    your account — customers will see &ldquo;Pay by bank&rdquo;
-                    at checkout once it&apos;s active.
+                      <StatusBadge tone="gray" label="Off" />
+                    )}
+                  </div>
+                  <p className="mt-1.5 text-sm text-muted">
+                    Let diners approve a real-time bank-to-bank payment in their
+                    banking app — no card needed. Lower fees than cards, and no
+                    chargebacks. Australia only; payments still settle through
+                    your Stripe account.
                   </p>
-                ) : null}
+                  {venue.paytoEnabled && paytoCapability !== "active" ? (
+                    <p className="mt-2 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-ink">
+                      You&apos;ve turned PayTo on. Stripe is still verifying it
+                      for your account — customers will see &ldquo;Pay by
+                      bank&rdquo; at checkout once it&apos;s active.
+                    </p>
+                  ) : null}
+                </div>
               </div>
               <PayToToggle enabled={venue.paytoEnabled} />
+            </div>
+
+            {/* Benefit row — the honest, non-fabricated PayTo properties. */}
+            <div className="mt-4 grid grid-cols-3 gap-3 border-t border-line pt-3">
+              {[
+                { k: "Provider fee", v: "Lower than cards" },
+                { k: "Approval", v: "In the bank app" },
+                { k: "Chargebacks", v: "None" },
+              ].map((s) => (
+                <div key={s.k}>
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                    {s.k}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-ink">{s.v}</p>
+                </div>
+              ))}
             </div>
 
             {/* Pay-by-bank saving — only meaningful once PayTo is on. */}

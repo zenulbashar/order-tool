@@ -75,20 +75,25 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
     });
   }
 
-  // Group products by category for the browse grid.
-  const grouped = useMemo(() => {
-    const map = new Map<string, ShopProduct[]>();
+  // Category filter pills (design): "All" + the categories actually stocked.
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
     for (const p of products) {
-      const list = map.get(p.category) ?? [];
-      list.push(p);
-      map.set(p.category, list);
+      if (!seen.has(p.category)) {
+        seen.add(p.category);
+        list.push(p.category);
+      }
     }
-    return [...map.entries()];
+    return list;
   }, [products]);
+  const [cat, setCat] = useState<string>("all");
+  const visible = cat === "all" ? products : products.filter((p) => p.category === cat);
+  const itemCount = lines.reduce((sum, [, qty]) => sum + qty, 0);
 
   return (
     <section className="grid gap-6 px-5 py-8 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-6">
+      <div className="space-y-4">
         {done ? (
           <div className="rounded-card border border-[var(--color-success)]/30 bg-[var(--color-success)]/8 px-4 py-3 text-sm text-success-deep">
             Order requested — we&apos;ll confirm it and send an invoice. Track it
@@ -96,66 +101,87 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
           </div>
         ) : null}
 
-        {grouped.map(([category, list]) => (
-          <div key={category}>
-            <p className="mb-2 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
-              {CATEGORY_LABEL[category] ?? category}
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {list.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex flex-col overflow-hidden rounded-card border border-line bg-surface-elevated shadow-card"
-                >
-                  {product.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="h-32 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-32 w-full items-center justify-center bg-hover-secondary text-2xl">
-                      📦
-                    </div>
-                  )}
-                  <div className="flex flex-1 flex-col p-3">
-                    <p className="text-sm font-bold text-ink">{product.name}</p>
-                    {product.description ? (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted">
-                        {product.description}
-                      </p>
-                    ) : null}
-                    <div className="mt-2 flex items-baseline justify-between">
-                      <span className="font-display text-base font-extrabold text-ink">
-                        ${formatCents(product.priceCents)}
-                        {product.unitLabel ? (
-                          <span className="ml-1 font-mono text-[10px] font-normal text-muted">
-                            {product.unitLabel}
-                          </span>
-                        ) : null}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <QtyStepper
-                        value={cart.get(product.id) ?? 0}
-                        onChange={(q) => setQty(product.id, q)}
-                      />
-                    </div>
-                  </div>
+        {/* Category pills */}
+        <div className="flex flex-wrap gap-2">
+          {[{ id: "all", label: "All" }, ...categories.map((c) => ({ id: c, label: CATEGORY_LABEL[c] ?? c }))].map(
+            (c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setCat(c.id)}
+                className={cx(
+                  "rounded-pill px-3.5 py-1.5 text-xs font-bold transition",
+                  cat === c.id
+                    ? "bg-[var(--color-accent)] text-forest"
+                    : "border border-line-strong text-ink hover:bg-hover-secondary",
+                )}
+              >
+                {c.label}
+              </button>
+            ),
+          )}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {visible.map((product) => (
+            <div
+              key={product.id}
+              className="flex flex-col overflow-hidden rounded-card border border-line bg-surface-elevated shadow-card"
+            >
+              {product.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="h-32 w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-32 w-full items-center justify-center bg-[repeating-linear-gradient(135deg,#efe6d2_0_11px,#f6efe1_11px_22px)]">
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                    {CATEGORY_LABEL[product.category] ?? product.category}
+                  </span>
                 </div>
-              ))}
+              )}
+              <div className="flex flex-1 flex-col p-3">
+                <p className="text-sm font-bold text-ink">{product.name}</p>
+                {product.description ? (
+                  <p className="mt-0.5 line-clamp-2 text-xs text-muted">
+                    {product.description}
+                  </p>
+                ) : null}
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <span className="font-display text-base font-extrabold text-ink">
+                    ${formatCents(product.priceCents)}
+                    {product.unitLabel ? (
+                      <span className="ml-1 font-mono text-[10px] font-normal text-muted">
+                        {product.unitLabel}
+                      </span>
+                    ) : null}
+                  </span>
+                  <QtyStepper
+                    value={cart.get(product.id) ?? 0}
+                    onChange={(q) => setQty(product.id, q)}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Cart */}
       <aside className="lg:sticky lg:top-6 lg:self-start">
         <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-card">
-          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
-            Your order
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="font-display text-base font-semibold tracking-tight text-ink">
+              Your cart
+            </p>
+            {itemCount > 0 ? (
+              <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                {itemCount} {itemCount === 1 ? "item" : "items"}
+              </span>
+            ) : null}
+          </div>
           {lines.length === 0 ? (
             <p className="mt-3 text-sm text-muted">
               Add items to build an order. You&apos;ll be invoiced — nothing is
@@ -163,30 +189,39 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
             </p>
           ) : (
             <>
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-3 space-y-2.5">
                 {lines.map(([id, qty]) => {
                   const p = byId.get(id);
                   if (!p) return null;
                   return (
-                    <li
-                      key={id}
-                      className="flex items-center justify-between gap-2 text-sm"
-                    >
-                      <span className="min-w-0 truncate text-ink">
-                        {qty}× {p.name}
+                    <li key={id} className="flex items-center gap-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-input bg-[repeating-linear-gradient(135deg,#efe6d2_0_7px,#f6efe1_7px_14px)]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-ink">
+                          {p.name}
+                        </span>
+                        <span className="block truncate font-mono text-[10px] text-muted">
+                          {p.unitLabel ?? "each"} · ×{qty}
+                        </span>
                       </span>
-                      <span className="shrink-0 font-medium text-ink">
+                      <span className="shrink-0 text-sm font-bold text-ink">
                         ${formatCents(p.priceCents * qty)}
                       </span>
                     </li>
                   );
                 })}
               </ul>
-              <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-                <span className="text-sm font-medium text-ink">Total</span>
-                <span className="font-display text-lg font-extrabold text-ink">
-                  ${formatCents(total)}
-                </span>
+              <div className="mt-3 space-y-1.5 border-t border-line pt-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Subtotal</span>
+                  <span className="font-display font-extrabold text-ink">
+                    ${formatCents(total)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Est. shipping</span>
+                  <span className="text-muted">Quoted on invoice</span>
+                </div>
               </div>
               <textarea
                 rows={2}
@@ -196,6 +231,10 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                 placeholder="Delivery notes (optional)"
                 className="mt-3 w-full resize-none rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
               />
+              <p className="mt-3 rounded-control bg-hover-secondary px-3 py-2 text-[11px] text-muted">
+                <span className="font-bold text-ink">Invoice later.</span> No card
+                charged now — added to your monthly Prompt2Eat invoice.
+              </p>
               {error ? (
                 <p className="mt-2 text-sm text-warm-deep" role="alert">
                   {error}
@@ -209,12 +248,8 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                 loadingLabel="Sending…"
                 className="mt-3 w-full"
               >
-                Request order
+                Request order →
               </Button>
-              <p className="mt-2 text-[11px] text-muted">
-                We confirm availability and send an invoice — no card is charged
-                here.
-              </p>
             </>
           )}
         </div>
@@ -235,9 +270,9 @@ function QtyStepper({
       <button
         type="button"
         onClick={() => onChange(1)}
-        className="w-full rounded-input border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+        className="rounded-input bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-forest transition hover:opacity-90"
       >
-        Add
+        ＋ Add
       </button>
     );
   }
