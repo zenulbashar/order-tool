@@ -56,6 +56,12 @@ function wrap(text: string, maxChars: number, maxLines: number): string[] {
   return lines;
 }
 
+/** Single-line truncate with an ellipsis so a long name can't overrun a price. */
+function truncate(text: string, maxChars: number): string {
+  if (maxChars <= 1) return "…";
+  return text.length > maxChars ? `${text.slice(0, maxChars - 1).trimEnd()}…` : text;
+}
+
 /* -------------------------------- Menu ---------------------------------- */
 
 export function MenuArtwork({
@@ -67,20 +73,13 @@ export function MenuArtwork({
 }) {
   const { width: W, height: H } = preset;
   const ink = readableOn(data.brandColor);
-  const pad = Math.round(W * 0.06);
+  const pad = Math.round(W * 0.055);
   const headerH = Math.round(H * 0.14);
-  const cols = W > H ? 2 : 1;
-  const colGap = pad;
-  const colW = (W - pad * 2 - colGap * (cols - 1)) / cols;
-  const bodyTop = headerH + Math.round(H * 0.04);
-  const bodyBottom = H - Math.round(H * 0.05);
-
+  const bodyTop = headerH + Math.round(H * 0.035);
+  const bodyBottom = H - Math.round(H * 0.045);
   const nameSize = Math.round(headerH * 0.34);
-  const catSize = Math.round(W * 0.028 * (cols === 1 ? 1 : 0.9)) + 6;
-  const itemSize = Math.round(catSize * 0.72);
-  const descSize = Math.round(itemSize * 0.7);
 
-  // Flatten to a block stream, then flow into columns.
+  // Flatten to a block stream (category header + items).
   type Block =
     | { type: "cat"; name: string }
     | { type: "item"; name: string; priceCents: number; description: string | null };
@@ -91,35 +90,80 @@ export function MenuArtwork({
     for (const it of cat.items) blocks.push({ type: "item", ...it });
   }
 
-  const catH = catSize * 2.1;
-  const itemH = itemSize * 1.5;
-  const descH = descSize * 1.25;
+  type Placed = {
+    col: number;
+    y: number;
+    block: Block;
+    descLines: string[];
+    name: string;
+    itemSize: number;
+    catSize: number;
+    descSize: number;
+  };
 
-  const placed: { col: number; y: number; block: Block; descLines: string[] }[] = [];
-  let col = 0;
-  let y = bodyTop;
-  let truncated = 0;
-  const descMaxChars = Math.floor(colW / (descSize * 0.55));
+  // Try to fit the WHOLE menu: pick the biggest font (then shed descriptions,
+  // then shrink) that lets every block fit across `cols` columns. Only when even
+  // the most compact pass overflows do we fall back to "+N more".
+  const aspect = W / H;
+  const maxCols = aspect >= 1.6 ? 4 : aspect > 1.05 ? 3 : W > 640 ? 2 : 1;
 
-  for (let i = 0; i < blocks.length; i += 1) {
-    const block = blocks[i];
-    const descLines =
-      block.type === "item" && block.description
-        ? wrap(block.description, descMaxChars, 2)
-        : [];
-    const blockH =
-      block.type === "cat" ? catH : itemH + descLines.length * descH;
-    if (y + blockH > bodyBottom) {
-      col += 1;
-      y = bodyTop;
-      if (col >= cols) {
-        truncated = blocks.length - i;
-        break;
+  function layout(cols: number, descCap: 0 | 1 | 2, scale: number) {
+    const colGap = pad;
+    const colW = (W - pad * 2 - colGap * (cols - 1)) / cols;
+    const catSize = Math.max(11, Math.round((W * 0.02) / Math.sqrt(cols) * scale) + 4);
+    const itemSize = Math.max(9, Math.round(catSize * 0.74));
+    const descSize = Math.max(8, Math.round(itemSize * 0.72));
+    const catH = catSize * 1.9;
+    const rowH = itemSize * 1.32;
+    const descH = descSize * 1.2;
+    // Char budgets (rough monospace-free estimate at ~0.55em).
+    const priceReserve = itemSize * 4.2; // room for "$00.00" + gap
+    const nameMaxChars = Math.max(6, Math.floor((colW - priceReserve) / (itemSize * 0.52)));
+    const descMaxChars = Math.max(8, Math.floor(colW / (descSize * 0.52)));
+
+    const placed: Placed[] = [];
+    let col = 0;
+    let y = bodyTop;
+    for (let i = 0; i < blocks.length; i += 1) {
+      const block = blocks[i];
+      const descLines =
+        descCap > 0 && block.type === "item" && block.description
+          ? wrap(block.description, descMaxChars, descCap)
+          : [];
+      const blockH = block.type === "cat" ? catH : rowH + descLines.length * descH;
+      if (y + blockH > bodyBottom) {
+        col += 1;
+        y = bodyTop;
+        if (col >= cols) return { placed, colW, truncated: blocks.length - i };
       }
+      placed.push({
+        col,
+        y,
+        block,
+        descLines,
+        name: block.type === "item" ? truncate(block.name, nameMaxChars) : block.name,
+        itemSize,
+        catSize,
+        descSize,
+      });
+      y += blockH;
     }
-    placed.push({ col, y, block, descLines });
-    y += blockH;
+    return { placed, colW, truncated: 0 };
   }
+
+  let chosen = layout(maxCols, 2, 1);
+  outer: for (const scale of [1, 0.9, 0.8, 0.72, 0.64, 0.56, 0.5, 0.45]) {
+    for (const descCap of [2, 1, 0] as const) {
+      const t = layout(maxCols, descCap, scale);
+      if (t.truncated === 0) {
+        chosen = t;
+        break outer;
+      }
+      chosen = t; // keep the tightest attempt as the fallback
+    }
+  }
+  const { placed, colW, truncated } = chosen;
+  const colGap = pad;
 
   return (
     <svg
@@ -153,54 +197,55 @@ export function MenuArtwork({
           opacity={0.85}
           dominantBaseline="middle"
         >
-          {data.tagline}
+          {truncate(data.tagline, Math.floor((W - pad * 2) / (nameSize * 0.4 * 0.52)))}
         </text>
       ) : null}
 
-      {placed.map(({ col: c, y: by, block, descLines }, idx) => {
-        const x = pad + c * (colW + colGap);
-        if (block.type === "cat") {
+      {placed.map((p, idx) => {
+        const x = pad + p.col * (colW + colGap);
+        if (p.block.type === "cat") {
           return (
             <g key={idx}>
               <text
                 x={x}
-                y={by + catSize}
+                y={p.y + p.catSize}
                 fontFamily={FONT}
-                fontSize={catSize}
+                fontSize={p.catSize}
                 fontWeight={800}
                 fill={data.brandColor}
                 style={{ textTransform: "uppercase" }}
                 letterSpacing={1}
               >
-                {block.name}
+                {p.name}
               </text>
-              <rect x={x} y={by + catSize * 1.35} width={colW} height={2} fill={data.brandColor} opacity={0.3} />
+              <rect x={x} y={p.y + p.catSize * 1.3} width={colW} height={Math.max(1, Math.round(p.catSize * 0.08))} fill={data.brandColor} opacity={0.3} />
             </g>
           );
         }
         return (
           <g key={idx}>
-            <text x={x} y={by + itemSize} fontFamily={FONT} fontSize={itemSize} fontWeight={700} fill="#0e1f18">
-              {block.name}
+            {/* Name reserves room for the right-aligned price (truncated to fit). */}
+            <text x={x} y={p.y + p.itemSize} fontFamily={FONT} fontSize={p.itemSize} fontWeight={700} fill="#0e1f18">
+              {p.name}
             </text>
             <text
               x={x + colW}
-              y={by + itemSize}
+              y={p.y + p.itemSize}
               fontFamily={FONT}
-              fontSize={itemSize}
+              fontSize={p.itemSize}
               fontWeight={800}
               fill={data.brandColor}
               textAnchor="end"
             >
-              ${formatCents(block.priceCents)}
+              ${formatCents(p.block.type === "item" ? p.block.priceCents : 0)}
             </text>
-            {descLines.map((line, li) => (
+            {p.descLines.map((line, li) => (
               <text
                 key={li}
                 x={x}
-                y={by + itemSize + descSize * 1.25 * (li + 1)}
+                y={p.y + p.itemSize + p.descSize * 1.2 * (li + 1)}
                 fontFamily={FONT}
-                fontSize={descSize}
+                fontSize={p.descSize}
                 fill="#6e756b"
               >
                 {line}
@@ -215,11 +260,11 @@ export function MenuArtwork({
           x={W / 2}
           y={bodyBottom + (H - bodyBottom) * 0.5}
           fontFamily={FONT}
-          fontSize={descSize}
+          fontSize={Math.round(headerH * 0.12)}
           fill="#6e756b"
           textAnchor="middle"
         >
-          + {truncated} more on the full menu
+          + {truncated} more — choose a larger size to fit the full menu
         </text>
       ) : null}
     </svg>
