@@ -96,7 +96,7 @@ export default async function StudioPage() {
   return (
     <main className="mx-auto max-w-6xl">
       <PageHeader
-        title="Design studio"
+        title="Studio"
         description={venue.name}
         backHref="/dashboard/menu"
       />

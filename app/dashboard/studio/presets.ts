@@ -9,6 +9,8 @@ export type StudioMode = "menu" | "banner";
 export type SizePreset = {
   id: string;
   label: string;
+  /** Short label for the compact size-tile picker (design: "A4 Portrait"). */
+  short: string;
   width: number;
   height: number;
   /** print → offer Print-to-PDF; raster → offer PNG download (both always SVG). */
@@ -16,19 +18,19 @@ export type SizePreset = {
 };
 
 export const MENU_PRESETS: SizePreset[] = [
-  { id: "a4-portrait", label: "A4 poster (portrait)", width: 794, height: 1123, kind: "print" },
-  { id: "a4-landscape", label: "A4 poster (landscape)", width: 1123, height: 794, kind: "print" },
-  { id: "a5-tent", label: "A5 table tent", width: 559, height: 794, kind: "print" },
-  { id: "signage-portrait", label: "Digital signage 9:16", width: 1080, height: 1920, kind: "raster" },
-  { id: "signage-landscape", label: "Digital signage 16:9", width: 1920, height: 1080, kind: "raster" },
+  { id: "a4-portrait", label: "A4 poster (portrait)", short: "A4 Portrait", width: 794, height: 1123, kind: "print" },
+  { id: "a4-landscape", label: "A4 poster (landscape)", short: "A4 Land", width: 1123, height: 794, kind: "print" },
+  { id: "a5-tent", label: "A5 table tent", short: "A5 Tent", width: 559, height: 794, kind: "print" },
+  { id: "signage-portrait", label: "Digital signage 9:16", short: "9:16", width: 1080, height: 1920, kind: "raster" },
+  { id: "signage-landscape", label: "Digital signage 16:9", short: "16:9", width: 1920, height: 1080, kind: "raster" },
 ];
 
 export const BANNER_PRESETS: SizePreset[] = [
-  { id: "ig-square", label: "Instagram post (1:1)", width: 1080, height: 1080, kind: "raster" },
-  { id: "ig-story", label: "Instagram story (9:16)", width: 1080, height: 1920, kind: "raster" },
-  { id: "fb-cover", label: "Facebook cover", width: 1200, height: 630, kind: "raster" },
-  { id: "web-wide", label: "Web banner (wide)", width: 1456, height: 512, kind: "raster" },
-  { id: "signage-landscape", label: "Digital signage 16:9", width: 1920, height: 1080, kind: "raster" },
+  { id: "ig-square", label: "Instagram post (1:1)", short: "IG Post", width: 1080, height: 1080, kind: "raster" },
+  { id: "ig-story", label: "Instagram story (9:16)", short: "Story", width: 1080, height: 1920, kind: "raster" },
+  { id: "fb-cover", label: "Facebook cover", short: "FB Cover", width: 1200, height: 630, kind: "raster" },
+  { id: "web-wide", label: "Web banner (wide)", short: "Web", width: 1456, height: 512, kind: "raster" },
+  { id: "signage-landscape", label: "Digital signage 16:9", short: "16:9", width: 1920, height: 1080, kind: "raster" },
 ];
 
 export function presetsFor(mode: StudioMode): SizePreset[] {

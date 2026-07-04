@@ -80,11 +80,17 @@ All screens are **freeform canvas layouts** (`design_doc_mode: canvas`) — pane
 - **Owner** — `P2E-Owner.dc.html` — restaurant-owner dashboard / menu management surface.
 - **Diner** — `P2E-Diner.dc.html` — diner-facing experience.
 - **Roadmap** — `P2E-Roadmap.dc.html` — product roadmap.
+- **Studio** — `P2E-Studio.dc.html` — print & promo generator (Menu mode + Banner mode, with the ✦ Generate-with-AI panel). Owner sidebar chrome. Desktop light/dark + responsive mobile.
+- **Shop** — `P2E-Shop.dc.html` — supplies marketplace: catalog browse, invoice-later cart, and Your Orders (requested → confirmed → shipped). Owner sidebar chrome. Desktop light/dark + mobile.
+- **Admin** — `P2E-Admin.dc.html` — back-office operator console on its own minimal top-bar chrome (NOT the owner sidebar): Directory · Stats · Promotions · Venue detail · Marketplace admin. Desktop light/dark.
+- **Refreshes** — `P2E-Refresh.dc.html` — updates to existing screens for shipped features: Settings logo upload, Payments PayTo + pay-by-bank discount, Menu recipe-cost + AI dietary tags, and the diner returning saved-mandate one-tap checkout.
 
-Cross-links: each screen has a pill nav (Identity · Components · Owner · Diner · Roadmap); the active pill is amber `#F4B43C` on ink text.
+Each new screen is shown as a **light** and **dark** option; every panel carries a `{turn}{letter}` id badge (`1a`, `1b`, …) for review reference.
+
+Cross-links: each screen has a pill nav (Identity · Components · Owner · Studio · Shop · Admin · Refreshes · Diner · Roadmap); the active pill is amber `#F4B43C` on ink text.
 
 ## Shared pieces
-- `P2ESidebar.dc.html`, `P2EMark.dc.html` — shared sidebar and logo mark, imported by the screens.
+- `P2ESidebar.dc.html` — shared owner sidebar (now includes Studio + Shop nav items), `P2EMark.dc.html` — logo mark, `P2EAdminBar.dc.html` — the admin console's minimal top bar (props: `active`, `theme`). Imported by the screens.
 
 ## Interactions & Behavior
 - **Focus:** amber ring `0 0 0 4px rgba(244,180,60,.32–.40)` on all interactive elements.
@@ -102,7 +108,7 @@ No raster images or custom SVG icon set — icons are Unicode glyphs (`→ ＋ �
 
 ## Screenshots
 - `screenshots/` — one full-resolution PNG per board (identity, components, owner, diner, roadmap), captured at native 1:1.
-- `blocks/` — **each individual card/screen cropped as its own PNG**, organised by board (`blocks/identity/`, `blocks/components/`, `blocks/owner/`, `blocks/diner/`, `blocks/roadmap/`). Each file is named for its caption (e.g. `04-logo-dark.png`, `01-menu-management-compact-item-editor.png`). Use these as per-component visual references.
+- `blocks/` — **each individual card/screen cropped as its own PNG**, organised by board (`blocks/identity/`, `blocks/components/`, `blocks/owner/`, `blocks/diner/`, `blocks/roadmap/`, and the new `blocks/studio/`, `blocks/shop/`, `blocks/admin/`, `blocks/refresh/`). Each file is named for its screen + theme (e.g. `admin-stats-dark.png`, `studio-banner-mode-light.png`, `diner-saved-mandate-light.png`). Use these as per-component visual references.
 
 ## Ready-to-paste code (start here)
 - `CLAUDE.md` — implementation guide + Button/Input/Card reference components for Claude Code.
@@ -115,7 +121,13 @@ No raster images or custom SVG icon set — icons are Unicode glyphs (`→ ＋ �
 - `P2E-Owner.dc.html` — Owner dashboard
 - `P2E-Diner.dc.html` — Diner experience
 - `P2E-Roadmap.dc.html` — Roadmap
+- `P2E-Studio.dc.html` — Studio (print & promo generator) — NEW
+- `P2E-Shop.dc.html` — Shop (supplies marketplace) — NEW
+- `P2E-Admin.dc.html` — Admin operator console — NEW
+- `P2E-Refresh.dc.html` — Refreshes (Settings/Payments/Menu drift + diner mandate) — NEW
 - `P2ESidebar.dc.html`, `P2EMark.dc.html` — shared sidebar + logo mark
+- `P2EAdminBar.dc.html` — admin console top bar (`active`, `theme` props) — NEW
+- `image-slot.js` — drag-and-drop image placeholder web component (used for the Studio/Settings logo slots) — NEW
 - `support.js` — runtime required to open the `.dc.html` files in a browser
 
 ### How to open the references
