@@ -123,10 +123,19 @@ model of "exactly ONE block" predates D4b — the second block was explicitly ga
   after first submit — confirm). `mobile/README.md` has the full build + submit guide.
 - **User must, on their Mac/PC:** Apple Developer ($99/yr) + Play ($25) accounts; `cap add ios/
   android`; add brand icon/splash + `npm run assets`; open in Xcode/Android Studio; submit.
-- **Top follow-ups (flagged in README):** (1) magic-link **deep links** (Universal/App Links) so
-  sign-in completes in-app — the #1 wire-up; (2) **push notifications** (APNs/FCM + a `/api/push/
-  register` bridge + send on the existing webhook `after()` seam) — the big native win; (3) later,
-  replace hot screens (kitchen orders, checkout) with native views.
+- **Native follow-ups — server side DONE (this branch), inert until env set:**
+  - **Push (new-order alerts):** migration 0034 `push_tokens` (venue-scoped, unique token); `POST
+    /api/push/register` (owner-session, venue from session); `app/dashboard/push-registrar.tsx`
+    client bridge (uses the injected `window.Capacitor` global — web takes NO Capacitor dep;
+    no-op on web); `lib/push.ts::notifyNewOrder` sends via FCM HTTP v1 (node:crypto-minted SA
+    token, cached), fired from a THIRD isolated + fully-swallowed webhook `after()` block (confirm
+    UPDATE byte-identical; checkout diff 0). **Env:** `FCM_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY`.
+  - **Magic-link deep links:** dynamic `/.well-known/apple-app-site-association` +
+    `/.well-known/assetlinks.json` route handlers (auth+dashboard paths only; storefront excluded
+    so "view storefront" stays in-browser). **Env:** `IOS_APP_ID`, `ANDROID_PACKAGE`,
+    `ANDROID_SHA256`. Native side (Associated Domains / intent filter + `appUrlOpen` handler) is
+    added in `ios/`+`android/` after `cap add` — see `mobile/README.md`.
+  - **Later:** replace hot screens (kitchen orders, checkout) with native views.
 
 ### Platform hygiene (verified present)
 - `app/_components/toast.tsx` — **PRESENT** (resolves a parallel-session "missing" report).

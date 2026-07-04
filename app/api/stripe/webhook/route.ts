@@ -6,6 +6,7 @@ import type Stripe from "stripe";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
+import { notifyNewOrder } from "@/lib/push";
 import { depleteStockForOrder } from "@/lib/stock/depletion";
 import { getStripe } from "@/lib/stripe";
 
@@ -91,6 +92,17 @@ export async function POST(request: Request): Promise<Response> {
           after(() => depleteStockForOrder(paymentIntent.id).catch(() => {}));
         } catch {
           // Swallowed by design — the sweep is the guarantee.
+        }
+        // ADDITIVE (native app) — new-order push, a THIRD independent, fully-
+        // swallowed touch held to the SAME contract: it runs strictly AFTER the
+        // confirm UPDATE (unchanged), is isolated in its own try/catch, and does
+        // all its work in after() so it can never delay or fail this response.
+        // notifyNewOrder is a complete no-op when FCM is not configured, so this
+        // is safe on the money path; losing this block loses only the push.
+        try {
+          after(() => notifyNewOrder(paymentIntent.id).catch(() => {}));
+        } catch {
+          // Swallowed by design.
         }
         break;
       }
