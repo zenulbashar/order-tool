@@ -58,11 +58,40 @@ export function StudioClient({
   const holderRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
 
+  // Content flexibility (client-only). The owner chooses which categories show
+  // and whether prices / descriptions / the logo are drawn — the artwork is
+  // regenerated from these without touching the live menu.
+  const [includedCats, setIncludedCats] = useState<Set<string>>(
+    () => new Set(menuData.categories.map((c) => c.name)),
+  );
+  const [showPrices, setShowPrices] = useState(true);
+  const [showDescriptions, setShowDescriptions] = useState(true);
+  const [showLogo, setShowLogo] = useState(true);
+
+  const hasLogo = Boolean(menuData.logoDataUri);
+  const logoOn = hasLogo && showLogo;
+
+  function toggleCategory(name: string) {
+    setIncludedCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
+
   function switchMode(next: StudioMode) {
     setMode(next);
     setPresetId(presetsFor(next)[0].id);
     setShareMsg(null);
   }
+
+  // Menu artwork honours the owner's category picks + logo toggle.
+  const filteredMenuData: MenuArtworkData = {
+    ...menuData,
+    logoDataUri: logoOn ? menuData.logoDataUri : null,
+    categories: menuData.categories.filter((c) => includedCats.has(c.name)),
+  };
 
   const bannerData: BannerArtworkData = {
     venueName: menuData.venueName,
@@ -70,6 +99,7 @@ export function StudioClient({
     headline,
     subtext,
     offerText,
+    logoDataUri: logoOn ? menuData.logoDataUri : null,
   };
 
   const suggestedCaption =
@@ -96,8 +126,9 @@ export function StudioClient({
   }
 
   // Rasterize the current SVG to a PNG Blob at the preset's exact pixel size.
-  // Resolves null on any failure. No remote images in the artwork ⇒ the canvas
-  // never taints, so toBlob always succeeds.
+  // Resolves null on any failure. The only image in the artwork is the logo,
+  // inlined server-side as a same-origin data: URI ⇒ the canvas never taints,
+  // so toBlob always succeeds.
   function renderPng(): Promise<Blob | null> {
     const svg = currentSvg();
     if (!svg) return Promise.resolve(null);
@@ -300,13 +331,76 @@ export function StudioClient({
                 className={controlClass}
               />
             </label>
+            {hasLogo ? (
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={showLogo}
+                  onChange={(event) => setShowLogo(event.target.checked)}
+                  className="accent-[var(--color-forest)]"
+                />
+                Show logo
+              </label>
+            ) : null}
           </>
         ) : (
-          <p className="rounded-card border border-dashed border-line p-3 text-xs text-muted">
-            The menu is built from your live categories, items and prices — edit
-            them in the Menu editor and regenerate. Longer menus overflow into
-            &ldquo;+ N more&rdquo;; pick a larger size to fit more.
-          </p>
+          <div className="space-y-3 border-t border-line pt-4">
+            <p className={microLabel}>Menu content</p>
+            {/* Category picker — uncheck any you don't want on this artwork. */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] text-muted">Categories</span>
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-input border border-line bg-surface-elevated p-2">
+                {menuData.categories.map((category) => (
+                  <label
+                    key={category.name}
+                    className="flex items-center gap-2 text-sm text-ink"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={includedCats.has(category.name)}
+                      onChange={() => toggleCategory(category.name)}
+                      className="accent-[var(--color-forest)]"
+                    />
+                    <span className="truncate">{category.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={showPrices}
+                onChange={(event) => setShowPrices(event.target.checked)}
+                className="accent-[var(--color-forest)]"
+              />
+              Show prices
+            </label>
+            <label className="flex items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={showDescriptions}
+                onChange={(event) => setShowDescriptions(event.target.checked)}
+                className="accent-[var(--color-forest)]"
+              />
+              Show descriptions
+            </label>
+            {hasLogo ? (
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={showLogo}
+                  onChange={(event) => setShowLogo(event.target.checked)}
+                  className="accent-[var(--color-forest)]"
+                />
+                Show logo
+              </label>
+            ) : null}
+            <p className="text-[11px] text-muted">
+              Built from your live menu — edit items in the Menu editor and
+              regenerate. Long menus auto-fit across columns; only if they still
+              won&apos;t fit does a small &ldquo;+ N more&rdquo; appear.
+            </p>
+          </div>
         )}
 
         <div className="space-y-2 border-t border-line pt-4">
@@ -376,7 +470,12 @@ export function StudioClient({
             className="mx-auto flex max-h-[70vh] items-center justify-center overflow-hidden [&>svg]:h-auto [&>svg]:max-h-[70vh] [&>svg]:w-auto [&>svg]:max-w-full [&>svg]:shadow-card"
           >
             {mode === "menu" ? (
-              <MenuArtwork data={menuData} preset={preset} />
+              <MenuArtwork
+                data={filteredMenuData}
+                preset={preset}
+                showPrices={showPrices}
+                showDescriptions={showDescriptions}
+              />
             ) : (
               <BannerArtwork data={bannerData} preset={preset} />
             )}

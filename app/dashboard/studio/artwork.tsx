@@ -6,15 +6,19 @@ import type { SizePreset } from "./presets";
 /**
  * SVG artwork generators (Track G). Pure functions returning an <svg> sized to a
  * preset's exact pixel canvas — vector, so the same render exports crisply at
- * any size. Deliberately TYPOGRAPHIC + brand colour only (no remote item/logo
- * images) so a client-side canvas PNG export never taints. Photo compositing is
- * a later enhancement. No hooks — safe to render inside the client studio.
+ * any size. TYPOGRAPHIC + brand colour, plus the venue logo when present. The
+ * logo is passed pre-inlined as a data: URI (the server fetches + base64-encodes
+ * it) — data URIs are same-origin, so the client-side canvas PNG export never
+ * taints; a raw remote URL WOULD taint it. No hooks — safe in the client studio.
  */
 
 export type MenuArtworkData = {
   venueName: string;
   brandColor: string;
   tagline: string | null;
+  /** Venue logo pre-inlined as a data: URI (server-side) so PNG export stays
+   * clean — remote URLs would taint the export canvas. null/undefined = none. */
+  logoDataUri?: string | null;
   categories: {
     name: string;
     items: { name: string; priceCents: number; description: string | null }[];
@@ -27,6 +31,8 @@ export type BannerArtworkData = {
   headline: string;
   subtext: string;
   offerText: string;
+  /** Data-URI logo (see MenuArtworkData.logoDataUri). null/undefined = none. */
+  logoDataUri?: string | null;
 };
 
 const FONT =
@@ -67,9 +73,13 @@ function truncate(text: string, maxChars: number): string {
 export function MenuArtwork({
   data,
   preset,
+  showPrices = true,
+  showDescriptions = true,
 }: {
   data: MenuArtworkData;
   preset: SizePreset;
+  showPrices?: boolean;
+  showDescriptions?: boolean;
 }) {
   const { width: W, height: H } = preset;
   const ink = readableOn(data.brandColor);
@@ -78,6 +88,20 @@ export function MenuArtwork({
   const bodyTop = headerH + Math.round(H * 0.035);
   const bodyBottom = H - Math.round(H * 0.045);
   const nameSize = Math.round(headerH * 0.34);
+
+  // Logo (if any) sits at the right of the header on a white chip so it stays
+  // legible over any brand fill or a transparent PNG. The venue name truncates
+  // to leave room for it.
+  const logo = data.logoDataUri ?? null;
+  const logoBox = logo ? Math.round(headerH * 0.6) : 0;
+  const logoPad = Math.round(logoBox * 0.12);
+  const logoX = W - pad - logoBox;
+  const logoY = Math.round(headerH * 0.5 - logoBox / 2);
+  const nameRight = logo ? logoX - Math.round(pad * 0.5) : W - pad;
+  const venueName = truncate(
+    data.venueName,
+    Math.max(4, Math.floor((nameRight - pad) / (nameSize * 0.6))),
+  );
 
   // Flatten to a block stream (category header + items).
   type Block =
@@ -116,8 +140,9 @@ export function MenuArtwork({
     const catH = catSize * 1.9;
     const rowH = itemSize * 1.32;
     const descH = descSize * 1.2;
-    // Char budgets (rough monospace-free estimate at ~0.55em).
-    const priceReserve = itemSize * 4.2; // room for "$00.00" + gap
+    // Char budgets (rough monospace-free estimate at ~0.55em). With prices
+    // hidden the name gets the full column width.
+    const priceReserve = showPrices ? itemSize * 4.2 : 0; // room for "$00.00" + gap
     const nameMaxChars = Math.max(6, Math.floor((colW - priceReserve) / (itemSize * 0.52)));
     const descMaxChars = Math.max(8, Math.floor(colW / (descSize * 0.52)));
 
@@ -151,9 +176,12 @@ export function MenuArtwork({
     return { placed, colW, truncated: 0 };
   }
 
-  let chosen = layout(maxCols, 2, 1);
+  // Descriptions can be turned off entirely by the owner; when on, the fit loop
+  // may still shed them (cap 2→1→0) to make the whole menu fit.
+  const descCaps: readonly (0 | 1 | 2)[] = showDescriptions ? [2, 1, 0] : [0];
+  let chosen = layout(maxCols, descCaps[0], 1);
   outer: for (const scale of [1, 0.9, 0.8, 0.72, 0.64, 0.56, 0.5, 0.45]) {
-    for (const descCap of [2, 1, 0] as const) {
+    for (const descCap of descCaps) {
       const t = layout(maxCols, descCap, scale);
       if (t.truncated === 0) {
         chosen = t;
@@ -185,7 +213,7 @@ export function MenuArtwork({
         fill={ink}
         dominantBaseline="middle"
       >
-        {data.venueName}
+        {venueName}
       </text>
       {data.tagline ? (
         <text
@@ -197,8 +225,29 @@ export function MenuArtwork({
           opacity={0.85}
           dominantBaseline="middle"
         >
-          {truncate(data.tagline, Math.floor((W - pad * 2) / (nameSize * 0.4 * 0.52)))}
+          {truncate(data.tagline, Math.floor((nameRight - pad) / (nameSize * 0.4 * 0.52)))}
         </text>
+      ) : null}
+      {logo ? (
+        <>
+          <rect
+            x={logoX}
+            y={logoY}
+            width={logoBox}
+            height={logoBox}
+            rx={Math.round(logoBox * 0.16)}
+            fill="#ffffff"
+          />
+          {/* Data-URI logo — inlined server-side, so the export canvas stays clean. */}
+          <image
+            href={logo}
+            x={logoX + logoPad}
+            y={logoY + logoPad}
+            width={logoBox - logoPad * 2}
+            height={logoBox - logoPad * 2}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        </>
       ) : null}
 
       {placed.map((p, idx) => {
@@ -228,17 +277,19 @@ export function MenuArtwork({
             <text x={x} y={p.y + p.itemSize} fontFamily={FONT} fontSize={p.itemSize} fontWeight={700} fill="#0e1f18">
               {p.name}
             </text>
-            <text
-              x={x + colW}
-              y={p.y + p.itemSize}
-              fontFamily={FONT}
-              fontSize={p.itemSize}
-              fontWeight={800}
-              fill={data.brandColor}
-              textAnchor="end"
-            >
-              ${formatCents(p.block.type === "item" ? p.block.priceCents : 0)}
-            </text>
+            {showPrices ? (
+              <text
+                x={x + colW}
+                y={p.y + p.itemSize}
+                fontFamily={FONT}
+                fontSize={p.itemSize}
+                fontWeight={800}
+                fill={data.brandColor}
+                textAnchor="end"
+              >
+                ${formatCents(p.block.type === "item" ? p.block.priceCents : 0)}
+              </text>
+            ) : null}
             {p.descLines.map((line, li) => (
               <text
                 key={li}
@@ -290,6 +341,12 @@ export function BannerArtwork({
   const blockH = lines.length * headlineSize * 1.12 + (data.subtext ? subSize * 2 : 0);
   const startY = H / 2 - blockH / 2 + headlineSize;
 
+  // Logo (if any) — top-right, on a white chip so it reads over the brand fill.
+  const logo = data.logoDataUri ?? null;
+  const logoBox = logo ? Math.round(Math.min(W, H) * 0.16) : 0;
+  const logoPad = Math.round(logoBox * 0.12);
+  const logoX = W - pad - logoBox;
+
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -302,6 +359,28 @@ export function BannerArtwork({
       {/* Subtle corner motif so flat brand fills don't read as empty. */}
       <circle cx={W} cy={0} r={Math.min(W, H) * 0.28} fill={ink} opacity={0.06} />
       <circle cx={0} cy={H} r={Math.min(W, H) * 0.22} fill={ink} opacity={0.06} />
+
+      {logo ? (
+        <>
+          <rect
+            x={logoX}
+            y={pad}
+            width={logoBox}
+            height={logoBox}
+            rx={Math.round(logoBox * 0.16)}
+            fill="#ffffff"
+          />
+          {/* Data-URI logo — inlined server-side, so the export canvas stays clean. */}
+          <image
+            href={logo}
+            x={logoX + logoPad}
+            y={pad + logoPad}
+            width={logoBox - logoPad * 2}
+            height={logoBox - logoPad * 2}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        </>
+      ) : null}
 
       {data.offerText ? (
         <>

@@ -11,6 +11,45 @@ import { StudioClient } from "./studio-client";
 
 export const dynamic = "force-dynamic";
 
+// Raster image types we'll inline. SVG is intentionally excluded — an SVG image
+// referenced inside the artwork can taint the export canvas in some browsers, so
+// SVG logos simply don't appear in studio artwork (they still show elsewhere).
+const INLINE_LOGO_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+const INLINE_LOGO_MAX_BYTES = 2 * 1024 * 1024; // 2MB
+
+/**
+ * Fetch the venue logo server-side and return it as a data: URI so the artwork
+ * can embed it WITHOUT tainting the client-side PNG export canvas (a remote URL
+ * would). Bounded (3s timeout, 2MB, raster types only) and fail-soft: any
+ * problem returns null and the artwork falls back to its typographic header.
+ */
+async function inlineLogo(url: string | null): Promise<string | null> {
+  if (!url || !/^https?:\/\//i.test(url)) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+    if (!res.ok) return null;
+    const type = (res.headers.get("content-type") ?? "")
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+    if (!INLINE_LOGO_TYPES.has(type)) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length === 0 || buf.length > INLINE_LOGO_MAX_BYTES) return null;
+    return `data:${type};base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Design studio (Track G). One-click print menus + promo banners generated from
  * the venue's LIVE menu data and brand, at multiple pixel sizes. Pure client-
@@ -22,9 +61,10 @@ export default async function StudioPage() {
   await requireUser();
   const venue = await requireVenue();
 
-  const [categories, items] = await Promise.all([
+  const [categories, items, logoDataUri] = await Promise.all([
     getCategoriesForVenue(venue.id),
     getItemsForVenue(venue.id),
+    inlineLogo(venue.logoUrl),
   ]);
 
   const itemsByCategory = new Map<string, typeof items>();
@@ -39,6 +79,7 @@ export default async function StudioPage() {
     venueName: venue.name,
     brandColor: venue.brandColor,
     tagline: venue.storefrontDescription ?? null,
+    logoDataUri,
     categories: categories
       .filter((category) => category.isActive)
       .map((category) => ({

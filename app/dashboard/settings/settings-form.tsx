@@ -4,7 +4,6 @@ import { useActionState, useRef, useState } from "react";
 
 import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
-import { Input } from "@/app/_components/input";
 import { Textarea } from "@/app/_components/textarea";
 
 import { updateVenueSettings, type VenueSettingsState } from "./actions";
@@ -21,7 +20,6 @@ const BRAND_PRESETS = ["#f4b43c", "#e2553a", "#13301f", "#3fa66a", "#635bff"];
 
 type VenueSettings = {
   brandColor: string;
-  logoUrl: string | null;
   storefrontDescription: string | null;
 };
 
@@ -89,25 +87,6 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
           </label>
           <span className="font-mono text-xs text-muted">{brandColor}</span>
         </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="block">
-          <span className={microLabel}>
-            Logo URL{" "}
-            <span className="font-normal normal-case text-muted">(optional)</span>
-          </span>
-          <Input
-            name="logoUrl"
-            type="url"
-            maxLength={2048}
-            defaultValue={settings.logoUrl ?? ""}
-            placeholder="https://…/logo.png"
-          />
-        </label>
-        <p className="text-xs text-muted">
-          Paste a hosted image URL. Uploads arrive in a later update.
-        </p>
       </div>
 
       <div className="space-y-1.5">
