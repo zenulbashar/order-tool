@@ -34,6 +34,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [cartOpen, setCartOpen] = useState(false);
 
   const byId = useMemo(
     () => new Map(products.map((p) => [p.id, p])),
@@ -69,6 +70,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
         setCart(new Map());
         setNote("");
         setDone(true);
+        setCartOpen(false);
       } else {
         setError(result.error);
       }
@@ -122,7 +124,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
           )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
           {visible.map((product) => (
             <div
               key={product.id}
@@ -169,8 +171,8 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
         </div>
       </div>
 
-      {/* Cart */}
-      <aside className="lg:sticky lg:top-6 lg:self-start">
+      {/* Cart — desktop sidebar (mobile uses the bottom bar + overlay below). */}
+      <aside className="hidden lg:sticky lg:top-6 lg:block lg:self-start">
         <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-card">
           <div className="flex items-center justify-between">
             <p className="font-display text-base font-semibold tracking-tight text-ink">
@@ -254,6 +256,112 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
           )}
         </div>
       </aside>
+
+      {/* Mobile: a sticky "view cart" bar that opens a full-screen cart. */}
+      {itemCount > 0 && !cartOpen ? (
+        <button
+          type="button"
+          onClick={() => setCartOpen(true)}
+          className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-line bg-surface-elevated px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-4px_16px_rgba(20,30,25,0.08)] lg:hidden"
+        >
+          <span className="flex items-center gap-2 text-sm font-bold text-ink">
+            <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[var(--color-accent)] px-1.5 text-[11px] font-bold text-forest">
+              {itemCount}
+            </span>
+            View cart
+          </span>
+          <span className="font-display text-base font-extrabold text-ink">
+            ${formatCents(total)}
+          </span>
+        </button>
+      ) : null}
+
+      {/* Mobile: full-screen dark cart (P2E-Shop shop-mobile-cart). */}
+      {cartOpen ? (
+        <div className="fixed inset-0 z-50 flex flex-col bg-forest-deep text-white lg:hidden">
+          <div className="flex items-center justify-between px-5 pb-3 pt-[calc(env(safe-area-inset-top)+14px)]">
+            <button
+              type="button"
+              onClick={() => setCartOpen(false)}
+              className="flex items-center gap-1 text-sm font-bold text-white"
+            >
+              <span aria-hidden="true">‹</span> Your cart
+            </button>
+            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-[var(--color-sidebar-muted)]">
+              {itemCount} {itemCount === 1 ? "item" : "items"}
+            </span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5">
+            {lines.length === 0 ? (
+              <p className="mt-10 text-center text-sm text-[var(--color-sidebar-ink)]">
+                Your cart is empty.
+              </p>
+            ) : (
+              <>
+                <ul className="space-y-3">
+                  {lines.map(([id, qty]) => {
+                    const p = byId.get(id);
+                    if (!p) return null;
+                    return (
+                      <li key={id} className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 rounded-input bg-white/5" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-white">
+                            {p.name}
+                          </span>
+                          <span className="block truncate font-mono text-[10px] text-[var(--color-sidebar-muted)]">
+                            {p.unitLabel ?? "each"} · ×{qty}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-sm font-bold text-white">
+                          ${formatCents(p.priceCents * qty)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <textarea
+                  rows={2}
+                  value={note}
+                  maxLength={500}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Delivery notes (optional)"
+                  className="mt-4 w-full resize-none rounded-input border border-white/15 bg-white/5 px-2.5 py-2 text-sm text-white placeholder:text-[var(--color-sidebar-muted)] focus-visible:border-[var(--color-accent)] focus-visible:outline-none"
+                />
+                <p className="mt-3 rounded-control bg-white/5 px-3 py-2 text-[11px] text-[var(--color-sidebar-muted)]">
+                  <span className="font-bold text-white">Invoice later.</span> No
+                  card charged now — added to your monthly Prompt2Eat invoice.
+                </p>
+                {error ? (
+                  <p className="mt-2 text-sm text-[var(--color-warm)]" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </>
+            )}
+          </div>
+
+          {lines.length > 0 ? (
+            <div className="border-t border-white/10 px-5 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm text-[var(--color-sidebar-ink)]">Total</span>
+                <span className="font-display text-lg font-extrabold text-white">
+                  ${formatCents(total)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={submit}
+                disabled={pending}
+                className="w-full rounded-control bg-[var(--color-accent)] px-4 py-3 text-sm font-bold text-forest transition hover:opacity-90 disabled:opacity-50"
+              >
+                {pending ? "Sending…" : "Request order →"}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -338,7 +338,7 @@ export function StudioClient({
     "w-full justify-start rounded-control px-3 py-2 text-left text-sm font-semibold transition disabled:opacity-50";
 
   return (
-    <section className="px-5 py-6">
+    <section className="px-5 py-6 pb-24 lg:pb-6">
       {/* Toolbar — mode tabs (left), Download + Publish actions (right). */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
@@ -359,7 +359,7 @@ export function StudioClient({
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
           {/* Download disclosure (PNG / SVG / Print). */}
           <details className="relative">
             <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-control border border-line-strong bg-surface-elevated px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary [&::-webkit-details-marker]:hidden">
@@ -428,8 +428,8 @@ export function StudioClient({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        {/* Controls */}
-        <div className="space-y-6">
+        {/* Controls (below the preview on mobile, per the mobile design). */}
+        <div className="order-2 space-y-6 lg:order-1">
           {mode === "banner" ? (
             <>
               {/* AI copy (option A) — amber is the sanctioned AI signature. */}
@@ -584,8 +584,8 @@ export function StudioClient({
           )}
         </div>
 
-        {/* Live preview */}
-        <div className="min-w-0">
+        {/* Live preview (above the controls on mobile). */}
+        <div className="order-1 min-w-0 lg:order-2">
           <div className="mb-2 flex items-center justify-between">
             <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
               {preset.short} · {preset.width} × {preset.height} px
@@ -609,6 +609,27 @@ export function StudioClient({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Mobile action bar (design: Studio bottom bar). Desktop keeps the header
+          Download/Publish disclosures above. */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t border-line bg-surface px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 lg:hidden">
+        <button
+          type="button"
+          onClick={downloadPng}
+          disabled={busy}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-control border border-line-strong bg-surface-elevated px-4 py-2.5 text-sm font-semibold text-ink transition disabled:opacity-50"
+        >
+          <span aria-hidden="true">↓</span> Download
+        </button>
+        <button
+          type="button"
+          onClick={shareImage}
+          disabled={busy}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-control bg-forest px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        >
+          Publish <span aria-hidden="true" className="text-[var(--color-accent)]">→</span>
+        </button>
       </div>
     </section>
   );
