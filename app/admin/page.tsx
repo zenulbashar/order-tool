@@ -215,9 +215,12 @@ export default async function AdminConsolePage() {
                 className="grid grid-cols-[1.8fr_0.8fr_0.9fr_0.9fr_1fr_0.9fr] items-center gap-3 border-b border-line/60 px-4 py-3 text-sm last:border-0"
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-bold text-ink">
+                  <Link
+                    href={`/admin/venues/${venue.id}`}
+                    className="block truncate font-bold text-ink hover:text-[var(--action)]"
+                  >
                     {venue.name}
-                  </span>
+                  </Link>
                   <span className="font-mono text-[10px] text-muted">
                     /{venue.slug}
                     {venue.isLive ? "" : " · not live"}

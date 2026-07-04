@@ -211,6 +211,13 @@
       "when": 1783085026098,
       "tag": "0029_lean_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1783139406543,
+      "tag": "0030_ancient_zaran",
+      "breakpoints": true
     }
   ]
 }

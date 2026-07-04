@@ -101,6 +101,16 @@ export const paytoDiscountMode = pgEnum("payto_discount_mode", [
   "percent",
 ]);
 
+// Per-venue subscription-fee discount, set by the admin console (Track E2c).
+// off = list price; percent = % off the monthly fee; amount = fixed cents off.
+// Applied as a Stripe coupon on the venue's subscription — our columns are the
+// intent, Stripe's discount is the runtime truth (like payto_enabled).
+export const planDiscountMode = pgEnum("plan_discount_mode", [
+  "off",
+  "percent",
+  "amount",
+]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -174,6 +184,11 @@ export const venues = pgTable(
       .notNull()
       .default("off"),
     paytoDiscountValue: integer("payto_discount_value").notNull().default(0),
+    // Admin-set subscription-fee discount (Track E2c). off = list price; the
+    // value is % (percent mode) or cents/month (amount mode). Applied as a
+    // Stripe coupon on the subscription; these columns are our intent/display.
+    planDiscountMode: planDiscountMode("plan_discount_mode").notNull().default("off"),
+    planDiscountValue: integer("plan_discount_value").notNull().default(0),
     // Billing entitlement (Phase 1). `plan` is the ONLY field gated on now; it is
     // the single value hasFeature() reads (see lib/billing/plans.ts). Existing
     // rows backfill to 'trial' so every current venue keeps full access, matching
