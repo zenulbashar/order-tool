@@ -7,20 +7,31 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
+import {
+  deleteFromR2,
+  r2KeyFromPublicUrl,
+  uploadToR2,
+} from "@/lib/r2";
 import { requireVenue } from "@/lib/tenant";
 import {
+  logoUrlSchema,
   OPENING_DAYS,
   venueDetailsSchema,
   venueSettingsSchema,
 } from "@/lib/validation";
 
 export type VenueSettingsState = { error?: string; success?: boolean };
+export type LogoState = { error?: string };
 
 /**
  * Update the current venue's storefront theming. Ownership comes from the
  * session via requireVenue() (no client-supplied id), so the update is scoped
  * to the owner's own venue. Server Functions are POST-able, so auth is
  * re-checked here; the redirect stays outside any try/catch.
+ *
+ * logo_url is DELIBERATELY not in this set — the logo is owned by the dedicated
+ * upload/URL/remove actions below (same discipline as menu_items.image_url),
+ * so a theme save can never clobber a just-uploaded logo.
  */
 export async function updateVenueSettings(
   _prev: VenueSettingsState,
@@ -32,11 +43,12 @@ export async function updateVenueSettings(
   }
   const venue = await requireVenue();
 
-  const parsed = venueSettingsSchema.safeParse({
-    brandColor: formData.get("brandColor") ?? "",
-    logoUrl: formData.get("logoUrl") ?? "",
-    storefrontDescription: formData.get("storefrontDescription") ?? "",
-  });
+  const parsed = venueSettingsSchema
+    .omit({ logoUrl: true })
+    .safeParse({
+      brandColor: formData.get("brandColor") ?? "",
+      storefrontDescription: formData.get("storefrontDescription") ?? "",
+    });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
@@ -45,7 +57,6 @@ export async function updateVenueSettings(
     .update(venues)
     .set({
       brandColor: parsed.data.brandColor,
-      logoUrl: parsed.data.logoUrl,
       storefrontDescription: parsed.data.storefrontDescription,
     })
     .where(eq(venues.id, venue.id));
@@ -54,6 +65,141 @@ export async function updateVenueSettings(
   // The storefront is force-dynamic, but clear its router cache entry too.
   revalidatePath(`/${venue.slug}`);
   return { success: true };
+}
+
+/* --------------------------------- Logo ----------------------------------- */
+/* The venue logo is owned by these three actions (upload a file, paste a URL,  */
+/* or remove) — never by the theme save above — so the two can't race. Uploads  */
+/* go server-side to R2 (never browser->R2); type + size are re-validated here   */
+/* as the real gate. Ownership is the session venue (no client-supplied id), so  */
+/* every write is scoped WHERE id = venue.id. Old R2 objects are cleaned up      */
+/* best-effort; a manually-pasted URL we don't manage is left alone.            */
+
+const LOGO_MAX_BYTES = 2 * 1024 * 1024; // 2MB
+const LOGO_TYPE_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+/** Read the venue's current logo URL, or null. */
+async function currentLogoUrl(venueId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ logoUrl: venues.logoUrl })
+    .from(venues)
+    .where(eq(venues.id, venueId))
+    .limit(1);
+  return row?.logoUrl ?? null;
+}
+
+/** Best-effort delete of an R2 object behind a stored public URL. Never throws. */
+async function bestEffortDeleteLogo(url: string | null): Promise<void> {
+  if (!url) return;
+  const key = r2KeyFromPublicUrl(url);
+  if (!key) return; // not an object we manage (e.g. a pasted third-party URL)
+  try {
+    await deleteFromR2(key);
+  } catch {
+    // Cleanup is best-effort: a leftover object is harmless and must never
+    // fail the owner's request.
+  }
+}
+
+export async function uploadVenueLogo(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose an image to upload." };
+  }
+  // Server-side validation is the real gate (independent of any client check).
+  if (file.size > LOGO_MAX_BYTES) {
+    return { error: "Logo must be 2MB or smaller." };
+  }
+  const ext = LOGO_TYPE_EXT[file.type];
+  if (!ext) {
+    return { error: "Logo must be a JPEG, PNG, or WebP image." };
+  }
+
+  const previousUrl = await currentLogoUrl(venue.id);
+  const key = `venues/${venue.id}/logo/${crypto.randomUUID()}.${ext}`;
+
+  let publicUrl: string;
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    publicUrl = await uploadToR2(key, buffer, file.type);
+  } catch {
+    // Upload failed (network, or R2 not configured) — leave the DB untouched.
+    return { error: "Couldn't upload the logo right now. Please try again." };
+  }
+
+  await db
+    .update(venues)
+    .set({ logoUrl: publicUrl })
+    .where(eq(venues.id, venue.id));
+
+  await bestEffortDeleteLogo(previousUrl);
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/${venue.slug}`);
+  return {};
+}
+
+export async function setVenueLogoUrl(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const parsed = logoUrlSchema.safeParse(formData.get("logoUrl") ?? "");
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Enter a valid URL." };
+  }
+
+  const previousUrl = await currentLogoUrl(venue.id);
+  await db
+    .update(venues)
+    .set({ logoUrl: parsed.data })
+    .where(eq(venues.id, venue.id));
+
+  // If a pasted URL replaced an object we uploaded, clean the old one up.
+  if (previousUrl && previousUrl !== parsed.data) {
+    await bestEffortDeleteLogo(previousUrl);
+  }
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/${venue.slug}`);
+  return {};
+}
+
+export async function removeVenueLogo(): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const previousUrl = await currentLogoUrl(venue.id);
+  await db
+    .update(venues)
+    .set({ logoUrl: null })
+    .where(eq(venues.id, venue.id));
+
+  await bestEffortDeleteLogo(previousUrl);
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/${venue.slug}`);
 }
 
 /**

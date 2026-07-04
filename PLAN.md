@@ -143,18 +143,27 @@ model of "exactly ONE block" predates D4b — the second block was explicitly ga
 - **F3 — supplier product feed** (Nisbets / Reward Hospitality auto-import + stock). Needs supplier BD.
 - **G3 — true OAuth social auto-post** to connected FB/IG/Google Business Profile. Gated on Meta app
   review + Google Business Profile API approval. Would reuse crypto + `venue_integrations` + outbox.
-- **Studio v2 (user feedback 2026-07-04)** — the design studio needs:
-  - ✅ FIXED: menu item names overrunning the price (now truncated to reserve price width); the
-    "+N more" truncation now auto-fits the FULL menu (up to 4 columns on wide/signage; sheds
-    descriptions then shrinks font to fit every item; "+N more" only as a last resort).
-  - **Logo / branding (was G-photos):** embed the venue logo in the header + honor brand. Needs
-    server-side data-URI inlining of the R2 logo so the client PNG export doesn't taint. Buildable.
-  - **Flexibility:** let the venue choose which categories/items to include, toggle descriptions/
-    prices, pick a layout template + accent. Buildable.
-  - **AI banners:** ⚠ REALITY CHECK — Claude generates TEXT + reads images but does NOT paint raster
-    images. "AI banner" = Haiku-written headline/subtext/offer copy auto-styled in the venue brand
-    (buildable, reuses MENU_COPY_MODEL + amber affordance). Actual AI-generated imagery needs a
-    3rd-party image-gen API (external, gated) — confirm which the user wants.
+- **Studio v2 (user feedback 2026-07-04)** — the design studio:
+  - ✅ FIXED (PR #118, merged): menu item names overrunning the price (now truncated to reserve
+    price width); the "+N more" truncation now auto-fits the FULL menu (up to 4 columns on
+    wide/signage; sheds descriptions then shrinks font to fit every item; "+N more" only as a last
+    resort).
+  - ✅ DONE — PR-b (this branch): **Logo / branding.** Venue logo now renders in the studio menu
+    header + banner corner, on a white chip so it reads over any brand fill / transparent PNG. The
+    logo is fetched server-side and inlined as a data: URI (bounded: 3s timeout, 2MB, raster types
+    only; SVG excluded to keep the export clean) so the client PNG/print export never taints. Plus
+    a real **logo upload** in Settings (server-side to R2, mirroring the menu-photo action; the
+    paste-a-URL path stays as an alternative; the logo is owned by dedicated upload/URL/remove
+    actions so a theme save can't clobber it). Plus **content flexibility** in the studio: pick which
+    categories appear, toggle prices, toggle descriptions, toggle the logo. No schema, no writes to
+    order data, money-path 0.
+  - ⏭ NEXT — PR-c: **AI-copy banner (option A, user-chosen).** "✦ Generate with AI" → Haiku
+    (MENU_COPY_MODEL) writes headline/subtext/offer from venue name + description + menu highlights
+    + an optional occasion prompt, rendered in the existing branded banner (brand colour + logo +
+    amber AI affordance). Reuses the AI rate-limit discipline; no new dependency, money-path 0.
+    ⚠ REALITY CHECK — Claude writes TEXT, it does NOT paint raster images. Actual AI-generated
+    imagery would need a 3rd-party image-gen API (external, gated) — registered as a separate future
+    arc if the user later wants painted backgrounds.
 - **E2d settlement transfers** — automated Stripe transfer/topup to pay venues the co-funded share
   (currently a tracked out-of-band liability). Future finance-infra arc.
 

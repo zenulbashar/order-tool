@@ -4,6 +4,7 @@ import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
+import { LogoControl } from "./logo-control";
 import { SettingsDetailsForm } from "./settings-details-form";
 import { SettingsForm } from "./settings-form";
 
@@ -15,17 +16,19 @@ export default async function SettingsPage() {
     <main className="mx-auto max-w-3xl">
       <PageHeader title="Storefront settings" description={venue.name} />
 
-      <section className="px-5 py-8">
+      <section className="space-y-4 px-5 py-8">
         <Card>
           <SettingsForm
             settings={{
               brandColor: venue.brandColor,
-              logoUrl: venue.logoUrl,
               storefrontDescription: venue.storefrontDescription,
             }}
           />
         </Card>
-        <p className="mt-4 text-xs text-muted">
+        <Card>
+          <LogoControl logoUrl={venue.logoUrl} />
+        </Card>
+        <p className="text-xs text-muted">
           Your storefront is live at{" "}
           <Link
             href={`/${venue.slug}`}
