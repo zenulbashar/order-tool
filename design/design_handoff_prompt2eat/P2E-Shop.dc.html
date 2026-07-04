@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Hanken Grotesk', sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  @keyframes p2e-spark { 0%,100% { transform: scale(1) rotate(0deg); opacity:.85; } 50% { transform: scale(1.18) rotate(45deg); opacity:1; } }
+</style>
+</helmet>
+
+<!-- ============ TITLE + NAV ============ -->
+<div data-drags-parent="1" style="position:absolute; left:80px; top:40px; width:1240px;">
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span style="font:800 36px 'Bricolage Grotesque',sans-serif; letter-spacing:-.035em; color:#16241C;">Prompt<span style="color:#F4B43C;">2</span>Eat</span>
+    <span style="font:700 10px 'Space Mono',monospace; letter-spacing:.2em; color:#8a9384; border:1px solid #dfe4d8; border-radius:999px; padding:5px 11px;">NEW · SHOP — MARKETPLACE</span>
+  </div>
+  <div style="font:500 15px 'Hanken Grotesk',sans-serif; color:#6E756B; margin-top:8px; max-width:1100px;">Venue buys hardware, signage &amp; consumables. Browse the catalog, build a cart, and <b style="color:#16241C;">request an order</b> — invoiced later, no card charge. Shown as <b style="color:#16241C;">light</b> and <b style="color:#16241C;">dark</b> options.</div>
+  <div style="display:flex; gap:7px; margin-top:13px; flex-wrap:wrap;"><a href="Prompt2Eat.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Identity</a><a href="P2E-Components.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Components</a><a href="P2E-Owner.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Owner</a><a href="P2E-Studio.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Studio</a><a href="P2E-Shop.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border:1px solid #F4B43C; border-radius:999px; padding:6px 13px;">Shop</a><a href="P2E-Admin.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Admin</a><a href="P2E-Refresh.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Refreshes</a><a href="P2E-Diner.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Diner</a><a href="P2E-Roadmap.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Roadmap</a></div>
+</div>
+
+<!-- ============ SHOP · MOBILE (RESPONSIVE) ============ -->
+<div style="position:absolute; left:80px; top:2110px; width:2640px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 12px 4px;">Shop · mobile — responsive · browse (light) &amp; cart (dark) · <span style="color:#16241C;">3a</span></div>
+  <div style="display:flex; gap:40px; align-items:flex-start;">
+    <!-- phone: browse (light) -->
+    <div style="width:392px; height:812px; border-radius:44px; background:#0f241b; padding:11px; box-shadow:0 40px 80px -30px rgba(20,30,25,.5);">
+      <div style="width:100%; height:100%; border-radius:34px; overflow:hidden; background:#F5F0E6; display:flex; flex-direction:column;">
+        <div style="height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 26px; background:#FBF8F1;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C;">9:41</span><span style="font:700 10px 'Hanken Grotesk'; color:#16241C;">● ▮▮ ⌁</span></div>
+        <div style="flex-shrink:0; display:flex; align-items:center; gap:12px; padding:12px 18px; background:#FBF8F1; border-bottom:1px solid #ece3d1;"><span style="font:800 20px 'Hanken Grotesk'; color:#16241C;">☰</span><span style="font:800 18px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Shop</span><span style="margin-left:auto; position:relative; font:700 12px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:9px; padding:7px 12px;">🛒 <span style="font:700 9px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:1px 6px;">3</span></span></div>
+        <div style="flex-shrink:0; display:flex; gap:6px; padding:12px 16px 6px; overflow:hidden;"><span style="font:700 10px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:6px 12px;">All</span><span style="font:700 10px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 12px;">Signage</span><span style="font:700 10px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 12px;">Hardware</span></div>
+        <div style="flex:1; overflow:hidden; padding:12px 16px; display:grid; grid-template-columns:1fr 1fr; gap:12px; align-content:start; background:#ECE5D7;">
+          <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:13px; overflow:hidden;"><div style="height:80px; background:repeating-linear-gradient(135deg,#efe6d2 0 8px,#e8ddc6 8px 16px);"></div><div style="padding:9px 10px;"><div style="font:700 11px 'Hanken Grotesk'; color:#16241C;">QR stands</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;"><span style="font:800 12px 'Hanken Grotesk'; color:#16241C;">$42</span><span style="font:700 15px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; width:26px; height:26px; display:flex; align-items:center; justify-content:center;">＋</span></div></div></div>
+          <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:13px; overflow:hidden;"><div style="height:80px; background:repeating-linear-gradient(135deg,#e9dfcb 0 8px,#e1d4bb 8px 16px);"></div><div style="padding:9px 10px;"><div style="font:700 11px 'Hanken Grotesk'; color:#16241C;">A-frame sign</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;"><span style="font:800 12px 'Hanken Grotesk'; color:#16241C;">$96</span><span style="font:700 15px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; width:26px; height:26px; display:flex; align-items:center; justify-content:center;">＋</span></div></div></div>
+          <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:13px; overflow:hidden;"><div style="height:80px; background:repeating-linear-gradient(135deg,#e6ddc9 0 8px,#ded1b8 8px 16px);"></div><div style="padding:9px 10px;"><div style="font:700 11px 'Hanken Grotesk'; color:#16241C;">Tablet stand</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;"><span style="font:800 12px 'Hanken Grotesk'; color:#16241C;">$68</span><span style="font:700 15px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; width:26px; height:26px; display:flex; align-items:center; justify-content:center;">＋</span></div></div></div>
+          <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:13px; overflow:hidden;"><div style="height:80px; background:repeating-linear-gradient(135deg,#efe6d2 0 8px,#e8ddc6 8px 16px);"></div><div style="padding:9px 10px;"><div style="font:700 11px 'Hanken Grotesk'; color:#16241C;">Receipt paper</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:6px;"><span style="font:800 12px 'Hanken Grotesk'; color:#16241C;">$29</span><span style="font:700 15px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; width:26px; height:26px; display:flex; align-items:center; justify-content:center;">＋</span></div></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- phone: cart (dark) -->
+    <div style="width:392px; height:812px; border-radius:44px; background:#000; padding:11px; box-shadow:0 40px 80px -30px rgba(0,0,0,.6);">
+      <div style="width:100%; height:100%; border-radius:34px; overflow:hidden; background:#0d1a14; display:flex; flex-direction:column;">
+        <div style="height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 26px; background:#12211a;"><span style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2;">9:41</span><span style="font:700 10px 'Hanken Grotesk'; color:#F3EEE2;">● ▮▮ ⌁</span></div>
+        <div style="flex-shrink:0; display:flex; align-items:center; gap:12px; padding:12px 18px; background:#12211a; border-bottom:1px solid rgba(255,255,255,.07);"><span style="font:800 20px 'Hanken Grotesk'; color:#F3EEE2;">‹</span><span style="font:800 18px 'Bricolage Grotesque'; color:#F3EEE2; letter-spacing:-.02em;">Your cart</span><span style="margin-left:auto; font:700 10px 'Space Mono'; color:#6f857a;">3 ITEMS</span></div>
+        <div style="flex:1; overflow:hidden; padding:16px 18px; display:flex; flex-direction:column; gap:14px; background:#081410;">
+          <div style="display:flex; gap:11px; align-items:center;"><span style="width:48px;height:48px;border-radius:9px;background:repeating-linear-gradient(135deg,#243a2f 0 6px,#1e3227 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Table QR stands</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295;">Pack of 10 · ×1</div></div><span style="font:800 13px 'Hanken Grotesk'; color:#F3EEE2;">$42</span></div>
+          <div style="display:flex; gap:11px; align-items:center;"><span style="width:48px;height:48px;border-radius:9px;background:repeating-linear-gradient(135deg,#243a2f 0 6px,#1e3227 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Thermal receipt paper</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295;">Box of 20 · ×2</div></div><span style="font:800 13px 'Hanken Grotesk'; color:#F3EEE2;">$58</span></div>
+          <div style="display:flex; gap:11px; align-items:center;"><span style="width:48px;height:48px;border-radius:9px;background:repeating-linear-gradient(135deg,#243a2f 0 6px,#1e3227 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Menu holders A5</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295;">Pack of 6 · ×1</div></div><span style="font:800 13px 'Hanken Grotesk'; color:#F3EEE2;">$34</span></div>
+          <div style="margin-top:auto; display:flex; gap:8px; background:rgba(244,180,60,.1); border:1px solid rgba(244,180,60,.3); border-radius:10px; padding:11px 12px;"><span style="font-size:13px;">🧾</span><span style="font:500 11px/1.4 'Hanken Grotesk'; color:#c5d3c9;"><b style="color:#F4B43C;">Invoice later.</b> No card charged — added to your monthly invoice.</span></div>
+        </div>
+        <div style="flex-shrink:0; padding:14px 18px 24px; background:#12211a; border-top:1px solid rgba(255,255,255,.07);">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px;"><span style="font:700 14px 'Hanken Grotesk'; color:#F3EEE2;">Total</span><span style="font:800 16px 'Hanken Grotesk'; color:#F3EEE2;">$146.00</span></div>
+          <span style="display:block; text-align:center; font:700 14px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:12px; padding:14px;">Request order →</span>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1; align-self:center; max-width:520px;">
+      <div style="font:800 22px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em; margin-bottom:10px;">Responsive behaviour</div>
+      <div style="font:500 14px/1.6 'Hanken Grotesk'; color:#6E756B;">Catalog collapses to a <b style="color:#16241C;">two-up grid</b> under a sticky category rail; the cart moves from a side drawer to a full-screen sheet with a docked total + <b style="color:#16241C;">Request order</b> bar. Order history stacks into single-column cards with the same status chips. No card is ever charged — every request is invoiced to the venue's monthly statement.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SHOP · YOUR ORDERS — LIGHT ============ -->
+<div style="position:absolute; left:80px; top:1160px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Shop · your orders (requested → confirmed → shipped) — light · <span style="color:#16241C;">2a</span></div>
+  <div data-screen-label="Shop your orders (light)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #e6ddcb; box-shadow:0 1px 3px rgba(20,30,25,.06),0 34px 64px -26px rgba(20,30,25,.24); display:flex; background:#F5F0E6;">
+    <dc-import name="P2ESidebar" active="shop" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#FBF8F1; border-bottom:1px solid #ece3d1;">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Shop</div>
+        <div style="display:flex; background:#F0E9DA; border:1px solid #e6ddcb; border-radius:10px; padding:3px; gap:2px; margin-left:6px;"><span style="font:700 12px 'Hanken Grotesk'; color:#8a9384; padding:6px 15px;">Browse</span><span style="font:700 12px 'Hanken Grotesk'; color:#16241C; background:#fff; border-radius:7px; padding:6px 15px; box-shadow:0 1px 3px rgba(20,30,25,.08);">Your orders</span></div>
+        <span style="margin-left:auto; position:relative; display:inline-flex; align-items:center; gap:7px; font:700 12px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:10px; padding:9px 15px;">🛒 Cart<span style="font:700 10px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:1px 7px;">0</span></span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+        <!-- order: shipped -->
+        <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; box-shadow:0 1px 3px rgba(20,30,25,.05); padding:18px 20px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="font:800 15px 'Bricolage Grotesque'; color:#16241C;">Order #P2E-2841</span><span style="font:700 9px 'Space Mono'; color:#2f7a4f; background:#e7f4ea; border:1px solid #c7e6ce; border-radius:6px; padding:4px 9px;">● SHIPPED</span><span style="margin-left:auto; font:400 11px 'Space Mono'; color:#a0987f;">28 JUN 2026</span></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#efe6d2 0 5px,#e8ddc6 5px 10px);"></span>
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#e9dfcb 0 5px,#e1d4bb 5px 10px);"></span>
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#e6ddc9 0 5px,#ded1b8 5px 10px);"></span>
+            <span style="font:500 12px 'Hanken Grotesk'; color:#6E756B;">QR stands, receipt paper, menu holders · 3 items</span>
+            <span style="margin-left:auto; font:800 15px 'Hanken Grotesk'; color:#16241C;">$146.00</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid #f1ead9;"><span style="font:500 11px 'Hanken Grotesk'; color:#8a9384;">🧾 Billed to your March statement · Tracking AUS-88213</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:9px; padding:7px 13px;">Track parcel →</span></div>
+        </div>
+        <!-- order: confirmed -->
+        <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; box-shadow:0 1px 3px rgba(20,30,25,.05); padding:18px 20px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="font:800 15px 'Bricolage Grotesque'; color:#16241C;">Order #P2E-2903</span><span style="font:700 9px 'Space Mono'; color:#2a6bb0; background:#e8f0fa; border:1px solid #c5daf1; border-radius:6px; padding:4px 9px;">● CONFIRMED</span><span style="margin-left:auto; font:400 11px 'Space Mono'; color:#a0987f;">01 JUL 2026</span></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#e9dfcb 0 5px,#e1d4bb 5px 10px);"></span>
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#e6ddc9 0 5px,#ded1b8 5px 10px);"></span>
+            <span style="font:500 12px 'Hanken Grotesk'; color:#6E756B;">A-frame sidewalk sign, takeaway bags · 2 items</span>
+            <span style="margin-left:auto; font:800 15px 'Hanken Grotesk'; color:#16241C;">$184.00</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid #f1ead9;"><span style="font:500 11px 'Hanken Grotesk'; color:#8a9384;">🧾 Will be added to your next statement · ships in 3–5 days</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:9px; padding:7px 13px;">View details</span></div>
+        </div>
+        <!-- order: requested -->
+        <div style="background:#FFFDF8; border:1px solid #f0d49a; border-radius:16px; box-shadow:0 1px 3px rgba(20,30,25,.05); padding:18px 20px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="font:800 15px 'Bricolage Grotesque'; color:#16241C;">Order #P2E-2911</span><span style="font:700 9px 'Space Mono'; color:#b07f1e; background:#fbf0d8; border:1px solid #f0d49a; border-radius:6px; padding:4px 9px;">● REQUESTED</span><span style="margin-left:auto; font:400 11px 'Space Mono'; color:#a0987f;">03 JUL 2026</span></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#e6ddc9 0 5px,#ded1b8 5px 10px);"></span>
+            <span style="font:500 12px 'Hanken Grotesk'; color:#6E756B;">Counter tablet stand · 1 item</span>
+            <span style="margin-left:auto; font:800 15px 'Hanken Grotesk'; color:#16241C;">$68.00</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid #f1ead9;"><span style="font:500 11px 'Hanken Grotesk'; color:#8a9384;">Awaiting confirmation — no card charged</span><span style="font:700 11px 'Hanken Grotesk'; color:#c0492f;">Cancel request</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ SHOP · YOUR ORDERS — DARK ============ -->
+<div style="position:absolute; left:1440px; top:1160px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Shop · your orders — dark · <span style="color:#16241C;">2b</span></div>
+  <div data-screen-label="Shop your orders (dark)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #1c2f26; box-shadow:0 1px 3px rgba(0,0,0,.2),0 34px 64px -26px rgba(0,0,0,.5); display:flex; background:#0d1a14;">
+    <dc-import name="P2ESidebar" active="shop" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#12211a; border-bottom:1px solid rgba(255,255,255,.07);">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#F3EEE2; letter-spacing:-.02em;">Shop</div>
+        <div style="display:flex; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:10px; padding:3px; gap:2px; margin-left:6px;"><span style="font:700 12px 'Hanken Grotesk'; color:#7f9488; padding:6px 15px;">Browse</span><span style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2; background:#1e332a; border-radius:7px; padding:6px 15px;">Your orders</span></div>
+        <span style="margin-left:auto; position:relative; display:inline-flex; align-items:center; gap:7px; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:9px 15px;">🛒 Cart<span style="font:700 10px 'Hanken Grotesk'; color:#F4B43C; background:#16241C; border-radius:999px; padding:1px 7px;">0</span></span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:22px 24px; display:flex; flex-direction:column; gap:14px;">
+        <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px 20px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="font:800 15px 'Bricolage Grotesque'; color:#F3EEE2;">Order #P2E-2841</span><span style="font:700 9px 'Space Mono'; color:#6fd39a; background:rgba(47,122,79,.2); border:1px solid rgba(111,211,154,.3); border-radius:6px; padding:4px 9px;">● SHIPPED</span><span style="margin-left:auto; font:400 11px 'Space Mono'; color:#6f857a;">28 JUN 2026</span></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#243a2f 0 5px,#1e3227 5px 10px);"></span>
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#243a2f 0 5px,#1e3227 5px 10px);"></span>
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#243a2f 0 5px,#1e3227 5px 10px);"></span>
+            <span style="font:500 12px 'Hanken Grotesk'; color:#9DB2A5;">QR stands, receipt paper, menu holders · 3 items</span>
+            <span style="margin-left:auto; font:800 15px 'Hanken Grotesk'; color:#F3EEE2;">$146.00</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.07);"><span style="font:500 11px 'Hanken Grotesk'; color:#8fa295;">🧾 Billed to your March statement · Tracking AUS-88213</span><span style="font:700 11px 'Hanken Grotesk'; color:#EDE6D6; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:9px; padding:7px 13px;">Track parcel →</span></div>
+        </div>
+        <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:18px 20px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="font:800 15px 'Bricolage Grotesque'; color:#F3EEE2;">Order #P2E-2903</span><span style="font:700 9px 'Space Mono'; color:#7fb4ee; background:rgba(42,107,176,.2); border:1px solid rgba(127,180,238,.3); border-radius:6px; padding:4px 9px;">● CONFIRMED</span><span style="margin-left:auto; font:400 11px 'Space Mono'; color:#6f857a;">01 JUL 2026</span></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#243a2f 0 5px,#1e3227 5px 10px);"></span>
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#243a2f 0 5px,#1e3227 5px 10px);"></span>
+            <span style="font:500 12px 'Hanken Grotesk'; color:#9DB2A5;">A-frame sidewalk sign, takeaway bags · 2 items</span>
+            <span style="margin-left:auto; font:800 15px 'Hanken Grotesk'; color:#F3EEE2;">$184.00</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.07);"><span style="font:500 11px 'Hanken Grotesk'; color:#8fa295;">🧾 Will be added to your next statement · ships in 3–5 days</span><span style="font:700 11px 'Hanken Grotesk'; color:#EDE6D6; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:9px; padding:7px 13px;">View details</span></div>
+        </div>
+        <div style="background:#16281f; border:1px solid rgba(244,180,60,.3); border-radius:16px; padding:18px 20px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="font:800 15px 'Bricolage Grotesque'; color:#F3EEE2;">Order #P2E-2911</span><span style="font:700 9px 'Space Mono'; color:#F4B43C; background:rgba(244,180,60,.15); border:1px solid rgba(244,180,60,.35); border-radius:6px; padding:4px 9px;">● REQUESTED</span><span style="margin-left:auto; font:400 11px 'Space Mono'; color:#6f857a;">03 JUL 2026</span></div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
+            <span style="width:38px;height:38px;border-radius:8px;background:repeating-linear-gradient(135deg,#243a2f 0 5px,#1e3227 5px 10px);"></span>
+            <span style="font:500 12px 'Hanken Grotesk'; color:#9DB2A5;">Counter tablet stand · 1 item</span>
+            <span style="margin-left:auto; font:800 15px 'Hanken Grotesk'; color:#F3EEE2;">$68.00</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.07);"><span style="font:500 11px 'Hanken Grotesk'; color:#8fa295;">Awaiting confirmation — no card charged</span><span style="font:700 11px 'Hanken Grotesk'; color:#e8836a;">Cancel request</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ SHOP · BROWSE + CART — LIGHT ============ -->
+<div style="position:absolute; left:1440px; top:210px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Shop · browse catalog + cart — dark · <span style="color:#16241C;">1b</span></div>
+  <div data-screen-label="Shop browse (dark)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #1c2f26; box-shadow:0 1px 3px rgba(0,0,0,.2),0 34px 64px -26px rgba(0,0,0,.5); display:flex; background:#0d1a14;">
+    <dc-import name="P2ESidebar" active="shop" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#12211a; border-bottom:1px solid rgba(255,255,255,.07);">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#F3EEE2; letter-spacing:-.02em;">Shop</div>
+        <div style="flex:1; max-width:260px; display:flex; align-items:center; gap:9px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:8px 12px; margin-left:6px;"><span style="color:#6f857a; font-size:13px;">⌕</span><span style="font:400 12px 'Space Mono'; color:#6f857a;">Search catalog…</span></div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+          <span style="display:inline-flex; align-items:center; gap:6px; font:700 12px 'Hanken Grotesk'; color:#EDE6D6; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:9px 14px;">Your orders</span>
+          <span style="position:relative; display:inline-flex; align-items:center; gap:7px; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:9px 15px;">🛒 Cart<span style="font:700 10px 'Hanken Grotesk'; color:#F4B43C; background:#16241C; border-radius:999px; padding:1px 7px;">3</span></span>
+        </div>
+      </header>
+      <div style="flex:1; display:flex; overflow:hidden;">
+        <!-- catalog -->
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="flex-shrink:0; display:flex; gap:7px; padding:14px 22px; border-bottom:1px solid rgba(255,255,255,.07);">
+            <span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:7px 14px;">All</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#9DB2A5; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:999px; padding:7px 14px;">Signage</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#9DB2A5; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:999px; padding:7px 14px;">Hardware</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#9DB2A5; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:999px; padding:7px 14px;">Consumables</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#9DB2A5; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:999px; padding:7px 14px;">Packaging</span>
+          </div>
+          <div style="flex:1; overflow:hidden; padding:20px 22px; display:grid; grid-template-columns:1fr 1fr 1fr; grid-auto-rows:min-content; gap:16px; align-content:start;">
+            <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden;"><div style="height:118px; background:repeating-linear-gradient(135deg,#243a2f 0 10px,#1e3227 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#6f857a;">QR STANDS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Table QR stands</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295; margin-top:2px;">Acrylic · pack of 10</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#F3EEE2;">$42</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden;"><div style="height:118px; background:repeating-linear-gradient(135deg,#2a3f34 0 10px,#22362b 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#6f857a;">A-FRAME</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">A-frame sidewalk sign</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295; margin-top:2px;">Weatherproof · A1</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#F3EEE2;">$96</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden;"><div style="height:118px; background:repeating-linear-gradient(135deg,#243a2f 0 10px,#1e3227 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#6f857a;">TABLET STAND</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Counter tablet stand</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295; margin-top:2px;">Steel · anti-theft</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#F3EEE2;">$68</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden;"><div style="height:118px; background:repeating-linear-gradient(135deg,#243a2f 0 10px,#1e3227 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#6f857a;">RECEIPT ROLLS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Thermal receipt paper</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295; margin-top:2px;">80mm · box of 20</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#F3EEE2;">$29</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden;"><div style="height:118px; background:repeating-linear-gradient(135deg,#2a3f34 0 10px,#22362b 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#6f857a;">TAKEAWAY BAGS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Branded takeaway bags</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295; margin-top:2px;">Kraft · pack of 500</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#F3EEE2;">$88</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:16px; overflow:hidden;"><div style="height:118px; background:repeating-linear-gradient(135deg,#243a2f 0 10px,#1e3227 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#6f857a;">MENU HOLDERS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#F3EEE2;">Menu holders A5</div><div style="font:400 11px 'Hanken Grotesk'; color:#8fa295; margin-top:2px;">Acrylic · pack of 6</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#F3EEE2;">$34</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+          </div>
+        </div>
+        <!-- cart drawer -->
+        <div style="width:322px; flex-shrink:0; border-left:1px solid rgba(255,255,255,.07); background:#12211a; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="padding:16px 18px; border-bottom:1px solid rgba(255,255,255,.07); display:flex; align-items:center; justify-content:space-between;"><span style="font:800 15px 'Bricolage Grotesque'; color:#F3EEE2;">Your cart</span><span style="font:700 10px 'Space Mono'; color:#6f857a;">3 ITEMS</span></div>
+          <div style="flex:1; overflow:hidden; padding:14px 18px; display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; gap:11px;"><span style="width:44px;height:44px;border-radius:9px;background:repeating-linear-gradient(135deg,#243a2f 0 6px,#1e3227 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2;">Table QR stands</div><div style="font:400 10px 'Hanken Grotesk'; color:#8fa295;">Pack of 10</div></div><div style="text-align:right;"><div style="font:800 12px 'Hanken Grotesk'; color:#F3EEE2;">$42</div><div style="font:700 10px 'Space Mono'; color:#6f857a;">×1</div></div></div>
+            <div style="display:flex; gap:11px;"><span style="width:44px;height:44px;border-radius:9px;background:repeating-linear-gradient(135deg,#243a2f 0 6px,#1e3227 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2;">Thermal receipt paper</div><div style="font:400 10px 'Hanken Grotesk'; color:#8fa295;">80mm · box of 20</div></div><div style="text-align:right;"><div style="font:800 12px 'Hanken Grotesk'; color:#F3EEE2;">$58</div><div style="font:700 10px 'Space Mono'; color:#6f857a;">×2</div></div></div>
+            <div style="display:flex; gap:11px;"><span style="width:44px;height:44px;border-radius:9px;background:repeating-linear-gradient(135deg,#243a2f 0 6px,#1e3227 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2;">Menu holders A5</div><div style="font:400 10px 'Hanken Grotesk'; color:#8fa295;">Pack of 6</div></div><div style="text-align:right;"><div style="font:800 12px 'Hanken Grotesk'; color:#F3EEE2;">$34</div><div style="font:700 10px 'Space Mono'; color:#6f857a;">×1</div></div></div>
+          </div>
+          <div style="flex-shrink:0; padding:16px 18px; border-top:1px solid rgba(255,255,255,.07);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="font:500 12px 'Hanken Grotesk'; color:#9DB2A5;">Subtotal</span><span style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2;">$134.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px;"><span style="font:500 12px 'Hanken Grotesk'; color:#9DB2A5;">Est. shipping</span><span style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2;">$12.00</span></div>
+            <div style="display:flex; gap:8px; background:rgba(244,180,60,.1); border:1px solid rgba(244,180,60,.3); border-radius:10px; padding:10px 11px; margin-bottom:12px;"><span style="font-size:13px;">🧾</span><span style="font:500 11px/1.4 'Hanken Grotesk'; color:#c5d3c9;"><b style="color:#F4B43C;">Invoice later.</b> No card charged now — added to your monthly Prompt2Eat invoice.</span></div>
+            <span style="display:block; text-align:center; font:700 14px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:11px; padding:13px;">Request order →</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ SHOP · BROWSE + CART — LIGHT ============ -->
+<div style="position:absolute; left:80px; top:210px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Shop · browse catalog + cart — light · <span style="color:#16241C;">1a</span></div>
+  <div data-screen-label="Shop browse (light)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #e6ddcb; box-shadow:0 1px 3px rgba(20,30,25,.06),0 34px 64px -26px rgba(20,30,25,.24); display:flex; background:#F5F0E6;">
+    <dc-import name="P2ESidebar" active="shop" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#FBF8F1; border-bottom:1px solid #ece3d1;">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Shop</div>
+        <div style="flex:1; max-width:260px; display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #e6ddcb; border-radius:10px; padding:8px 12px; margin-left:6px;"><span style="color:#b6ab92; font-size:13px;">⌕</span><span style="font:400 12px 'Space Mono'; color:#b6ab92;">Search catalog…</span></div>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+          <span style="display:inline-flex; align-items:center; gap:6px; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:10px; padding:9px 14px;">Your orders</span>
+          <span style="position:relative; display:inline-flex; align-items:center; gap:7px; font:700 12px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:10px; padding:9px 15px;">🛒 Cart<span style="font:700 10px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:1px 7px;">3</span></span>
+        </div>
+      </header>
+      <div style="flex:1; display:flex; overflow:hidden;">
+        <!-- catalog -->
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="flex-shrink:0; display:flex; gap:7px; padding:14px 22px; border-bottom:1px solid #ece3d1;">
+            <span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:7px 14px;">All</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:7px 14px;">Signage</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:7px 14px;">Hardware</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:7px 14px;">Consumables</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:7px 14px;">Packaging</span>
+          </div>
+          <div style="flex:1; overflow:hidden; padding:20px 22px; display:grid; grid-template-columns:1fr 1fr 1fr; grid-auto-rows:min-content; gap:16px; align-content:start;">
+            <!-- product card template x6 -->
+            <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,25,.05);"><div style="height:118px; background:repeating-linear-gradient(135deg,#efe6d2 0 10px,#e8ddc6 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#a8977a;">QR STANDS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#16241C;">Table QR stands</div><div style="font:400 11px 'Hanken Grotesk'; color:#8a9384; margin-top:2px;">Acrylic · pack of 10</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#16241C;">$42</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,25,.05);"><div style="height:118px; background:repeating-linear-gradient(135deg,#e9dfcb 0 10px,#e1d4bb 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#a8977a;">A-FRAME</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#16241C;">A-frame sidewalk sign</div><div style="font:400 11px 'Hanken Grotesk'; color:#8a9384; margin-top:2px;">Weatherproof · A1</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#16241C;">$96</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,25,.05);"><div style="height:118px; background:repeating-linear-gradient(135deg,#e6ddc9 0 10px,#ded1b8 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#a8977a;">TABLET STAND</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#16241C;">Counter tablet stand</div><div style="font:400 11px 'Hanken Grotesk'; color:#8a9384; margin-top:2px;">Steel · anti-theft</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#16241C;">$68</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,25,.05);"><div style="height:118px; background:repeating-linear-gradient(135deg,#efe6d2 0 10px,#e8ddc6 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#a8977a;">RECEIPT ROLLS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#16241C;">Thermal receipt paper</div><div style="font:400 11px 'Hanken Grotesk'; color:#8a9384; margin-top:2px;">80mm · box of 20</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#16241C;">$29</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,25,.05);"><div style="height:118px; background:repeating-linear-gradient(135deg,#e9dfcb 0 10px,#e1d4bb 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#a8977a;">TAKEAWAY BAGS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#16241C;">Branded takeaway bags</div><div style="font:400 11px 'Hanken Grotesk'; color:#8a9384; margin-top:2px;">Kraft · pack of 500</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#16241C;">$88</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+            <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:16px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,25,.05);"><div style="height:118px; background:repeating-linear-gradient(135deg,#e6ddc9 0 10px,#ded1b8 10px 20px); display:flex; align-items:center; justify-content:center;"><span style="font:700 8px 'Space Mono'; letter-spacing:.14em; color:#a8977a;">MENU HOLDERS</span></div><div style="padding:12px 13px;"><div style="font:700 13px 'Hanken Grotesk'; color:#16241C;">Menu holders A5</div><div style="font:400 11px 'Hanken Grotesk'; color:#8a9384; margin-top:2px;">Acrylic · pack of 6</div><div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><span style="font:800 14px 'Hanken Grotesk'; color:#16241C;">$34</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:8px; padding:6px 12px;">＋ Add</span></div></div></div>
+          </div>
+        </div>
+        <!-- cart drawer -->
+        <div style="width:322px; flex-shrink:0; border-left:1px solid #ece3d1; background:#FBF8F1; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="padding:16px 18px; border-bottom:1px solid #ece3d1; display:flex; align-items:center; justify-content:space-between;"><span style="font:800 15px 'Bricolage Grotesque'; color:#16241C;">Your cart</span><span style="font:700 10px 'Space Mono'; color:#a0987f;">3 ITEMS</span></div>
+          <div style="flex:1; overflow:hidden; padding:14px 18px; display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; gap:11px;"><span style="width:44px;height:44px;border-radius:9px;background:repeating-linear-gradient(135deg,#efe6d2 0 6px,#e8ddc6 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 12px 'Hanken Grotesk'; color:#16241C;">Table QR stands</div><div style="font:400 10px 'Hanken Grotesk'; color:#8a9384;">Pack of 10</div></div><div style="text-align:right;"><div style="font:800 12px 'Hanken Grotesk'; color:#16241C;">$42</div><div style="font:700 10px 'Space Mono'; color:#a0987f;">×1</div></div></div>
+            <div style="display:flex; gap:11px;"><span style="width:44px;height:44px;border-radius:9px;background:repeating-linear-gradient(135deg,#e6ddc9 0 6px,#ded1b8 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 12px 'Hanken Grotesk'; color:#16241C;">Thermal receipt paper</div><div style="font:400 10px 'Hanken Grotesk'; color:#8a9384;">80mm · box of 20</div></div><div style="text-align:right;"><div style="font:800 12px 'Hanken Grotesk'; color:#16241C;">$58</div><div style="font:700 10px 'Space Mono'; color:#a0987f;">×2</div></div></div>
+            <div style="display:flex; gap:11px;"><span style="width:44px;height:44px;border-radius:9px;background:repeating-linear-gradient(135deg,#e9dfcb 0 6px,#e1d4bb 6px 12px);flex-shrink:0;"></span><div style="flex:1;"><div style="font:700 12px 'Hanken Grotesk'; color:#16241C;">Menu holders A5</div><div style="font:400 10px 'Hanken Grotesk'; color:#8a9384;">Pack of 6</div></div><div style="text-align:right;"><div style="font:800 12px 'Hanken Grotesk'; color:#16241C;">$34</div><div style="font:700 10px 'Space Mono'; color:#a0987f;">×1</div></div></div>
+          </div>
+          <div style="flex-shrink:0; padding:16px 18px; border-top:1px solid #ece3d1;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="font:500 12px 'Hanken Grotesk'; color:#6E756B;">Subtotal</span><span style="font:700 12px 'Hanken Grotesk'; color:#16241C;">$134.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px;"><span style="font:500 12px 'Hanken Grotesk'; color:#6E756B;">Est. shipping</span><span style="font:700 12px 'Hanken Grotesk'; color:#16241C;">$12.00</span></div>
+            <div style="display:flex; gap:8px; background:#F0E9DA; border:1px solid #e6ddcb; border-radius:10px; padding:10px 11px; margin-bottom:12px;"><span style="font-size:13px;">🧾</span><span style="font:500 11px/1.4 'Hanken Grotesk'; color:#5d655b;"><b style="color:#16241C;">Invoice later.</b> No card charged now — added to your monthly Prompt2Eat invoice.</span></div>
+            <span style="display:block; text-align:center; font:700 14px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:11px; padding:13px;">Request order →</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

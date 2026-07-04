@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Hanken Grotesk', sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  @keyframes p2e-spark { 0%,100% { transform: scale(1) rotate(0deg); opacity:.85; } 50% { transform: scale(1.18) rotate(45deg); opacity:1; } }
+  @keyframes p2e-think { 0%,80%,100% { transform: translateY(0); opacity:.35; } 40% { transform: translateY(-6px); opacity:1; } }
+</style>
+</helmet>
+
+<!-- ============ TITLE + NAV ============ -->
+<div data-drags-parent="1" style="position:absolute; left:80px; top:40px; width:1240px;">
+  <div style="display:flex; align-items:center; gap:14px;">
+    <span style="font:800 36px 'Bricolage Grotesque',sans-serif; letter-spacing:-.035em; color:#16241C;">Prompt<span style="color:#F4B43C;">2</span>Eat</span>
+    <span style="font:700 10px 'Space Mono',monospace; letter-spacing:.2em; color:#8a9384; border:1px solid #dfe4d8; border-radius:999px; padding:5px 11px;">REFRESHES — DRIFT + UNBUILT</span>
+  </div>
+  <div style="font:500 15px 'Hanken Grotesk',sans-serif; color:#6E756B; margin-top:8px; max-width:1100px;">Existing screens updated for shipped features: <b style="color:#16241C;">Settings logo upload</b>, <b style="color:#16241C;">Payments PayTo + bank discount</b>, <b style="color:#16241C;">Menu recipe-cost + AI dietary tags</b>, and the unbuilt <b style="color:#16241C;">returning saved bank mandate</b>. Each as <b style="color:#16241C;">light</b> and <b style="color:#16241C;">dark</b> options.</div>
+  <div style="display:flex; gap:7px; margin-top:13px; flex-wrap:wrap;"><a href="Prompt2Eat.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Identity</a><a href="P2E-Components.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Components</a><a href="P2E-Owner.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Owner</a><a href="P2E-Studio.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Studio</a><a href="P2E-Shop.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Shop</a><a href="P2E-Admin.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Admin</a><a href="P2E-Refresh.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border:1px solid #F4B43C; border-radius:999px; padding:6px 13px;">Refreshes</a><a href="P2E-Diner.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Diner</a><a href="P2E-Roadmap.dc.html" style="text-decoration:none; font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1px solid #e6ddcb; border-radius:999px; padding:6px 13px;">Roadmap</a></div>
+</div>
+
+<!-- ============ DINER · RETURNING SAVED BANK MANDATE (mobile) ============ -->
+<div style="position:absolute; left:80px; top:3060px; width:2640px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 12px 4px;">Diner · returning saved bank mandate — one-tap · light &amp; dark · <span style="color:#16241C;">4a</span></div>
+  <div style="display:flex; gap:40px; align-items:flex-start;">
+    <!-- phone: light -->
+    <div style="width:392px; height:812px; border-radius:44px; background:#0f241b; padding:11px; box-shadow:0 40px 80px -30px rgba(20,30,25,.5);">
+      <div style="width:100%; height:100%; border-radius:34px; overflow:hidden; background:#FBF8F1; display:flex; flex-direction:column;">
+        <div style="height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 26px; background:#FBF8F1;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C;">9:41</span><span style="font:700 10px 'Hanken Grotesk'; color:#16241C;">● ▮▮ ⌁</span></div>
+        <div style="flex-shrink:0; display:flex; align-items:center; gap:12px; padding:14px 20px;"><span style="font:800 20px 'Hanken Grotesk'; color:#16241C;">‹</span><div><div style="font:800 16px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Checkout</div><div style="font:500 11px 'Hanken Grotesk'; color:#8a9384;">Maple &amp; Thyme · pickup 12:30</div></div></div>
+        <div style="flex:1; overflow:hidden; padding:6px 20px; display:flex; flex-direction:column; gap:14px;">
+          <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:14px; padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font:500 13px 'Hanken Grotesk'; color:#5d655b;">Green Goddess Bowl</span><span style="font:600 13px 'Hanken Grotesk'; color:#16241C;">$13.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font:500 13px 'Hanken Grotesk'; color:#5d655b;">Harissa Roast Chicken</span><span style="font:600 13px 'Hanken Grotesk'; color:#16241C;">$24.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font:500 13px 'Hanken Grotesk'; color:#5d655b;">Flat white</span><span style="font:600 13px 'Hanken Grotesk'; color:#16241C;">$4.00</span></div>
+            <div style="display:flex; justify-content:space-between; padding-top:10px; border-top:1px solid #f1ead9; margin-bottom:6px;"><span style="font:500 12px 'Hanken Grotesk'; color:#8a9384;">Subtotal</span><span style="font:600 12px 'Hanken Grotesk'; color:#16241C;">$41.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font:600 12px 'Hanken Grotesk'; color:#2f7a4f;">Pay-by-bank discount 2%</span><span style="font:700 12px 'Hanken Grotesk'; color:#2f7a4f;">−$0.82</span></div>
+            <div style="display:flex; justify-content:space-between;"><span style="font:800 15px 'Hanken Grotesk'; color:#16241C;">Total</span><span style="font:800 15px 'Hanken Grotesk'; color:#16241C;">$40.18</span></div>
+          </div>
+          <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a0987f; margin-left:2px;">YOUR SAVED BANK</div>
+          <div style="background:#fff; border:1.5px solid #F4B43C; box-shadow:0 0 0 4px rgba(244,180,60,.15); border-radius:14px; padding:15px 16px; display:flex; align-items:center; gap:13px;">
+            <span style="width:44px;height:44px;border-radius:11px;background:#16241C;display:flex;align-items:center;justify-content:center;color:#F4B43C;font-size:19px;">⇄</span>
+            <div style="flex:1;"><div style="font:700 14px 'Hanken Grotesk'; color:#16241C;">Westpac ···· 4821</div><div style="font:500 11px 'Hanken Grotesk'; color:#8a9384;">PayTo mandate · saved Mar 2026</div></div>
+            <span style="width:22px;height:22px;border-radius:50%;background:#F4B43C;display:flex;align-items:center;justify-content:center;color:#16241C;font-size:12px;">✓</span>
+          </div>
+          <div style="display:flex; gap:9px; background:#F0E9DA; border-radius:11px; padding:11px 13px; align-items:center;"><span style="font-size:13px;">⚡</span><span style="font:500 11px/1.4 'Hanken Grotesk'; color:#5d655b;">One tap — no card, no app switch. Approved instantly from your saved mandate.</span></div>
+        </div>
+        <div style="flex-shrink:0; padding:14px 20px 24px;">
+          <span style="display:block; text-align:center; font:800 15px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:13px; padding:15px;">Pay $40.18 by bank →</span>
+          <div style="text-align:center; margin-top:11px; font:700 12px 'Hanken Grotesk'; color:#8a9384;">Use a card instead</div>
+        </div>
+      </div>
+    </div>
+    <!-- phone: dark -->
+    <div style="width:392px; height:812px; border-radius:44px; background:#000; padding:11px; box-shadow:0 40px 80px -30px rgba(0,0,0,.6);">
+      <div style="width:100%; height:100%; border-radius:34px; overflow:hidden; background:#0d1a14; display:flex; flex-direction:column;">
+        <div style="height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 26px; background:#0d1a14;"><span style="font:700 12px 'Hanken Grotesk'; color:#F3EEE2;">9:41</span><span style="font:700 10px 'Hanken Grotesk'; color:#F3EEE2;">● ▮▮ ⌁</span></div>
+        <div style="flex-shrink:0; display:flex; align-items:center; gap:12px; padding:14px 20px;"><span style="font:800 20px 'Hanken Grotesk'; color:#F3EEE2;">‹</span><div><div style="font:800 16px 'Bricolage Grotesque'; color:#F3EEE2; letter-spacing:-.02em;">Checkout</div><div style="font:500 11px 'Hanken Grotesk'; color:#8fa295;">Maple &amp; Thyme · pickup 12:30</div></div></div>
+        <div style="flex:1; overflow:hidden; padding:6px 20px; display:flex; flex-direction:column; gap:14px;">
+          <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px 16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font:500 13px 'Hanken Grotesk'; color:#9DB2A5;">Green Goddess Bowl</span><span style="font:600 13px 'Hanken Grotesk'; color:#F3EEE2;">$13.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font:500 13px 'Hanken Grotesk'; color:#9DB2A5;">Harissa Roast Chicken</span><span style="font:600 13px 'Hanken Grotesk'; color:#F3EEE2;">$24.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span style="font:500 13px 'Hanken Grotesk'; color:#9DB2A5;">Flat white</span><span style="font:600 13px 'Hanken Grotesk'; color:#F3EEE2;">$4.00</span></div>
+            <div style="display:flex; justify-content:space-between; padding-top:10px; border-top:1px solid rgba(255,255,255,.07); margin-bottom:6px;"><span style="font:500 12px 'Hanken Grotesk'; color:#8fa295;">Subtotal</span><span style="font:600 12px 'Hanken Grotesk'; color:#F3EEE2;">$41.00</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span style="font:600 12px 'Hanken Grotesk'; color:#6fd39a;">Pay-by-bank discount 2%</span><span style="font:700 12px 'Hanken Grotesk'; color:#6fd39a;">−$0.82</span></div>
+            <div style="display:flex; justify-content:space-between;"><span style="font:800 15px 'Hanken Grotesk'; color:#F3EEE2;">Total</span><span style="font:800 15px 'Hanken Grotesk'; color:#F3EEE2;">$40.18</span></div>
+          </div>
+          <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#6f857a; margin-left:2px;">YOUR SAVED BANK</div>
+          <div style="background:#16281f; border:1.5px solid #F4B43C; box-shadow:0 0 0 4px rgba(244,180,60,.14); border-radius:14px; padding:15px 16px; display:flex; align-items:center; gap:13px;">
+            <span style="width:44px;height:44px;border-radius:11px;background:#F4B43C;display:flex;align-items:center;justify-content:center;color:#16241C;font-size:19px;">⇄</span>
+            <div style="flex:1;"><div style="font:700 14px 'Hanken Grotesk'; color:#F3EEE2;">Westpac ···· 4821</div><div style="font:500 11px 'Hanken Grotesk'; color:#8fa295;">PayTo mandate · saved Mar 2026</div></div>
+            <span style="width:22px;height:22px;border-radius:50%;background:#F4B43C;display:flex;align-items:center;justify-content:center;color:#16241C;font-size:12px;">✓</span>
+          </div>
+          <div style="display:flex; gap:9px; background:rgba(255,255,255,.05); border-radius:11px; padding:11px 13px; align-items:center;"><span style="font-size:13px;">⚡</span><span style="font:500 11px/1.4 'Hanken Grotesk'; color:#9DB2A5;">One tap — no card, no app switch. Approved instantly from your saved mandate.</span></div>
+        </div>
+        <div style="flex-shrink:0; padding:14px 20px 24px;">
+          <span style="display:block; text-align:center; font:800 15px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:13px; padding:15px;">Pay $40.18 by bank →</span>
+          <div style="text-align:center; margin-top:11px; font:700 12px 'Hanken Grotesk'; color:#8fa295;">Use a card instead</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1; align-self:center; max-width:520px;">
+      <div style="font:800 22px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em; margin-bottom:10px;">Returning saved mandate</div>
+      <div style="font:500 14px/1.6 'Hanken Grotesk'; color:#6E756B;">A diner who's paid by bank before skips the 3-step approval entirely: their <b style="color:#16241C;">saved PayTo mandate</b> is pre-selected, the pay-by-bank discount is already applied to the total, and a single tap settles instantly. The card path stays one tap away as the fallback. This is the <b style="color:#16241C;">⏳ designed-but-unbuilt</b> state from the inventory.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MENU EDITOR · RECIPE COST + AI TAGS — LIGHT ============ -->
+<div style="position:absolute; left:80px; top:2110px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Menu editor · recipe &amp; cost lines + AI dietary-tag suggestions — light · <span style="color:#16241C;">3a</span></div>
+  <div data-screen-label="Menu recipe cost (light)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #e6ddcb; box-shadow:0 1px 3px rgba(20,30,25,.06),0 34px 64px -26px rgba(20,30,25,.24); display:flex; background:#F5F0E6;">
+    <dc-import name="P2ESidebar" active="menu" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#FBF8F1; border-bottom:1px solid #ece3d1;">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Green Goddess Bowl</div>
+        <span style="font:700 9px 'Space Mono'; color:#16241C; background:#F0E9DA; border-radius:6px; padding:4px 9px;">BREAKFAST · $13.00</span>
+        <span style="margin-left:auto; font:700 12px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:10px; padding:9px 15px;">Save changes →</span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:24px; display:flex; gap:18px;">
+        <!-- recipe cost -->
+        <div style="flex:1.3; background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:22px 24px; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;"><span style="font:800 16px 'Bricolage Grotesque'; color:#16241C;">Recipe &amp; cost</span><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:9px; padding:7px 12px;">＋ Ingredient</span></div>
+          <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding-bottom:9px; border-bottom:1px solid #f1ead9; font:700 9px 'Space Mono'; letter-spacing:.1em; color:#a0987f;"><span>INGREDIENT</span><span>QTY</span><span>UNIT</span><span style="text-align:right;">LINE</span></div>
+          <div style="display:flex; flex-direction:column;">
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid #f6f0e4; font:600 13px 'Hanken Grotesk'; color:#16241C;"><span>Avocado</span><span style="color:#8a9384;">½</span><span style="color:#8a9384;">$1.80</span><span style="text-align:right;">$0.90</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid #f6f0e4; font:600 13px 'Hanken Grotesk'; color:#16241C;"><span>Kale</span><span style="color:#8a9384;">60g</span><span style="color:#8a9384;">$6.6/kg</span><span style="text-align:right;">$0.40</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid #f6f0e4; font:600 13px 'Hanken Grotesk'; color:#16241C;"><span>Mixed grains</span><span style="color:#8a9384;">80g</span><span style="color:#8a9384;">$6.9/kg</span><span style="text-align:right;">$0.55</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid #f6f0e4; font:600 13px 'Hanken Grotesk'; color:#16241C;"><span>Egg</span><span style="color:#8a9384;">1</span><span style="color:#8a9384;">$0.45</span><span style="text-align:right;">$0.45</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; font:600 13px 'Hanken Grotesk'; color:#16241C;"><span>Lemon-tahini</span><span style="color:#8a9384;">30g</span><span style="color:#8a9384;">$23/kg</span><span style="text-align:right;">$0.70</span></div>
+          </div>
+          <div style="margin-top:auto; padding-top:16px; display:flex; gap:12px;">
+            <div style="flex:1; background:#FBF8F1; border:1px solid #ece3d1; border-radius:12px; padding:12px 14px;"><div style="font:700 9px 'Space Mono'; color:#a0987f;">FOOD COST</div><div style="font:800 18px 'Hanken Grotesk'; color:#16241C; margin-top:3px;">$3.00</div></div>
+            <div style="flex:1; background:#FBF8F1; border:1px solid #ece3d1; border-radius:12px; padding:12px 14px;"><div style="font:700 9px 'Space Mono'; color:#a0987f;">COST %</div><div style="font:800 18px 'Hanken Grotesk'; color:#16241C; margin-top:3px;">23%</div></div>
+            <div style="flex:1; background:#16241C; border-radius:12px; padding:12px 14px;"><div style="font:700 9px 'Space Mono'; color:#8ba393;">GROSS PROFIT</div><div style="font:800 18px 'Hanken Grotesk'; color:#F4B43C; margin-top:3px;">$10.00</div></div>
+          </div>
+        </div>
+        <!-- AI dietary tags -->
+        <div style="flex:1; background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:22px 24px; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;"><span style="font:800 16px 'Bricolage Grotesque'; color:#16241C;">Dietary &amp; allergens</span></div>
+          <div style="display:inline-flex; align-self:flex-start; align-items:center; gap:6px; font:700 9px 'Space Mono'; color:#16241C; background:linear-gradient(110deg,#FBEBD2,#f6e2bf); border-radius:6px; padding:4px 9px; margin-bottom:16px;"><span style="color:#c08a2e; animation:p2e-spark 3s ease-in-out infinite; display:inline-block;">✦</span> AI-SUGGESTED FROM RECIPE</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+            <span style="font:700 9px 'Space Mono'; color:#2f7a4f; background:#e7f4ea; border:1px solid #c7e6ce; border-radius:6px; padding:6px 10px;">✓ VEGETARIAN</span>
+            <span style="font:700 9px 'Space Mono'; color:#b07f1e; background:#fbf0d8; border:1px solid #f0d49a; border-radius:6px; padding:6px 10px;">✓ GLUTEN-FREE</span>
+          </div>
+          <div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#a0987f; margin-bottom:9px;">SUGGESTED — CONFIRM TO ADD</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; gap:9px; border:1px dashed #d8cbb0; border-radius:10px; padding:9px 12px;"><span style="flex:1; font:700 11px 'Space Mono'; color:#5d655b;">CONTAINS EGG</span><span style="font:700 10px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; padding:5px 11px;">Confirm</span></div>
+            <div style="display:flex; align-items:center; gap:9px; border:1px dashed #d8cbb0; border-radius:10px; padding:9px 12px;"><span style="flex:1; font:700 11px 'Space Mono'; color:#5d655b;">CONTAINS SESAME</span><span style="font:700 10px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; padding:5px 11px;">Confirm</span></div>
+          </div>
+          <div style="margin-top:auto; display:flex; gap:9px; background:#FBEBD2; border:1px solid #f0d49a; border-radius:11px; padding:11px 13px;"><span style="color:#b07f1e; font-size:13px; flex-shrink:0;">⚠</span><span style="font:500 11px/1.45 'Hanken Grotesk'; color:#5a4a22;"><b style="color:#16241C;">Suggestions only.</b> Confirm allergens with your kitchen — Prompt2Eat never guarantees them.</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ MENU EDITOR · RECIPE COST + AI TAGS — DARK ============ -->
+<div style="position:absolute; left:1440px; top:2110px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Menu editor · recipe cost + AI dietary tags — dark · <span style="color:#16241C;">3b</span></div>
+  <div data-screen-label="Menu recipe cost (dark)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #1c2f26; box-shadow:0 1px 3px rgba(0,0,0,.2),0 34px 64px -26px rgba(0,0,0,.5); display:flex; background:#0d1a14;">
+    <dc-import name="P2ESidebar" active="menu" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#12211a; border-bottom:1px solid rgba(255,255,255,.07);">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#F3EEE2; letter-spacing:-.02em;">Green Goddess Bowl</div>
+        <span style="font:700 9px 'Space Mono'; color:#F4B43C; background:rgba(244,180,60,.15); border-radius:6px; padding:4px 9px;">BREAKFAST · $13.00</span>
+        <span style="margin-left:auto; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:9px 15px;">Save changes →</span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:24px; display:flex; gap:18px;">
+        <div style="flex:1.3; background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px 24px; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;"><span style="font:800 16px 'Bricolage Grotesque'; color:#F3EEE2;">Recipe &amp; cost</span><span style="font:700 11px 'Hanken Grotesk'; color:#EDE6D6; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:9px; padding:7px 12px;">＋ Ingredient</span></div>
+          <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding-bottom:9px; border-bottom:1px solid rgba(255,255,255,.07); font:700 9px 'Space Mono'; letter-spacing:.1em; color:#6f857a;"><span>INGREDIENT</span><span>QTY</span><span>UNIT</span><span style="text-align:right;">LINE</span></div>
+          <div style="display:flex; flex-direction:column;">
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid rgba(255,255,255,.05); font:600 13px 'Hanken Grotesk'; color:#F3EEE2;"><span>Avocado</span><span style="color:#8fa295;">½</span><span style="color:#8fa295;">$1.80</span><span style="text-align:right;">$0.90</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid rgba(255,255,255,.05); font:600 13px 'Hanken Grotesk'; color:#F3EEE2;"><span>Kale</span><span style="color:#8fa295;">60g</span><span style="color:#8fa295;">$6.6/kg</span><span style="text-align:right;">$0.40</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid rgba(255,255,255,.05); font:600 13px 'Hanken Grotesk'; color:#F3EEE2;"><span>Mixed grains</span><span style="color:#8fa295;">80g</span><span style="color:#8fa295;">$6.9/kg</span><span style="text-align:right;">$0.55</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; border-bottom:1px solid rgba(255,255,255,.05); font:600 13px 'Hanken Grotesk'; color:#F3EEE2;"><span>Egg</span><span style="color:#8fa295;">1</span><span style="color:#8fa295;">$0.45</span><span style="text-align:right;">$0.45</span></div>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; padding:10px 0; align-items:center; font:600 13px 'Hanken Grotesk'; color:#F3EEE2;"><span>Lemon-tahini</span><span style="color:#8fa295;">30g</span><span style="color:#8fa295;">$23/kg</span><span style="text-align:right;">$0.70</span></div>
+          </div>
+          <div style="margin-top:auto; padding-top:16px; display:flex; gap:12px;">
+            <div style="flex:1; background:#12211a; border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:12px 14px;"><div style="font:700 9px 'Space Mono'; color:#6f857a;">FOOD COST</div><div style="font:800 18px 'Hanken Grotesk'; color:#F3EEE2; margin-top:3px;">$3.00</div></div>
+            <div style="flex:1; background:#12211a; border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:12px 14px;"><div style="font:700 9px 'Space Mono'; color:#6f857a;">COST %</div><div style="font:800 18px 'Hanken Grotesk'; color:#F3EEE2; margin-top:3px;">23%</div></div>
+            <div style="flex:1; background:#F4B43C; border-radius:12px; padding:12px 14px;"><div style="font:700 9px 'Space Mono'; color:#7a5410;">GROSS PROFIT</div><div style="font:800 18px 'Hanken Grotesk'; color:#16241C; margin-top:3px;">$10.00</div></div>
+          </div>
+        </div>
+        <div style="flex:1; background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px 24px; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;"><span style="font:800 16px 'Bricolage Grotesque'; color:#F3EEE2;">Dietary &amp; allergens</span></div>
+          <div style="display:inline-flex; align-self:flex-start; align-items:center; gap:6px; font:700 9px 'Space Mono'; color:#F4B43C; background:rgba(244,180,60,.12); border:1px solid rgba(244,180,60,.3); border-radius:6px; padding:4px 9px; margin-bottom:16px;"><span style="animation:p2e-spark 3s ease-in-out infinite; display:inline-block;">✦</span> AI-SUGGESTED FROM RECIPE</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+            <span style="font:700 9px 'Space Mono'; color:#6fd39a; background:rgba(47,122,79,.2); border:1px solid rgba(111,211,154,.3); border-radius:6px; padding:6px 10px;">✓ VEGETARIAN</span>
+            <span style="font:700 9px 'Space Mono'; color:#F4B43C; background:rgba(244,180,60,.15); border:1px solid rgba(244,180,60,.3); border-radius:6px; padding:6px 10px;">✓ GLUTEN-FREE</span>
+          </div>
+          <div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#6f857a; margin-bottom:9px;">SUGGESTED — CONFIRM TO ADD</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; gap:9px; border:1px dashed rgba(255,255,255,.18); border-radius:10px; padding:9px 12px;"><span style="flex:1; font:700 11px 'Space Mono'; color:#9DB2A5;">CONTAINS EGG</span><span style="font:700 10px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; padding:5px 11px;">Confirm</span></div>
+            <div style="display:flex; align-items:center; gap:9px; border:1px dashed rgba(255,255,255,.18); border-radius:10px; padding:9px 12px;"><span style="flex:1; font:700 11px 'Space Mono'; color:#9DB2A5;">CONTAINS SESAME</span><span style="font:700 10px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:7px; padding:5px 11px;">Confirm</span></div>
+          </div>
+          <div style="margin-top:auto; display:flex; gap:9px; background:rgba(244,180,60,.1); border:1px solid rgba(244,180,60,.3); border-radius:11px; padding:11px 13px;"><span style="color:#F4B43C; font-size:13px; flex-shrink:0;">⚠</span><span style="font:500 11px/1.45 'Hanken Grotesk'; color:#c9d3c9;"><b style="color:#F3EEE2;">Suggestions only.</b> Confirm allergens with your kitchen — Prompt2Eat never guarantees them.</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ PAYMENTS · PAYTO + BANK DISCOUNT — LIGHT ============ -->
+<div style="position:absolute; left:80px; top:1160px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Payments · Stripe + PayTo toggle + pay-by-bank discount — light · <span style="color:#16241C;">2a</span></div>
+  <div data-screen-label="Payments PayTo (light)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #e6ddcb; box-shadow:0 1px 3px rgba(20,30,25,.06),0 34px 64px -26px rgba(20,30,25,.24); display:flex; background:#F5F0E6;">
+    <dc-import name="P2ESidebar" active="payments" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#FBF8F1; border-bottom:1px solid #ece3d1;">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Payments</div>
+        <span style="margin-left:auto; font:700 12px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:10px; padding:9px 15px;">View payouts →</span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:24px; display:flex; flex-direction:column; gap:18px;">
+        <!-- stripe status -->
+        <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:20px 22px; display:flex; align-items:center; gap:16px;">
+          <span style="width:44px;height:44px;border-radius:11px;background:#635bff;display:flex;align-items:center;justify-content:center;font:800 18px 'Hanken Grotesk';color:#fff;">S</span>
+          <div style="flex:1;"><div style="display:flex; align-items:center; gap:9px;"><span style="font:800 16px 'Bricolage Grotesque'; color:#16241C;">Stripe Connect</span><span style="font:700 9px 'Space Mono'; color:#2f7a4f; background:#e7f4ea; border:1px solid #c7e6ce; border-radius:6px; padding:3px 8px;">● ACTIVE</span></div><div style="font:500 12px 'Hanken Grotesk'; color:#8a9384; margin-top:3px;">Next payout $2,184 · Fri 5 Jul · card + Apple/Google Pay enabled</div></div>
+          <span style="font:700 12px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:10px; padding:9px 15px;">Manage</span>
+        </div>
+        <!-- PayTo (the refresh) -->
+        <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:22px 24px;">
+          <div style="display:flex; align-items:flex-start; gap:14px;">
+            <span style="width:44px;height:44px;border-radius:11px;background:#16241C;display:flex;align-items:center;justify-content:center;color:#F4B43C;font-size:19px;">⇄</span>
+            <div style="flex:1;"><div style="font:800 16px 'Bricolage Grotesque'; color:#16241C;">PayTo — pay by bank</div><div style="font:500 12px/1.5 'Hanken Grotesk'; color:#8a9384; margin-top:3px; max-width:560px;">Let diners approve a real-time bank-to-bank payment in their banking app. Lower fees than cards, funds settle instantly, no chargebacks.</div></div>
+            <span style="width:46px; height:27px; border-radius:999px; background:#16241C; position:relative; flex-shrink:0; margin-top:4px;"><span style="position:absolute; top:3px; right:3px; width:21px; height:21px; border-radius:50%; background:#F4B43C;"></span></span>
+          </div>
+          <div style="display:flex; gap:20px; margin-top:16px; padding-top:16px; border-top:1px solid #f1ead9;">
+            <div style="flex:1;"><div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#a0987f;">PROVIDER FEE</div><div style="font:800 17px 'Hanken Grotesk'; color:#16241C; margin-top:3px;">0.9%<span style="font:500 12px 'Hanken Grotesk'; color:#8a9384;"> vs 1.75% card</span></div></div>
+            <div style="flex:1;"><div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#a0987f;">SETTLEMENT</div><div style="font:800 17px 'Hanken Grotesk'; color:#16241C; margin-top:3px;">Instant</div></div>
+            <div style="flex:1;"><div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#a0987f;">MANDATES SAVED</div><div style="font:800 17px 'Hanken Grotesk'; color:#16241C; margin-top:3px;">312 diners</div></div>
+          </div>
+        </div>
+        <!-- pay-by-bank discount -->
+        <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:22px 24px;">
+          <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+            <div style="flex:1;"><div style="font:800 16px 'Bricolage Grotesque'; color:#16241C;">Pay-by-bank discount</div><div style="font:500 12px 'Hanken Grotesk'; color:#8a9384; margin-top:3px;">Reward diners who pay by bank — the saving comes out of your lower fees.</div></div>
+            <span style="width:46px; height:27px; border-radius:999px; background:#16241C; position:relative; flex-shrink:0;"><span style="position:absolute; top:3px; right:3px; width:21px; height:21px; border-radius:50%; background:#F4B43C;"></span></span>
+          </div>
+          <div style="display:flex; gap:16px; align-items:flex-end;">
+            <div><div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a0987f; margin-bottom:6px;">DISCOUNT TYPE</div><div style="display:flex; background:#F0E9DA; border-radius:9px; padding:3px;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C; background:#fff; border-radius:6px; padding:7px 16px; box-shadow:0 1px 2px rgba(0,0,0,.06);">Percent</span><span style="font:700 12px 'Hanken Grotesk'; color:#8a9384; padding:7px 16px;">Amount</span></div></div>
+            <div style="width:120px;"><div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a0987f; margin-bottom:6px;">VALUE</div><div style="border:1px solid #e6ddcb; border-radius:10px; padding:10px 13px; background:#fff; display:flex; align-items:center; justify-content:space-between;"><span style="font:600 14px 'Hanken Grotesk'; color:#16241C;">2</span><span style="font:700 13px 'Hanken Grotesk'; color:#8a9384;">%</span></div></div>
+            <div style="flex:1; display:flex; gap:9px; align-items:center; background:#e7f4ea; border:1px solid #c7e6ce; border-radius:11px; padding:11px 14px;"><span style="color:#2f7a4f;">✓</span><span style="font:500 12px/1.4 'Hanken Grotesk'; color:#3a5f47;">Diners see <b style="color:#16241C;">“Save 2% — pay by bank”</b> at checkout. On a $40 order, that's <b style="color:#16241C;">$0.80 off</b>.</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ PAYMENTS · PAYTO + BANK DISCOUNT — DARK ============ -->
+<div style="position:absolute; left:1440px; top:1160px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Payments · PayTo + bank discount — dark · <span style="color:#16241C;">2b</span></div>
+  <div data-screen-label="Payments PayTo (dark)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #1c2f26; box-shadow:0 1px 3px rgba(0,0,0,.2),0 34px 64px -26px rgba(0,0,0,.5); display:flex; background:#0d1a14;">
+    <dc-import name="P2ESidebar" active="payments" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#12211a; border-bottom:1px solid rgba(255,255,255,.07);">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#F3EEE2; letter-spacing:-.02em;">Payments</div>
+        <span style="margin-left:auto; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:9px 15px;">View payouts →</span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:24px; display:flex; flex-direction:column; gap:18px;">
+        <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:20px 22px; display:flex; align-items:center; gap:16px;">
+          <span style="width:44px;height:44px;border-radius:11px;background:#635bff;display:flex;align-items:center;justify-content:center;font:800 18px 'Hanken Grotesk';color:#fff;">S</span>
+          <div style="flex:1;"><div style="display:flex; align-items:center; gap:9px;"><span style="font:800 16px 'Bricolage Grotesque'; color:#F3EEE2;">Stripe Connect</span><span style="font:700 9px 'Space Mono'; color:#6fd39a; background:rgba(47,122,79,.2); border:1px solid rgba(111,211,154,.3); border-radius:6px; padding:3px 8px;">● ACTIVE</span></div><div style="font:500 12px 'Hanken Grotesk'; color:#8fa295; margin-top:3px;">Next payout $2,184 · Fri 5 Jul · card + Apple/Google Pay enabled</div></div>
+          <span style="font:700 12px 'Hanken Grotesk'; color:#EDE6D6; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:9px 15px;">Manage</span>
+        </div>
+        <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px 24px;">
+          <div style="display:flex; align-items:flex-start; gap:14px;">
+            <span style="width:44px;height:44px;border-radius:11px;background:#F4B43C;display:flex;align-items:center;justify-content:center;color:#16241C;font-size:19px;">⇄</span>
+            <div style="flex:1;"><div style="font:800 16px 'Bricolage Grotesque'; color:#F3EEE2;">PayTo — pay by bank</div><div style="font:500 12px/1.5 'Hanken Grotesk'; color:#8fa295; margin-top:3px; max-width:560px;">Let diners approve a real-time bank-to-bank payment in their banking app. Lower fees than cards, funds settle instantly, no chargebacks.</div></div>
+            <span style="width:46px; height:27px; border-radius:999px; background:#F4B43C; position:relative; flex-shrink:0; margin-top:4px;"><span style="position:absolute; top:3px; right:3px; width:21px; height:21px; border-radius:50%; background:#16241C;"></span></span>
+          </div>
+          <div style="display:flex; gap:20px; margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,.07);">
+            <div style="flex:1;"><div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#6f857a;">PROVIDER FEE</div><div style="font:800 17px 'Hanken Grotesk'; color:#F3EEE2; margin-top:3px;">0.9%<span style="font:500 12px 'Hanken Grotesk'; color:#8fa295;"> vs 1.75% card</span></div></div>
+            <div style="flex:1;"><div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#6f857a;">SETTLEMENT</div><div style="font:800 17px 'Hanken Grotesk'; color:#F3EEE2; margin-top:3px;">Instant</div></div>
+            <div style="flex:1;"><div style="font:700 9px 'Space Mono'; letter-spacing:.1em; color:#6f857a;">MANDATES SAVED</div><div style="font:800 17px 'Hanken Grotesk'; color:#F3EEE2; margin-top:3px;">312 diners</div></div>
+          </div>
+        </div>
+        <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px 24px;">
+          <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+            <div style="flex:1;"><div style="font:800 16px 'Bricolage Grotesque'; color:#F3EEE2;">Pay-by-bank discount</div><div style="font:500 12px 'Hanken Grotesk'; color:#8fa295; margin-top:3px;">Reward diners who pay by bank — the saving comes out of your lower fees.</div></div>
+            <span style="width:46px; height:27px; border-radius:999px; background:#F4B43C; position:relative; flex-shrink:0;"><span style="position:absolute; top:3px; right:3px; width:21px; height:21px; border-radius:50%; background:#16241C;"></span></span>
+          </div>
+          <div style="display:flex; gap:16px; align-items:flex-end;">
+            <div><div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#6f857a; margin-bottom:6px;">DISCOUNT TYPE</div><div style="display:flex; background:rgba(255,255,255,.06); border-radius:9px; padding:3px;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:6px; padding:7px 16px;">Percent</span><span style="font:700 12px 'Hanken Grotesk'; color:#8fa295; padding:7px 16px;">Amount</span></div></div>
+            <div style="width:120px;"><div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#6f857a; margin-bottom:6px;">VALUE</div><div style="border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px 13px; background:rgba(255,255,255,.04); display:flex; align-items:center; justify-content:space-between;"><span style="font:600 14px 'Hanken Grotesk'; color:#F3EEE2;">2</span><span style="font:700 13px 'Hanken Grotesk'; color:#8fa295;">%</span></div></div>
+            <div style="flex:1; display:flex; gap:9px; align-items:center; background:rgba(47,122,79,.15); border:1px solid rgba(111,211,154,.3); border-radius:11px; padding:11px 14px;"><span style="color:#6fd39a;">✓</span><span style="font:500 12px/1.4 'Hanken Grotesk'; color:#a9c9b6;">Diners see <b style="color:#F3EEE2;">“Save 2% — pay by bank”</b> at checkout. On a $40 order, that's <b style="color:#F3EEE2;">$0.80 off</b>.</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ SETTINGS · LOGO UPLOAD — DARK ============ -->
+<div style="position:absolute; left:1440px; top:210px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Settings · branding with logo UPLOAD — dark · <span style="color:#16241C;">1b</span></div>
+  <div data-screen-label="Settings logo upload (dark)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #1c2f26; box-shadow:0 1px 3px rgba(0,0,0,.2),0 34px 64px -26px rgba(0,0,0,.5); display:flex; background:#0d1a14;">
+    <dc-import name="P2ESidebar" active="settings" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#12211a; border-bottom:1px solid rgba(255,255,255,.07);">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#F3EEE2; letter-spacing:-.02em;">Settings</div>
+        <div style="display:flex; gap:7px; margin-left:8px;"><span style="font:700 11px 'Hanken Grotesk'; color:#F3EEE2; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:6px 13px;">Branding</span><span style="font:700 11px 'Hanken Grotesk'; color:#7f9488; padding:6px 13px;">Hours</span><span style="font:700 11px 'Hanken Grotesk'; color:#7f9488; padding:6px 13px;">SEO &amp; geo</span></div>
+        <span style="margin-left:auto; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:9px 15px;">Save changes →</span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:24px; display:flex; flex-direction:column; gap:18px;">
+        <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px 24px;">
+          <div style="font:800 16px 'Bricolage Grotesque'; color:#F3EEE2; margin-bottom:3px;">Brand logo</div>
+          <div style="font:500 12px 'Hanken Grotesk'; color:#8fa295; margin-bottom:16px;">Used across your storefront, receipts, Studio menus &amp; banners. PNG or SVG, at least 512px.</div>
+          <div style="display:flex; align-items:center; gap:20px;">
+            <image-slot id="settings-logo-d" style="width:104px;height:104px;flex-shrink:0;" shape="rounded" radius="16" placeholder="Drop logo"></image-slot>
+            <div style="flex:1;">
+              <div style="display:flex; gap:9px; margin-bottom:12px;"><span style="font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:9px 16px;">⤒ Upload logo</span><span style="font:700 12px 'Hanken Grotesk'; color:#EDE6D6; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:9px 16px;">Replace</span><span style="font:700 12px 'Hanken Grotesk'; color:#e8836a; background:rgba(226,85,58,.1); border:1px solid rgba(226,85,58,.3); border-radius:10px; padding:9px 16px;">Remove</span></div>
+              <div style="border:1.5px dashed rgba(255,255,255,.18); border-radius:12px; padding:14px 16px; background:rgba(255,255,255,.03); display:flex; align-items:center; gap:11px;"><span style="width:30px;height:30px;border-radius:8px;background:rgba(244,180,60,.15);display:flex;align-items:center;justify-content:center;color:#F4B43C;font-size:15px;">⤓</span><span style="font:500 12px/1.4 'Hanken Grotesk'; color:#8fa295;"><b style="color:#F3EEE2;">Drag &amp; drop</b> an image here, or click to browse. We'll generate light &amp; dark variants automatically.</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:18px;">
+          <div style="flex:1; background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:20px 22px;">
+            <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#6f857a; margin-bottom:12px;">BRAND COLOUR</div>
+            <div style="display:flex; gap:10px; align-items:center;"><span style="width:34px;height:34px;border-radius:9px;background:#F4B43C;box-shadow:0 0 0 3px rgba(244,180,60,.3);"></span><span style="width:34px;height:34px;border-radius:9px;background:#F7F3EA;"></span><span style="width:34px;height:34px;border-radius:9px;background:#E2553A;"></span><span style="width:34px;height:34px;border-radius:9px;background:#7fb4ee;"></span><span style="width:34px;height:34px;border-radius:9px;border:1px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;color:#6f857a;font-size:15px;">＋</span><div style="margin-left:8px; border:1px solid rgba(255,255,255,.1); border-radius:9px; padding:8px 12px; background:rgba(255,255,255,.04); font:600 12px 'Space Mono'; color:#F3EEE2;">#F4B43C</div></div>
+          </div>
+          <div style="flex:1; background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:20px 22px;">
+            <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#6f857a; margin-bottom:12px;">VENUE NAME</div>
+            <div style="border:1px solid rgba(255,255,255,.1); border-radius:11px; padding:11px 14px; background:rgba(255,255,255,.04); font:600 15px 'Hanken Grotesk'; color:#F3EEE2;">Maple &amp; Thyme</div>
+          </div>
+        </div>
+        <div style="background:#16281f; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:20px 22px;">
+          <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#6f857a; margin-bottom:12px;">STOREFRONT DESCRIPTION</div>
+          <div style="border:1px solid rgba(255,255,255,.1); border-radius:11px; padding:12px 14px; background:rgba(255,255,255,.04); font:400 13px/1.5 'Hanken Grotesk'; color:#9DB2A5;">An all-day Camberwell kitchen for bright, seasonal plates and very good coffee. Dine in, takeaway, or order ahead.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ SETTINGS · LOGO UPLOAD — LIGHT ============ -->
+<div style="position:absolute; left:80px; top:210px; width:1280px;">
+  <div data-drags-parent="1" style="font:700 11px 'Space Mono',monospace; letter-spacing:.16em; text-transform:uppercase; color:#86907f; margin:0 0 10px 4px;">Settings · branding with logo UPLOAD (drag / replace / remove) — light · <span style="color:#16241C;">1a</span></div>
+  <div data-screen-label="Settings logo upload (light)" style="width:1280px; height:884px; border-radius:18px; overflow:hidden; border:1px solid #e6ddcb; box-shadow:0 1px 3px rgba(20,30,25,.06),0 34px 64px -26px rgba(20,30,25,.24); display:flex; background:#F5F0E6;">
+    <dc-import name="P2ESidebar" active="settings" badge="6" hint-size="244px,884px" style="width:244px; flex:0 0 244px; align-self:stretch;"></dc-import>
+    <main style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0;">
+      <header style="height:60px; flex-shrink:0; display:flex; align-items:center; gap:14px; padding:0 24px; background:#FBF8F1; border-bottom:1px solid #ece3d1;">
+        <div style="font:800 19px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.02em;">Settings</div>
+        <div style="display:flex; gap:7px; margin-left:8px;"><span style="font:700 11px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:999px; padding:6px 13px;">Branding</span><span style="font:700 11px 'Hanken Grotesk'; color:#8a9384; padding:6px 13px;">Hours</span><span style="font:700 11px 'Hanken Grotesk'; color:#8a9384; padding:6px 13px;">SEO &amp; geo</span></div>
+        <span style="margin-left:auto; font:700 12px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:10px; padding:9px 15px;">Save changes →</span>
+      </header>
+      <div style="flex:1; overflow:hidden; padding:24px; display:flex; flex-direction:column; gap:18px;">
+        <!-- LOGO UPLOAD (the refresh) -->
+        <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; box-shadow:0 1px 3px rgba(20,30,25,.05); padding:22px 24px;">
+          <div style="font:800 16px 'Bricolage Grotesque'; color:#16241C; margin-bottom:3px;">Brand logo</div>
+          <div style="font:500 12px 'Hanken Grotesk'; color:#8a9384; margin-bottom:16px;">Used across your storefront, receipts, Studio menus &amp; banners. PNG or SVG, at least 512px.</div>
+          <div style="display:flex; align-items:center; gap:20px;">
+            <image-slot id="settings-logo-l" style="width:104px;height:104px;flex-shrink:0;" shape="rounded" radius="16" placeholder="Drop logo"></image-slot>
+            <div style="flex:1;">
+              <div style="display:flex; gap:9px; margin-bottom:12px;"><span style="font:700 12px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border-radius:10px; padding:9px 16px;">⤒ Upload logo</span><span style="font:700 12px 'Hanken Grotesk'; color:#16241C; background:#fff; border:1px solid #d8cbb0; border-radius:10px; padding:9px 16px;">Replace</span><span style="font:700 12px 'Hanken Grotesk'; color:#c0492f; background:#fff; border:1px solid #ecccbf; border-radius:10px; padding:9px 16px;">Remove</span></div>
+              <div style="border:1.5px dashed #d8cbb0; border-radius:12px; padding:14px 16px; background:#FBF8F1; display:flex; align-items:center; gap:11px;"><span style="width:30px;height:30px;border-radius:8px;background:#F0E9DA;display:flex;align-items:center;justify-content:center;color:#c08a2e;font-size:15px;">⤓</span><span style="font:500 12px/1.4 'Hanken Grotesk'; color:#8a9384;"><b style="color:#16241C;">Drag &amp; drop</b> an image here, or click to browse. We'll generate light &amp; dark variants automatically.</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- brand colour + venue name -->
+        <div style="display:flex; gap:18px;">
+          <div style="flex:1; background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:20px 22px;">
+            <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a0987f; margin-bottom:12px;">BRAND COLOUR</div>
+            <div style="display:flex; gap:10px; align-items:center;"><span style="width:34px;height:34px;border-radius:9px;background:#F4B43C;box-shadow:0 0 0 3px rgba(244,180,60,.3);"></span><span style="width:34px;height:34px;border-radius:9px;background:#16241C;"></span><span style="width:34px;height:34px;border-radius:9px;background:#E2553A;"></span><span style="width:34px;height:34px;border-radius:9px;background:#2a6bb0;"></span><span style="width:34px;height:34px;border-radius:9px;border:1px dashed #d8cbb0;display:flex;align-items:center;justify-content:center;color:#b6ab92;font-size:15px;">＋</span><div style="margin-left:8px; border:1px solid #e6ddcb; border-radius:9px; padding:8px 12px; background:#fff; font:600 12px 'Space Mono'; color:#16241C;">#F4B43C</div></div>
+          </div>
+          <div style="flex:1; background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:20px 22px;">
+            <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a0987f; margin-bottom:12px;">VENUE NAME</div>
+            <div style="border:1px solid #e6ddcb; border-radius:11px; padding:11px 14px; background:#fff; font:600 15px 'Hanken Grotesk'; color:#16241C;">Maple &amp; Thyme</div>
+          </div>
+        </div>
+        <!-- storefront description -->
+        <div style="background:#FFFDF8; border:1px solid #EFE7D6; border-radius:18px; padding:20px 22px;">
+          <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a0987f; margin-bottom:12px;">STOREFRONT DESCRIPTION</div>
+          <div style="border:1px solid #e6ddcb; border-radius:11px; padding:12px 14px; background:#fff; font:400 13px/1.5 'Hanken Grotesk'; color:#5d655b;">An all-day Camberwell kitchen for bright, seasonal plates and very good coffee. Dine in, takeaway, or order ahead.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>
