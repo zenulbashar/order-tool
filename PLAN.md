@@ -143,8 +143,18 @@ model of "exactly ONE block" predates D4b — the second block was explicitly ga
 - **F3 — supplier product feed** (Nisbets / Reward Hospitality auto-import + stock). Needs supplier BD.
 - **G3 — true OAuth social auto-post** to connected FB/IG/Google Business Profile. Gated on Meta app
   review + Google Business Profile API approval. Would reuse crypto + `venue_integrations` + outbox.
-- **G-photos** — item photos + logo in studio artwork (needs server-side compositing / CORS-safe embed
-  to keep PNG export clean). Buildable now.
+- **Studio v2 (user feedback 2026-07-04)** — the design studio needs:
+  - ✅ FIXED: menu item names overrunning the price (now truncated to reserve price width); the
+    "+N more" truncation now auto-fits the FULL menu (up to 4 columns on wide/signage; sheds
+    descriptions then shrinks font to fit every item; "+N more" only as a last resort).
+  - **Logo / branding (was G-photos):** embed the venue logo in the header + honor brand. Needs
+    server-side data-URI inlining of the R2 logo so the client PNG export doesn't taint. Buildable.
+  - **Flexibility:** let the venue choose which categories/items to include, toggle descriptions/
+    prices, pick a layout template + accent. Buildable.
+  - **AI banners:** ⚠ REALITY CHECK — Claude generates TEXT + reads images but does NOT paint raster
+    images. "AI banner" = Haiku-written headline/subtext/offer copy auto-styled in the venue brand
+    (buildable, reuses MENU_COPY_MODEL + amber affordance). Actual AI-generated imagery needs a
+    3rd-party image-gen API (external, gated) — confirm which the user wants.
 - **E2d settlement transfers** — automated Stripe transfer/topup to pay venues the co-funded share
   (currently a tracked out-of-band liability). Future finance-infra arc.
 
