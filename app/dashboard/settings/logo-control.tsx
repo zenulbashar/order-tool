@@ -32,14 +32,19 @@ const initialState: LogoState = {};
 
 export function LogoControl({ logoUrl }: { logoUrl: string | null }) {
   return (
-    <div className="space-y-3">
-      <span className={microLabel}>
-        Logo{" "}
-        <span className="font-normal normal-case text-muted">(optional)</span>
-      </span>
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+          Brand logo
+        </h2>
+        <p className="mt-0.5 text-xs text-muted">
+          Used across your storefront, receipts, and Studio menus &amp; banners.
+          JPEG, PNG or WebP, up to 2MB — transparent PNGs work best.
+        </p>
+      </div>
 
       {logoUrl ? (
-        <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-4">
           {/* key remounts the uploader (clearing the picked file + any error)
               once a successful upload/URL change swaps logo_url. */}
           <UploadForm key={logoUrl} label="Replace logo" logoUrl={logoUrl} />
@@ -52,11 +57,6 @@ export function LogoControl({ logoUrl }: { logoUrl: string | null }) {
       )}
 
       <PasteUrlForm logoUrl={logoUrl} />
-
-      <p className="text-xs text-muted">
-        JPEG, PNG, or WebP · up to 2MB. Transparent PNGs work best. Shown on your
-        storefront and in the Design studio.
-      </p>
     </div>
   );
 }
