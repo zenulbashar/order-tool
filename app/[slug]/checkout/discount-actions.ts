@@ -5,38 +5,49 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { orders, venues } from "@/lib/db/schema";
 import { BANK_METHODS, bankDiscountCents } from "@/lib/payments/bank-discount";
+import { composeOrderDiscount } from "@/lib/payments/order-discount";
+import { resolveActivePromo } from "@/lib/promotions";
 import { computeApplicationFeeCents, getStripe } from "@/lib/stripe";
 
 /**
- * Apply (or revert) the pay-by-bank saving on a pending order when the customer
- * changes payment method at checkout (Track B · 3b-ii). This is the ONLY new
- * money-path write in the program — `placeOrder` and the Stripe webhook are
- * untouched. It is deliberately isolated in its own module so the checkout
- * `actions.ts` (placeOrder) stays byte-for-byte.
+ * The SINGLE order-discount apply (Track B · 3b-ii + Track E2d). Recomputes an
+ * order's discount from the two sources — an active platform PROMOTION (always)
+ * and the pay-by-bank SAVING (only when a bank method is selected) — composes
+ * them into one clamped total, updates the PaymentIntent, and records the
+ * breakdown. Called from the payment step: once on mount (so a promo applies
+ * automatically) and again on every method change (so the bank saving follows).
+ * Both triggers route through here, so the two discounts STACK instead of
+ * clobbering each other.
  *
- * Safety properties:
- *  - SERVER-AUTHORITATIVE: the discount is recomputed from the order's STORED
- *    subtotal + the venue's configured mode/value — the client never supplies an
- *    amount. A forged method just toggles between subtotal and subtotal−discount.
- *  - VENUE + TOKEN SCOPED: resolved by the opaque public_token AND venue (the
- *    same capability the order page uses); pending_payment only.
- *  - ORDER: Stripe PI update FIRST (a succeeded/confirmed PI rejects the update,
- *    so we never lower an order's recorded total after it's paid), then the DB
- *    write guarded on status='pending_payment'.
- *  - The webhook still confirms by PI id and charges the PI's server amount, so
- *    the customer is always charged exactly what the PI holds.
+ * This is the only new diner money-path write in the program — `placeOrder` and
+ * the Stripe webhook stay byte-for-byte unchanged.
  *
- * Known, accepted v1 limitation: a customer could request the discount (method
- * = payto) then confirm with a card, saving the fee difference. That is a small
- * venue-side revenue leak (never customer harm, never a surcharge) and matches
- * the intrinsic risk of any method-based discount; reconciling it would require
- * touching the webhook, which we keep byte-for-byte.
+ * Safety:
+ *  - SERVER-AUTHORITATIVE: both discounts are recomputed from the order's STORED
+ *    subtotal; the client only names the selected method. It can never set an
+ *    amount.
+ *  - SERIALIZED: the order row is locked FOR UPDATE for the duration, so two
+ *    concurrent applies (mount + method-change) can't race the PaymentIntent and
+ *    the DB into disagreement. The DB is written first and the PI update is last
+ *    inside the same transaction, so a Stripe failure rolls the DB back — PI and
+ *    DB never diverge on the common failure paths.
+ *  - IDEMPOTENT: the PI update carries an idempotency key keyed to the target
+ *    amount, so a retry to the same amount replays rather than double-applies.
+ *  - CLAMPED ONCE: composeOrderDiscount sums promo + bank then clamps to
+ *    [0, subtotal − Stripe minimum]; neither can ever produce a negative or
+ *    sub-minimum charge, and it is never a surcharge.
+ *  - The webhook still confirms by PI id and charges exactly what the PI holds.
  */
 export type ApplyDiscountResult =
-  | { ok: true; totalCents: number; discountCents: number }
+  | {
+      ok: true;
+      totalCents: number;
+      discountCents: number;
+      promoDiscountCents: number;
+    }
   | { ok: false };
 
-export async function applyBankDiscount(
+export async function applyOrderDiscounts(
   slug: string,
   token: string,
   method: string,
@@ -57,60 +68,92 @@ export async function applyBankDiscount(
     .limit(1);
   if (!venue || !venue.stripeAccountId) return { ok: false };
 
-  const [order] = await db
+  // Subtotal is immutable after creation, so resolve the promo + bank raw
+  // discounts from the first read; the transaction below re-locks for the
+  // authoritative state + write.
+  const [pre] = await db
     .select({
       id: orders.id,
       subtotalCents: orders.subtotalCents,
-      totalCents: orders.totalCents,
-      discountCents: orders.discountCents,
-      pi: orders.stripePaymentIntentId,
       status: orders.status,
+      pi: orders.stripePaymentIntentId,
     })
     .from(orders)
     .where(
       and(eq(orders.publicToken, trimmedToken), eq(orders.venueId, venue.id)),
     )
     .limit(1);
-  if (!order || order.status !== "pending_payment" || !order.pi) {
-    return { ok: false };
-  }
+  if (!pre || pre.status !== "pending_payment" || !pre.pi) return { ok: false };
 
-  // Server-authoritative recompute from the STORED subtotal. Offered only when
-  // PayTo is on, a discount is configured, and the chosen method is a bank one.
-  const discount =
+  const promo = await resolveActivePromo(pre.subtotalCents);
+  const promoRaw = promo?.raw ?? 0;
+  const bankRaw =
     BANK_METHODS.has(method) && venue.paytoEnabled
-      ? bankDiscountCents(order.subtotalCents, venue.mode, venue.value)
+      ? bankDiscountCents(pre.subtotalCents, venue.mode, venue.value)
       : 0;
-  const newTotal = order.subtotalCents - discount;
+  const { discountCents, promoDiscountCents, totalCents } = composeOrderDiscount({
+    subtotalCents: pre.subtotalCents,
+    promoRaw,
+    bankRaw,
+  });
+  const appliedPromoId = promoDiscountCents > 0 ? promo?.id ?? null : null;
 
-  // Nothing to change — avoid a needless Stripe round-trip on re-selection.
-  if (discount === order.discountCents && newTotal === order.totalCents) {
-    return { ok: true, totalCents: newTotal, discountCents: discount };
-  }
-
-  // Update the PaymentIntent on the connected account: the server-recomputed
-  // amount + a re-derived application fee (fee ≤ amount always holds). If the PI
-  // is no longer updatable (already confirmed/processing), Stripe throws → we
-  // leave the order untouched.
+  let result: ApplyDiscountResult = { ok: false };
   try {
-    await getStripe().paymentIntents.update(
-      order.pi,
-      {
-        amount: newTotal,
-        application_fee_amount: computeApplicationFeeCents(newTotal),
-      },
-      { stripeAccount: venue.stripeAccountId },
-    );
+    await db.transaction(async (tx) => {
+      // Lock the order row — serializes concurrent applies on THIS order.
+      const [locked] = await tx
+        .select({
+          id: orders.id,
+          status: orders.status,
+          pi: orders.stripePaymentIntentId,
+          totalCents: orders.totalCents,
+          discountCents: orders.discountCents,
+          promoDiscountCents: orders.promoDiscountCents,
+          appliedPromoId: orders.appliedPromoId,
+        })
+        .from(orders)
+        .where(and(eq(orders.id, pre.id), eq(orders.venueId, venue.id)))
+        .for("update")
+        .limit(1);
+      if (!locked || locked.status !== "pending_payment" || !locked.pi) return;
+
+      // No-op guard keyed off the FULL target (not a single scalar), so an equal
+      // combined discount with a different composition still applies correctly.
+      if (
+        locked.totalCents === totalCents &&
+        locked.discountCents === discountCents &&
+        locked.promoDiscountCents === promoDiscountCents &&
+        (locked.appliedPromoId ?? null) === appliedPromoId
+      ) {
+        result = { ok: true, totalCents, discountCents, promoDiscountCents };
+        return;
+      }
+
+      // DB first, PI last — a Stripe failure rolls the whole transaction back so
+      // the PI and the order can't disagree.
+      await tx
+        .update(orders)
+        .set({ totalCents, discountCents, promoDiscountCents, appliedPromoId })
+        .where(and(eq(orders.id, locked.id), eq(orders.status, "pending_payment")));
+
+      await getStripe().paymentIntents.update(
+        locked.pi,
+        {
+          amount: totalCents,
+          application_fee_amount: computeApplicationFeeCents(totalCents),
+        },
+        {
+          stripeAccount: venue.stripeAccountId!,
+          idempotencyKey: `${locked.id}-disc-${totalCents}`,
+        },
+      );
+
+      result = { ok: true, totalCents, discountCents, promoDiscountCents };
+    });
   } catch {
     return { ok: false };
   }
 
-  await db
-    .update(orders)
-    .set({ totalCents: newTotal, discountCents: discount })
-    .where(
-      and(eq(orders.id, order.id), eq(orders.status, "pending_payment")),
-    );
-
-  return { ok: true, totalCents: newTotal, discountCents: discount };
+  return result;
 }

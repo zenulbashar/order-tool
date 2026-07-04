@@ -111,6 +111,19 @@ export const planDiscountMode = pgEnum("plan_discount_mode", [
   "amount",
 ]);
 
+// Platform promotion type (Track E2d). percent = % off subtotal; amount = fixed
+// cents off. Applied server-side as an order discount line — never a surcharge.
+export const promotionType = pgEnum("promotion_type", ["percent", "amount"]);
+
+// Who bears a promotion's cost (Track E2d), mirroring the delivery platforms.
+// v1 records this for reporting; merchant is the default (the venue's margin
+// absorbs it, as on Uber Eats / Zomato).
+export const promotionFunding = pgEnum("promotion_funding", [
+  "merchant",
+  "platform",
+  "cofunded",
+]);
+
 export const venues = pgTable(
   "venues",
   {
@@ -747,6 +760,13 @@ export const orders = pgTable(
     // lowers total_cents when the customer chooses PayTo; total = subtotal −
     // discount. Never a surcharge.
     discountCents: integer("discount_cents").notNull().default(0),
+    // Promotion breakdown (Track E2d). `discount_cents` above is the COMBINED
+    // saving (promo + pay-by-bank); these record how much of it is the platform
+    // promotion and which one, so the single recompute can reconstruct both
+    // components (discount_cents alone is lossy). Soft ref — no FK — so deleting
+    // a promo never rewrites a placed order. bank portion = discount − promo.
+    promoDiscountCents: integer("promo_discount_cents").notNull().default(0),
+    appliedPromoId: text("applied_promo_id"),
     // Stripe PaymentIntent backing this order (direct charge on the venue's
     // connected account). Set server-side after the order row is written; the
     // webhook resolves orders to confirm/fail by THIS id only — never a
@@ -1256,6 +1276,42 @@ export const platformAuditLog = pgTable(
 );
 
 export type PlatformAuditEntry = typeof platformAuditLog.$inferSelect;
+
+/**
+ * Platform promotions (Track E2d). A campaign the admin console runs — a % or
+ * fixed-$ discount on qualifying orders, within a window, above a minimum
+ * basket. v1 is platform-wide (all venues); per-venue targeting is a later
+ * additive build. The discount itself is applied server-side at the payment
+ * step by the SINGLE order-discount recompute (lib/payments/order-discount.ts),
+ * which stacks it with the pay-by-bank saving and clamps the total once — never
+ * a surcharge. This table is the campaign DEFINITION; per-order application is
+ * recorded on `orders.applied_promo_id` + `orders.promo_discount_cents`.
+ */
+export const promotions = pgTable(
+  "promotions",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    type: promotionType("type").notNull(),
+    // Percent (1–100) when type=percent, else cents off.
+    value: integer("value").notNull(),
+    // Minimum order subtotal (cents) for the promo to apply; 0 = no minimum.
+    minBasketCents: integer("min_basket_cents").notNull().default(0),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    fundingSource: promotionFunding("funding_source").notNull().default("merchant"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("promotions_active_idx").on(table.isActive),
+    check("promotions_value_pos", sql`${table.value} > 0`),
+    check("promotions_min_basket_nonneg", sql`${table.minBasketCents} >= 0`),
+  ],
+);
+
+export type Promotion = typeof promotions.$inferSelect;
 
 /* -------------------------------------------------------------------------- */
 /* Hardware marketplace (Track F). A PLATFORM catalog (curated in the admin      */
