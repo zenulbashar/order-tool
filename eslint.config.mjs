@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     // Design handoff bundle — reference assets only (the vendored .dc.html
     // viewer JS is not our code and is never imported or shipped).
     "design/**",
+    // Native mobile app — its own isolated Capacitor project (own package.json,
+    // tooling, and lint); not part of the web app build.
+    "mobile/**",
   ]),
 ]);
 

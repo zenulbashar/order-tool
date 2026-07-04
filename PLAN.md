@@ -112,6 +112,22 @@ model of "exactly ONE block" predates D4b — the second block was explicitly ga
   desktop + the responsive `.dc.html` canvases) so future sessions have the source; `design/**` is
   excluded from ESLint (vendored viewer JS, never imported/shipped).
 
+### Mobile apps — iOS + Android (`mobile/`, hybrid phase 1)
+- **STARTED (this branch):** an ISOLATED Capacitor project in `mobile/` (own `package.json`/tooling;
+  excluded from the web `tsc`/ESLint; does not touch the web build or money path). User decisions:
+  **hybrid** (Capacitor now → native later), **owner app first**, owners **view storefront in the
+  device browser** (dashboard `target="_blank"` links open externally — no web change).
+- Shell loads the HOSTED owner dashboard via `server.url` (set `P2E_APP_URL` to the AUTH_URL) — the
+  app is server-rendered so it can't be statically bundled. Capacitor 8; plugins: push / browser /
+  splash / status-bar / app. Forest brand chrome; `appId au.com.zaleit.prompt2eat.owner` (permanent
+  after first submit — confirm). `mobile/README.md` has the full build + submit guide.
+- **User must, on their Mac/PC:** Apple Developer ($99/yr) + Play ($25) accounts; `cap add ios/
+  android`; add brand icon/splash + `npm run assets`; open in Xcode/Android Studio; submit.
+- **Top follow-ups (flagged in README):** (1) magic-link **deep links** (Universal/App Links) so
+  sign-in completes in-app — the #1 wire-up; (2) **push notifications** (APNs/FCM + a `/api/push/
+  register` bridge + send on the existing webhook `after()` seam) — the big native win; (3) later,
+  replace hot screens (kitchen orders, checkout) with native views.
+
 ### Platform hygiene (verified present)
 - `app/_components/toast.tsx` — **PRESENT** (resolves a parallel-session "missing" report).
 - `lib/rate-limit.ts` fail-open Upstash; gates verified on: auth magic-link (`authIp`/`authEmail`),
