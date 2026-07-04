@@ -431,11 +431,19 @@ export default async function OrderConfirmationPage({
               <span className="text-ink">${formatCents(order.subtotalCents)}</span>
             </div>
           ) : null}
-          {order.discountCents > 0 ? (
+          {order.promoDiscountCents > 0 ? (
+            <div className="mt-1 flex items-center justify-between text-sm">
+              <span className="text-success-deep">Promotion</span>
+              <span className="text-success-deep">
+                −${formatCents(order.promoDiscountCents)}
+              </span>
+            </div>
+          ) : null}
+          {order.discountCents - order.promoDiscountCents > 0 ? (
             <div className="mt-1 flex items-center justify-between text-sm">
               <span className="text-success-deep">Bank discount</span>
               <span className="text-success-deep">
-                −${formatCents(order.discountCents)}
+                −${formatCents(order.discountCents - order.promoDiscountCents)}
               </span>
             </div>
           ) : null}

@@ -140,6 +140,12 @@ export default async function AdminConsolePage() {
             Stats →
           </Link>
           <Link
+            href="/admin/promotions"
+            className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+          >
+            Promotions →
+          </Link>
+          <Link
             href="/admin/marketplace"
             className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
           >

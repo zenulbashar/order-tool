@@ -9,14 +9,14 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { readableOn } from "@/app/_components/brand-contrast";
 import { Button } from "@/app/_components/button";
 import { bankDiscountCents } from "@/lib/payments/bank-discount";
 import { formatCents } from "@/lib/validation";
 
-import { applyBankDiscount } from "./discount-actions";
+import { applyOrderDiscounts } from "./discount-actions";
 
 import type { PublicVenue } from "../types";
 
@@ -114,18 +114,20 @@ function PaymentForm({
   // never affects the amount, the fee, or confirmation — the webhook remains the
   // sole source of truth.
   const [selectedMethod, setSelectedMethod] = useState<string>("card");
-  // The amount currently shown on the Pay button. Starts at the full (card)
-  // price and drops to the discounted total when the customer selects a bank
-  // method — the number comes back from the SERVER (applyBankDiscount), which is
+  // The amount currently shown on the Pay button. Starts at the full price and
+  // drops to the discounted total once a promotion and/or the bank saving apply
+  // — the number comes back from the SERVER (applyOrderDiscounts), which is
   // authoritative; the client never computes the charged amount.
   const [displayAmount, setDisplayAmount] = useState(amountCents);
   // True while the discount is being applied/reverted server-side — the Pay
   // button is disabled so a payment can't be confirmed at a stale amount.
   const [recomputing, setRecomputing] = useState(false);
+  // The platform promotion applied to this order (cents), from the server.
+  const [promoDiscountCents, setPromoDiscountCents] = useState(0);
   const lastMethodRef = useRef<string>("card");
 
-  // The saving on offer for this order (0 when the venue hasn't configured one).
-  // Display only; the server recompute is the source of truth.
+  // The pay-by-bank saving on offer for this order (0 when the venue hasn't
+  // configured one). Display only; the server recompute is the source of truth.
   const offerDiscountCents =
     venue.paytoEnabled
       ? bankDiscountCents(
@@ -135,19 +137,17 @@ function PaymentForm({
         )
       : 0;
 
-  // When the customer switches payment method, apply (bank) or revert (card) the
-  // discount on the server, then re-sync the Payment Element to the new PI
-  // amount. Only fires on an actual method-type change; a no-op when no discount
-  // is configured.
-  async function handleMethodChange(type: string) {
-    setSelectedMethod(type);
-    if (offerDiscountCents <= 0 || type === lastMethodRef.current) return;
-    lastMethodRef.current = type;
+  // The SINGLE apply path (Track E2d). Recomputes both discounts server-side for
+  // the given method, updates the PI + order, and re-syncs the Element. Used for
+  // the automatic promo apply on mount AND every method change, so a promotion
+  // and the bank saving STACK rather than clobber each other.
+  async function runDiscount(type: string) {
     setRecomputing(true);
     try {
-      const result = await applyBankDiscount(venue.slug, token, type);
+      const result = await applyOrderDiscounts(venue.slug, token, type);
       if (result.ok) {
         setDisplayAmount(result.totalCents);
+        setPromoDiscountCents(result.promoDiscountCents);
         try {
           await elements?.fetchUpdates();
         } catch {
@@ -157,6 +157,26 @@ function PaymentForm({
     } finally {
       setRecomputing(false);
     }
+  }
+
+  // Apply any active promotion automatically once, as soon as the step mounts —
+  // it must not depend on the customer touching the method selector. Fail-closed:
+  // if this never runs, the customer simply pays full price.
+  const appliedOnMount = useRef(false);
+  useEffect(() => {
+    if (appliedOnMount.current) return;
+    appliedOnMount.current = true;
+    void runDiscount(lastMethodRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // On an actual method-type change, recompute (adds/removes the bank saving on
+  // top of any promo). The server no-op guard makes a redundant selection cheap.
+  function handleMethodChange(type: string) {
+    setSelectedMethod(type);
+    if (type === lastMethodRef.current) return;
+    lastMethodRef.current = type;
+    void runDiscount(type);
   }
 
   // SINGLE confirmation path. BOTH the card form submit and the Express Checkout
@@ -249,6 +269,19 @@ function PaymentForm({
           ) : null}
         </div>
 
+        {/* Promotion applied automatically (Track E2d). */}
+        {promoDiscountCents > 0 ? (
+          <div className="mb-3 flex items-center gap-2 rounded-input border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-2">
+            <span
+              aria-hidden
+              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-success-deep"
+            >
+              −${formatCents(promoDiscountCents)}
+            </span>
+            <span className="text-xs text-ink">Promotion applied to your order.</span>
+          </div>
+        ) : null}
+
         {offerDiscountCents > 0 ? (
           <div className="mb-3 flex items-center gap-2 rounded-input border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-2">
             <span
@@ -258,9 +291,7 @@ function PaymentForm({
               Save ${formatCents(offerDiscountCents)}
             </span>
             <span className="text-xs text-ink">
-              {displayAmount < amountCents
-                ? "Applied — you're paying by bank."
-                : "Pay by bank instead of card."}
+              Pay by bank to save on top of any promotion.
             </span>
           </div>
         ) : null}
