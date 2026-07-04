@@ -101,6 +101,17 @@ model of "exactly ONE block" predates D4b — the second block was explicitly ga
   export, dependency-free). **G2** (PR #110) — share panel (Web Share API to social apps + Google
   hand-off + copy caption).
 
+### Owner Overview landing (design_handoff — owner-overview)
+- **DONE (this branch):** `app/dashboard/page.tsx` rebuilt from the tiles grid into the live "Today"
+  dashboard from the design bundle — greeting header + "View storefront", 4 KPIs (today's orders /
+  revenue / avg order with recent-daily-average deltas + sparklines, menu-health ring), Revenue·this-
+  week bar chart, Order-mix donut (dine-in vs takeaway, 30d), Live-orders queue, and a Concierge-
+  insight card wired to the REAL top `buildSuggestions` nudge (all-clear state when none). All real
+  venue-scoped data, server-rendered dependency-free SVG/CSS, responsive; no writes, money-path 0.
+- **Design bundle committed** to `design/design_handoff_prompt2eat/` (reference for every screen,
+  desktop + the responsive `.dc.html` canvases) so future sessions have the source; `design/**` is
+  excluded from ESLint (vendored viewer JS, never imported/shipped).
+
 ### Platform hygiene (verified present)
 - `app/_components/toast.tsx` — **PRESENT** (resolves a parallel-session "missing" report).
 - `lib/rate-limit.ts` fail-open Upstash; gates verified on: auth magic-link (`authIp`/`authEmail`),
