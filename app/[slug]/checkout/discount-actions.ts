@@ -102,6 +102,12 @@ export async function applyOrderDiscounts(
     bankRaw,
   });
   const appliedPromoId = promoDiscountCents > 0 ? promo?.id ?? null : null;
+  // The platform's co-funded share of the (post-clamp) promo discount — a
+  // tracked liability, settled out of band. Does not change the charge or fee.
+  const platformFundedCents =
+    appliedPromoId && promo
+      ? Math.round((promoDiscountCents * promo.platformFundedPercent) / 100)
+      : 0;
 
   let result: ApplyDiscountResult = { ok: false };
   try {
@@ -139,7 +145,13 @@ export async function applyOrderDiscounts(
       // the PI and the order can't disagree.
       await tx
         .update(orders)
-        .set({ totalCents, discountCents, promoDiscountCents, appliedPromoId })
+        .set({
+          totalCents,
+          discountCents,
+          promoDiscountCents,
+          appliedPromoId,
+          platformFundedCents,
+        })
         .where(and(eq(orders.id, locked.id), eq(orders.status, "pending_payment")));
 
       await getStripe().paymentIntents.update(

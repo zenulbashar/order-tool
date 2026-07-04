@@ -25,7 +25,7 @@ export async function resolveActivePromo(
   venueId: string,
   subtotalCents: number,
   customerId: string | null,
-): Promise<{ id: string; raw: number } | null> {
+): Promise<{ id: string; raw: number; platformFundedPercent: number } | null> {
   if (subtotalCents <= 0) return null;
 
   const now = new Date();
@@ -37,6 +37,7 @@ export async function resolveActivePromo(
       scope: promotions.scope,
       audience: promotions.audience,
       budgetCents: promotions.budgetCents,
+      platformFundedPercent: promotions.platformFundedPercent,
     })
     .from(promotions)
     .where(
@@ -101,13 +102,15 @@ export async function resolveActivePromo(
     returning = (row?.n ?? 0) > 0;
   }
 
-  let best: { id: string; raw: number } | null = null;
+  let best: { id: string; raw: number; platformFundedPercent: number } | null = null;
   for (const c of candidates) {
     if (c.scope === "selected" && !targeted.has(c.id)) continue;
     if (c.budgetCents != null && (spent.get(c.id) ?? 0) >= c.budgetCents) continue;
     if (c.audience === "new" && customerId && returning) continue;
     const raw = promoDiscountRawCents(subtotalCents, c.type, c.value);
-    if (raw > 0 && (!best || raw > best.raw)) best = { id: c.id, raw };
+    if (raw > 0 && (!best || raw > best.raw)) {
+      best = { id: c.id, raw, platformFundedPercent: c.platformFundedPercent };
+    }
   }
   return best;
 }

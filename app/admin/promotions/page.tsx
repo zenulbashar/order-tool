@@ -37,11 +37,12 @@ export default async function AdminPromotionsPage() {
       .select({ id: venues.id, name: venues.name })
       .from(venues)
       .orderBy(asc(venues.name)),
-    // Confirmed spend per promo (for budget display).
+    // Confirmed spend + platform-funded liability per promo.
     db
       .select({
         promoId: orders.appliedPromoId,
         spent: sql<number>`coalesce(sum(${orders.promoDiscountCents}), 0)`,
+        funded: sql<number>`coalesce(sum(${orders.platformFundedCents}), 0)`,
       })
       .from(orders)
       .where(eq(orders.status, "confirmed"))
@@ -57,7 +58,9 @@ export default async function AdminPromotionsPage() {
   ]);
 
   const spentByPromo = new Map(spentRows.filter((r) => r.promoId).map((r) => [r.promoId as string, Number(r.spent)]));
+  const fundedByPromo = new Map(spentRows.filter((r) => r.promoId).map((r) => [r.promoId as string, Number(r.funded)]));
   const targetsByPromo = new Map(targetRows.map((r) => [r.promotionId, Number(r.n)]));
+  const platformOwed = [...fundedByPromo.values()].reduce((s, v) => s + v, 0);
 
   return (
     <main className="mx-auto max-w-4xl px-5 py-8">
@@ -71,6 +74,12 @@ export default async function AdminPromotionsPage() {
         <p className="mt-1 text-sm text-muted">
           Order discounts applied automatically at checkout and stacked with any
           pay-by-bank saving — never a surcharge.
+          {platformOwed > 0 ? (
+            <span className="ml-1 font-semibold text-ink">
+              Platform co-funding owed to venues: ${formatCents(platformOwed)}{" "}
+              (settled out of band).
+            </span>
+          ) : null}
         </p>
       </header>
 
@@ -116,6 +125,10 @@ export default async function AdminPromotionsPage() {
                 <option value="platform">Platform</option>
                 <option value="cofunded">Co-funded</option>
               </select>
+            </label>
+            <label className="block">
+              <span className={eyebrow}>Platform % (co-funded)</span>
+              <input name="platformPercent" inputMode="numeric" placeholder="50" className={`${control} mt-1`} />
             </label>
             <label className="block">
               <span className={eyebrow}>Starts</span>
@@ -189,6 +202,9 @@ export default async function AdminPromotionsPage() {
                         {promo.budgetCents != null
                           ? ` · $${formatCents(spent)}/$${formatCents(promo.budgetCents)}`
                           : ` · $${formatCents(spent)} used`}
+                        {promo.fundingSource !== "merchant"
+                          ? ` · ${promo.fundingSource} ${promo.platformFundedPercent}% (owe $${formatCents(fundedByPromo.get(promo.id) ?? 0)})`
+                          : ""}
                         {` · ${fmtDate(promo.startsAt)}–${fmtDate(promo.endsAt)}`}
                       </span>
                     </span>
