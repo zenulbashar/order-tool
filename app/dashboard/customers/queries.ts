@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
@@ -18,6 +18,12 @@ import { scopedToVenue } from "@/lib/tenant";
  */
 
 const NEW_WINDOW_DAYS = 30;
+// The directory aggregates a rolling window rather than all-time, so memory +
+// payload stay bounded regardless of a venue's lifetime order volume.
+const DIRECTORY_WINDOW_DAYS = 365;
+// Cap the returned directory so a busy venue never renders a multi-thousand-row
+// table; KPIs still reflect every customer in the window.
+export const CUSTOMER_TABLE_CAP = 200;
 
 export type VenueCustomer = {
   key: string;
@@ -63,6 +69,9 @@ type Agg = {
 export async function getVenueCustomers(
   venueId: string,
 ): Promise<VenueCustomerStats> {
+  const nowMs = new Date().getTime();
+  const windowSince = new Date(nowMs - DIRECTORY_WINDOW_DAYS * 86_400_000);
+
   const rows = await db
     .select({
       customerId: orders.customerId,
@@ -76,6 +85,7 @@ export async function getVenueCustomers(
       and(
         scopedToVenue(orders.venueId, venueId),
         eq(orders.status, "confirmed"),
+        gt(orders.createdAt, windowSince),
       ),
     );
 
@@ -94,13 +104,16 @@ export async function getVenueCustomers(
       map.set(key, {
         key,
         name: row.customerName,
-        phone: row.customerPhone,
+        // Keep the nicely-formatted RAW phone for display, but only when it
+        // actually contains digits (so junk like "ask staff" never becomes a
+        // broken tel: link or shadows a real number).
+        phone: phone ? row.customerPhone : null,
         orders: 1,
         totalCents: row.totalCents,
         firstOrderAt: row.createdAt,
         lastOrderAt: row.createdAt,
         nameSeenAt: at,
-        phoneSeenAt: row.customerPhone ? at : -1,
+        phoneSeenAt: phone ? at : -1,
       });
       continue;
     }
@@ -113,7 +126,7 @@ export async function getVenueCustomers(
       existing.name = row.customerName;
       existing.nameSeenAt = at;
     }
-    if (row.customerPhone && at >= existing.phoneSeenAt) {
+    if (phone && at >= existing.phoneSeenAt) {
       existing.phone = row.customerPhone;
       existing.phoneSeenAt = at;
     }
@@ -135,7 +148,7 @@ export async function getVenueCustomers(
   const totalCustomers = customers.length;
   const orderCount = rows.length;
   const totalRevenueCents = customers.reduce((sum, c) => sum + c.totalCents, 0);
-  const since = new Date().getTime() - NEW_WINDOW_DAYS * 86_400_000;
+  const newSince = nowMs - NEW_WINDOW_DAYS * 86_400_000;
 
   return {
     customers,
@@ -145,6 +158,6 @@ export async function getVenueCustomers(
     totalRevenueCents,
     avgSpendCents: totalCustomers > 0 ? Math.round(totalRevenueCents / totalCustomers) : 0,
     avgOrderCents: orderCount > 0 ? Math.round(totalRevenueCents / orderCount) : 0,
-    newThisPeriod: customers.filter((c) => c.firstOrderAt.getTime() >= since).length,
+    newThisPeriod: customers.filter((c) => c.firstOrderAt.getTime() >= newSince).length,
   };
 }

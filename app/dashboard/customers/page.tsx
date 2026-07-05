@@ -4,7 +4,7 @@ import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
-import { getVenueCustomers } from "./queries";
+import { CUSTOMER_TABLE_CAP, getVenueCustomers } from "./queries";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Customers" };
@@ -68,6 +68,8 @@ export default async function CustomersPage() {
       : 0;
   const topSpenders = stats.customers.slice(0, 6);
   const topMax = Math.max(1, ...topSpenders.map((c) => c.totalCents));
+  const tableRows = stats.customers.slice(0, CUSTOMER_TABLE_CAP);
+  const truncated = stats.customers.length - tableRows.length;
 
   return (
     <main className="mx-auto max-w-5xl">
@@ -75,7 +77,7 @@ export default async function CustomersPage() {
         title="Customers"
         description={`${stats.totalCustomers} ${
           stats.totalCustomers === 1 ? "customer" : "customers"
-        } · from confirmed orders`}
+        } · last 12 months`}
       />
 
       <div className="space-y-6 px-5 py-8">
@@ -83,7 +85,7 @@ export default async function CustomersPage() {
           <Kpi
             label="Customers"
             value={String(stats.totalCustomers)}
-            sub="All time"
+            sub="Last 12 months"
           />
           <Kpi
             label="Repeat rate"
@@ -143,7 +145,7 @@ export default async function CustomersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.customers.map((c) => (
+                    {tableRows.map((c) => (
                       <tr key={c.key} className="border-b border-line/60 last:border-0">
                         <td className="max-w-[12rem] truncate px-4 py-2.5 font-medium text-ink">
                           {c.name}
@@ -186,11 +188,17 @@ export default async function CustomersPage() {
               </div>
             </section>
 
+            {truncated > 0 ? (
+              <p className="text-xs text-muted">
+                Showing the top {CUSTOMER_TABLE_CAP} by spend of{" "}
+                {stats.totalCustomers} customers.
+              </p>
+            ) : null}
             <p className="text-xs text-muted">
-              Customers are grouped from your confirmed orders — by sign-in
-              first, then phone number, then name. Guests who didn&rsquo;t sign
-              in are matched best-effort, so counts are a close guide rather than
-              an exact identity.
+              Customers are grouped from your confirmed orders in the last 12
+              months — by sign-in first, then phone number, then name. Guests who
+              didn&rsquo;t sign in are matched best-effort, so counts are a close
+              guide rather than an exact identity.
             </p>
           </>
         )}
