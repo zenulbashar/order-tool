@@ -7,6 +7,7 @@ import { requireUser, requireVenue } from "@/lib/tenant";
 import { LogoControl } from "./logo-control";
 import { SettingsDetailsForm } from "./settings-details-form";
 import { SettingsForm } from "./settings-form";
+import { TaxForm } from "./tax-form";
 
 export default async function SettingsPage() {
   await requireUser();
@@ -39,6 +40,26 @@ export default async function SettingsPage() {
           </Link>
           .
         </p>
+      </section>
+
+      <section className="border-t border-line px-5 py-8">
+        <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
+          Tax (GST)
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Australian prices include GST. Turn this on to show the GST portion on
+          diner receipts and your order records — your menu prices and the amount
+          charged stay exactly the same.
+        </p>
+        <Card className="mt-4">
+          <TaxForm
+            tax={{
+              enabled: venue.taxEnabled,
+              ratePercent: venue.taxRateBps ? (venue.taxRateBps / 100).toString() : "",
+              label: venue.taxLabel,
+            }}
+          />
+        </Card>
       </section>
 
       <section className="border-t border-line px-5 py-8">

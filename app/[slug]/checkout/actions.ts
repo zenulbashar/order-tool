@@ -16,6 +16,7 @@ import {
   orders,
   venues,
 } from "@/lib/db/schema";
+import { getVenueTaxConfig, inclusiveTaxCents } from "@/lib/payments/tax";
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import {
   computeApplicationFeeCents,
@@ -345,6 +346,16 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
   const totalCents = subtotalCents; // no tax / fees / tips this phase
 
+  // Additive GST capture (inclusive): a display/reporting snapshot of the GST
+  // COMPONENT already contained in totalCents — NEVER added to the charge. The
+  // recompute above and the PaymentIntent below are byte-for-byte unchanged.
+  // Read separately (like scheduling) so the money-path venue SELECT stays
+  // byte-for-byte. 0 whenever the venue has GST disabled.
+  const taxConfig = await getVenueTaxConfig(venueId);
+  const taxCents = taxConfig.enabled
+    ? inclusiveTaxCents(totalCents, taxConfig.rateBps)
+    : 0;
+
   // (f) Write order + items + modifiers in ONE transaction. Every sensitive
   // column (venue_id, token, status, all totals/snapshots) is set from
   // server-derived values — client input is never spread in. Retry on the
@@ -375,6 +386,9 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
             status: "pending_payment",
             subtotalCents,
             totalCents,
+            // Additive inert capture — the GST component of totalCents; never a
+            // pricing input, never read by the recompute/app-fee/PI/webhook.
+            taxCents,
           })
           .returning({ id: orders.id });
 
