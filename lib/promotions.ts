@@ -25,7 +25,13 @@ export async function resolveActivePromo(
   venueId: string,
   subtotalCents: number,
   customerId: string | null,
-): Promise<{ id: string; raw: number; platformFundedPercent: number } | null> {
+  code?: string | null,
+): Promise<{
+  id: string;
+  raw: number;
+  platformFundedPercent: number;
+  viaCode: boolean;
+} | null> {
   if (subtotalCents <= 0) return null;
 
   const now = new Date();
@@ -38,6 +44,7 @@ export async function resolveActivePromo(
       audience: promotions.audience,
       budgetCents: promotions.budgetCents,
       platformFundedPercent: promotions.platformFundedPercent,
+      code: promotions.code,
     })
     .from(promotions)
     .where(
@@ -102,15 +109,45 @@ export async function resolveActivePromo(
     returning = (row?.n ?? 0) > 0;
   }
 
+  type Candidate = (typeof candidates)[number];
+  const rawOf = (c: Candidate) =>
+    promoDiscountRawCents(subtotalCents, c.type, c.value);
+  const eligible = (c: Candidate) => {
+    if (c.scope === "selected" && !targeted.has(c.id)) return false;
+    if (c.budgetCents != null && (spent.get(c.id) ?? 0) >= c.budgetCents) return false;
+    if (c.audience === "new" && customerId && returning) return false;
+    return rawOf(c) > 0;
+  };
+
+  // A diner-entered CODE selects its specific promo (case-insensitive), even if
+  // a code-less auto promo would be larger — the diner chose it. Codes are
+  // stored uppercased. An unknown/ineligible code falls through to auto promos
+  // below, so entering a bad code never removes an already-applied discount; the
+  // caller compares the applied promo's id to know if the code took.
+  const normalizedCode = code?.trim().toUpperCase() || null;
+  if (normalizedCode) {
+    const match = candidates.find(
+      (c) => c.code === normalizedCode && eligible(c),
+    );
+    if (match) {
+      return {
+        id: match.id,
+        raw: rawOf(match),
+        platformFundedPercent: match.platformFundedPercent,
+        viaCode: true,
+      };
+    }
+  }
+
+  // AUTO promos only (code IS NULL); largest discount wins.
   let best: { id: string; raw: number; platformFundedPercent: number } | null = null;
   for (const c of candidates) {
-    if (c.scope === "selected" && !targeted.has(c.id)) continue;
-    if (c.budgetCents != null && (spent.get(c.id) ?? 0) >= c.budgetCents) continue;
-    if (c.audience === "new" && customerId && returning) continue;
-    const raw = promoDiscountRawCents(subtotalCents, c.type, c.value);
-    if (raw > 0 && (!best || raw > best.raw)) {
+    if (c.code !== null) continue;
+    if (!eligible(c)) continue;
+    const raw = rawOf(c);
+    if (!best || raw > best.raw) {
       best = { id: c.id, raw, platformFundedPercent: c.platformFundedPercent };
     }
   }
-  return best;
+  return best ? { ...best, viaCode: false } : null;
 }

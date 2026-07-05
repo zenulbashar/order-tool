@@ -53,6 +53,7 @@ function navGroups(
       items: [
         { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
         { label: "Payments", href: "/dashboard/payments", icon: <IconPayments /> },
+        { label: "Discounts", href: "/dashboard/discounts", icon: <IconDiscount /> },
         {
           label: "Integrations",
           href: "/dashboard/integrations",
@@ -456,6 +457,14 @@ function IconCustomers() {
     <>
       <circle cx="9" cy="8" r="3" />
       <path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.8M18.5 20a5.5 5.5 0 0 0-3-4.9" />
+    </>,
+  );
+}
+function IconDiscount() {
+  return svg(
+    <>
+      <path d="M20.6 12.4 12 21l-8-8 .1-6.9L11 5l9.6 9.6a1.3 1.3 0 0 1 0 1.8Z" />
+      <circle cx="8.5" cy="8.5" r="1.2" />
     </>,
   );
 }
