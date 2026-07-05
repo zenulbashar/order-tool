@@ -108,6 +108,25 @@ export async function saveTaxSettings(
   return { success: true };
 }
 
+/**
+ * Toggle new-order push notifications for the current venue (quick-win #5).
+ * Ownership from the session (no client id). Only gates the send path in
+ * lib/push.ts — never fabricates a push (still needs FCM + a registered device).
+ */
+export async function setPushNewOrders(formData: FormData): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+  const enabled = formData.get("enable") === "on";
+  await db
+    .update(venues)
+    .set({ pushNewOrders: enabled })
+    .where(eq(venues.id, venue.id));
+  revalidatePath("/dashboard/settings");
+}
+
 /* --------------------------------- Logo ----------------------------------- */
 /* The venue logo is owned by these three actions (upload a file, paste a URL,  */
 /* or remove) — never by the theme save above — so the two can't race. Uploads  */
