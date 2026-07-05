@@ -5,7 +5,7 @@ import { createSign } from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { orders, pushTokens } from "@/lib/db/schema";
+import { orders, pushTokens, venues } from "@/lib/db/schema";
 import { formatCents } from "@/lib/validation";
 
 /**
@@ -122,11 +122,14 @@ export async function notifyNewOrder(paymentIntentId: string): Promise<void> {
         tableLabel: orders.tableLabel,
         totalCents: orders.totalCents,
         status: orders.status,
+        pushNewOrders: venues.pushNewOrders,
       })
       .from(orders)
+      .innerJoin(venues, eq(venues.id, orders.venueId))
       .where(eq(orders.stripePaymentIntentId, paymentIntentId))
       .limit(1);
     if (!order || order.status !== "confirmed") return;
+    if (!order.pushNewOrders) return; // venue turned new-order alerts off
 
     const rows = await db
       .select({ token: pushTokens.token })

@@ -5,6 +5,7 @@ import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 import { LogoControl } from "./logo-control";
+import { NotifyToggle } from "./notify-toggle";
 import { SettingsDetailsForm } from "./settings-details-form";
 import { SettingsForm } from "./settings-form";
 import { TaxForm } from "./tax-form";
@@ -40,6 +41,29 @@ export default async function SettingsPage() {
           </Link>
           .
         </p>
+      </section>
+
+      <section className="border-t border-line px-5 py-8">
+        <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
+          Notifications
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Get a push notification on your phone the moment a new order comes in
+          (needs the Prompt2Eat app installed and signed in).
+        </p>
+        <Card className="mt-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-ink">
+                New-order notifications
+              </p>
+              <p className="text-xs text-muted">
+                Sent to every device signed in to this venue.
+              </p>
+            </div>
+            <NotifyToggle enabled={venue.pushNewOrders} />
+          </div>
+        </Card>
       </section>
 
       <section className="border-t border-line px-5 py-8">

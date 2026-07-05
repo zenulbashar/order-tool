@@ -211,6 +211,11 @@ export const venues = pgTable(
     taxEnabled: boolean("tax_enabled").notNull().default(false),
     taxRateBps: integer("tax_rate_bps").notNull().default(0),
     taxLabel: text("tax_label").notNull().default("GST"),
+    // Notification preference (quick-win #5): whether new-order push alerts are
+    // sent to this venue's registered devices. Default on; the send path
+    // (lib/push.ts) is still a no-op unless FCM is configured + a device is
+    // registered, so this only ever suppresses, never fabricates, a push.
+    pushNewOrders: boolean("push_new_orders").notNull().default(true),
     // Admin-set subscription-fee discount (Track E2c). off = list price; the
     // value is % (percent mode) or cents/month (amount mode). Applied as a
     // Stripe coupon on the subscription; these columns are our intent/display.

@@ -1,0 +1,1 @@
+ALTER TABLE "venues" ADD COLUMN "push_new_orders" boolean DEFAULT true NOT NULL;
