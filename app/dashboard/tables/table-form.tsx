@@ -12,12 +12,13 @@ const initialState: TablesActionState = {};
 type EditableTable = {
   id: string;
   label: string;
+  seats: number | null;
 };
 
 /**
- * Create (no `table`) or rename (with `table`) a dine-in table. Mirrors the
- * menu VariantForm: useActionState on the matching server action, a hidden id
- * for edits, an inline error, and the shared primitives.
+ * Create (no `table`) or edit (with `table`) a dine-in table — name + optional
+ * seat count. useActionState on the matching server action, a hidden id for
+ * edits, an inline error, and the shared primitives.
  */
 export function TableForm({ table }: { table?: EditableTable }) {
   const isEdit = Boolean(table);
@@ -27,7 +28,7 @@ export function TableForm({ table }: { table?: EditableTable }) {
   );
 
   return (
-    <form action={formAction} className="flex flex-wrap items-center gap-2">
+    <form action={formAction} className="flex flex-wrap items-end gap-2">
       {table ? <input type="hidden" name="id" value={table.id} /> : null}
 
       <Input
@@ -38,11 +39,20 @@ export function TableForm({ table }: { table?: EditableTable }) {
         defaultValue={table?.label ?? ""}
         placeholder="e.g. 1 or Patio 3"
         aria-label="Table name"
-        className="sm:w-56"
+        className="w-full sm:w-40"
+      />
+      <Input
+        name="seats"
+        type="text"
+        inputMode="numeric"
+        defaultValue={table?.seats != null ? String(table.seats) : ""}
+        placeholder="Seats"
+        aria-label="Seats (optional)"
+        className="w-20"
       />
 
       <Button type="submit" variant="primary" loading={pending} loadingLabel="Saving…">
-        {isEdit ? "Save" : "Add table"}
+        {isEdit ? "Save" : "Add"}
       </Button>
 
       {state.error ? (

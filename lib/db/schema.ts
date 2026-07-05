@@ -318,6 +318,8 @@ export const venueTables = pgTable(
       .notNull()
       .references(() => venues.id, { onDelete: "cascade" }),
     label: text("label").notNull(),
+    // Optional seat count shown on the table card + tent (design). Null = unset.
+    seats: integer("seats"),
     // No DB default; set to MAX(sort_order)+1 within the venue on insert.
     sortOrder: integer("sort_order").notNull(),
     createdAt: createdAt(),
