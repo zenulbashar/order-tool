@@ -40,7 +40,7 @@ export function PlanPicker() {
   return (
     <div className="space-y-5">
       <div className="flex justify-center">
-        <div className="inline-flex rounded-full border border-sand bg-surface p-1">
+        <div className="inline-flex rounded-full border border-line bg-sand p-1">
           <button
             type="button"
             onClick={() => setInterval("monthly")}
@@ -71,8 +71,8 @@ export function PlanPicker() {
           <form
             key={tier.plan}
             action={createBillingCheckout}
-            className={`relative flex flex-col rounded-xl border p-5 ${
-              tier.popular ? "border-forest" : "border-sand"
+            className={`relative flex flex-col rounded-card border bg-surface-elevated p-5 ${
+              tier.popular ? "border-[var(--color-accent)] shadow-card" : "border-line"
             }`}
           >
             {tier.popular ? (
@@ -100,7 +100,7 @@ export function PlanPicker() {
             </ul>
             <button
               type="submit"
-              className="mt-5 w-full rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep"
+              className="mt-5 w-full rounded-control bg-forest px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
             >
               Start free trial
             </button>
