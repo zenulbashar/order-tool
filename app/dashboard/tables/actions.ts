@@ -14,6 +14,14 @@ export type TablesActionState = { error?: string };
 
 const TABLES_PATH = "/dashboard/tables";
 
+/** Optional seat count: a positive integer up to 99, else null (unset). */
+function parseSeats(raw: FormDataEntryValue | null): number | null {
+  const value = String(raw ?? "").trim();
+  if (value === "") return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 && n <= 99 ? n : null;
+}
+
 const DUPLICATE_MESSAGE = "A table with that name already exists.";
 
 /**
@@ -96,6 +104,7 @@ export async function createTable(
     await db.insert(venueTables).values({
       venueId: venue.id,
       label: parsed.data,
+      seats: parseSeats(formData.get("seats")),
       sortOrder: await nextTableSort(venue.id),
     });
   } catch (error) {
@@ -130,7 +139,7 @@ export async function updateTable(
     // .returning() length confirms the row existed and belonged to the venue.
     const updated = await db
       .update(venueTables)
-      .set({ label: parsed.data })
+      .set({ label: parsed.data, seats: parseSeats(formData.get("seats")) })
       .where(
         and(
           eq(venueTables.id, id.data),
