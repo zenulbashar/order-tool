@@ -44,6 +44,10 @@ export type ApplyDiscountResult =
       totalCents: number;
       discountCents: number;
       promoDiscountCents: number;
+      // True only when a diner-entered CODE selected the applied promo (so the
+      // checkout can confirm "code applied" vs an auto promo). An invalid code
+      // leaves this false while any auto discount still applies.
+      codeApplied: boolean;
     }
   | { ok: false };
 
@@ -51,6 +55,7 @@ export async function applyOrderDiscounts(
   slug: string,
   token: string,
   method: string,
+  code?: string,
 ): Promise<ApplyDiscountResult> {
   const trimmedToken = token.trim();
   if (!trimmedToken) return { ok: false };
@@ -90,6 +95,7 @@ export async function applyOrderDiscounts(
     venue.id,
     pre.subtotalCents,
     pre.customerId,
+    code,
   );
   const promoRaw = promo?.raw ?? 0;
   const bankRaw =
@@ -108,6 +114,9 @@ export async function applyOrderDiscounts(
     appliedPromoId && promo
       ? Math.round((promoDiscountCents * promo.platformFundedPercent) / 100)
       : 0;
+  // The code "took" only if a diner-entered code selected the promo AND it
+  // survived the clamp — reported so the checkout can confirm/deny the code.
+  const codeApplied = promo?.viaCode === true && promoDiscountCents > 0;
 
   let result: ApplyDiscountResult = { ok: false };
   try {
@@ -137,7 +146,7 @@ export async function applyOrderDiscounts(
         locked.promoDiscountCents === promoDiscountCents &&
         (locked.appliedPromoId ?? null) === appliedPromoId
       ) {
-        result = { ok: true, totalCents, discountCents, promoDiscountCents };
+        result = { ok: true, totalCents, discountCents, promoDiscountCents, codeApplied };
         return;
       }
 
@@ -166,7 +175,7 @@ export async function applyOrderDiscounts(
         },
       );
 
-      result = { ok: true, totalCents, discountCents, promoDiscountCents };
+      result = { ok: true, totalCents, discountCents, promoDiscountCents, codeApplied };
     });
   } catch {
     return { ok: false };

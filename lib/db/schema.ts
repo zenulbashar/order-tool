@@ -1341,11 +1341,26 @@ export const promotions = pgTable(
     audience: promotionAudience("audience").notNull().default("all"),
     budgetCents: integer("budget_cents"),
     isActive: boolean("is_active").notNull().default(true),
+    // Owner-created, diner-redeemable discount CODE (quick-win #4). code NULL =
+    // an auto-applied promo (platform/admin — existing behaviour); a non-null,
+    // UPPERCASE code applies ONLY when the diner enters it at checkout.
+    // ownerVenueId marks an owner-managed promo (vs platform-created); those are
+    // always scope=selected to that one venue and merchant-funded.
+    code: text("code"),
+    ownerVenueId: text("owner_venue_id").references(() => venues.id, {
+      onDelete: "cascade",
+    }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (table) => [
     index("promotions_active_idx").on(table.isActive),
+    // One live code per owning venue; partial so the many code-less platform
+    // promos stay unconstrained. Codes are stored uppercased.
+    uniqueIndex("promotions_owner_code_idx")
+      .on(table.ownerVenueId, table.code)
+      .where(sql`${table.code} IS NOT NULL`),
+    index("promotions_code_idx").on(table.code),
     check("promotions_value_pos", sql`${table.value} > 0`),
     check("promotions_min_basket_nonneg", sql`${table.minBasketCents} >= 0`),
     check(

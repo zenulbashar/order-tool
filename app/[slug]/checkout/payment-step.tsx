@@ -125,6 +125,14 @@ function PaymentForm({
   // The platform promotion applied to this order (cents), from the server.
   const [promoDiscountCents, setPromoDiscountCents] = useState(0);
   const lastMethodRef = useRef<string>("card");
+  // Diner-entered promo/discount CODE in effect (re-sent on every recompute so a
+  // method change keeps it). Empty = no code → auto promos only. The server is
+  // authoritative: the code only NAMES a promo; it can never set an amount.
+  const appliedCodeRef = useRef<string>("");
+  const [codeInput, setCodeInput] = useState("");
+  const [codeStatus, setCodeStatus] = useState<"idle" | "applied" | "invalid">(
+    "idle",
+  );
 
   // The pay-by-bank saving on offer for this order (0 when the venue hasn't
   // configured one). Display only; the server recompute is the source of truth.
@@ -144,10 +152,19 @@ function PaymentForm({
   async function runDiscount(type: string) {
     setRecomputing(true);
     try {
-      const result = await applyOrderDiscounts(venue.slug, token, type);
+      const result = await applyOrderDiscounts(
+        venue.slug,
+        token,
+        type,
+        appliedCodeRef.current || undefined,
+      );
       if (result.ok) {
         setDisplayAmount(result.totalCents);
         setPromoDiscountCents(result.promoDiscountCents);
+        // Reflect whether an entered code took (auto-only applies leave it idle).
+        if (appliedCodeRef.current) {
+          setCodeStatus(result.codeApplied ? "applied" : "invalid");
+        }
         try {
           await elements?.fetchUpdates();
         } catch {
@@ -157,6 +174,16 @@ function PaymentForm({
     } finally {
       setRecomputing(false);
     }
+  }
+
+  // Apply (or clear) the diner-entered code, then recompute at the current
+  // method. An unknown code falls back to auto promos server-side, so pressing
+  // Apply never removes an existing discount — it just reports "not valid".
+  function applyCode() {
+    if (recomputing) return;
+    appliedCodeRef.current = codeInput.trim().toUpperCase();
+    setCodeStatus("idle");
+    void runDiscount(lastMethodRef.current);
   }
 
   // Apply any active promotion automatically once, as soon as the step mounts —
@@ -266,6 +293,48 @@ function PaymentForm({
               <span className="text-xs text-muted">Or pay with card</span>
               <span className="h-px flex-1 bg-line" />
             </div>
+          ) : null}
+        </div>
+
+        {/* Promo code entry (owner discount codes, quick-win #4). type="button"
+            + Enter-handling so it never submits the payment form. */}
+        <div className="mb-3">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={codeInput}
+              onChange={(event) => {
+                setCodeInput(event.target.value);
+                if (codeStatus !== "idle") setCodeStatus("idle");
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  applyCode();
+                }
+              }}
+              placeholder="Promo code"
+              autoCapitalize="characters"
+              autoComplete="off"
+              maxLength={24}
+              aria-label="Promo code"
+              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
+            />
+            <button
+              type="button"
+              onClick={applyCode}
+              disabled={recomputing || codeInput.trim().length === 0}
+              className="shrink-0 rounded-control border border-line-strong bg-surface-elevated px-4 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary disabled:opacity-50"
+            >
+              Apply
+            </button>
+          </div>
+          {codeStatus === "invalid" ? (
+            <p className="mt-1 text-xs text-[var(--color-warm)]">
+              That code isn&rsquo;t valid for this order.
+            </p>
+          ) : codeStatus === "applied" ? (
+            <p className="mt-1 text-xs text-success-deep">Code applied.</p>
           ) : null}
         </div>
 
