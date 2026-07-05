@@ -1,12 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button } from "@/app/_components/button";
 
+import { listVenueImages } from "../media/actions";
 import {
   removeItemPhoto,
+  setItemPhotoFromLibrary,
   uploadItemPhoto,
   type MenuActionState,
 } from "./actions";
@@ -64,6 +67,93 @@ export function PhotoControl({
       ) : (
         <UploadForm key="none" itemId={item.id} label="Upload photo" empty />
       )}
+
+      <LibraryPicker itemId={item.id} />
+    </div>
+  );
+}
+
+/**
+ * "Choose from library" — lazy-loads the venue's shared image library (only when
+ * opened) and attaches the picked image to this item via setItemPhotoFromLibrary
+ * (a reference, not a copy). Sits OUTSIDE the upload <form> so its buttons never
+ * submit it. Refreshes the route on success so the new photo shows immediately.
+ */
+function LibraryPicker({ itemId }: { itemId: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [images, setImages] = useState<{ id: string; url: string }[] | null>(
+    null,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && images === null) {
+      try {
+        setImages(await listVenueImages());
+      } catch {
+        setImages([]);
+      }
+    }
+  }
+
+  function pick(imageId: string) {
+    setError(null);
+    startTransition(async () => {
+      const result = await setItemPhotoFromLibrary(itemId, imageId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setOpen(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={toggle}
+        className="text-xs font-semibold text-[var(--action)] hover:underline"
+      >
+        {open ? "Hide library" : "Choose from library"}
+      </button>
+
+      {open ? (
+        <div className="mt-2 rounded-card border border-line bg-surface-elevated p-2 shadow-sm">
+          {images === null ? (
+            <p className="p-2 text-xs text-muted">Loading…</p>
+          ) : images.length === 0 ? (
+            <p className="p-2 text-xs text-muted">
+              No library images yet. Add some under Media library.
+            </p>
+          ) : (
+            <div className="grid max-h-56 grid-cols-4 gap-1.5 overflow-y-auto">
+              {images.map((image) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => pick(image.id)}
+                  disabled={pending}
+                  className="aspect-square overflow-hidden rounded-input border border-line transition hover:ring-2 hover:ring-[var(--color-accent)] disabled:opacity-50"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image.url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+          {error ? (
+            <p className="mt-1 px-1 text-xs text-[var(--color-warm)]" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
