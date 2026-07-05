@@ -44,6 +44,7 @@ function navGroups(
         },
         { label: "Tables", href: "/dashboard/tables", icon: <IconTables /> },
         { label: "Reports", href: "/dashboard/reports", icon: <IconReports /> },
+        { label: "Customers", href: "/dashboard/customers", icon: <IconCustomers /> },
         { label: "Storefront", href: `/${slug}`, icon: <IconStorefront />, external: true },
       ],
     },
@@ -449,6 +450,14 @@ function IconTables() {
 }
 function IconReports() {
   return svg(<path d="M4 20h16M7 20v-7M12 20V6M17 20v-4" />);
+}
+function IconCustomers() {
+  return svg(
+    <>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.8M18.5 20a5.5 5.5 0 0 0-3-4.9" />
+    </>,
+  );
 }
 // 3D box — the design bundle's stock glyph (P2ESidebar).
 function IconStock() {
