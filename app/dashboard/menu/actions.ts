@@ -13,6 +13,7 @@ import {
   menuItemVariants,
   modifierGroups,
   modifierOptions,
+  venueImages,
 } from "@/lib/db/schema";
 import {
   deleteFromR2,
@@ -517,6 +518,11 @@ async function bestEffortDeletePhoto(url: string | null): Promise<void> {
   if (!url) return;
   const key = r2KeyFromPublicUrl(url);
   if (!key) return; // not an object we manage (e.g. a legacy pasted URL)
+  // Shared LIBRARY objects (venues/{id}/library/…) are owned by the media
+  // library, not the item — never delete them on item replace/remove, or other
+  // items referencing the same library image would break. The library page is
+  // the only place that deletes these.
+  if (key.includes("/library/")) return;
   try {
     await deleteFromR2(key);
   } catch {
@@ -586,6 +592,49 @@ export async function uploadItemPhoto(
   }
 
   // Replace succeeded — remove the previous object (best-effort).
+  await bestEffortDeletePhoto(previousUrl);
+
+  revalidatePath(MENU_PATH);
+  return {};
+}
+
+/**
+ * Attach an image from the venue's shared library to an item (quick-win #6).
+ * The item's image_url is set to the library object's URL — a REFERENCE, not a
+ * copy — so replace/remove on this item won't delete the shared object (the
+ * cleanup guard skips /library/ keys). IDOR-safe: both the item and the image
+ * must belong to the session venue. A prior per-item upload is cleaned up.
+ */
+export async function setItemPhotoFromLibrary(
+  itemId: string,
+  imageId: string,
+): Promise<MenuActionState> {
+  const venue = await requireVenueForAction();
+  const item = idSchema.safeParse(itemId);
+  const image = idSchema.safeParse(imageId);
+  if (!item.success || !image.success) return { error: "Missing item or image." };
+
+  const owned = await ownedItemId(venue.id, item.data);
+  if (!owned) return { error: "Item not found." };
+
+  const [libImg] = await db
+    .select({ url: venueImages.url })
+    .from(venueImages)
+    .where(and(eq(venueImages.id, image.data), eq(venueImages.venueId, venue.id)))
+    .limit(1);
+  if (!libImg) return { error: "Image not found." };
+
+  const previousUrl = await currentItemImageUrl(venue.id, owned);
+
+  await db
+    .update(menuItems)
+    .set({ imageUrl: libImg.url })
+    .where(
+      and(eq(menuItems.id, owned), scopedToVenue(menuItems.venueId, venue.id)),
+    );
+
+  // Clean up the previous object — the guard skips it if it was itself a shared
+  // library image, so only a prior per-item upload is actually deleted.
   await bestEffortDeletePhoto(previousUrl);
 
   revalidatePath(MENU_PATH);

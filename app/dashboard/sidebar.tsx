@@ -34,6 +34,7 @@ function navGroups(
       items: [
         { label: "Overview", href: "/dashboard", icon: <IconHome />, exact: true },
         { label: "Menu", href: "/dashboard/menu", icon: <IconMenu /> },
+        { label: "Media", href: "/dashboard/media", icon: <IconMedia /> },
         { label: "Studio", href: "/dashboard/studio", icon: <IconStudio /> },
         { label: "Stock", href: "/dashboard/stock", icon: <IconStock /> },
         {
@@ -465,6 +466,15 @@ function IconDiscount() {
     <>
       <path d="M20.6 12.4 12 21l-8-8 .1-6.9L11 5l9.6 9.6a1.3 1.3 0 0 1 0 1.8Z" />
       <circle cx="8.5" cy="8.5" r="1.2" />
+    </>,
+  );
+}
+function IconMedia() {
+  return svg(
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9.5" r="1.5" />
+      <path d="m4 17 5-5 4 4 3-3 4 4" />
     </>,
   );
 }

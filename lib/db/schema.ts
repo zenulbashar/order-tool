@@ -1527,3 +1527,29 @@ export const pushTokens = pgTable(
 );
 
 export type PushToken = typeof pushTokens.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/*  Venue image library (shared, reusable across menu items)                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A venue's reusable image library (quick-win #6). Owners upload once and attach
+ * a library image to any menu item; the item's image_url references the library
+ * object's URL. R2 objects live under `venues/{id}/library/…`, distinct from the
+ * per-item `…/items/…` namespace, so item-photo cleanup never deletes a shared
+ * library object (see menu actions' cleanup guard). venue-scoped + cascade.
+ */
+export const venueImages = pgTable(
+  "venue_images",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [index("venue_images_venue_idx").on(table.venueId)],
+);
+
+export type VenueImage = typeof venueImages.$inferSelect;
