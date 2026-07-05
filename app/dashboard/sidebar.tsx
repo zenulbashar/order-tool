@@ -43,6 +43,7 @@ function navGroups(
           badge: activeOrderCount,
         },
         { label: "Tables", href: "/dashboard/tables", icon: <IconTables /> },
+        { label: "Reports", href: "/dashboard/reports", icon: <IconReports /> },
         { label: "Storefront", href: `/${slug}`, icon: <IconStorefront />, external: true },
       ],
     },
@@ -445,6 +446,9 @@ function IconTables() {
       <path d="M3 10h18M9 10v10" />
     </>,
   );
+}
+function IconReports() {
+  return svg(<path d="M4 20h16M7 20v-7M12 20V6M17 20v-4" />);
 }
 // 3D box — the design bundle's stock glyph (P2ESidebar).
 function IconStock() {
