@@ -56,7 +56,7 @@ function hmac(input: string): string {
     .digest("base64url");
 }
 
-export function buildAuthorizeUrl(state: string): string {
+export function buildAuthorizeUrl(state: string, redirectUri?: string): string {
   const config = getSquareConfig();
   const params = new URLSearchParams({
     client_id: config.applicationId,
@@ -64,6 +64,11 @@ export function buildAuthorizeUrl(state: string): string {
     state,
     session: "false",
   });
+  // Pass redirect_uri explicitly when we know our callback URL, rather than
+  // relying on Square's "default redirect URL" behaviour (which errors/blanks
+  // when the app has zero or multiple redirect URLs configured). Must EXACTLY
+  // match a Redirect URL registered in the Square Developer Console.
+  if (redirectUri) params.set("redirect_uri", redirectUri);
   return `${config.baseUrl}/oauth2/authorize?${params.toString()}`;
 }
 

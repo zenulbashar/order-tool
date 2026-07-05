@@ -37,6 +37,8 @@ export type SquareCardData = {
   locations: { id: string; name: string }[] | null;
   remapHref: string;
   detailHref: string;
+  /** Sandbox env — surfaces the "open a test-account dashboard first" hint. */
+  sandbox: boolean;
 };
 
 export function SquareCard({ data }: { data: SquareCardData }) {
@@ -171,6 +173,13 @@ export function SquareCard({ data }: { data: SquareCardData }) {
             <p className="mt-1.5 text-center font-mono text-[8px] font-bold uppercase tracking-wider text-label">
               Takes ~2 min · opens Square
             </p>
+            {data.sandbox ? (
+              <p className="mt-2 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/8 px-2.5 py-2 text-[11px] leading-relaxed text-muted">
+                <span className="font-semibold text-ink">Sandbox:</span> open a
+                Square test-account dashboard in another tab first, or the
+                authorize page shows blank.
+              </p>
+            ) : null}
           </div>
         </>
       ) : null}

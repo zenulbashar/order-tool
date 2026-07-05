@@ -16,6 +16,7 @@ import {
 } from "@/lib/integrations/square/oauth";
 import { decryptSecret } from "@/lib/crypto";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { getBaseUrl } from "@/lib/url";
 import { idSchema } from "@/lib/validation";
 
 const HUB_PATH = "/dashboard/integrations";
@@ -52,7 +53,10 @@ async function squareIntegrationFor(venueId: string) {
 /** Kick off the Square OAuth round-trip (venue-bound signed state). */
 export async function connectSquare(): Promise<void> {
   const venue = await requireVenueForAction();
-  const url = buildAuthorizeUrl(signOAuthState(venue.id));
+  // Explicit redirect_uri = our callback; must match the Redirect URL registered
+  // in the Square Developer Console (`{AUTH_URL}/api/integrations/square/callback`).
+  const redirectUri = `${await getBaseUrl()}/api/integrations/square/callback`;
+  const url = buildAuthorizeUrl(signOAuthState(venue.id), redirectUri);
   redirect(url);
 }
 

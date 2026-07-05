@@ -172,6 +172,7 @@ export default async function IntegrationsPage({
     locations,
     remapHref: `${HUB_PATH}?remap=square`,
     detailHref: `${HUB_PATH}?detail=square`,
+    sandbox: (process.env.SQUARE_ENVIRONMENT ?? "sandbox") !== "production",
   };
 
   const activityRows: ActivityRow[] = recentJobs.map((job) => {
