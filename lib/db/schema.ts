@@ -205,6 +205,12 @@ export const venues = pgTable(
       .notNull()
       .default("off"),
     paytoDiscountValue: integer("payto_discount_value").notNull().default(0),
+    // Sales tax / GST (inclusive). AU menu prices are GST-INCLUSIVE, so tax is a
+    // DISPLAY component of the price — never added to the charge. enabled off =
+    // no GST line; rate in basis points (1000 = 10.00%); label shown on receipts.
+    taxEnabled: boolean("tax_enabled").notNull().default(false),
+    taxRateBps: integer("tax_rate_bps").notNull().default(0),
+    taxLabel: text("tax_label").notNull().default("GST"),
     // Admin-set subscription-fee discount (Track E2c). off = list price; the
     // value is % (percent mode) or cents/month (amount mode). Applied as a
     // Stripe coupon on the subscription; these columns are our intent/display.
@@ -762,6 +768,9 @@ export const orders = pgTable(
       .default("new"),
     subtotalCents: integer("subtotal_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
+    // GST component (inclusive) already contained in total_cents — an additive
+    // display/reporting snapshot, NEVER added to the charge. 0 when tax disabled.
+    taxCents: integer("tax_cents").notNull().default(0),
     // Pay-by-bank discount applied to THIS order (Track B · 3b-ii). Default 0 —
     // placeOrder always writes the full (card) price and leaves this 0. A
     // separate, method-triggered server action (applyBankDiscount) sets it and

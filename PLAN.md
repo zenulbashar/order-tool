@@ -137,6 +137,16 @@ model of "exactly ONE block" predates D4b — the second block was explicitly ga
     added in `ios/`+`android/` after `cap add` — see `mobile/README.md`.
   - **Later:** replace hot screens (kitchen orders, checkout) with native views.
 
+### Sales tax / GST — inclusive (quick-win #1, this branch)
+- **DONE:** AU-first **inclusive** GST — menu prices unchanged, we compute+show the GST COMPONENT.
+  Migration 0035 (additive): `venues.tax_enabled/tax_rate_bps/tax_label`, `orders.tax_cents`.
+  `lib/payments/tax.ts` (`getVenueTaxConfig` + `inclusiveTaxCents`). Checkout captures `taxCents`
+  additively — **charge byte-for-byte unchanged** (`totalCents = subtotalCents`, PI amount, app-fee, and
+  webhook all identical; verified diff). Settings "Tax (GST)" card (`saveTaxSettings` + `tax-form.tsx`).
+  Display: diner checkout summary + receipt show "incl. {label} $X". Config on `PublicVenue`.
+- **Follow-up:** owner order-card/ticket GST line (BAS convenience); US-style **exclusive** tax (changes
+  the charge) — future, gated via the post-creation recompute like discounts.
+
 ### Platform hygiene (verified present)
 - `app/_components/toast.tsx` — **PRESENT** (resolves a parallel-session "missing" report).
 - `lib/rate-limit.ts` fail-open Upstash; gates verified on: auth magic-link (`authIp`/`authEmail`),

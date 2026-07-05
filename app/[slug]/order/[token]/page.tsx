@@ -459,6 +459,11 @@ export default async function OrderConfirmationPage({
               ${formatCents(order.totalCents)}
             </span>
           </div>
+          {order.taxCents > 0 ? (
+            <p className="mt-1 text-right text-xs text-muted">
+              incl. {venue.taxLabel} ${formatCents(order.taxCents)}
+            </p>
+          ) : null}
         </div>
 
         {/* Special request the customer left, echoed back. Plain (React-escaped)

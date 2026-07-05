@@ -34,6 +34,8 @@ export type ConfirmedOrder = {
   discountCents: number;
   // The platform-promotion portion of discountCents (Track E2d); bank = the rest.
   promoDiscountCents: number;
+  // GST component (inclusive) contained in totalCents — display/receipt only.
+  taxCents: number;
   totalCents: number;
   createdAt: Date;
   items: ConfirmedOrderItem[];
@@ -65,6 +67,7 @@ export async function getOrderByToken(
       subtotalCents: orders.subtotalCents,
       discountCents: orders.discountCents,
       promoDiscountCents: orders.promoDiscountCents,
+      taxCents: orders.taxCents,
       totalCents: orders.totalCents,
       createdAt: orders.createdAt,
     })
@@ -132,6 +135,7 @@ export async function getOrderByToken(
     subtotalCents: order.subtotalCents,
     discountCents: order.discountCents,
     promoDiscountCents: order.promoDiscountCents,
+    taxCents: order.taxCents,
     totalCents: order.totalCents,
     createdAt: order.createdAt,
     items: items.map((item) => ({

@@ -67,6 +67,47 @@ export async function updateVenueSettings(
   return { success: true };
 }
 
+/**
+ * Save the venue's GST/sales-tax config. INCLUSIVE model: menu prices are
+ * unchanged; this only controls whether the tax portion is shown on receipts and
+ * at what rate. Ownership is the session venue (no client id); the rate is stored
+ * in basis points (percent × 100). Never touches any order or the money path.
+ */
+export async function saveTaxSettings(
+  _prev: VenueSettingsState,
+  formData: FormData,
+): Promise<VenueSettingsState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const enabled = formData.get("taxEnabled") === "on";
+  const label = String(formData.get("taxLabel") ?? "").trim() || "GST";
+  const rawRate = String(formData.get("taxRatePercent") ?? "").trim();
+  const rate = rawRate === "" ? 0 : Number(rawRate);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+    return { error: "Tax rate must be between 0 and 100%." };
+  }
+  if (label.length > 20) {
+    return { error: "Tax label must be 20 characters or fewer." };
+  }
+
+  await db
+    .update(venues)
+    .set({
+      taxEnabled: enabled,
+      taxRateBps: Math.round(rate * 100), // percent → basis points (10 → 1000)
+      taxLabel: label,
+    })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/${venue.slug}`);
+  return { success: true };
+}
+
 /* --------------------------------- Logo ----------------------------------- */
 /* The venue logo is owned by these three actions (upload a file, paste a URL,  */
 /* or remove) — never by the theme save above — so the two can't race. Uploads  */

@@ -39,6 +39,12 @@ export type PublicVenue = {
   paytoEnabled: boolean;
   paytoDiscountMode: "off" | "flat" | "percent";
   paytoDiscountValue: number;
+  // GST/sales tax (inclusive) — display only. The checkout summary + receipt show
+  // "incl. GST $X" (the tax portion already inside the price); the charge is never
+  // affected. taxRateBps is basis points (1000 = 10%); taxLabel defaults to "GST".
+  taxEnabled: boolean;
+  taxRateBps: number;
+  taxLabel: string;
   // Whether the venue has finished onboarding and is live (Phase 3c). A DERIVED
   // boolean (onboarding_completed_at !== null) — never the raw timestamp — so the
   // storefront can show a graceful "not taking orders yet" state. The server-side

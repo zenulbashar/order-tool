@@ -65,6 +65,11 @@ export const getPublicVenueBySlug = cache(
         paytoEnabled: venues.paytoEnabled,
         paytoDiscountMode: venues.paytoDiscountMode,
         paytoDiscountValue: venues.paytoDiscountValue,
+        // GST/sales tax (inclusive) — display only. Powers the "incl. GST $X"
+        // line on the checkout summary + receipt; never changes the charge.
+        taxEnabled: venues.taxEnabled,
+        taxRateBps: venues.taxRateBps,
+        taxLabel: venues.taxLabel,
         // Live-ready signal (Phase 3c). Derived to a boolean in SQL so the raw
         // onboarding_completed_at timestamp never reaches the client shape.
         isLive: sql<boolean>`${venues.onboardingCompletedAt} is not null`,

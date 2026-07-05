@@ -236,6 +236,16 @@ export function CheckoutClient({
             ${formatCents(subtotalCents)}
           </span>
         </div>
+        {venue.taxEnabled && venue.taxRateBps > 0 ? (
+          <p className="mt-1 text-right text-xs text-muted">
+            incl. {venue.taxLabel} $
+            {formatCents(
+              Math.round(
+                (subtotalCents * venue.taxRateBps) / (10000 + venue.taxRateBps),
+              ),
+            )}
+          </p>
+        ) : null}
       </section>
 
       <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-10">
