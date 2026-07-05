@@ -53,6 +53,11 @@ export async function createOwnerDiscount(
     return { error: "A percentage can’t be over 100." };
   }
   const value = type === "percent" ? Math.round(rawValue) : Math.round(rawValue * 100);
+  if (value <= 0) {
+    // e.g. $0.004 → 0 cents; catch it here rather than tripping the DB
+    // value>0 check (which the generic catch would mislabel as a dup code).
+    return { error: "Enter a discount value above 0." };
+  }
   if (!Number.isFinite(minBasketDollars) || minBasketDollars < 0) {
     return { error: "Minimum spend can’t be negative." };
   }
