@@ -42,13 +42,13 @@ export function ServiceForm({ defaults }: { defaults: Defaults }) {
         {OPTIONS.map((option) => (
           <label
             key={option.name}
-            className="flex cursor-pointer items-start gap-3 rounded-lg border border-sand bg-surface-elevated p-4 transition has-[:checked]:border-forest"
+            className="flex cursor-pointer items-start gap-3 rounded-card border border-line bg-surface-elevated p-4 transition hover:bg-hover-secondary has-[:checked]:border-[var(--color-accent)] has-[:checked]:bg-[var(--color-accent)]/8"
           >
             <input
               type="checkbox"
               name={option.name}
               defaultChecked={defaults[option.name]}
-              className="mt-1 h-4 w-4 accent-forest"
+              className="mt-1 h-4 w-4 accent-[var(--color-accent)]"
             />
             <span className="space-y-0.5">
               <span className="block text-sm font-medium text-ink">
@@ -71,9 +71,12 @@ export function ServiceForm({ defaults }: { defaults: Defaults }) {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-1.5 rounded-control bg-forest px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Saving…" : "Continue"}
+        {pending ? null : (
+          <span aria-hidden="true" className="text-[var(--color-accent)]">→</span>
+        )}
       </button>
     </form>
   );

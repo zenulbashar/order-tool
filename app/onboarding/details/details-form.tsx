@@ -9,8 +9,9 @@ import { createVenueFromOnboarding, type DetailsState } from "./actions";
 const initialState: DetailsState = {};
 
 const fieldClass =
-  "w-full rounded-md border border-sand bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest";
-const labelClass = "block text-sm font-medium text-ink";
+  "w-full rounded-input border border-line bg-surface-elevated px-3 py-2.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
+const labelClass =
+  "mb-1.5 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
 
 const VENUE_TYPE_OPTIONS = [
   { value: "cafe", label: "Cafe" },
@@ -62,7 +63,7 @@ export function DetailsForm({ baseHost }: { baseHost: string }) {
           {VENUE_TYPE_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className="cursor-pointer rounded-md border border-sand px-3 py-1.5 text-sm text-ink transition has-[:checked]:border-forest has-[:checked]:bg-forest has-[:checked]:text-surface-elevated"
+              className="cursor-pointer rounded-input border border-line px-3.5 py-2 text-sm font-medium text-ink transition hover:bg-hover-secondary has-[:checked]:border-[var(--color-accent)] has-[:checked]:bg-[var(--color-accent)] has-[:checked]:text-forest"
             >
               <input
                 type="radio"
@@ -215,9 +216,12 @@ export function DetailsForm({ baseHost }: { baseHost: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-forest px-4 py-2 text-sm font-medium text-surface-elevated transition hover:bg-forest-deep disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-1.5 rounded-control bg-forest px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
       >
         {pending ? "Saving…" : "Continue"}
+        {pending ? null : (
+          <span aria-hidden="true" className="text-[var(--color-accent)]">→</span>
+        )}
       </button>
     </form>
   );

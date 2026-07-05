@@ -16,14 +16,17 @@ export default async function OnboardingLayout({
   await requireUser();
 
   return (
-    <div className="min-h-dvh bg-surface px-6 py-10">
+    <div className="min-h-dvh bg-surface px-5 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-md">
-        <header className="mb-6 text-center">
-          <span className="font-display text-xl font-semibold tracking-tight text-forest">
+        <header className="mb-6 flex items-center justify-center gap-2">
+          <span aria-hidden="true" className="text-lg text-[var(--color-accent)]">
+            ✦
+          </span>
+          <span className="font-display text-xl font-extrabold tracking-tight text-forest">
             Prompt2Eat
           </span>
         </header>
-        <div className="rounded-2xl border border-sand bg-surface-elevated p-6 shadow-sm">
+        <div className="rounded-card border border-line bg-surface-elevated p-5 shadow-card sm:p-6">
           {children}
         </div>
       </div>

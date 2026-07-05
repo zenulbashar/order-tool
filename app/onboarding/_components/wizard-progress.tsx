@@ -20,10 +20,12 @@ export function WizardProgress({ current }: { current: number }) {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
-        <p className="font-mono text-xs uppercase tracking-wide text-muted">
-          Step {current} of {TOTAL_STEPS}
+        <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+          {title}
         </p>
-        <p className="font-mono text-xs text-muted">{title}</p>
+        <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+          Step {current} / {TOTAL_STEPS}
+        </p>
       </div>
       <ol className="flex gap-1.5" aria-hidden="true">
         {Array.from({ length: TOTAL_STEPS }, (_, index) => {
@@ -33,7 +35,7 @@ export function WizardProgress({ current }: { current: number }) {
             <li
               key={stepNumber}
               className={`h-1.5 flex-1 rounded-full ${
-                done ? "bg-forest" : "bg-sand"
+                done ? "bg-[var(--color-accent)]" : "bg-sand"
               }`}
             />
           );
