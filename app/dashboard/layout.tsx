@@ -1,6 +1,7 @@
 import { getCurrentVenue, getUserVenues, requireUser } from "@/lib/tenant";
 
 import { getActiveOrderCount } from "./orders/queries";
+import { PushRegistrar } from "./push-registrar";
 import { Sidebar } from "./sidebar";
 
 /**
@@ -47,6 +48,8 @@ export default async function DashboardLayout({
         brandColor={current.brandColor}
       />
       <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+      {/* Native app only: registers this device for new-order push (no-op on web). */}
+      <PushRegistrar />
     </div>
   );
 }

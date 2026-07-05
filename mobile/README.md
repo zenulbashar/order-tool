@@ -128,3 +128,32 @@ This is the biggest reason to ship native: instant new-order / order-ready alert
    invoice photos, native share for Studio exports.
 3. **Later** — replace hot screens (kitchen orders board, checkout) with
    fully-native React views for 60fps feel, keeping the rest in the shell.
+
+## Server wiring shipped (in the web app)
+
+The web app now includes the server side of these native features — inert until
+you set the env vars, so nothing changes for web-only users.
+
+### Push notifications (new-order alerts)
+- `POST /api/push/register` — the app's `PushRegistrar` bridge registers the
+  device APNs/FCM token (venue-scoped, from the owner session).
+- `lib/push.ts::notifyNewOrder` — fires from the order webhook's isolated,
+  fully-swallowed `after()` block on `payment_intent.succeeded` (money path
+  byte-for-byte unchanged). Sends via **FCM HTTP v1** (one project → Android +
+  iOS-via-APNs). **No-op until configured.**
+- **Env to activate:** `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`
+  (service-account key; literal `\n` newlines OK). In Firebase, upload your
+  **APNs auth key** for iOS. In the app, enable Push capability (iOS) and add
+  `google-services.json` (Android).
+
+### Magic-link deep links (in-app sign-in)
+- `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json`
+  are served dynamically from env (auth + dashboard paths only; storefront
+  excluded so "view storefront" still opens in the browser).
+- **Env to activate:** `IOS_APP_ID` = `<TEAM_ID>.au.com.zaleit.prompt2eat.owner`;
+  `ANDROID_PACKAGE` = `au.com.zaleit.prompt2eat.owner`; `ANDROID_SHA256` = your
+  signing-cert SHA-256 (comma-separated if several).
+- **Native side still to add** (in `ios/` + `android/` after `cap add`): the
+  Associated Domains capability (iOS) + intent filter (Android), and an
+  `@capacitor/app` `appUrlOpen` listener that loads the tapped magic-link URL in
+  the WebView. See the deep-links steps above.

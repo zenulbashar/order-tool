@@ -1470,3 +1470,36 @@ export const marketplaceOrderItems = pgTable(
 );
 
 export type MarketplaceOrderItem = typeof marketplaceOrderItems.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/*  Push tokens (native owner app · Capacitor)                                 */
+/* -------------------------------------------------------------------------- */
+
+export const pushPlatform = pgEnum("push_platform", ["ios", "android", "web"]);
+
+/**
+ * Device push tokens for the native owner app. The signed-in owner's device
+ * registers its APNs/FCM token against their CURRENT venue; new-order pushes go
+ * to that venue's tokens. Unique on the token so re-registration updates the row
+ * (and can re-home a device to a different venue) instead of duplicating.
+ * venue-scoped + cascade like every other row.
+ */
+export const pushTokens = pgTable(
+  "push_tokens",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    token: text("token").notNull(),
+    platform: pushPlatform("platform").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("push_tokens_token_idx").on(table.token),
+    index("push_tokens_venue_idx").on(table.venueId),
+  ],
+);
+
+export type PushToken = typeof pushTokens.$inferSelect;

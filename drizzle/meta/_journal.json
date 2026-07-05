@@ -239,6 +239,13 @@
       "when": 1783142827418,
       "tag": "0033_milky_the_hood",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1783181565320,
+      "tag": "0034_opposite_spitfire",
+      "breakpoints": true
     }
   ]
 }
