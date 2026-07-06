@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<span style="display:inline-flex;align-items:center;justify-content:center;width:{{ size }}px;height:{{ size }}px;filter:{{ glow }}">
+  <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block">
+    <rect x="5.5" y="49.5" width="10" height="5.4" rx="2.7" transform="rotate(43 12 52)" fill="{{ vein }}"></rect>
+    <path d="M12 52 A 35 35 0 0 1 56 15 A 21.5 21.5 0 0 0 12 52 Z" fill="{{ body }}"></path>
+    <path d="M15 49.5 A 27 27 0 0 1 47.5 19.5" stroke="{{ vein }}" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.33"></path>
+    <sc-if value="{{ is_spark4 }}" hint-placeholder-val="{{ true }}">
+      <path d="M57 5 L61 14 L57 23 L53 14 Z" fill="{{ spark }}"></path>
+      <path d="M48 14 L57 10 L66 14 L57 18 Z" fill="{{ spark }}"></path>
+    </sc-if>
+    <sc-if value="{{ is_twin }}" hint-placeholder-val="{{ false }}">
+      <path d="M53.5 8 L57 15 L53.5 22 L50 15 Z" fill="{{ spark }}"></path>
+      <path d="M46.5 15 L53.5 11.5 L60.5 15 L53.5 18.5 Z" fill="{{ spark }}"></path>
+      <path d="M65.5 2 L67.3 6 L65.5 10 L63.7 6 Z" fill="{{ spark }}"></path>
+      <path d="M61.5 6 L65.5 4.2 L69.5 6 L65.5 7.8 Z" fill="{{ spark }}"></path>
+    </sc-if>
+    <sc-if value="{{ is_burst }}" hint-placeholder-val="{{ false }}">
+      <g stroke="{{ spark }}" stroke-width="2.4" stroke-linecap="round">
+        <path d="M57 3.5 V22.5"></path><path d="M48.8 8.2 L65.2 17.8"></path><path d="M48.8 17.8 L65.2 8.2"></path>
+      </g>
+    </sc-if>
+    <sc-if value="{{ is_orbit }}" hint-placeholder-val="{{ false }}">
+      <ellipse cx="57" cy="13" rx="10.5" ry="4.6" fill="none" stroke="{{ spark }}" stroke-width="1.8" transform="rotate(-28 57 13)"></ellipse>
+      <circle cx="57" cy="13" r="3.1" fill="{{ spark }}"></circle>
+      <circle cx="66.5" cy="9.2" r="2" fill="{{ spark }}"></circle>
+    </sc-if>
+    <sc-if value="{{ is_wave }}" hint-placeholder-val="{{ false }}">
+      <g fill="{{ spark }}">
+        <rect x="48.5" y="11" width="3" height="6" rx="1.5"></rect>
+        <rect x="53.7" y="5.5" width="3" height="17" rx="1.5"></rect>
+        <rect x="58.9" y="8.5" width="3" height="11" rx="1.5"></rect>
+        <rect x="64.1" y="11.5" width="3" height="5" rx="1.5"></rect>
+      </g>
+    </sc-if>
+    <sc-if value="{{ is_dots }}" hint-placeholder-val="{{ false }}">
+      <g fill="{{ spark }}"><circle cx="49" cy="13.5" r="2.5"></circle><circle cx="57" cy="13.5" r="2.5"></circle><circle cx="65" cy="13.5" r="2.5"></circle></g>
+    </sc-if>
+    <sc-if value="{{ is_node }}" hint-placeholder-val="{{ false }}">
+      <g stroke="{{ spark }}" stroke-width="1.5"><path d="M57 13 L49 7"></path><path d="M57 13 L66.5 8.5"></path><path d="M57 13 L60 22.5"></path></g>
+      <g fill="{{ spark }}"><circle cx="57" cy="13" r="2.7"></circle><circle cx="48.5" cy="6.6" r="1.9"></circle><circle cx="66.8" cy="8.4" r="1.9"></circle><circle cx="60.2" cy="22.8" r="1.9"></circle></g>
+    </sc-if>
+    <sc-if value="{{ is_rings }}" hint-placeholder-val="{{ false }}">
+      <circle cx="57" cy="13" r="2.4" fill="{{ spark }}"></circle>
+      <path d="M51.5 18.5 A 7.6 7.6 0 0 1 51.5 7.5" stroke="{{ spark }}" stroke-width="1.8" fill="none" stroke-linecap="round"></path>
+      <path d="M62.5 7.5 A 7.6 7.6 0 0 1 62.5 18.5" stroke="{{ spark }}" stroke-width="1.8" fill="none" stroke-linecap="round"></path>
+    </sc-if>
+  </svg>
+</span>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:140,&quot;height&quot;:140},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amber&quot;,&quot;forest&quot;,&quot;cream&quot;,&quot;glow&quot;],&quot;default&quot;:&quot;amber&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;aimark&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;spark4&quot;,&quot;twin&quot;,&quot;burst&quot;,&quot;orbit&quot;,&quot;wave&quot;,&quot;dots&quot;,&quot;node&quot;,&quot;rings&quot;],&quot;default&quot;:&quot;spark4&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:96,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const size = this.props.size ?? 44;
+    const variant = this.props.variant ?? 'amber';
+    const V = {
+      amber:  { body: '#F4B43C', vein: '#B97714', spark: '#13301F', glow: 'none' },
+      forest: { body: '#143228', vein: '#0c1f17', spark: '#13301F', glow: 'none' },
+      cream:  { body: '#F7F3EA', vein: '#cdbf9f', spark: '#FFFFFF', glow: 'none' },
+      glow:   { body: '#F6BE4A', vein: '#c98a1f', spark: '#FFFFFF', glow: 'drop-shadow(0 0 16px rgba(244,180,60,.55))' }
+    };
+    const c = V[variant] || V.amber;
+    const aimark = this.props.aimark ?? 'spark4';
+    const marks = ['spark4', 'twin', 'burst', 'orbit', 'wave', 'dots', 'node', 'rings'];
+    const flags = {};
+    marks.forEach(function (k) { flags['is_' + k] = (aimark === k); });
+    return Object.assign({ size, body: c.body, vein: c.vein, spark: c.spark, glow: c.glow }, flags);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @keyframes hs-in { 0% { transform: translateY(14px); opacity:0; } 100% { transform: translateY(0); opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { *{ animation-duration:.001ms !important; } }
+</style>
+</helmet>
+<div style="width:100%;">
+  <!-- category filter pills -->
+  <div style="display:flex; flex-wrap:wrap; gap:9px; margin-bottom:30px;">
+    <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5">
+      <button onClick="{{ c.pick }}" style="font:700 12.5px 'Hanken Grotesk'; letter-spacing:-.005em; color:{{ c.fg }}; background:{{ c.bg }}; border:1.5px solid {{ c.border }}; border-radius:999px; padding:10px 17px; cursor:pointer; transition:all .18s;">{{ c.label }}</button>
+    </sc-for>
+  </div>
+
+  <!-- product grid -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:18px;">
+    <sc-for list="{{ products }}" as="p" hint-placeholder-count="8">
+      <div style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:22px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s ease-out, box-shadow .2s ease-out; animation:hs-in .4s ease-out both;" style-hover="{{ p.hover }}">
+        <!-- image placeholder -->
+        <div style="position:relative; aspect-ratio:4/3; background:{{ p.img }}; overflow:hidden;">
+          <div style="position:absolute; inset:0; background:linear-gradient(160deg,rgba(255,253,248,.12),rgba(20,30,25,.14));"></div>
+          <span style="position:absolute; bottom:9px; left:11px; font:700 8px 'Space Mono'; letter-spacing:.14em; color:rgba(255,255,255,.82);">PRODUCT SHOT</span>
+          <sc-if value="{{ p.badge }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute; top:11px; left:11px; font:700 9px 'Space Mono'; letter-spacing:.08em; color:#16241C; background:#F4B43C; border-radius:999px; padding:4px 10px;">{{ p.badge }}</span>
+          </sc-if>
+        </div>
+        <!-- body -->
+        <div style="padding:15px 16px 16px;">
+          <div style="font:700 9px 'Space Mono'; letter-spacing:.12em; color:#a99a78; text-transform:uppercase;">{{ p.category }}</div>
+          <div style="font:800 15.5px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin-top:6px; line-height:1.2;">{{ p.name }}</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+            <span style="font:800 18px 'Bricolage Grotesque'; color:#16241C;">{{ p.price }}</span>
+            <button style="display:flex; align-items:center; gap:6px; font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border:none; border-radius:11px; padding:9px 14px; cursor:pointer; transition:background .18s;" style-hover="{{ addHover }}"><span style="font-size:15px; line-height:1; margin-top:-1px;">＋</span>Add</button>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+    <div style="text-align:center; padding:40px; font:500 14px 'Hanken Grotesk'; color:#8a9384;">Nothing in this category yet.</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:700}}">
+class Component extends DCLogic {
+  // ============================================================
+  // === LIVE PRODUCT FEED — replace PRODUCTS with fetch() later ===
+  // Swap this static array for data loaded in componentDidMount:
+  //   const res = await fetch('/api/products'); const data = await res.json();
+  //   this.setState({ products: data });  // objects: {name, price, category, imageUrl, badge}
+  // renderProducts() below handles filtering + rendering unchanged.
+  // 'img' here is a CSS placeholder tile; a real feed supplies imageUrl ->
+  // set img: `url(${p.imageUrl}) center/cover`.
+  // ============================================================
+  PRODUCTS = [
+    { name: 'QR Table Stand (10-pack)', price: '$49', category: 'QR & Signage', badge: 'BEST SELLER', img: 'repeating-linear-gradient(135deg,#3f6b54 0 14px,#375f4a 14px 28px)' },
+    { name: 'Adjustable Tablet Stand', price: '$79', category: 'Stands', badge: '', img: 'repeating-linear-gradient(135deg,#4a5248 0 14px,#414940 14px 28px)' },
+    { name: 'Thermal Receipt Paper (24 rolls)', price: '$32', category: 'Consumables', badge: '', img: 'repeating-linear-gradient(135deg,#d9cbaa 0 14px,#cebf9a 14px 28px)' },
+    { name: 'A-Frame Sidewalk Sign', price: '$119', category: 'QR & Signage', badge: 'NEW', img: 'repeating-linear-gradient(135deg,#c98a3f 0 14px,#ba7d33 14px 28px)' },
+    { name: 'Branded Takeaway Bags (250)', price: '$64', category: 'Packaging', badge: '', img: 'repeating-linear-gradient(135deg,#b5643f 0 14px,#a55736 14px 28px)' },
+    { name: 'Bluetooth Receipt Printer', price: '$189', category: 'Hardware', badge: '', img: 'repeating-linear-gradient(135deg,#3a4a42 0 14px,#33423b 14px 28px)' },
+    { name: 'Contactless Card Reader', price: '$59', category: 'Hardware', badge: 'STRIPE-READY', img: 'repeating-linear-gradient(135deg,#4d6f5b 0 14px,#446250 14px 28px)' },
+    { name: 'Kraft Food Boxes (300)', price: '$88', category: 'Packaging', badge: '', img: 'repeating-linear-gradient(135deg,#c79a5e 0 14px,#b98d52 14px 28px)' },
+    { name: 'Table Number Discs (set of 30)', price: '$38', category: 'QR & Signage', badge: '', img: 'repeating-linear-gradient(135deg,#3f6b54 0 14px,#375f4a 14px 28px)' },
+    { name: 'Countertop iPad Enclosure', price: '$139', category: 'Stands', badge: '', img: 'repeating-linear-gradient(135deg,#4a5248 0 14px,#414940 14px 28px)' },
+    { name: 'Compostable Cutlery (500)', price: '$54', category: 'Consumables', badge: 'ECO', img: 'repeating-linear-gradient(135deg,#7c9a4f 0 14px,#6f8c46 14px 28px)' },
+    { name: 'Wireless Kitchen Buzzer Kit', price: '$229', category: 'Hardware', badge: '', img: 'repeating-linear-gradient(135deg,#b5643f 0 14px,#a55736 14px 28px)' }
+  ];
+
+  CATS = ['All', 'QR & Signage', 'Stands', 'Hardware', 'Packaging', 'Consumables'];
+  state = { cat: 'All' };
+
+  renderVals() {
+    const cats = this.CATS.map(c => {
+      const active = c === this.state.cat;
+      return {
+        label: c,
+        pick: () => this.setState({ cat: c }),
+        fg: active ? '#16241C' : '#4a5248',
+        bg: active ? '#F4B43C' : '#FFFDF8',
+        border: active ? '#F4B43C' : '#E0D6C1'
+      };
+    });
+    // renderProducts(): filter by category — fetch feed drops in transparently
+    const products = this.PRODUCTS
+      .filter(p => this.state.cat === 'All' || p.category === this.state.cat)
+      .map(p => ({
+        name: p.name, price: p.price, category: p.category, badge: p.badge, img: p.img,
+        hover: { transform: 'translateY(-4px)', boxShadow: '0 22px 42px -22px rgba(20,30,25,.32)' }
+      }));
+    return {
+      cats,
+      products,
+      empty: products.length === 0,
+      addHover: { background: '#eaa62b' }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: 'Hanken Grotesk', sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; color: #16241C; background: #FFFDF8; }
+  a { color: inherit; }
+  @keyframes p2e-aurora { 0% { transform: translate(0,0) scale(1); } 50% { transform: translate(4%,-3%) scale(1.08); } 100% { transform: translate(0,0) scale(1); } }
+  @keyframes p2e-glow { 0%,100% { opacity:.45; } 50% { opacity:.9; } }
+  @keyframes p2e-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes p2e-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(63,166,106,.5); } 50% { box-shadow:0 0 0 8px rgba(63,166,106,0); } }
+  :focus-visible { outline: 3px solid rgba(244,180,60,.55); outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; } }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="width:100%; overflow-x:clip; background:#FFFDF8;">
+
+  <!-- ============ NAV ============ -->
+  <header style="position:sticky; top:0; z-index:50; background:rgba(15,36,27,.82); backdrop-filter:saturate(140%) blur(14px); -webkit-backdrop-filter:saturate(140%) blur(14px); border-bottom:1px solid rgba(247,243,234,.08);">
+    <nav style="max-width:1240px; margin:0 auto; padding:13px clamp(18px,4vw,48px); display:flex; align-items:center; gap:20px;">
+      <a href="#top" style="display:flex; align-items:center; gap:10px; text-decoration:none;">
+        <dc-import name="P2EMark" variant="glow" size="30" aimark="spark4" hint-size="30px,30px"></dc-import>
+        <span style="font:800 21px 'Bricolage Grotesque'; letter-spacing:-.035em; color:#F7F3EA;">Prompt<span style="color:#F4B43C;">2</span>Eat</span>
+      </a>
+      <div style="flex:1; display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
+        <a href="#concierge" style="text-decoration:none; font:600 13.5px 'Hanken Grotesk'; color:#c9d4cb; padding:8px 12px; border-radius:9px; transition:color .18s, background .18s;" style-hover="{{ navHover }}">Concierge</a>
+        <a href="#restaurants" style="text-decoration:none; font:600 13.5px 'Hanken Grotesk'; color:#c9d4cb; padding:8px 12px; border-radius:9px; transition:color .18s, background .18s;" style-hover="{{ navHover }}">For Restaurants</a>
+        <a href="#shop" style="text-decoration:none; font:600 13.5px 'Hanken Grotesk'; color:#c9d4cb; padding:8px 12px; border-radius:9px; transition:color .18s, background .18s;" style-hover="{{ navHover }}">Shop</a>
+        <a href="#pricing" style="text-decoration:none; font:600 13.5px 'Hanken Grotesk'; color:#c9d4cb; padding:8px 12px; border-radius:9px; transition:color .18s, background .18s;" style-hover="{{ navHover }}">Pricing</a>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <a href="#top" style="text-decoration:none; font:700 13.5px 'Hanken Grotesk'; color:#F7F3EA; padding:9px 14px; border-radius:10px; transition:background .18s;" style-hover="{{ signinHover }}">Sign in</a>
+        <a href="#cta" style="text-decoration:none; font:700 13.5px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; padding:10px 17px; border-radius:11px; box-shadow:0 8px 20px -10px rgba(244,180,60,.7); transition:transform .16s, box-shadow .16s;" style-hover="{{ ctaHover }}">Start free</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section id="top" style="position:relative; overflow:hidden; background:radial-gradient(120% 90% at 78% -8%, #1d4636 0%, #143228 40%, #0f281e 74%, #0c1c15 100%);">
+    <div style="position:absolute; width:640px; height:640px; left:-160px; top:-220px; background:radial-gradient(circle, rgba(244,180,60,.20), transparent 62%); animation:p2e-aurora 18s ease-in-out infinite;"></div>
+    <div style="position:absolute; width:520px; height:520px; right:-140px; bottom:-200px; background:radial-gradient(circle, rgba(127,168,144,.16), transparent 66%); animation:p2e-aurora 22s ease-in-out infinite reverse;"></div>
+    <div style="position:absolute; inset:0; background-image:radial-gradient(rgba(247,243,234,.05) 1px, transparent 1px); background-size:26px 26px; opacity:.5;"></div>
+
+    <div style="position:relative; max-width:1240px; margin:0 auto; padding:clamp(48px,7vw,88px) clamp(18px,4vw,48px) clamp(60px,7vw,96px); display:flex; flex-wrap:wrap; align-items:center; gap:clamp(36px,5vw,72px);">
+      <!-- copy -->
+      <div style="flex:1 1 420px; min-width:min(100%,420px);">
+        <div data-reveal style="display:inline-flex; align-items:center; gap:9px; background:rgba(247,243,234,.06); border:1px solid rgba(244,180,60,.28); border-radius:999px; padding:7px 14px; margin-bottom:26px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#3FA66A; animation:p2e-pulse 2.4s ease-in-out infinite;"></span>
+          <span style="font:700 10.5px 'Space Mono'; letter-spacing:.16em; color:#F4B43C;">AI CONCIERGE · NOW LIVE</span>
+        </div>
+        <h1 data-reveal data-delay="60" style="font:800 clamp(40px,6.2vw,74px)/0.98 'Bricolage Grotesque'; letter-spacing:-.035em; color:#F7F3EA; margin:0;">Just say what<br>you're hungry for.</h1>
+        <p data-reveal data-delay="130" style="font:400 clamp(16px,1.7vw,20px)/1.55 'Hanken Grotesk'; color:#b9c6bb; max-width:520px; margin:22px 0 0;">Prompt2Eat is the AI-native way to order. Scan the table, <em style="color:#F7F3EA; font-style:normal; font-weight:600;">talk</em> to the concierge — "something spicy under $20, no dairy" — and it recommends, customizes, and places your order. No app to download.</p>
+        <div data-reveal data-delay="200" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:34px;">
+          <a href="#concierge" style="text-decoration:none; font:700 15px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; padding:15px 26px; border-radius:12px; box-shadow:0 14px 30px -12px rgba(244,180,60,.65); transition:transform .16s, box-shadow .16s;" style-hover="{{ ctaHover }}">Start free →</a>
+          <a href="#concierge" style="text-decoration:none; font:700 15px 'Hanken Grotesk'; color:#F7F3EA; background:rgba(247,243,234,.06); border:1px solid rgba(247,243,234,.18); padding:15px 26px; border-radius:12px; transition:background .18s;" style-hover="{{ ghostHover }}">See it order for you</a>
+        </div>
+        <div data-reveal data-delay="260" style="display:flex; align-items:center; gap:18px; margin-top:30px; flex-wrap:wrap;">
+          <span style="font:700 10.5px 'Space Mono'; letter-spacing:.14em; color:#7FA890;">ORDER WITH</span>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <!-- TODO-LOGO: Google Gemini -->
+            <span style="font:700 12px 'Hanken Grotesk'; color:#d7e0d8; display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:50%; background:conic-gradient(from 210deg,#4285F4,#9b72cb,#d96570,#F4B43C,#4285F4);"></span>Gemini</span>
+            <span style="width:1px; height:14px; background:rgba(247,243,234,.16);"></span>
+            <span style="font:600 12px 'Hanken Grotesk'; color:#9fb0a2;"> Pay</span>
+            <span style="font:600 12px 'Hanken Grotesk'; color:#9fb0a2;">G Pay</span>
+            <span style="font:600 12px 'Hanken Grotesk'; color:#9fb0a2;">PayTo</span>
+          </div>
+        </div>
+      </div>
+      <!-- demo -->
+      <div data-reveal data-delay="120" style="flex:1 1 380px; min-width:min(100%,340px); display:flex; justify-content:center;">
+        <dc-import name="ConciergeDemo" hint-size="100%,860px"></dc-import>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRUST STRIP ============ -->
+  <section style="background:#0c1c15; border-top:1px solid rgba(247,243,234,.06); padding:22px clamp(18px,4vw,48px);">
+    <div style="max-width:1240px; margin:0 auto; display:flex; align-items:center; justify-content:center; gap:14px 26px; flex-wrap:wrap;">
+      <span style="font:700 10.5px 'Space Mono'; letter-spacing:.16em; color:#5f7568;">WORKS EVERYWHERE YOU ALREADY ARE</span>
+      <span data-reveal style="display:inline-flex; align-items:center; gap:8px; font:600 13px 'Hanken Grotesk'; color:#c9d4cb; background:rgba(247,243,234,.05); border:1px solid rgba(247,243,234,.1); border-radius:999px; padding:9px 15px;"><span style="width:14px; height:14px; border-radius:50%; background:conic-gradient(from 210deg,#4285F4,#9b72cb,#d96570,#F4B43C,#4285F4);"></span>Order from Google Gemini</span>
+      <span data-reveal data-delay="60" style="display:inline-flex; align-items:center; gap:8px; font:600 13px 'Hanken Grotesk'; color:#c9d4cb; background:rgba(247,243,234,.05); border:1px solid rgba(247,243,234,.1); border-radius:999px; padding:9px 15px;">Apple Pay &amp; Google Pay</span>
+      <span data-reveal data-delay="120" style="display:inline-flex; align-items:center; gap:8px; font:600 13px 'Hanken Grotesk'; color:#c9d4cb; background:rgba(247,243,234,.05); border:1px solid rgba(247,243,234,.1); border-radius:999px; padding:9px 15px;">PayTo · pay by bank</span>
+      <span data-reveal data-delay="180" style="display:inline-flex; align-items:center; gap:8px; font:700 13px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:999px; padding:9px 15px;">No app needed</span>
+    </div>
+  </section>
+
+  <!-- ============ CONCIERGE DEEP-DIVE ============ -->
+  <section id="concierge" style="background:linear-gradient(180deg,#FFFDF8,#FBF6EC); padding:clamp(72px,10vw,128px) clamp(18px,4vw,48px);">
+    <div style="max-width:1180px; margin:0 auto;">
+      <div data-reveal style="text-align:center; max-width:720px; margin:0 auto clamp(48px,6vw,80px);">
+        <div style="font:700 11px 'Space Mono'; letter-spacing:.2em; color:#B08A30; text-transform:uppercase;">The Concierge</div>
+        <h2 style="font:800 clamp(30px,4.4vw,52px)/1.03 'Bricolage Grotesque'; letter-spacing:-.03em; color:#16241C; margin:16px 0 0;">Ordering, reinvented by AI.</h2>
+        <p style="font:400 clamp(15px,1.5vw,18px)/1.55 'Hanken Grotesk'; color:#6E756B; margin:16px 0 0;">A concierge that actually understands cravings, budgets, and diets — and does the tapping for you.</p>
+      </div>
+
+      <!-- row 1 -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:clamp(28px,4vw,64px); align-items:center; margin-bottom:clamp(48px,6vw,88px);">
+        <div data-reveal>
+          <div style="font:700 10.5px 'Space Mono'; letter-spacing:.16em; color:#B08A30; text-transform:uppercase; margin-bottom:14px;">Natural-language ordering</div>
+          <h3 style="font:800 clamp(24px,3vw,34px)/1.08 'Bricolage Grotesque'; letter-spacing:-.02em; color:#16241C; margin:0;">Just say what you're hungry for.</h3>
+          <p style="font:400 16px/1.6 'Hanken Grotesk'; color:#6E756B; margin:14px 0 0; max-width:440px;">Type or talk in plain words. The concierge reads the whole menu, respects your budget, and knows every allergen and dietary tag — so "warming, veg, under $18" returns the right three dishes, not a search dump.</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:18px;">
+            <span style="font:700 11px 'Hanken Grotesk'; color:#2f7a4f; background:#e7f4ea; border-radius:999px; padding:6px 12px;">Dairy-free aware</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#b07f1e; background:#fbf0d8; border-radius:999px; padding:6px 12px;">Budget-smart</span>
+            <span style="font:700 11px 'Hanken Grotesk'; color:#5d655b; background:#eef0ea; border-radius:999px; padding:6px 12px;">Allergen-safe</span>
+          </div>
+        </div>
+        <div data-reveal data-delay="80" style="background:#fff; border:1px solid #EDE4D2; border-radius:24px; padding:24px; box-shadow:0 1px 3px rgba(20,30,25,.05), 0 30px 56px -28px rgba(20,30,25,.22);">
+          <div style="align-self:flex-end; max-width:80%; margin-left:auto; background:linear-gradient(180deg,#F4B43C,#eaa62b); color:#16241C; font:600 13.5px/1.45 'Hanken Grotesk'; padding:11px 14px; border-radius:16px 16px 5px 16px;">Something warming and vegetarian, around $18</div>
+          <div style="max-width:88%; margin-top:12px; background:#F7F3EA; border:1px solid #ece3d1; color:#23312a; font:500 13.5px/1.5 'Hanken Grotesk'; padding:11px 14px; border-radius:16px 16px 16px 5px;">Three cosy picks under $18 — the miso ramen is our warmest bowl right now. 🍜</div>
+        </div>
+      </div>
+
+      <!-- row 2 -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:clamp(28px,4vw,64px); align-items:center; margin-bottom:clamp(48px,6vw,88px);">
+        <div data-reveal data-delay="80" style="order:2; background:radial-gradient(120% 120% at 20% 0%,#1d4636,#0f281e); border-radius:24px; padding:30px; box-shadow:0 30px 56px -28px rgba(13,29,22,.5); position:relative; overflow:hidden;">
+          <div style="position:absolute; width:220px; height:220px; right:-60px; top:-80px; background:radial-gradient(circle,rgba(244,180,60,.28),transparent 65%); animation:p2e-glow 6s ease-in-out infinite;"></div>
+          <div style="position:relative; display:inline-flex; align-items:center; gap:9px; background:rgba(247,243,234,.07); border:1px solid rgba(247,243,234,.14); border-radius:999px; padding:8px 14px;">
+            <span style="width:16px; height:16px; border-radius:50%; background:conic-gradient(from 210deg,#4285F4,#9b72cb,#d96570,#F4B43C,#4285F4);"></span>
+            <span style="font:700 12px 'Hanken Grotesk'; color:#F7F3EA;">Google Gemini</span>
+          </div>
+          <div style="position:relative; margin-top:18px; background:rgba(247,243,234,.06); border:1px solid rgba(247,243,234,.1); border-radius:14px; padding:13px 15px; font:500 13.5px/1.5 'Hanken Grotesk'; color:#d7e0d8;">"Hey Gemini, order my usual from Maple &amp; Thyme."</div>
+          <div style="position:relative; margin-top:10px; background:rgba(244,180,60,.12); border:1px solid rgba(244,180,60,.3); border-radius:14px; padding:13px 15px; font:600 13px/1.5 'Hanken Grotesk'; color:#F4B43C;">✓ Placed — Green Goddess Bowl, extra chilli. Ready 7:15pm.</div>
+        </div>
+        <div data-reveal style="order:1;">
+          <div style="font:700 10.5px 'Space Mono'; letter-spacing:.16em; color:#B08A30; text-transform:uppercase; margin-bottom:14px;">Order via Google Gemini</div>
+          <h3 style="font:800 clamp(24px,3vw,34px)/1.08 'Bricolage Grotesque'; letter-spacing:-.02em; color:#16241C; margin:0;">Order from the assistant you already use.</h3>
+          <p style="font:400 16px/1.6 'Hanken Grotesk'; color:#6E756B; margin:14px 0 0; max-width:440px;">Prompt2Eat plugs into Gemini, so diners can reorder, discover, and pay without ever opening a new app. Your venue meets customers exactly where they already are.</p>
+        </div>
+      </div>
+
+      <!-- row 3 -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:clamp(28px,4vw,64px); align-items:center; margin-bottom:clamp(48px,6vw,88px);">
+        <div data-reveal>
+          <div style="font:700 10.5px 'Space Mono'; letter-spacing:.16em; color:#B08A30; text-transform:uppercase; margin-bottom:14px;">QR dine-in</div>
+          <h3 style="font:800 clamp(24px,3vw,34px)/1.08 'Bricolage Grotesque'; letter-spacing:-.02em; color:#16241C; margin:0;">Scan the table. Order &amp; pay from your seat.</h3>
+          <p style="font:400 16px/1.6 'Hanken Grotesk'; color:#6E756B; margin:14px 0 0; max-width:440px;">No queue, no flagging down staff. One scan opens your table's concierge, splits the bill, and pays by card, wallet, or bank — all before your water arrives.</p>
+        </div>
+        <div data-reveal data-delay="80" style="display:flex; justify-content:center;">
+          <div style="width:210px; background:#fff; border:1px solid #EDE4D2; border-radius:24px; padding:22px; box-shadow:0 30px 56px -28px rgba(20,30,25,.22); text-align:center;">
+            <div style="width:120px; height:120px; margin:0 auto; border-radius:16px; background:#16241C; display:grid; grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(5,1fr); gap:5px; padding:16px;">
+              <span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span>
+              <span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span>
+              <span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span>
+              <span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span>
+              <span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span><span style="background:#F7F3EA; border-radius:3px;"></span><span style="background:#F4B43C; border-radius:3px;"></span>
+            </div>
+            <div style="font:800 13px 'Bricolage Grotesque'; color:#16241C; margin-top:14px;">Table 12</div>
+            <div style="font:700 9px 'Space Mono'; letter-spacing:.14em; color:#a99a78; margin-top:3px;">SCAN TO ORDER</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- row 4 -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:clamp(28px,4vw,64px); align-items:center;">
+        <div data-reveal data-delay="80" style="order:2; background:#fff; border:1px solid #EDE4D2; border-radius:24px; padding:24px; box-shadow:0 30px 56px -28px rgba(20,30,25,.22);">
+          <div style="display:flex; align-items:center; gap:12px; padding:12px; border:1px solid #EDE4D2; border-radius:14px;">
+            <div style="width:44px; height:44px; border-radius:11px; background:repeating-linear-gradient(135deg,#c9703a 0 8px,#b85f2e 8px 16px);"></div>
+            <div style="flex:1;"><div style="font:800 14px 'Bricolage Grotesque'; color:#16241C;">Your usual — Green Goddess Bowl</div><div style="font:500 12px 'Hanken Grotesk'; color:#8a9384;">Ordered 14 times</div></div>
+            <span style="font:700 12px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:10px; padding:8px 13px;">Reorder</span>
+          </div>
+          <div style="margin-top:12px; font:700 10px 'Space Mono'; letter-spacing:.14em; color:#a99a78;">SMART UPSELL</div>
+          <div style="margin-top:8px; display:flex; align-items:center; gap:12px; padding:12px; border:1px dashed #E0D6C1; border-radius:14px;">
+            <div style="width:44px; height:44px; border-radius:11px; background:repeating-linear-gradient(135deg,#e0a93f 0 8px,#d19a30 8px 16px);"></div>
+            <div style="flex:1;"><div style="font:800 14px 'Bricolage Grotesque'; color:#16241C;">Add miso soup?</div><div style="font:500 12px 'Hanken Grotesk'; color:#8a9384;">Pairs with your bowl · +$4</div></div>
+            <span style="font:800 16px 'Bricolage Grotesque'; color:#3FA66A;">＋</span>
+          </div>
+        </div>
+        <div data-reveal style="order:1;">
+          <div style="font:700 10.5px 'Space Mono'; letter-spacing:.16em; color:#B08A30; text-transform:uppercase; margin-bottom:14px;">Reorder &amp; upsell</div>
+          <h3 style="font:800 clamp(24px,3vw,34px)/1.08 'Bricolage Grotesque'; letter-spacing:-.02em; color:#16241C; margin:0;">"Your usual," one tap away.</h3>
+          <p style="font:400 16px/1.6 'Hanken Grotesk'; color:#6E756B; margin:14px 0 0; max-width:440px;">The concierge remembers favorites and suggests the perfect add-on at the perfect moment — lifting average order value without ever feeling pushy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section style="background:#16241C; padding:clamp(72px,10vw,120px) clamp(18px,4vw,48px); position:relative; overflow:hidden;">
+    <div style="position:absolute; width:520px; height:520px; left:50%; top:-260px; transform:translateX(-50%); background:radial-gradient(circle,rgba(244,180,60,.12),transparent 62%);"></div>
+    <div style="position:relative; max-width:1080px; margin:0 auto;">
+      <div data-reveal style="text-align:center; margin-bottom:clamp(44px,5vw,72px);">
+        <div style="font:700 11px 'Space Mono'; letter-spacing:.2em; color:#F4B43C; text-transform:uppercase;">How it works</div>
+        <h2 style="font:800 clamp(30px,4.4vw,50px)/1.03 'Bricolage Grotesque'; letter-spacing:-.03em; color:#F7F3EA; margin:16px 0 0;">Scan. Chat. Eat.</h2>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:clamp(20px,3vw,40px);">
+        <div data-reveal style="text-align:center;">
+          <div style="width:64px; height:64px; margin:0 auto; border-radius:18px; background:rgba(247,243,234,.06); border:1px solid rgba(247,243,234,.12); display:flex; align-items:center; justify-content:center; font:800 24px 'Bricolage Grotesque'; color:#F4B43C;">1</div>
+          <h3 style="font:800 21px 'Bricolage Grotesque'; letter-spacing:-.02em; color:#F7F3EA; margin:20px 0 0;">Scan the table</h3>
+          <p style="font:400 15px/1.55 'Hanken Grotesk'; color:#9fb0a2; margin:10px auto 0; max-width:280px;">Point your camera at the QR — the storefront opens instantly. No download, no sign-up wall.</p>
+        </div>
+        <div data-reveal data-delay="90" style="text-align:center;">
+          <div style="width:64px; height:64px; margin:0 auto; border-radius:18px; background:rgba(247,243,234,.06); border:1px solid rgba(247,243,234,.12); display:flex; align-items:center; justify-content:center; font:800 24px 'Bricolage Grotesque'; color:#F4B43C;">2</div>
+          <h3 style="font:800 21px 'Bricolage Grotesque'; letter-spacing:-.02em; color:#F7F3EA; margin:20px 0 0;">Chat your craving</h3>
+          <p style="font:400 15px/1.55 'Hanken Grotesk'; color:#9fb0a2; margin:10px auto 0; max-width:280px;">Tell the concierge what you feel like. It recommends, customizes, and totals it up.</p>
+        </div>
+        <div data-reveal data-delay="180" style="text-align:center;">
+          <div style="width:64px; height:64px; margin:0 auto; border-radius:18px; background:rgba(247,243,234,.06); border:1px solid rgba(247,243,234,.12); display:flex; align-items:center; justify-content:center; font:800 24px 'Bricolage Grotesque'; color:#F4B43C;">3</div>
+          <h3 style="font:800 21px 'Bricolage Grotesque'; letter-spacing:-.02em; color:#F7F3EA; margin:20px 0 0;">Pay &amp; eat</h3>
+          <p style="font:400 15px/1.55 'Hanken Grotesk'; color:#9fb0a2; margin:10px auto 0; max-width:280px;">Pay by wallet or bank in a tap. The kitchen's already firing your order.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOR RESTAURANTS ============ -->
+  <section id="restaurants" style="background:linear-gradient(180deg,#FBF6EC,#FFFDF8); padding:clamp(72px,10vw,128px) clamp(18px,4vw,48px);">
+    <div style="max-width:1180px; margin:0 auto;">
+      <div data-reveal style="max-width:680px; margin-bottom:clamp(40px,5vw,64px);">
+        <div style="font:700 11px 'Space Mono'; letter-spacing:.2em; color:#B08A30; text-transform:uppercase;">For Restaurants</div>
+        <h2 style="font:800 clamp(30px,4.4vw,52px)/1.03 'Bricolage Grotesque'; letter-spacing:-.03em; color:#16241C; margin:16px 0 0;">One platform to run the whole venue.</h2>
+        <p style="font:400 clamp(15px,1.5vw,18px)/1.55 'Hanken Grotesk'; color:#6E756B; margin:16px 0 0;">From a photo of your menu to a live storefront, kitchen board, and margins you can actually see — Prompt2Eat is built for operators.</p>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px;">
+        <!-- FEATURE CARD (repeat) -->
+        <div data-reveal style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2.5" stroke="#B08A30" stroke-width="2"/><circle cx="9" cy="10" r="2" fill="#F4B43C"/><path d="M4 17l5-4 4 3 3-2 4 3" stroke="#B08A30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">AI menu import</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">Snap a photo of your menu — AI turns it into a live, structured storefront in minutes.</p>
+        </div>
+        <div data-reveal data-delay="40" style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 11h16M4 16h9" stroke="#B08A30" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="17" r="3" fill="#F4B43C"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">AI descriptions &amp; tags</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">Appetizing copy and accurate allergen tags written for every dish, automatically.</p>
+        </div>
+        <div data-reveal data-delay="80" style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="5" height="16" rx="1.5" fill="#F4B43C"/><rect x="9.5" y="4" width="5" height="16" rx="1.5" stroke="#B08A30" stroke-width="2"/><rect x="16" y="4" width="5" height="16" rx="1.5" stroke="#B08A30" stroke-width="2"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">Kitchen orders board</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">A live ticket rail that keeps the pass in sync from tap to plate.</p>
+        </div>
+        <div data-reveal style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="7" r="2.5" fill="#F4B43C"/><circle cx="17" cy="7" r="2.5" stroke="#B08A30" stroke-width="2"/><circle cx="7" cy="17" r="2.5" stroke="#B08A30" stroke-width="2"/><circle cx="17" cy="17" r="2.5" stroke="#B08A30" stroke-width="2"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">Tables &amp; QR codes</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">Generate a branded QR for every table and track orders by seat.</p>
+        </div>
+        <div data-reveal data-delay="40" style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="5" stroke="#B08A30" stroke-width="2"/><rect x="12" y="12" width="9" height="9" rx="2.5" fill="#F4B43C"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">Design Studio</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">Branded menus, posters, and table cards — designed in a click, print-ready.</p>
+        </div>
+        <div data-reveal data-delay="80" style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#B08A30" stroke-width="2"/><path d="M12 8v8M9.5 13.5c0 1.4 1.1 2 2.5 2s2.5-.6 2.5-1.8-1.2-1.5-2.5-1.8-2.3-.6-2.3-1.7 1-1.7 2.3-1.7 2.4.7 2.4 1.9" stroke="#F4B43C" stroke-width="1.6" stroke-linecap="round"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">Food-cost &amp; inventory</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">Recipe COGS, invoice scanning, and low-stock nudges — margins you can see.</p>
+        </div>
+        <div data-reveal style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 20V4M4 20h16" stroke="#B08A30" stroke-width="2" stroke-linecap="round"/><path d="M8 16l4-5 3 3 4-6" stroke="#F4B43C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">Reports &amp; customers</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">Sales, trends, and a full customer directory to power loyalty and discounts.</p>
+        </div>
+        <div data-reveal data-delay="40" style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:20px; padding:22px; box-shadow:0 1px 3px rgba(20,30,25,.04); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:#F6EAD0; display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="6" y="2.5" width="12" height="19" rx="3" stroke="#B08A30" stroke-width="2"/><circle cx="12" cy="18" r="1.4" fill="#F4B43C"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#16241C; margin:16px 0 0;">Native iOS &amp; Android</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#7c8579; margin:7px 0 0;">Run the venue from your pocket with real apps, not a wrapped website.</p>
+        </div>
+        <div data-reveal data-delay="80" style="background:linear-gradient(150deg,#14352a,#0f281e); border:1px solid rgba(247,243,234,.08); border-radius:20px; padding:22px; box-shadow:0 20px 40px -22px rgba(13,29,22,.5); transition:transform .2s, box-shadow .2s;" style-hover="{{ cardHover }}">
+          <div style="width:42px; height:42px; border-radius:12px; background:rgba(244,180,60,.15); display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="10" height="10" rx="2.5" stroke="#F4B43C" stroke-width="2"/><rect x="11" y="9" width="10" height="10" rx="2.5" fill="#F4B43C"/></svg></div>
+          <h3 style="font:800 16px 'Bricolage Grotesque'; letter-spacing:-.015em; color:#F7F3EA; margin:16px 0 0;">Square + Stripe + PayTo</h3>
+          <p style="font:400 13.5px/1.5 'Hanken Grotesk'; color:#9fb0a2; margin:7px 0 0;">Integrations and payments that slot into the stack you already run.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HARDWARE SHOP ============ -->
+  <section id="shop" style="background:#FFFDF8; padding:clamp(72px,10vw,128px) clamp(18px,4vw,48px);">
+    <div style="max-width:1180px; margin:0 auto;">
+      <div data-reveal style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:clamp(32px,4vw,52px);">
+        <div style="max-width:620px;">
+          <div style="font:700 11px 'Space Mono'; letter-spacing:.2em; color:#B08A30; text-transform:uppercase;">The Shop</div>
+          <h2 style="font:800 clamp(30px,4.4vw,52px)/1.03 'Bricolage Grotesque'; letter-spacing:-.03em; color:#16241C; margin:16px 0 0;">Everything your venue needs.</h2>
+          <p style="font:400 clamp(15px,1.5vw,18px)/1.55 'Hanken Grotesk'; color:#6E756B; margin:14px 0 0;">QR stands, tablet mounts, receipt paper, signage, packaging — delivered and ready to plug in.</p>
+        </div>
+        <a href="#shop" style="text-decoration:none; font:700 13.5px 'Hanken Grotesk'; color:#16241C; border:1.5px solid #E0D6C1; border-radius:11px; padding:11px 18px; white-space:nowrap; transition:border-color .18s;" style-hover="{{ shopAllHover }}">Browse all →</a>
+      </div>
+      <div data-reveal data-delay="60">
+        <dc-import name="HardwareShop" hint-size="100%,780px"></dc-import>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SOCIAL PROOF ============ -->
+  <section style="background:linear-gradient(180deg,#0f281e,#0c1c15); padding:clamp(72px,10vw,120px) clamp(18px,4vw,48px); position:relative; overflow:hidden;">
+    <div style="position:absolute; width:600px; height:600px; right:-200px; top:-200px; background:radial-gradient(circle,rgba(244,180,60,.1),transparent 62%);"></div>
+    <div style="position:relative; max-width:1180px; margin:0 auto;">
+      <!-- metrics -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:clamp(20px,3vw,40px); text-align:center; margin-bottom:clamp(52px,6vw,84px);">
+        <!-- TODO-METRIC: replace with real figures -->
+        <div data-reveal><div data-count="2.4" data-suffix="M" data-decimals="1" style="font:800 clamp(38px,5vw,60px) 'Bricolage Grotesque'; letter-spacing:-.03em; color:#F4B43C;">2.4M</div><div style="font:600 13px 'Hanken Grotesk'; color:#9fb0a2; margin-top:6px;">Orders placed</div></div>
+        <div data-reveal data-delay="70"><div data-count="12" data-suffix="k+" style="font:800 clamp(38px,5vw,60px) 'Bricolage Grotesque'; letter-spacing:-.03em; color:#F7F3EA;">12k+</div><div style="font:600 13px 'Hanken Grotesk'; color:#9fb0a2; margin-top:6px;">Venues onboard</div></div>
+        <div data-reveal data-delay="140"><div data-count="38" data-suffix="%" style="font:800 clamp(38px,5vw,60px) 'Bricolage Grotesque'; letter-spacing:-.03em; color:#F7F3EA;">38%</div><div style="font:600 13px 'Hanken Grotesk'; color:#9fb0a2; margin-top:6px;">Avg. check uplift</div></div>
+        <div data-reveal data-delay="210"><div data-count="4.9" data-decimals="1" style="font:800 clamp(38px,5vw,60px) 'Bricolage Grotesque'; letter-spacing:-.03em; color:#F7F3EA;">4.9</div><div style="font:600 13px 'Hanken Grotesk'; color:#9fb0a2; margin-top:6px;">Diner rating</div></div>
+      </div>
+      <!-- testimonials -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px;">
+        <!-- TODO-TESTIMONIAL x3 -->
+        <div data-reveal style="background:rgba(247,243,234,.05); border:1px solid rgba(247,243,234,.1); border-radius:22px; padding:26px;">
+          <div style="font:700 18px 'Space Mono'; color:#F4B43C;">"</div>
+          <p style="font:500 16px/1.55 'Hanken Grotesk'; color:#e4ebe4; margin:4px 0 0;">Table turns are faster and the average check is up double digits. Staff spend time on hospitality, not order-taking.</p>
+          <div style="display:flex; align-items:center; gap:11px; margin-top:20px;"><div style="width:38px; height:38px; border-radius:50%; background:repeating-linear-gradient(135deg,#3f6b54 0 6px,#375f4a 6px 12px);"></div><div><div style="font:700 13px 'Hanken Grotesk'; color:#F7F3EA;">Owner Name</div><div style="font:500 12px 'Hanken Grotesk'; color:#7FA890;">Maple &amp; Thyme · Melbourne</div></div></div>
+        </div>
+        <div data-reveal data-delay="80" style="background:rgba(247,243,234,.05); border:1px solid rgba(247,243,234,.1); border-radius:22px; padding:26px;">
+          <div style="font:700 18px 'Space Mono'; color:#F4B43C;">"</div>
+          <p style="font:500 16px/1.55 'Hanken Grotesk'; color:#e4ebe4; margin:4px 0 0;">We went from a photo of the menu to a live storefront in one afternoon. The Gemini ordering feels like magic to our regulars.</p>
+          <div style="display:flex; align-items:center; gap:11px; margin-top:20px;"><div style="width:38px; height:38px; border-radius:50%; background:repeating-linear-gradient(135deg,#c98a3f 0 6px,#b77a30 6px 12px);"></div><div><div style="font:700 13px 'Hanken Grotesk'; color:#F7F3EA;">Owner Name</div><div style="font:500 12px 'Hanken Grotesk'; color:#7FA890;">Café Placeholder · Sydney</div></div></div>
+        </div>
+        <div data-reveal data-delay="160" style="background:rgba(247,243,234,.05); border:1px solid rgba(247,243,234,.1); border-radius:22px; padding:26px;">
+          <div style="font:700 18px 'Space Mono'; color:#F4B43C;">"</div>
+          <p style="font:500 16px/1.55 'Hanken Grotesk'; color:#e4ebe4; margin:4px 0 0;">Food-cost tracking finally lives where we work. Low-stock nudges alone have paid for the whole platform.</p>
+          <div style="display:flex; align-items:center; gap:11px; margin-top:20px;"><div style="width:38px; height:38px; border-radius:50%; background:repeating-linear-gradient(135deg,#b5643f 0 6px,#a55736 6px 12px);"></div><div><div style="font:700 13px 'Hanken Grotesk'; color:#F7F3EA;">Owner Name</div><div style="font:500 12px 'Hanken Grotesk'; color:#7FA890;">Restaurant Placeholder · Perth</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRICING ============ -->
+  <section id="pricing" style="background:linear-gradient(180deg,#FFFDF8,#FBF6EC); padding:clamp(72px,10vw,128px) clamp(18px,4vw,48px);">
+    <div style="max-width:1080px; margin:0 auto;">
+      <div data-reveal style="text-align:center; margin-bottom:clamp(40px,5vw,60px);">
+        <div style="font:700 11px 'Space Mono'; letter-spacing:.2em; color:#B08A30; text-transform:uppercase;">Pricing</div>
+        <h2 style="font:800 clamp(30px,4.4vw,50px)/1.03 'Bricolage Grotesque'; letter-spacing:-.03em; color:#16241C; margin:16px 0 0;">Free for 30 days. No card.</h2>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:18px; align-items:stretch;">
+        <!-- Starter -->
+        <div data-reveal style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:24px; padding:30px; display:flex; flex-direction:column;">
+          <div style="font:800 15px 'Bricolage Grotesque'; color:#16241C;">Starter</div>
+          <div style="margin-top:14px;"><span style="font:800 44px 'Bricolage Grotesque'; letter-spacing:-.03em; color:#16241C;">$0</span><span style="font:500 14px 'Hanken Grotesk'; color:#8a9384;">/mo to start</span></div>
+          <p style="font:400 14px/1.5 'Hanken Grotesk'; color:#7c8579; margin:12px 0 0;">Single venue, AI storefront, QR ordering, wallet payments.</p>
+          <a href="#cta" style="margin-top:auto; text-decoration:none; text-align:center; font:700 14px 'Hanken Grotesk'; color:#16241C; border:1.5px solid #E0D6C1; border-radius:11px; padding:13px; margin-top:24px; transition:border-color .18s;" style-hover="{{ shopAllHover }}">Start free</a>
+        </div>
+        <!-- Growth (featured) -->
+        <div data-reveal data-delay="70" style="background:linear-gradient(165deg,#14352a,#0f281e); border:1px solid rgba(244,180,60,.3); border-radius:24px; padding:30px; display:flex; flex-direction:column; box-shadow:0 30px 60px -28px rgba(13,29,22,.6); position:relative;">
+          <span style="position:absolute; top:-11px; left:30px; font:700 9px 'Space Mono'; letter-spacing:.14em; color:#16241C; background:#F4B43C; border-radius:999px; padding:5px 11px;">MOST POPULAR</span>
+          <div style="font:800 15px 'Bricolage Grotesque'; color:#F7F3EA;">Growth</div>
+          <div style="margin-top:14px;"><span style="font:800 44px 'Bricolage Grotesque'; letter-spacing:-.03em; color:#F4B43C;">$89</span><span style="font:500 14px 'Hanken Grotesk'; color:#9fb0a2;">/mo</span></div>
+          <p style="font:400 14px/1.5 'Hanken Grotesk'; color:#c9d4cb; margin:12px 0 0;">Everything in Starter + Gemini ordering, kitchen board, reports, food-cost, and Design Studio.</p>
+          <a href="#cta" style="margin-top:auto; text-decoration:none; text-align:center; font:700 14px 'Hanken Grotesk'; color:#16241C; background:#F4B43C; border-radius:11px; padding:13px; margin-top:24px; box-shadow:0 12px 26px -12px rgba(244,180,60,.6); transition:transform .16s;" style-hover="{{ ctaHover }}">Start free trial</a>
+        </div>
+        <!-- Pro -->
+        <div data-reveal data-delay="140" style="background:#FFFDF8; border:1px solid #EDE4D2; border-radius:24px; padding:30px; display:flex; flex-direction:column;">
+          <div style="font:800 15px 'Bricolage Grotesque'; color:#16241C;">Pro</div>
+          <div style="margin-top:14px;"><span style="font:800 44px 'Bricolage Grotesque'; letter-spacing:-.03em; color:#16241C;">Custom</span></div>
+          <p style="font:400 14px/1.5 'Hanken Grotesk'; color:#7c8579; margin:12px 0 0;">Multi-venue, priority support, custom integrations, and dedicated onboarding.</p>
+          <a href="#cta" style="margin-top:auto; text-decoration:none; text-align:center; font:700 14px 'Hanken Grotesk'; color:#16241C; border:1.5px solid #E0D6C1; border-radius:11px; padding:13px; margin-top:24px; transition:border-color .18s;" style-hover="{{ shopAllHover }}">Talk to sales</a>
+        </div>
+      </div>
+      <div data-reveal style="text-align:center; margin-top:26px;"><a href="#pricing" style="font:600 13.5px 'Hanken Grotesk'; color:#8a9384;">See full pricing →</a></div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section id="cta" style="padding:clamp(30px,5vw,64px) clamp(18px,4vw,48px);">
+    <div style="max-width:1180px; margin:0 auto; position:relative; overflow:hidden; border-radius:32px; background:radial-gradient(120% 140% at 85% 0%,#F6C258 0%,#F4B43C 42%,#e79a24 100%); padding:clamp(44px,6vw,80px);">
+      <div style="position:absolute; width:340px; height:340px; left:-80px; bottom:-160px; background:radial-gradient(circle,rgba(22,36,28,.16),transparent 66%);"></div>
+      <div style="position:relative; max-width:640px;">
+        <h2 style="font:800 clamp(30px,4.6vw,52px)/1.02 'Bricolage Grotesque'; letter-spacing:-.03em; color:#16241C; margin:0;">Start free — your menu's live in minutes.</h2>
+        <p style="font:500 clamp(15px,1.6vw,18px)/1.5 'Hanken Grotesk'; color:#3a2f16; margin:16px 0 0; opacity:.85;">Snap your menu, get an AI storefront and concierge, and take your first order today.</p>
+        <form onSubmit="{{ noSubmit }}" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:28px; max-width:520px;">
+          <input type="email" required placeholder="you@yourvenue.com" aria-label="Work email" style="flex:1 1 240px; min-width:0; font:500 15px 'Hanken Grotesk'; color:#16241C; background:#FFFDF8; border:1.5px solid rgba(22,36,28,.18); border-radius:12px; padding:15px 18px; outline:none;">
+          <button type="submit" style="font:700 15px 'Hanken Grotesk'; color:#F7F3EA; background:#16241C; border:none; border-radius:12px; padding:15px 26px; cursor:pointer; box-shadow:0 14px 30px -14px rgba(22,36,28,.6); transition:transform .16s;" style-hover="{{ darkCtaHover }}">Start free →</button>
+        </form>
+        <div style="font:600 12px 'Hanken Grotesk'; color:#3a2f16; opacity:.7; margin-top:12px;">30-day trial · no credit card · cancel anytime</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer style="background:#0c1c15; padding:clamp(56px,7vw,88px) clamp(18px,4vw,48px) 40px; border-top:1px solid rgba(247,243,234,.06);">
+    <div style="max-width:1180px; margin:0 auto;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:36px 20px;">
+        <div style="grid-column:1/-1; max-width:300px;">
+          <div style="display:flex; align-items:center; gap:10px;"><dc-import name="P2EMark" variant="glow" size="30" aimark="spark4" hint-size="30px,30px"></dc-import><span style="font:800 20px 'Bricolage Grotesque'; letter-spacing:-.035em; color:#F7F3EA;">Prompt<span style="color:#F4B43C;">2</span>Eat</span></div>
+          <p style="font:400 13.5px/1.55 'Hanken Grotesk'; color:#7c8579; margin:14px 0 0;">Just say what you're hungry for. The AI-native restaurant platform.</p>
+          <div style="display:flex; gap:8px; margin-top:16px;">
+            <!-- TODO-LOGO: App Store / Play badges -->
+            <span style="font:600 10px 'Hanken Grotesk'; color:#9fb0a2; border:1px solid rgba(247,243,234,.14); border-radius:8px; padding:7px 11px;"> App Store</span>
+            <span style="font:600 10px 'Hanken Grotesk'; color:#9fb0a2; border:1px solid rgba(247,243,234,.14); border-radius:8px; padding:7px 11px;">▶ Google Play</span>
+          </div>
+        </div>
+        <div>
+          <div style="font:700 10px 'Space Mono'; letter-spacing:.14em; color:#5f7568; text-transform:uppercase; margin-bottom:14px;">Product</div>
+          <div style="display:flex; flex-direction:column; gap:10px; font:500 13.5px 'Hanken Grotesk';"><a href="#concierge" style="color:#c9d4cb; text-decoration:none;">Concierge</a><a href="#concierge" style="color:#c9d4cb; text-decoration:none;">Gemini ordering</a><a href="#concierge" style="color:#c9d4cb; text-decoration:none;">QR dine-in</a></div>
+        </div>
+        <div>
+          <div style="font:700 10px 'Space Mono'; letter-spacing:.14em; color:#5f7568; text-transform:uppercase; margin-bottom:14px;">Restaurants</div>
+          <div style="display:flex; flex-direction:column; gap:10px; font:500 13.5px 'Hanken Grotesk';"><a href="#restaurants" style="color:#c9d4cb; text-decoration:none;">Platform</a><a href="#restaurants" style="color:#c9d4cb; text-decoration:none;">Design Studio</a><a href="#pricing" style="color:#c9d4cb; text-decoration:none;">Pricing</a></div>
+        </div>
+        <div>
+          <div style="font:700 10px 'Space Mono'; letter-spacing:.14em; color:#5f7568; text-transform:uppercase; margin-bottom:14px;">Shop</div>
+          <div style="display:flex; flex-direction:column; gap:10px; font:500 13.5px 'Hanken Grotesk';"><a href="#shop" style="color:#c9d4cb; text-decoration:none;">Hardware</a><a href="#shop" style="color:#c9d4cb; text-decoration:none;">QR &amp; signage</a><a href="#shop" style="color:#c9d4cb; text-decoration:none;">Packaging</a></div>
+        </div>
+        <div>
+          <div style="font:700 10px 'Space Mono'; letter-spacing:.14em; color:#5f7568; text-transform:uppercase; margin-bottom:14px;">Company</div>
+          <div style="display:flex; flex-direction:column; gap:10px; font:500 13.5px 'Hanken Grotesk';"><a href="#top" style="color:#c9d4cb; text-decoration:none;">About</a><a href="#top" style="color:#c9d4cb; text-decoration:none;">Careers</a><a href="#top" style="color:#c9d4cb; text-decoration:none;">Privacy · Terms</a></div>
+        </div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-top:44px; padding-top:24px; border-top:1px solid rgba(247,243,234,.08);">
+        <div style="font:500 12px 'Hanken Grotesk'; color:#5f7568;">© 2026 Prompt2Eat. All rights reserved.</div>
+        <div style="display:flex; gap:16px; font:600 12px 'Hanken Grotesk'; color:#7c8579;"><a href="#top" style="color:#7c8579; text-decoration:none;">X</a><a href="#top" style="color:#7c8579; text-decoration:none;">Instagram</a><a href="#top" style="color:#7c8579; text-decoration:none;">LinkedIn</a></div>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  rootRef = React.createRef();
+
+  componentDidMount() {
+    const root = this.rootRef.current;
+    if (!root) return;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---- scroll reveal (progressive enhancement: hidden state applied by JS) ----
+    const items = Array.prototype.slice.call(root.querySelectorAll('[data-reveal]'));
+    if (!reduce && 'IntersectionObserver' in window) {
+      items.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(26px)';
+        el.style.transition = 'opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1)';
+        el.style.willChange = 'opacity, transform';
+      });
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            const el = e.target;
+            el.style.transitionDelay = (el.dataset.delay || 0) + 'ms';
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+            io.unobserve(el);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -7% 0px' });
+      items.forEach(el => io.observe(el));
+    }
+
+    // ---- count-up metrics ----
+    const nums = Array.prototype.slice.call(root.querySelectorAll('[data-count]'));
+    if ('IntersectionObserver' in window) {
+      const cio = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) { this.countUp(e.target, reduce); cio.unobserve(e.target); }
+        });
+      }, { threshold: 0.6 });
+      nums.forEach(el => cio.observe(el));
+    }
+  }
+
+  countUp(el, reduce) {
+    const target = parseFloat(el.dataset.count);
+    const decimals = parseInt(el.dataset.decimals || '0', 10);
+    const suffix = el.dataset.suffix || '';
+    const prefix = el.dataset.prefix || '';
+    const fmt = (v) => prefix + v.toFixed(decimals) + suffix;
+    if (reduce) { el.textContent = fmt(target); return; }
+    const dur = 1400;
+    const start = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = fmt(target * eased);
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = fmt(target);
+    };
+    requestAnimationFrame(step);
+  }
+
+  renderVals() {
+    return {
+      rootRef: this.rootRef,
+      navHover: { color: '#F7F3EA', background: 'rgba(247,243,234,.07)' },
+      signinHover: { background: 'rgba(247,243,234,.08)' },
+      ctaHover: { transform: 'translateY(-2px)', boxShadow: '0 18px 36px -12px rgba(244,180,60,.8)' },
+      ghostHover: { background: 'rgba(247,243,234,.12)' },
+      cardHover: { transform: 'translateY(-4px)', boxShadow: '0 24px 46px -24px rgba(20,30,25,.3)' },
+      shopAllHover: { borderColor: '#F4B43C' },
+      darkCtaHover: { transform: 'translateY(-2px)' },
+      noSubmit: (e) => { e.preventDefault(); }
+    };
+  }
+}
+</script>
+</body>
+</html>
