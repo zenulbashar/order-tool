@@ -106,9 +106,11 @@ function hayOf(p: ShopProduct): string {
 }
 
 function isRelevant(p: ShopProduct): boolean {
-  const cat = p.category.trim().toLowerCase();
-  const sub = (p.subcategory ?? "").trim().toLowerCase();
-  return HOSPITALITY_CATEGORIES.has(cat) || (sub !== "" && HOSPITALITY_CATEGORIES.has(sub));
+  // Match the LEAF category only (the specific bucket). Matching the broad
+  // PARENT too would keep every "* Accessories" leaf under an allowlisted
+  // parent (Computers/Display/...), which is exactly the clutter we drop.
+  const leaf = (p.subcategory ?? p.category).trim().toLowerCase();
+  return HOSPITALITY_CATEGORIES.has(leaf);
 }
 
 /* ----------------------------- parsing ----------------------------------- */
