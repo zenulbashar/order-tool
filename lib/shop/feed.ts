@@ -76,38 +76,41 @@ const FEATURED_PLACEHOLDERS: ShopProduct[] = [
 
 const MAX_SHOP_PRODUCTS = 120;
 
-// Keywords that mark a product as relevant to a hospitality/business setup.
-const RELEVANT_KEYWORDS = [
-  // networking + cabling
-  "ethernet", "network", "cat5", "cat6", "cat 6", "rj45", "patch lead", "switch",
-  "router", "wifi", "wi-fi", "wireless", "access point", "poe", "fibre", "fiber",
-  "modem", "cable", "connector", "adapter", "converter", "extender", "hdmi",
-  "displayport", "usb-c", "kvm",
-  // audio / av
-  "speaker", "audio", "sound", "soundbar", "amplifier", "microphone", "projector",
-  "headset",
-  // displays / signage
-  "monitor", "display", "signage", "screen", "television", "touchscreen",
-  // security
-  "camera", "cctv", "surveillance", "dvr", "nvr", "security", "doorbell", "alarm",
-  // computing
-  "tablet", "ipad", "laptop", "notebook", "chromebook", "desktop", "mini pc",
-  "all-in-one",
-  // peripherals
-  "mouse", "keyboard", "webcam", "docking", "scanner", "barcode",
-  // printing
-  "printer", "label printer", "receipt",
-  // pos / power
-  "point of sale", "terminal", "ups", "power distribution", "surge",
-];
+// Exact MMT category names to KEEP in the /shop grid, matched against a
+// product's category AND subcategory (case-insensitive). Edit to taste.
+const HOSPITALITY_CATEGORIES = new Set<string>([
+  // Computing
+  "Computers", "Desktop Computers", "Notebooks", "Tablet",
+  // Displays / signage
+  "Display", "Monitors", "Monitors - Digital Signage", "LED TV", "Interactive Flat Panels",
+  // Projectors (devices only)
+  "Projectors", "Home Theatre Projectors", "Projectors - Large Venue", "Projectors - Ultra Short Throw", "Projectors - Data", "Projectors - Smart",
+  // Networking
+  "Networking", "Network - Network Cables", "Network - Switches", "Network - Router", "Network - Wireless Access Point", "Network - NICs & Adaptors", "Cables and Connectors", "USB - Cables",
+  // Security
+  "Surveillance - IP Cameras", "Surveillance - IP Recorders",
+  // Servers / storage
+  "Servers", "NAS - Network Attached Storage",
+  // Input / peripherals
+  "Keyboards", "Keyboards & Mice", "Mice", "Rugged & Industrial Keyboards", "Scanners", "USB Web Cams", "Microphones",
+  // Printing
+  "Laser/LED Printer",
+  // Audio / AV
+  "Audio", "Speakers", "AV Control",
+  // Power
+  "UPS", "Power Protection",
+].map((c) => c.toLowerCase()));
 
 function hayOf(p: ShopProduct): string {
   return `${p.category} ${p.subcategory ?? ""} ${p.name}`.toLowerCase();
 }
 
 function isRelevant(p: ShopProduct): boolean {
-  const hay = hayOf(p);
-  return RELEVANT_KEYWORDS.some((k) => hay.includes(k));
+  // Match the LEAF category only (the specific bucket). Matching the broad
+  // PARENT too would keep every "* Accessories" leaf under an allowlisted
+  // parent (Computers/Display/...), which is exactly the clutter we drop.
+  const leaf = (p.subcategory ?? p.category).trim().toLowerCase();
+  return HOSPITALITY_CATEGORIES.has(leaf);
 }
 
 /* ----------------------------- parsing ----------------------------------- */
