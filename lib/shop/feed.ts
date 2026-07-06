@@ -182,10 +182,16 @@ function mapProduct(product: MmtNode, index: number): ShopProduct | null {
 const getRelevantProducts = unstable_cache(
   async (): Promise<ShopProduct[]> => {
     const url = process.env.SHOP_FEED_URL;
-    if (!url) return [];
+    if (!url) {
+      console.warn("[shop] SHOP_FEED_URL is not set; serving placeholder products.");
+      return [];
+    }
     try {
       const res = await fetch(url, { next: { revalidate: 3600 } });
-      if (!res.ok) return [];
+      if (!res.ok) {
+        console.warn(`[shop] feed fetch failed with HTTP ${res.status}; serving placeholders.`);
+        return [];
+      }
       const xml = await res.text();
       const parsed = new XMLParser({
         ignoreAttributes: true,
@@ -196,7 +202,9 @@ const getRelevantProducts = unstable_cache(
         .map((product, i) => mapProduct(product, i))
         .filter((p): p is ShopProduct => p !== null && isRelevant(p))
         .slice(0, MAX_RELEVANT);
-    } catch {
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      console.warn(`[shop] feed fetch/parse error; serving placeholders: ${reason}`);
       return [];
     }
   },
@@ -224,13 +232,27 @@ function cheapest(list: ShopProduct[], preferStock = false): ShopProduct | null 
   return priced[0];
 }
 
+// Substrings that mark a listing as an ACCESSORY, not a featurable device. Used
+// ONLY by looksLikeDevice() inside getFeaturedProducts() to keep the 3 hero
+// picks on real devices. It is NOT applied to isRelevant()/getShopProducts, so
+// the /shop grid still carries cables, connectors, docks, etc.
 const DEVICE_EXCLUDES = [
   "case", "cover", "bag", "sleeve", "charger", "cable", "adapter", "stand",
   "mount", "dock", "screen protector", "battery", "stylus", "pen", "warranty",
   "bracket", "holder", "replacement", "spare", "skin", "strap", "kit", "sticker",
+  // Accessory categories/parts that were slipping into the device slots.
+  "accessor", "leveller", "leveler", "foot", "cradle", "trolley", "cart", "arm",
+  "riser", "plate", "pole", "wall", "psu", "power supply", "extension lead",
+  "patch lead",
 ];
 function looksLikeDevice(hay: string): boolean {
   return !DEVICE_EXCLUDES.some((k) => hay.includes(k));
+}
+
+/** Real display DEVICES (never accessories): display keywords AND looksLikeDevice. */
+function isDisplayDevice(p: ShopProduct): boolean {
+  const hay = hayOf(p);
+  return /signage|display|monitor|screen|television|\btv\b/.test(hay) && looksLikeDevice(hay);
 }
 
 /**
@@ -238,38 +260,36 @@ function looksLikeDevice(hay: string): boolean {
  * laptop (preferring in-stock as "latest"), and the cheapest tablet. Falls back
  * to placeholders if the feed is unavailable, and backfills to three if a
  * category is momentarily empty.
+ *
+ * Each pick is drawn from a DEVICE-only candidate pool (looksLikeDevice), so an
+ * accessory (a foot leveller, a tablet dock) can never win a device slot on
+ * price. Set SHOP_DEBUG=1 to log the candidate pools + final picks.
  */
 export async function getFeaturedProducts(): Promise<ShopProduct[]> {
   const relevant = await getRelevantProducts();
   if (relevant.length === 0) return FEATURED_PLACEHOLDERS;
 
+  // Signage: exact 50-inch display device first; else the cheapest real display
+  // device, preferring signage / commercial displays over generic monitors;
+  // never an accessory (if nothing qualifies, the backfill fills the slot).
   const fiftyInch = /(?<![0-9])50\s*("|”|inch|-inch|in\b)/i;
-  const signage50 = cheapest(
-    relevant.filter((p) => {
-      const hay = hayOf(p);
-      const isDisplay = /signage|display|monitor|screen|television|\btv\b/.test(hay);
-      return isDisplay && fiftyInch.test(hay) && looksLikeDevice(hay);
-    }),
-  );
+  const displayDevices = relevant.filter(isDisplayDevice);
   const signage =
-    signage50 ??
-    cheapest(relevant.filter((p) => /signage|display/.test(hayOf(p)) && looksLikeDevice(hayOf(p))));
+    cheapest(displayDevices.filter((p) => fiftyInch.test(hayOf(p)))) ??
+    cheapest(displayDevices.filter((p) => /signage|commercial display/.test(hayOf(p)))) ??
+    cheapest(displayDevices);
 
-  const laptop = cheapest(
-    relevant.filter((p) => {
-      const hay = hayOf(p);
-      return /laptop|notebook|chromebook/.test(hay) && looksLikeDevice(hay);
-    }),
-    true,
-  );
+  const laptopCandidates = relevant.filter((p) => {
+    const hay = hayOf(p);
+    return /laptop|notebook|chromebook/.test(hay) && looksLikeDevice(hay);
+  });
+  const laptop = cheapest(laptopCandidates, true);
 
-  const tablet = cheapest(
-    relevant.filter((p) => {
-      const hay = hayOf(p);
-      return /tablet|ipad|galaxy tab/.test(hay) && looksLikeDevice(hay);
-    }),
-    true,
-  );
+  const tabletCandidates = relevant.filter((p) => {
+    const hay = hayOf(p);
+    return /tablet|ipad|galaxy tab/.test(hay) && looksLikeDevice(hay);
+  });
+  const tablet = cheapest(tabletCandidates, true);
 
   const picks: ShopProduct[] = [];
   const seen = new Set<string>();
@@ -289,5 +309,41 @@ export async function getFeaturedProducts(): Promise<ShopProduct[]> {
       }
     }
   }
+
+  if (process.env.SHOP_DEBUG === "1") {
+    logFeaturedDebug(relevant.length, {
+      signage: displayDevices,
+      laptop: laptopCandidates,
+      tablet: tabletCandidates,
+    }, picks);
+  }
+
   return picks.length > 0 ? picks : FEATURED_PLACEHOLDERS;
+}
+
+/* ------------------------------ diagnostics ------------------------------ */
+
+function fmtProduct(p: ShopProduct): string {
+  return `${p.name} | $${p.priceValue.toFixed(2)} | inStock:${p.inStock}`;
+}
+
+/** Compact candidate/pick summary, gated behind SHOP_DEBUG=1. */
+function logFeaturedDebug(
+  relevantCount: number,
+  pools: Record<string, ShopProduct[]>,
+  picks: ShopProduct[],
+): void {
+  const lines: string[] = [`[shop:debug] relevant products: ${relevantCount}`];
+  for (const [name, pool] of Object.entries(pools)) {
+    const top = [...pool]
+      .filter((p) => p.priceValue > 0)
+      .sort((a, b) => a.priceValue - b.priceValue)
+      .slice(0, 5)
+      .map((p) => `    ${fmtProduct(p)}`);
+    lines.push(`[shop:debug] ${name}-candidates: ${pool.length}`);
+    lines.push(...top);
+  }
+  lines.push("[shop:debug] final picks:");
+  lines.push(...picks.map((p) => `    ${fmtProduct(p)}`));
+  console.info(lines.join("\n"));
 }
