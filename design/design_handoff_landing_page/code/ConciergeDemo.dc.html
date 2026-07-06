@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @keyframes cd-msgin { 0% { transform: translateY(12px); opacity:0; } 100% { transform: translateY(0); opacity:1; } }
+  @keyframes cd-think { 0%,80%,100% { transform: translateY(0); opacity:.3; } 40% { transform: translateY(-5px); opacity:1; } }
+  @keyframes cd-glow { 0%,100% { opacity:.4; } 50% { opacity:.9; } }
+  @keyframes cd-pop { 0% { transform: scale(0); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  @keyframes cd-blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+  @keyframes cd-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @media (prefers-reduced-motion: reduce) { *{ animation-duration:.001ms !important; } }
+</style>
+</helmet>
+<div style="width:100%; max-width:388px; margin:0 auto; display:flex; flex-direction:column; gap:18px;">
+  <!-- PHONE -->
+  <div style="width:100%; border-radius:44px; background:#0c1c15; padding:10px; box-shadow:0 1px 3px rgba(13,29,22,.4), 0 40px 80px -34px rgba(13,29,22,.75), 0 0 0 1px rgba(244,180,60,.08); position:relative;">
+    <div style="width:100%; aspect-ratio:9/18.6; border-radius:35px; overflow:hidden; background:#F7F3EA; position:relative; display:flex; flex-direction:column;">
+      <!-- header -->
+      <div style="flex-shrink:0; background:linear-gradient(150deg,#14352a 0%,#0f281e 100%); padding:13px 16px 14px; position:relative; overflow:hidden;">
+        <div style="position:absolute; width:180px; height:180px; right:-40px; top:-90px; background:radial-gradient(circle,rgba(244,180,60,.3),transparent 65%); animation:cd-glow 6s ease-in-out infinite;"></div>
+        <div style="position:relative; display:flex; align-items:center; justify-content:space-between; color:#F7F3EA; font:700 12px 'Hanken Grotesk'; margin-bottom:12px;"><span>9:41</span><span style="font-size:8px; letter-spacing:.14em; opacity:.85;">● ● ●</span></div>
+        <div style="position:relative; display:flex; align-items:center; gap:11px;">
+          <div style="animation:cd-float 5s ease-in-out infinite;"><dc-import name="P2EMark" variant="glow" size="38" aimark="spark4" hint-size="38px,38px"></dc-import></div>
+          <div style="flex:1; min-width:0;">
+            <div style="font:800 15px 'Bricolage Grotesque'; letter-spacing:-.02em; color:#F7F3EA;">Maple &amp; Thyme</div>
+            <div style="display:flex; align-items:center; gap:6px; font:600 10px 'Hanken Grotesk'; color:#7FA890; margin-top:1px;"><span style="width:6px; height:6px; border-radius:50%; background:#3FA66A; box-shadow:0 0 0 0 rgba(63,166,106,.5);"></span>AI Concierge · online</div>
+          </div>
+          <span style="font:700 8px 'Space Mono'; letter-spacing:.12em; color:#F4B43C; border:1px solid rgba(244,180,60,.35); border-radius:999px; padding:4px 8px;">TABLE 12</span>
+        </div>
+      </div>
+      <!-- messages -->
+      <div ref="{{ scrollRef }}" style="flex:1; overflow:hidden; padding:16px 14px 12px; display:flex; flex-direction:column; gap:11px; background:linear-gradient(180deg,#FBF7EE,#F4EEE0);">
+
+        <!-- diner prompt -->
+        <div style="align-self:flex-end; max-width:82%; animation:cd-msgin .34s ease-out both;">
+          <div style="background:linear-gradient(180deg,#F4B43C,#eaa62b); color:#16241C; font:600 13.5px/1.45 'Hanken Grotesk'; padding:11px 14px; border-radius:16px 16px 5px 16px; box-shadow:0 8px 20px -8px rgba(244,180,60,.5);">{{ dinerText }}</div>
+        </div>
+
+        <!-- thinking -->
+        <sc-if value="{{ thinking }}" hint-placeholder-val="{{ false }}">
+          <div style="align-self:flex-start; display:flex; align-items:center; gap:5px; background:#fff; border:1px solid #ece3d1; padding:12px 15px; border-radius:16px 16px 16px 5px; box-shadow:0 6px 16px -10px rgba(20,30,25,.3);">
+            <span style="width:7px; height:7px; border-radius:50%; background:#16241C; animation:cd-think 1.2s ease-in-out infinite;"></span>
+            <span style="width:7px; height:7px; border-radius:50%; background:#16241C; animation:cd-think 1.2s ease-in-out .2s infinite;"></span>
+            <span style="width:7px; height:7px; border-radius:50%; background:#16241C; animation:cd-think 1.2s ease-in-out .4s infinite;"></span>
+          </div>
+        </sc-if>
+
+        <!-- concierge reply -->
+        <sc-if value="{{ showReply }}" hint-placeholder-val="{{ false }}">
+          <div style="align-self:flex-start; max-width:88%; animation:cd-msgin .34s ease-out both;">
+            <div style="background:#fff; border:1px solid #ece3d1; color:#23312a; font:500 13.5px/1.5 'Hanken Grotesk'; padding:11px 14px; border-radius:16px 16px 16px 5px; box-shadow:0 6px 16px -10px rgba(20,30,25,.3);">{{ replyText }}<sc-if value="{{ caret }}" hint-placeholder-val="{{ false }}"><span style="display:inline-block; width:2px; height:14px; background:#F4B43C; margin-left:1px; vertical-align:-2px; animation:cd-blink 1s step-end infinite;"></span></sc-if></div>
+          </div>
+        </sc-if>
+
+        <!-- dish tiles -->
+        <sc-for list="{{ dishes }}" as="d" hint-placeholder-count="0">
+          <div onClick="{{ d.pick }}" style="align-self:flex-start; width:88%; display:flex; align-items:center; gap:11px; background:{{ d.bg }}; border:1.5px solid {{ d.border }}; border-radius:15px; padding:9px; cursor:pointer; box-shadow:{{ d.shadow }}; animation:cd-msgin .34s ease-out both; transition:border-color .18s, box-shadow .18s;">
+            <div style="width:52px; height:52px; border-radius:11px; flex-shrink:0; background:{{ d.img }}; position:relative; overflow:hidden;"><span style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font:700 6.5px 'Space Mono'; letter-spacing:.1em; color:rgba(255,255,255,.75);">DISH</span></div>
+            <div style="flex:1; min-width:0;">
+              <div style="font:800 13px 'Bricolage Grotesque'; color:#16241C; letter-spacing:-.01em;">{{ d.name }}</div>
+              <div style="font:500 11px 'Hanken Grotesk'; color:#8a9384; margin-top:1px;">{{ d.tag }}</div>
+            </div>
+            <div style="text-align:right; flex-shrink:0;">
+              <div style="font:800 14px 'Bricolage Grotesque'; color:#16241C;">{{ d.price }}</div>
+              <sc-if value="{{ d.selected }}" hint-placeholder-val="{{ false }}"><div style="font:700 8px 'Space Mono'; color:#3FA66A; letter-spacing:.08em; margin-top:2px;">✓ PICKED</div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+
+        <!-- follow-up question -->
+        <sc-if value="{{ showQuestion }}" hint-placeholder-val="{{ false }}">
+          <div style="align-self:flex-start; max-width:88%; animation:cd-msgin .34s ease-out both;">
+            <div style="background:#fff; border:1px solid #ece3d1; color:#23312a; font:500 13px/1.5 'Hanken Grotesk'; padding:11px 14px; border-radius:16px 16px 16px 5px; box-shadow:0 6px 16px -10px rgba(20,30,25,.3);">{{ questionText }}</div>
+            <div style="display:flex; gap:7px; margin-top:8px; padding-left:2px;">
+              <div onClick="{{ answerYes }}" style="font:700 12px 'Hanken Grotesk'; color:{{ yesFg }}; background:{{ yesBg }}; border:1.5px solid {{ yesBorder }}; border-radius:999px; padding:7px 15px; cursor:pointer; transition:all .18s;">{{ yesLabel }}</div>
+              <div onClick="{{ replay }}" style="font:700 12px 'Hanken Grotesk'; color:#5d655b; background:#fff; border:1.5px solid #ddd3bf; border-radius:999px; padding:7px 15px; cursor:pointer;">No thanks</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- cart bar -->
+      <sc-if value="{{ showCart }}" hint-placeholder-val="{{ false }}">
+        <div style="flex-shrink:0; padding:11px 14px 15px; background:#fff; border-top:1px solid #ece3d1; animation:cd-msgin .3s ease-out both;">
+          <div style="display:flex; align-items:center; justify-content:space-between; background:linear-gradient(110deg,#14352a,#1d4a35); border-radius:14px; padding:12px 15px; box-shadow:0 12px 26px -14px rgba(13,29,22,.7);">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <span style="width:26px; height:26px; border-radius:50%; background:#F4B43C; color:#16241C; font:800 12px 'Hanken Grotesk'; display:flex; align-items:center; justify-content:center; animation:cd-pop .4s ease-out;">1</span>
+              <span style="font:700 13px 'Hanken Grotesk'; color:#F7F3EA;">View order</span>
+            </div>
+            <span style="font:800 15px 'Bricolage Grotesque'; color:#F7F3EA;">{{ cartTotal }}</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- TRY IT -->
+  <div style="text-align:center;">
+    <div style="font:700 10px 'Space Mono'; letter-spacing:.18em; color:#7FA890; text-transform:uppercase; margin-bottom:10px;">↑ Try it — pick a craving</div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+      <sc-for list="{{ prompts }}" as="p" hint-placeholder-count="3">
+        <button onClick="{{ p.run }}" style="font:600 12.5px 'Hanken Grotesk'; color:{{ p.fg }}; background:{{ p.bg }}; border:1.5px solid {{ p.border }}; border-radius:999px; padding:9px 15px; cursor:pointer; transition:all .18s;" style-hover="{{ p.hover }}">{{ p.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:880}}">
+class Component extends DCLogic {
+  // ---- scripted conversations (edit copy / dishes here) ----
+  SCRIPTS = [
+    {
+      label: 'Warming &amp; veg, ~$18',
+      q: 'I want something warming and vegetarian, around $18',
+      reply: "On it — three warming, all-veg picks under $18. The miso ramen is our cosiest bowl right now:",
+      question: 'Great pick. Want it with extra chilli oil? 🌶️',
+      yes: 'Yes, extra chilli',
+      dishes: [
+        { name: 'Miso Butter Ramen', tag: 'Vegetarian · warming', price: '$16', img: 'repeating-linear-gradient(135deg,#c9703a 0 9px,#b85f2e 9px 18px)' },
+        { name: 'Roast Squash Risotto', tag: 'Vegetarian · GF', price: '$17', img: 'repeating-linear-gradient(135deg,#e0a93f 0 9px,#d19a30 9px 18px)' },
+        { name: 'Harissa Lentil Stew', tag: 'Vegan · hearty', price: '$15', img: 'repeating-linear-gradient(135deg,#b5482f 0 9px,#a23c26 9px 18px)' }
+      ]
+    },
+    {
+      label: 'Spicy, no dairy, &lt;$20',
+      q: 'Something spicy under $20, no dairy',
+      reply: "Say no more. Three dairy-free heat-hitters under $20 — the dan dan noodles bring the most fire:",
+      question: 'Turn the heat up to extra-hot? 🔥',
+      yes: 'Bring the heat',
+      dishes: [
+        { name: 'Sichuan Dan Dan', tag: 'Dairy-free · 🌶️🌶️🌶️', price: '$14', img: 'repeating-linear-gradient(135deg,#b5482f 0 9px,#9e3a24 9px 18px)' },
+        { name: 'Green Curry Bowl', tag: 'Dairy-free · 🌶️🌶️', price: '$18', img: 'repeating-linear-gradient(135deg,#3f8a5c 0 9px,#347a4e 9px 18px)' },
+        { name: 'Nashville Hot Cauli', tag: 'Vegan · 🌶️🌶️🌶️', price: '$16', img: 'repeating-linear-gradient(135deg,#d98a2e 0 9px,#c67a22 9px 18px)' }
+      ]
+    },
+    {
+      label: 'Light &amp; high-protein',
+      q: 'A light lunch, high protein please',
+      reply: "Perfect for a light-but-filling lunch — here are three high-protein bowls. The poke is the freshest today:",
+      question: 'Add a protein boost — extra chicken or tofu?',
+      yes: 'Add a boost',
+      dishes: [
+        { name: 'Salmon Poke Bowl', tag: '32g protein · fresh', price: '$17', img: 'repeating-linear-gradient(135deg,#d1584a 0 9px,#bf4a3d 9px 18px)' },
+        { name: 'Grilled Chicken Grain', tag: '38g protein · GF', price: '$15', img: 'repeating-linear-gradient(135deg,#c98a3f 0 9px,#b77a30 9px 18px)' },
+        { name: 'Tofu Bánh Mì', tag: 'Vegan · 24g protein', price: '$12', img: 'repeating-linear-gradient(135deg,#8a9a3f 0 9px,#7a8a32 9px 18px)' }
+      ]
+    }
+  ];
+
+  state = { p: 0, thinking: false, replyText: '', caret: false, dishesShown: 0, selected: -1, showQuestion: false, answered: false, showCart: false };
+  timers = [];
+  scrollRef = React.createRef();
+
+  componentDidMount() { this.play(0); }
+  componentWillUnmount() { this.clear(); }
+
+  clear() { this.timers.forEach(clearTimeout); this.timers = []; }
+  at(ms, fn) { this.timers.push(setTimeout(fn, ms)); }
+  scroll() { const el = this.scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }
+
+  play(i) {
+    this.clear();
+    this.setState({ p: i, thinking: false, replyText: '', caret: false, dishesShown: 0, selected: -1, showQuestion: false, answered: false, showCart: false });
+    const S = this.SCRIPTS[i];
+    this.words = S.reply.split(' ');
+    this.at(500, () => { this.setState({ thinking: true }); this.scroll(); });
+    this.at(1400, () => { this.setState({ thinking: false, caret: true }); this.streamReply(1); });
+  }
+
+  streamReply(n) {
+    if (n > this.words.length) {
+      this.setState({ caret: false });
+      // reveal dishes one by one
+      [1, 2, 3].forEach((c, k) => this.at(300 * k, () => { this.setState({ dishesShown: c }); this.scroll(); }));
+      this.at(900 + 650, () => { this.setState({ selected: 0 }); this.scroll(); });
+      this.at(900 + 1250, () => { this.setState({ showQuestion: true }); this.scroll(); });
+      return;
+    }
+    this.setState({ replyText: this.words.slice(0, n).join(' ') });
+    this.scroll();
+    this.at(55, () => this.streamReply(n + 1));
+  }
+
+  answerYes = () => {
+    if (this.state.answered) return;
+    this.setState({ answered: true });
+    this.at(450, () => { this.setState({ showCart: true }); this.scroll(); });
+  };
+
+  renderVals() {
+    const S = this.SCRIPTS[this.state.p];
+    const sel = this.state.selected;
+    const dishes = S.dishes.slice(0, this.state.dishesShown).map((d, i) => ({
+      name: d.name, tag: d.tag, price: d.price, img: d.img, selected: sel === i,
+      bg: sel === i ? '#eef7f0' : '#fff',
+      border: sel === i ? '#3FA66A' : '#ece3d1',
+      shadow: sel === i ? '0 10px 22px -12px rgba(63,166,106,.5)' : '0 6px 16px -12px rgba(20,30,25,.3)',
+      pick: () => { this.setState({ selected: i }); }
+    }));
+    const prompts = this.SCRIPTS.map((s, i) => {
+      const active = i === this.state.p;
+      return {
+        label: s.label,
+        run: () => this.play(i),
+        fg: active ? '#16241C' : '#4a5248',
+        bg: active ? '#F4B43C' : '#fff',
+        border: active ? '#F4B43C' : '#ddd3bf',
+        hover: active ? {} : { borderColor: '#F4B43C', color: '#16241C' }
+      };
+    });
+    return {
+      dinerText: S.q,
+      thinking: this.state.thinking,
+      showReply: this.state.caret || this.state.replyText.length > 0,
+      replyText: this.state.replyText,
+      caret: this.state.caret,
+      dishes,
+      showQuestion: this.state.showQuestion,
+      questionText: S.question,
+      yesLabel: S.yes,
+      answerYes: this.answerYes,
+      replay: () => this.play(this.state.p),
+      yesFg: this.state.answered ? '#fff' : '#16241C',
+      yesBg: this.state.answered ? '#3FA66A' : '#F4B43C',
+      yesBorder: this.state.answered ? '#3FA66A' : '#F4B43C',
+      showCart: this.state.showCart,
+      cartTotal: S.dishes[0].price,
+      prompts,
+      scrollRef: this.scrollRef
+    };
+  }
+}
+</script>
+</body>
+</html>
