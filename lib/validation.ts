@@ -638,6 +638,7 @@ export const RESERVED_SLUGS = new Set<string>([
   "orders",
   "public",
   "settings",
+  "shop",
   "signup",
   "static",
   "_next",
