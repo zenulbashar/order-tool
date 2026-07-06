@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ConciergeDemo } from "./concierge-demo";
 import { RevealScript } from "./reveal-script";
+import { ShopTeaser } from "./shop-teaser";
 
 /**
  * prompt2eat.com marketing landing page. Diner-first (the AI concierge is the
@@ -53,12 +54,6 @@ const RESTAURANT_FEATURES = [
   { title: "Food cost and stock", body: "See the margin on every dish and get a nudge before you run low.", d: "M3 3v18h18M7 15l3-4 3 3 4-6" },
   { title: "Reports and customers", body: "Know your best sellers, your busiest hours, and your regulars.", d: "M4 20V10M10 20V4M16 20v-8M20 20V7" },
   { title: "Native iOS and Android apps", body: "Run the venue from your phone, with a ping on every new order.", d: "M7 3h10v18H7zM11 18h2" },
-];
-
-const SHOP_TEASER = [
-  { name: "Tablet POS stand", price: "$79", tag: "Point of sale", grad: "from-[#e7d3a3] to-[#c9a35e]" },
-  { name: "Rugged tablet case", price: "$42", tag: "Cases", grad: "from-[#cdb98f] to-[#8a6f3f]" },
-  { name: "UPS power backup", price: "$249", tag: "Power", grad: "from-[#d9c39a] to-[#a8824c]" },
 ];
 
 const NAV_LINKS = [
@@ -392,50 +387,7 @@ export function Landing() {
       </section>
 
       {/* Shop teaser */}
-      <section id="shop" className="bg-[#FFFDF8] py-[clamp(72px,10vw,120px)]">
-        <div className={CONTAINER}>
-          <div className="flex flex-wrap items-end justify-between gap-4" data-reveal>
-            <div className="max-w-[560px]">
-              <span className={`${eyebrow} text-[#B08A30]`}>The shop</span>
-              <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
-                Everything your venue needs.
-              </h2>
-              <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
-                Tablets, cases, stands, power, and the gear that keeps your venue
-                running. Ordered from the same place you run Prompt2Eat.
-              </p>
-            </div>
-            <Link
-              href="/shop"
-              className="rounded-xl border border-[#E0D6C1] px-5 py-2.5 text-sm font-bold text-[#16241C] transition hover:bg-[#F6F0E2]"
-            >
-              Browse the shop →
-            </Link>
-          </div>
-          <div className="mt-10 grid gap-[18px] sm:grid-cols-3">
-            {SHOP_TEASER.map((p, i) => (
-              <Link
-                key={p.name}
-                href="/shop"
-                data-reveal
-                data-delay={i * 70}
-                className="group overflow-hidden rounded-[22px] border border-[#EDE4D2] bg-[#FFFDF8] shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
-              >
-                <span className={`flex aspect-[4/3] items-center justify-center bg-gradient-to-br ${p.grad}`}>
-                  <span className={`${eyebrow} text-[9px] text-white/70`}>Product shot</span>
-                </span>
-                <span className="block p-4">
-                  <span className={`${eyebrow} text-[9px] text-[#A99A78]`}>{p.tag}</span>
-                  <span className="mt-1 flex items-center justify-between">
-                    <span className="font-display text-[15.5px] font-extrabold">{p.name}</span>
-                    <span className="font-display text-lg font-extrabold">{p.price}</span>
-                  </span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ShopTeaser />
 
       {/* Social proof */}
       <section className="relative bg-gradient-to-b from-[#0F281E] to-[#0C1C15] py-[clamp(72px,10vw,120px)]">
