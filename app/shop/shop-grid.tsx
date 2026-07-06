@@ -74,7 +74,9 @@ function Card({ product, grad }: { product: ShopProduct; grad: string }) {
         ) : null}
       </span>
       <span className="block p-4">
-        <span className={`${eyebrow} text-[#A99A78]`}>{product.category}</span>
+        <span className={`${eyebrow} text-[#A99A78]`}>
+          {product.subcategory ?? product.category}
+        </span>
         <span className="mt-1 block font-display text-[15.5px] font-extrabold leading-snug tracking-[-0.015em] text-[#16241C]">
           {product.name}
         </span>

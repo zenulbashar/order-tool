@@ -3,16 +3,21 @@ import "server-only";
 import { XMLParser } from "fast-xml-parser";
 
 /**
- * Hardware-shop product feed for the marketing site's /shop page.
+ * Hardware-shop product feed for the marketing /shop page.
  *
- * Set `SHOP_FEED_URL` to your XML product feed (e.g. the zaleit / MMT catalogue
- * feed). We fetch + parse it at request time (cached 1h) and map each item to a
- * `ShopProduct`. If the env is unset, the fetch fails, or nothing parses, we fall
- * back to a small placeholder catalogue so the page always renders.
+ * Set `SHOP_FEED_URL` to your MMT price-list feed (the token stays in env, never
+ * in source). We fetch + parse it at request time (cached 1h) and map each
+ * `<Product>` to a `ShopProduct`. If the env is unset, the fetch fails, or
+ * nothing parses, we fall back to a small placeholder catalogue so the page
+ * always renders.
  *
- * NOTE: the feed's exact XML tag names can't be reached from the build sandbox,
- * so `mapItem` searches a broad list of plausible field names. Once you can see a
- * real feed sample, tighten `FIELD_ALIASES` to the exact tags for clean results.
+ * Mapping is tuned to the real MMT schema:
+ *   MMTPriceList > Products > Product
+ *     Description/ShortDescription  -> name
+ *     Pricing/RRPInc (else YourPrice) -> price
+ *     Category/ParentCategoryName   -> category (CategoryName -> subcategory)
+ *     Files/LargeImageURL           -> image (spaces URL-encoded)
+ *     MMTCode                       -> id ; Availability -> "In stock" badge
  */
 
 export type ShopProduct = {
@@ -20,6 +25,7 @@ export type ShopProduct = {
   name: string;
   price: string;
   category: string;
+  subcategory: string | null;
   imageUrl: string | null;
   link: string | null;
   badge: string | null;
@@ -28,89 +34,83 @@ export type ShopProduct = {
 export type ShopResult = { products: ShopProduct[]; source: "feed" | "placeholder" };
 
 const PLACEHOLDER_PRODUCTS: ShopProduct[] = [
-  { id: "p1", name: "QR table stands (10 pack)", price: "$42.00", category: "QR & Signage", imageUrl: null, link: null, badge: "Best seller" },
-  { id: "p2", name: "A-frame sidewalk sign", price: "$96.00", category: "QR & Signage", imageUrl: null, link: null, badge: null },
-  { id: "p3", name: "Counter tablet stand", price: "$68.00", category: "Stands", imageUrl: null, link: null, badge: null },
-  { id: "p4", name: "Adjustable POS stand", price: "$79.00", category: "Stands", imageUrl: null, link: null, badge: "New" },
-  { id: "p5", name: "Thermal receipt paper (20 rolls)", price: "$29.00", category: "Consumables", imageUrl: null, link: null, badge: null },
-  { id: "p6", name: "Kitchen printer", price: "$189.00", category: "Hardware", imageUrl: null, link: null, badge: "Stripe-ready" },
-  { id: "p7", name: "Branded takeaway bags (250)", price: "$88.00", category: "Packaging", imageUrl: null, link: null, badge: "Eco" },
-  { id: "p8", name: "Compostable containers (300)", price: "$74.00", category: "Packaging", imageUrl: null, link: null, badge: "Eco" },
+  { id: "p1", name: "Tablet POS stand", price: "$79.00", category: "Point of sale", subcategory: "Stands", imageUrl: null, link: null, badge: "Popular" },
+  { id: "p2", name: "Rugged tablet case", price: "$42.00", category: "Cases & covers", subcategory: null, imageUrl: null, link: null, badge: null },
+  { id: "p3", name: "Thermal receipt printer", price: "$189.00", category: "Point of sale", subcategory: "Printers", imageUrl: null, link: null, badge: null },
+  { id: "p4", name: "UPS power backup", price: "$249.00", category: "Power protection", subcategory: null, imageUrl: null, link: null, badge: "In stock" },
+  { id: "p5", name: "QR table stands (10 pack)", price: "$42.00", category: "Signage", subcategory: null, imageUrl: null, link: null, badge: null },
+  { id: "p6", name: "Receipt paper (20 rolls)", price: "$29.00", category: "Consumables", subcategory: null, imageUrl: null, link: null, badge: null },
 ];
 
-// Broad alias lists (case-insensitive). Tune to the real feed's tags later.
-const FIELD_ALIASES = {
-  name: ["name", "title", "productname", "product_name", "tn", "sn", "ln", "itemname", "displayname"],
-  price: ["price", "rrp", "saleprice", "sale_price", "cost", "amount", "dp", "sp", "listprice"],
-  category: ["category", "cat", "department", "type", "group", "producttype", "um"],
-  image: ["imageurl", "image_url", "image", "img", "picture", "thumbnail", "si", "li", "mainimage"],
-  link: ["link", "url", "producturl", "product_url", "href", "deeplink", "et"],
-  id: ["id", "sku", "code", "productid", "product_id", "ai", "bc", "st"],
-  badge: ["badge", "label", "tag", "flag"],
-};
+const MAX_PRODUCTS = 120;
 
+/** Get the plain text of a parsed node (handles empty and numeric-like nodes). */
 function textOf(value: unknown): string {
   if (value == null) return "";
   if (typeof value === "string") return value.trim();
   if (typeof value === "number") return String(value);
-  if (typeof value === "object") {
-    const v = value as Record<string, unknown>;
-    // fast-xml-parser puts element text under "#text" when attributes exist.
-    if (typeof v["#text"] === "string") return (v["#text"] as string).trim();
-  }
-  return "";
-}
-
-function pick(item: Record<string, unknown>, aliases: string[]): string {
-  const lowerKeys = new Map(Object.keys(item).map((k) => [k.toLowerCase(), k]));
-  for (const alias of aliases) {
-    const realKey = lowerKeys.get(alias);
-    if (realKey != null) {
-      const val = textOf(item[realKey]);
-      if (val) return val;
-    }
-  }
   return "";
 }
 
 function formatPrice(raw: string): string {
   if (!raw) return "";
-  if (/[£$€]/.test(raw)) return raw;
   const n = Number(raw.replace(/[^0-9.]/g, ""));
-  return Number.isFinite(n) && n > 0 ? `$${n.toFixed(2)}` : raw;
+  return Number.isFinite(n) && n > 0 ? `$${n.toFixed(2)}` : "";
 }
 
-/** Recursively find the longest array of object nodes (the product list). */
-function findItemArray(node: unknown, best: Record<string, unknown>[] = []): Record<string, unknown>[] {
-  if (Array.isArray(node)) {
-    const objects = node.filter((n) => n && typeof n === "object" && !Array.isArray(n));
-    if (objects.length > best.length) best = objects as Record<string, unknown>[];
-    for (const child of node) best = findItemArray(child, best);
-    return best;
+/** MMT image URLs contain spaces (".../Product assets/..."); encode them. */
+function encodeImageUrl(raw: string): string | null {
+  if (!raw) return null;
+  try {
+    return encodeURI(raw);
+  } catch {
+    return raw;
   }
-  if (node && typeof node === "object") {
-    for (const value of Object.values(node)) best = findItemArray(value, best);
-  }
-  return best;
 }
 
-function mapItem(item: Record<string, unknown>, index: number): ShopProduct | null {
-  const name = pick(item, FIELD_ALIASES.name);
+type MmtNode = Record<string, unknown>;
+
+function extractProducts(root: unknown): MmtNode[] {
+  const list = (root as MmtNode | undefined)?.["MMTPriceList"] as MmtNode | undefined;
+  const products = (list?.["Products"] as MmtNode | undefined)?.["Product"];
+  if (Array.isArray(products)) return products as MmtNode[];
+  if (products && typeof products === "object") return [products as MmtNode];
+  return [];
+}
+
+function mapProduct(product: MmtNode, index: number): ShopProduct | null {
+  const description = product["Description"] as MmtNode | undefined;
+  const name = textOf(description?.["ShortDescription"]);
   if (!name) return null;
-  const price = formatPrice(pick(item, FIELD_ALIASES.price));
-  const category = pick(item, FIELD_ALIASES.category) || "Shop";
-  const image = pick(item, FIELD_ALIASES.image);
-  const link = pick(item, FIELD_ALIASES.link);
-  const id = pick(item, FIELD_ALIASES.id) || `feed-${index}`;
-  const badge = pick(item, FIELD_ALIASES.badge) || null;
+
+  const pricing = product["Pricing"] as MmtNode | undefined;
+  const price =
+    formatPrice(textOf(pricing?.["RRPInc"])) ||
+    formatPrice(textOf(pricing?.["YourPrice"]));
+
+  const cat = product["Category"] as MmtNode | undefined;
+  const category = textOf(cat?.["ParentCategoryName"]) || textOf(cat?.["CategoryName"]) || "Shop";
+  const subcategory = textOf(cat?.["CategoryName"]) || null;
+
+  const files = product["Files"] as MmtNode | undefined;
+  const imageUrl = encodeImageUrl(
+    textOf(files?.["LargeImageURL"]) ||
+      textOf(files?.["ThumbnailImageURL"]) ||
+      textOf(files?.["HiresImageURL"]),
+  );
+
+  const id = textOf(product["MMTCode"]) || `mmt-${index}`;
+  const available = Number(textOf(product["Availability"]) || "0");
+
   return {
     id,
     name,
-    price: price || "",
+    price,
     category,
-    imageUrl: image || null,
-    link: link || null,
-    badge,
+    subcategory: subcategory && subcategory !== category ? subcategory : null,
+    imageUrl,
+    link: null,
+    badge: available > 0 ? "In stock" : null,
   };
 }
 
@@ -123,15 +123,16 @@ export async function getShopProducts(): Promise<ShopResult> {
     if (!res.ok) return { products: PLACEHOLDER_PRODUCTS, source: "placeholder" };
     const xml = await res.text();
     const parsed = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: "",
+      ignoreAttributes: true,
+      parseTagValue: false,
       trimValues: true,
     }).parse(xml);
-    const items = findItemArray(parsed);
-    const products = items
-      .map((item, i) => mapItem(item, i))
+
+    const products = extractProducts(parsed)
+      .map((product, i) => mapProduct(product, i))
       .filter((p): p is ShopProduct => p !== null)
-      .slice(0, 60);
+      .slice(0, MAX_PRODUCTS);
+
     return products.length > 0
       ? { products, source: "feed" }
       : { products: PLACEHOLDER_PRODUCTS, source: "placeholder" };

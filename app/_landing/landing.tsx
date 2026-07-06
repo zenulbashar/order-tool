@@ -56,9 +56,9 @@ const RESTAURANT_FEATURES = [
 ];
 
 const SHOP_TEASER = [
-  { name: "QR table stands", price: "$42", tag: "Signage", grad: "from-[#e7d3a3] to-[#c9a35e]" },
-  { name: "Counter tablet stand", price: "$68", tag: "Hardware", grad: "from-[#cdb98f] to-[#8a6f3f]" },
-  { name: "Branded takeaway bags", price: "$88", tag: "Packaging", grad: "from-[#d9c39a] to-[#a8824c]" },
+  { name: "Tablet POS stand", price: "$79", tag: "Point of sale", grad: "from-[#e7d3a3] to-[#c9a35e]" },
+  { name: "Rugged tablet case", price: "$42", tag: "Cases", grad: "from-[#cdb98f] to-[#8a6f3f]" },
+  { name: "UPS power backup", price: "$249", tag: "Power", grad: "from-[#d9c39a] to-[#a8824c]" },
 ];
 
 const NAV_LINKS = [
@@ -401,8 +401,8 @@ export function Landing() {
                 Everything your venue needs.
               </h2>
               <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
-                Table stands, signage, receipt rolls, and packaging. Ordered from
-                the same place you run the venue.
+                Tablets, cases, stands, power, and the gear that keeps your venue
+                running. Ordered from the same place you run Prompt2Eat.
               </p>
             </div>
             <Link

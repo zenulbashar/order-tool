@@ -57,8 +57,9 @@ export default async function ShopPage() {
             Everything your venue needs.
           </h1>
           <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
-            Table stands, signage, receipt rolls, and packaging. Ordered from the
-            same place you run the venue, and shipped to your door.
+            Tablets, cases, stands, power, and the gear that keeps your venue
+            running. Ordered from the same place you run Prompt2Eat, and shipped
+            to your door.
           </p>
         </div>
 
