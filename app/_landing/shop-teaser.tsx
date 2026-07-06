@@ -31,8 +31,8 @@ export async function ShopTeaser() {
               Everything your venue needs.
             </h2>
             <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
-              Screens, laptops, tablets, and the rest of the hardware it takes to
-              open your doors. Ordered from the same place you run Prompt2Eat.
+              Screens, laptops, mini PCs, and the rest of the hardware it takes
+              to open your doors. Ordered from the same place you run Prompt2Eat.
             </p>
           </div>
           <Link

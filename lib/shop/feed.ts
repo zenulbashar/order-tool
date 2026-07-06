@@ -61,7 +61,7 @@ function ph(
 const PLACEHOLDER_PRODUCTS: ShopProduct[] = [
   ph("f1", '50" digital signage display', 640, "Displays", "Digital signage", "In stock"),
   ph("f2", "14\" business laptop", 899, "Computers", "Laptops", "In stock"),
-  ph("f3", "10\" business tablet", 329, "Computers", "Tablets", null),
+  ph("f3", "Compact mini PC", 899, "Computers", "Mini PC", "In stock"),
   ph("p4", "4K security camera + NVR kit", 480, "Security", "Surveillance", null),
   ph("p5", "24-port network switch", 210, "Networking", "Switches", "In stock"),
   ph("p6", "Thermal receipt printer", 189, "Point of sale", "Printers", null),
@@ -239,7 +239,7 @@ export async function getShopProducts(): Promise<ShopResult> {
 
 /**
  * The three homepage picks: cheapest 50" digital signage, cheapest laptop, and
- * cheapest tablet, each preferring in-stock (a homepage hero should be
+ * cheapest mini PC, each preferring in-stock (a homepage hero should be
  * buyable). Falls back to placeholders when the feed is unavailable.
  */
 export async function getFeaturedProducts(): Promise<ShopProduct[]> {
@@ -293,12 +293,12 @@ function isSignage(p: ShopProduct): boolean {
 }
 
 /**
- * Pick the three homepage devices from the FULL relevant set. Each slot draws
- * from a DEVICE-only pool (looksLikeDevice) so an accessory can never win on
- * price, and prefers in-stock. Signage is tiered: a 50" commercial/professional
- * display first, else any 50" display, else any signage, else any display.
- * Backfills to three from cheapest in-stock DEVICES (never a stray accessory).
- * Set SHOP_DEBUG=1 to log the candidate pools + final picks.
+ * Pick the three homepage devices (signage, laptop, mini PC) from the FULL
+ * relevant set. Each slot draws from a DEVICE-only pool (looksLikeDevice) so an
+ * accessory can never win on price, and prefers in-stock. Signage is tiered: a
+ * 50" commercial/professional display first, else any 50" display, else any
+ * signage, else any display. Backfills to three from cheapest in-stock DEVICES
+ * (never a stray accessory). Set SHOP_DEBUG=1 to log the candidate pools + picks.
  */
 function selectFeatured(relevant: ShopProduct[]): ShopProduct[] {
   const fiftyInch = /(?<![0-9])50\s*("|”|inch|-inch|in\b)/i;
@@ -315,15 +315,22 @@ function selectFeatured(relevant: ShopProduct[]): ShopProduct[] {
   });
   const laptop = cheapest(laptopCandidates, true);
 
-  const tabletCandidates = relevant.filter((p) => {
+  // Third slot: a compact mini PC / small-form-factor desktop. (The MMT feed
+  // carries no consumer tablets and no receipt printers, so this is the
+  // hospitality-relevant device that rounds out the trio.)
+  const miniPcCandidates = relevant.filter((p) => {
     const hay = hayOf(p);
-    return /tablet|ipad|galaxy tab/.test(hay) && looksLikeDevice(hay);
+    return /mini pc|mini-pc|\btiny\b|\bnuc\b|thinkcentre|small form|\bsff\b|\bmff\b|prodesk|elitedesk|desktop mini/.test(hay) &&
+      // Not a monitor (a "Tiny-in-One" / all-in-one is a display, not a PC).
+      !isDisplayDevice(p) &&
+      !/in-one|all in one|\baio\b/.test(hay) &&
+      looksLikeDevice(hay);
   });
-  const tablet = cheapest(tabletCandidates, true);
+  const miniPc = cheapest(miniPcCandidates, true);
 
   const picks: ShopProduct[] = [];
   const seen = new Set<string>();
-  for (const p of [signage, laptop, tablet]) {
+  for (const p of [signage, laptop, miniPc]) {
     if (p && !seen.has(p.id)) {
       picks.push(p);
       seen.add(p.id);
@@ -347,7 +354,7 @@ function selectFeatured(relevant: ShopProduct[]): ShopProduct[] {
     logFeaturedDebug(relevant.length, {
       signage: displayDevices,
       laptop: laptopCandidates,
-      tablet: tabletCandidates,
+      miniPc: miniPcCandidates,
     }, picks);
   }
 
