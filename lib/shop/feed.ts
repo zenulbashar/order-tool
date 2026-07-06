@@ -75,7 +75,6 @@ const FEATURED_PLACEHOLDERS: ShopProduct[] = [
 ];
 
 const MAX_SHOP_PRODUCTS = 120;
-const MAX_RELEVANT = 600; // cap the cached set (enough for /shop + featured picks)
 
 // Keywords that mark a product as relevant to a hospitality/business setup.
 const RELEVANT_KEYWORDS = [
@@ -178,48 +177,77 @@ function mapProduct(product: MmtNode, index: number): ShopProduct | null {
   };
 }
 
-/** Fetch, parse, filter-to-relevant, cache 1h. Returns [] on any failure. */
-const getRelevantProducts = unstable_cache(
-  async (): Promise<ShopProduct[]> => {
-    const url = process.env.SHOP_FEED_URL;
-    if (!url) {
-      console.warn("[shop] SHOP_FEED_URL is not set; serving placeholder products.");
+/** Fetch + parse + filter the WHOLE feed to relevant products. [] on failure. */
+async function fetchRelevantProducts(): Promise<ShopProduct[]> {
+  const url = process.env.SHOP_FEED_URL;
+  if (!url) {
+    console.warn("[shop] SHOP_FEED_URL is not set; serving placeholder products.");
+    return [];
+  }
+  try {
+    const res = await fetch(url, { next: { revalidate: 3600 } });
+    if (!res.ok) {
+      console.warn(`[shop] feed fetch failed with HTTP ${res.status}; serving placeholders.`);
       return [];
     }
-    try {
-      const res = await fetch(url, { next: { revalidate: 3600 } });
-      if (!res.ok) {
-        console.warn(`[shop] feed fetch failed with HTTP ${res.status}; serving placeholders.`);
-        return [];
-      }
-      const xml = await res.text();
-      const parsed = new XMLParser({
-        ignoreAttributes: true,
-        parseTagValue: false,
-        trimValues: true,
-      }).parse(xml);
-      return extractProducts(parsed)
-        .map((product, i) => mapProduct(product, i))
-        .filter((p): p is ShopProduct => p !== null && isRelevant(p))
-        .slice(0, MAX_RELEVANT);
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      console.warn(`[shop] feed fetch/parse error; serving placeholders: ${reason}`);
-      return [];
-    }
+    const xml = await res.text();
+    const parsed = new XMLParser({
+      ignoreAttributes: true,
+      parseTagValue: false,
+      trimValues: true,
+    }).parse(xml);
+    return extractProducts(parsed)
+      .map((product, i) => mapProduct(product, i))
+      .filter((p): p is ShopProduct => p !== null && isRelevant(p));
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`[shop] feed fetch/parse error; serving placeholders: ${reason}`);
+    return [];
+  }
+}
+
+type ShopData = { products: ShopProduct[]; featured: ShopProduct[] };
+
+/**
+ * Fetch the feed once, then derive BOTH the /shop grid (first 120) and the 3
+ * homepage featured picks from the FULL relevant set, and cache only that small
+ * result for an hour. Deriving the picks before slicing is load-bearing: the
+ * feed carries thousands of products, so selecting from a capped slice would
+ * starve the picks (e.g. no tablet in the first N by feed order).
+ */
+const getShopData = unstable_cache(
+  async (): Promise<ShopData> => {
+    const relevant = await fetchRelevantProducts();
+    if (relevant.length === 0) return { products: [], featured: [] };
+    return {
+      products: relevant.slice(0, MAX_SHOP_PRODUCTS),
+      featured: selectFeatured(relevant),
+    };
   },
-  ["shop-relevant-products"],
+  ["shop-data-v2"],
   { revalidate: 3600 },
 );
 
 /* ----------------------------- public API -------------------------------- */
 
 export async function getShopProducts(): Promise<ShopResult> {
-  const relevant = await getRelevantProducts();
-  return relevant.length > 0
-    ? { products: relevant.slice(0, MAX_SHOP_PRODUCTS), source: "feed" }
+  const { products } = await getShopData();
+  return products.length > 0
+    ? { products, source: "feed" }
     : { products: PLACEHOLDER_PRODUCTS, source: "placeholder" };
 }
+
+/**
+ * The three homepage picks: cheapest 50" digital signage, cheapest laptop, and
+ * cheapest tablet, each preferring in-stock (a homepage hero should be
+ * buyable). Falls back to placeholders when the feed is unavailable.
+ */
+export async function getFeaturedProducts(): Promise<ShopProduct[]> {
+  const { featured } = await getShopData();
+  return featured.length > 0 ? featured : FEATURED_PLACEHOLDERS;
+}
+
+/* --------------------------- featured selection --------------------------- */
 
 /** Cheapest (priced) item, optionally preferring in-stock. */
 function cheapest(list: ShopProduct[], preferStock = false): ShopProduct | null {
@@ -232,18 +260,22 @@ function cheapest(list: ShopProduct[], preferStock = false): ShopProduct | null 
   return priced[0];
 }
 
-// Substrings that mark a listing as an ACCESSORY, not a featurable device. Used
-// ONLY by looksLikeDevice() inside getFeaturedProducts() to keep the 3 hero
-// picks on real devices. It is NOT applied to isRelevant()/getShopProducts, so
-// the /shop grid still carries cables, connectors, docks, etc.
+// Substrings that mark a listing as an ACCESSORY / part, not a featurable
+// device. Used ONLY by looksLikeDevice() during featured selection to keep the
+// 3 hero picks on real devices. It is NOT applied to isRelevant()/getShopProducts,
+// so the /shop grid still carries cables, connectors, docks, etc.
 const DEVICE_EXCLUDES = [
   "case", "cover", "bag", "sleeve", "charger", "cable", "adapter", "stand",
   "mount", "dock", "screen protector", "battery", "stylus", "pen", "warranty",
   "bracket", "holder", "replacement", "spare", "skin", "strap", "kit", "sticker",
-  // Accessory categories/parts that were slipping into the device slots.
+  // Accessory categories that slipped into the device slots (real-feed audit).
   "accessor", "leveller", "leveler", "foot", "cradle", "trolley", "cart", "arm",
   "riser", "plate", "pole", "wall", "psu", "power supply", "extension lead",
-  "patch lead",
+  "patch lead", "mounting",
+  // Parts and non-device items miscategorised alongside devices (real-feed audit:
+  // privacy filters, RAM/SSD modules, charging cabinets, a NAS in "signage").
+  "filter", "privacy", "sodimm", "dimm", "ssd", "hdd", "memory", "cabinet",
+  "component", "module", "antenna", "nas ",
 ];
 function looksLikeDevice(hay: string): boolean {
   return !DEVICE_EXCLUDES.some((k) => hay.includes(k));
@@ -255,29 +287,27 @@ function isDisplayDevice(p: ShopProduct): boolean {
   return /signage|display|monitor|screen|television|\btv\b/.test(hay) && looksLikeDevice(hay);
 }
 
-/**
- * The three homepage picks: the cheapest 50" digital signage, the cheapest
- * laptop (preferring in-stock as "latest"), and the cheapest tablet. Falls back
- * to placeholders if the feed is unavailable, and backfills to three if a
- * category is momentarily empty.
- *
- * Each pick is drawn from a DEVICE-only candidate pool (looksLikeDevice), so an
- * accessory (a foot leveller, a tablet dock) can never win a device slot on
- * price. Set SHOP_DEBUG=1 to log the candidate pools + final picks.
- */
-export async function getFeaturedProducts(): Promise<ShopProduct[]> {
-  const relevant = await getRelevantProducts();
-  if (relevant.length === 0) return FEATURED_PLACEHOLDERS;
+/** A commercial / professional signage display (vs a consumer TV or monitor). */
+function isSignage(p: ShopProduct): boolean {
+  return /signage|commercial|professional|large display/.test(hayOf(p));
+}
 
-  // Signage: exact 50-inch display device first; else the cheapest real display
-  // device, preferring signage / commercial displays over generic monitors;
-  // never an accessory (if nothing qualifies, the backfill fills the slot).
+/**
+ * Pick the three homepage devices from the FULL relevant set. Each slot draws
+ * from a DEVICE-only pool (looksLikeDevice) so an accessory can never win on
+ * price, and prefers in-stock. Signage is tiered: a 50" commercial/professional
+ * display first, else any 50" display, else any signage, else any display.
+ * Backfills to three from cheapest in-stock DEVICES (never a stray accessory).
+ * Set SHOP_DEBUG=1 to log the candidate pools + final picks.
+ */
+function selectFeatured(relevant: ShopProduct[]): ShopProduct[] {
   const fiftyInch = /(?<![0-9])50\s*("|”|inch|-inch|in\b)/i;
   const displayDevices = relevant.filter(isDisplayDevice);
   const signage =
-    cheapest(displayDevices.filter((p) => fiftyInch.test(hayOf(p)))) ??
-    cheapest(displayDevices.filter((p) => /signage|commercial display/.test(hayOf(p)))) ??
-    cheapest(displayDevices);
+    cheapest(displayDevices.filter((p) => fiftyInch.test(hayOf(p)) && isSignage(p)), true) ??
+    cheapest(displayDevices.filter((p) => fiftyInch.test(hayOf(p))), true) ??
+    cheapest(displayDevices.filter(isSignage), true) ??
+    cheapest(displayDevices, true);
 
   const laptopCandidates = relevant.filter((p) => {
     const hay = hayOf(p);
@@ -299,9 +329,12 @@ export async function getFeaturedProducts(): Promise<ShopProduct[]> {
       seen.add(p.id);
     }
   }
-  // Backfill to three with the cheapest remaining relevant products.
+  // Backfill to three with the cheapest in-stock DEVICES (not a raw accessory).
   if (picks.length < 3) {
-    for (const p of [...relevant].filter((x) => x.priceValue > 0).sort((a, b) => a.priceValue - b.priceValue)) {
+    const devicePool = relevant
+      .filter((p) => p.priceValue > 0 && looksLikeDevice(hayOf(p)))
+      .sort((a, b) => (a.inStock !== b.inStock ? (a.inStock ? -1 : 1) : a.priceValue - b.priceValue));
+    for (const p of devicePool) {
       if (picks.length >= 3) break;
       if (!seen.has(p.id)) {
         picks.push(p);
@@ -318,7 +351,7 @@ export async function getFeaturedProducts(): Promise<ShopProduct[]> {
     }, picks);
   }
 
-  return picks.length > 0 ? picks : FEATURED_PLACEHOLDERS;
+  return picks;
 }
 
 /* ------------------------------ diagnostics ------------------------------ */
