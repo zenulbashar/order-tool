@@ -1560,3 +1560,49 @@ export const venueImages = pgTable(
 );
 
 export type VenueImage = typeof venueImages.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* Shop (marketing /shop page) admin controls                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Admin overrides for the live-feed /shop page. The grid is driven by the MMT
+ * product feed (lib/shop/feed.ts) with a code-level default category allowlist;
+ * these two tables + a `shop_markup_bps` platform_settings row let a platform
+ * admin tune it without a deploy. Both are read fresh per request and merged
+ * onto the (separately cached) feed, so edits reflect immediately.
+ *
+ * Per-category visibility. A row overrides the code default for one leaf
+ * category (`category` stored as it appears in the feed). Absent row ⇒ the
+ * code default (DEFAULT_SHOP_CATEGORIES) decides.
+ */
+export const shopCategorySettings = pgTable("shop_category_settings", {
+  category: text("category").primaryKey(),
+  visible: boolean("visible").notNull().default(true),
+  updatedAt: updatedAt(),
+});
+
+export type ShopCategorySetting = typeof shopCategorySettings.$inferSelect;
+
+/**
+ * Per-product overrides, keyed by the feed's MMT product code. `hidden` removes
+ * the product from the grid + featured picks; `price_override_cents` (when set)
+ * replaces the feed price (and wins over the global markup).
+ */
+export const shopProductOverrides = pgTable(
+  "shop_product_overrides",
+  {
+    mmtCode: text("mmt_code").primaryKey(),
+    hidden: boolean("hidden").notNull().default(false),
+    priceOverrideCents: integer("price_override_cents"),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "shop_price_override_nonneg",
+      sql`${table.priceOverrideCents} IS NULL OR ${table.priceOverrideCents} >= 0`,
+    ),
+  ],
+);
+
+export type ShopProductOverride = typeof shopProductOverrides.$inferSelect;

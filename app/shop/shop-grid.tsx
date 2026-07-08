@@ -20,13 +20,51 @@ export function ShopGrid({ products }: { products: ShopProduct[] }) {
     [products],
   );
   const [cat, setCat] = useState("All");
-  const visible = cat === "All" ? products : products.filter(
-    (p) => (p.subcategory ?? p.category) === cat,
-  );
+  const [query, setQuery] = useState("");
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return products.filter((p) => {
+      if (cat !== "All" && (p.subcategory ?? p.category) !== cat) return false;
+      if (q === "") return true;
+      return `${p.name} ${p.category} ${p.subcategory ?? ""}`.toLowerCase().includes(q);
+    });
+  }, [products, cat, query]);
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <label className="relative w-full sm:max-w-[320px]">
+          <span className="sr-only">Search products</span>
+          <svg
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#A99A78]"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search products…"
+            className="w-full rounded-full border border-[#E0D6C1] bg-[#FFFDF8] py-2 pl-9 pr-4 text-sm text-[#16241C] outline-none transition placeholder:text-[#A99A78] focus:border-[var(--color-accent)]"
+          />
+        </label>
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[#A99A78]">
+          {visible.length} product{visible.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
         {categories.map((c) => (
           <button
             key={c}
@@ -43,11 +81,17 @@ export function ShopGrid({ products }: { products: ShopProduct[] }) {
         ))}
       </div>
 
-      <div className="mt-8 grid gap-[18px] [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))]">
-        {visible.map((p, i) => (
-          <Card key={p.id} product={p} grad={GRADIENTS[i % GRADIENTS.length]} />
-        ))}
-      </div>
+      {visible.length === 0 ? (
+        <p className="mt-10 text-center text-sm text-[#6E756B]">
+          No products match your search.
+        </p>
+      ) : (
+        <div className="mt-8 grid gap-[18px] [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))]">
+          {visible.map((p, i) => (
+            <Card key={p.id} product={p} grad={GRADIENTS[i % GRADIENTS.length]} />
+          ))}
+        </div>
+      )}
     </>
   );
 }

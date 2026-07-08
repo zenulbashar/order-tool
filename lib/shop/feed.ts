@@ -3,14 +3,18 @@ import "server-only";
 import { XMLParser } from "fast-xml-parser";
 import { unstable_cache } from "next/cache";
 
+import { getShopConfig, isCategoryVisible, type ShopConfig } from "./config";
+
 /**
  * Hardware-shop product feed for the marketing site.
  *
  * Set `SHOP_FEED_URL` to your MMT price-list feed (the token stays in env). We
- * fetch + parse it, keep only products relevant to setting up and running a
- * hospitality venue (networking, AV, displays/signage, security, computing,
- * peripherals, printing, POS, power), and cache the mapped result for an hour
- * (the raw catalogue is large, so we cache across requests, not just the fetch).
+ * fetch + parse the whole catalogue and cache it for an hour; then, per request,
+ * we apply the admin config (lib/shop/config.ts) — which leaf categories show
+ * (default = DEFAULT_SHOP_CATEGORIES), per-product hide, per-product price
+ * override, and a global markup — so admin edits reflect immediately without a
+ * re-fetch. The default assortment stays hospitality gear (networking, AV,
+ * displays/signage, security, computing, peripherals, printing, POS, power).
  *
  * MMT schema mapping:
  *   MMTPriceList > Products > Product
@@ -74,41 +78,13 @@ const FEATURED_PLACEHOLDERS: ShopProduct[] = [
   PLACEHOLDER_PRODUCTS[2],
 ];
 
-// Exact MMT category names to KEEP in the /shop grid, matched against a
-// product's category AND subcategory (case-insensitive). Edit to taste.
-const HOSPITALITY_CATEGORIES = new Set<string>([
-  // Computing
-  "Computers", "Desktop Computers", "Desktop Computers Workstation", "Notebooks", "Notebooks Workstation", "Tablet",
-  // Displays / signage
-  "Display", "Monitors", "Monitors - Digital Signage", "LED TV", "Interactive Flat Panels",
-  // Projectors (devices only)
-  "Projectors", "Home Theatre Projectors", "Projectors - Large Venue", "Projectors - Ultra Short Throw", "Projectors - Data", "Projectors - Smart",
-  // Networking
-  "Networking", "Network - Network Cables", "Network - Switches", "Network - Router", "Network - Wireless Access Point", "Network - NICs & Adaptors", "Cables and Connectors", "USB - Cables",
-  // Security
-  "Surveillance - IP Cameras", "Surveillance - IP Recorders",
-  // Servers / storage
-  "Servers", "NAS - Network Attached Storage",
-  // Input / peripherals
-  "Keyboards", "Keyboards & Mice", "Mice", "Rugged & Industrial Keyboards", "Scanners", "USB Web Cams", "Microphones",
-  // Printing
-  "Laser/LED Printer",
-  // Audio / AV
-  "Audio", "Speakers", "AV Control",
-  // Power
-  "UPS", "Power Protection",
-].map((c) => c.toLowerCase()));
-
 function hayOf(p: ShopProduct): string {
   return `${p.category} ${p.subcategory ?? ""} ${p.name}`.toLowerCase();
 }
 
-function isRelevant(p: ShopProduct): boolean {
-  // Match the LEAF category only (the specific bucket). Matching the broad
-  // PARENT too would keep every "* Accessories" leaf under an allowlisted
-  // parent (Computers/Display/...), which is exactly the clutter we drop.
-  const leaf = (p.subcategory ?? p.category).trim().toLowerCase();
-  return HOSPITALITY_CATEGORIES.has(leaf);
+/** The leaf category used for visibility + the /shop pills (specific bucket). */
+function leafCategory(p: ShopProduct): string {
+  return p.subcategory ?? p.category;
 }
 
 /* ----------------------------- parsing ----------------------------------- */
@@ -178,74 +154,95 @@ function mapProduct(product: MmtNode, index: number): ShopProduct | null {
   };
 }
 
-/** Fetch + parse + filter the WHOLE feed to relevant products. [] on failure. */
-async function fetchRelevantProducts(): Promise<ShopProduct[]> {
-  const url = process.env.SHOP_FEED_URL;
-  if (!url) {
-    console.warn("[shop] SHOP_FEED_URL is not set; serving placeholder products.");
-    return [];
-  }
-  try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) {
-      console.warn(`[shop] feed fetch failed with HTTP ${res.status}; serving placeholders.`);
+/**
+ * Fetch + parse + map the WHOLE feed (no relevance filter). Cached for an hour;
+ * the admin config (categories / hides / pricing) is applied fresh per request
+ * on top, so it must be able to reach any category the admin might switch on.
+ * [] on any failure.
+ */
+const getAllProducts = unstable_cache(
+  async (): Promise<ShopProduct[]> => {
+    const url = process.env.SHOP_FEED_URL;
+    if (!url) {
+      console.warn("[shop] SHOP_FEED_URL is not set; serving placeholder products.");
       return [];
     }
-    const xml = await res.text();
-    const parsed = new XMLParser({
-      ignoreAttributes: true,
-      parseTagValue: false,
-      trimValues: true,
-    }).parse(xml);
-    return extractProducts(parsed)
-      .map((product, i) => mapProduct(product, i))
-      .filter((p): p is ShopProduct => p !== null && isRelevant(p));
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    console.warn(`[shop] feed fetch/parse error; serving placeholders: ${reason}`);
-    return [];
-  }
-}
-
-type ShopData = { products: ShopProduct[]; featured: ShopProduct[] };
-
-/**
- * Fetch the feed once, then derive BOTH the /shop grid (first 120) and the 3
- * homepage featured picks from the FULL relevant set, and cache only that small
- * result for an hour. Deriving the picks before slicing is load-bearing: the
- * feed carries thousands of products, so selecting from a capped slice would
- * starve the picks (e.g. no tablet in the first N by feed order).
- */
-const getShopData = unstable_cache(
-  async (): Promise<ShopData> => {
-    const relevant = await fetchRelevantProducts();
-    if (relevant.length === 0) return { products: [], featured: [] };
-    return {
-      products: relevant,
-      featured: selectFeatured(relevant),
-    };
+    try {
+      const res = await fetch(url, { next: { revalidate: 3600 } });
+      if (!res.ok) {
+        console.warn(`[shop] feed fetch failed with HTTP ${res.status}; serving placeholders.`);
+        return [];
+      }
+      const xml = await res.text();
+      const parsed = new XMLParser({
+        ignoreAttributes: true,
+        parseTagValue: false,
+        trimValues: true,
+      }).parse(xml);
+      return extractProducts(parsed)
+        .map((product, i) => mapProduct(product, i))
+        .filter((p): p is ShopProduct => p !== null);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      console.warn(`[shop] feed fetch/parse error; serving placeholders: ${reason}`);
+      return [];
+    }
   },
-  ["shop-data-v2"],
+  ["shop-all-products-v1"],
   { revalidate: 3600 },
 );
 
+/** Apply a per-product price override (wins) or the global markup to a product. */
+function applyPricing(p: ShopProduct, cfg: ShopConfig): ShopProduct {
+  const override = cfg.overrides.get(p.id);
+  let dollars: number;
+  if (override?.priceOverrideCents != null) {
+    dollars = override.priceOverrideCents / 100;
+  } else if (cfg.markupBps > 0 && p.priceValue > 0) {
+    dollars = p.priceValue * (1 + cfg.markupBps / 10000);
+  } else {
+    return p; // no override, no markup → leave the feed price untouched
+  }
+  if (!(dollars > 0)) return p;
+  const rounded = Math.round(dollars * 100) / 100;
+  return { ...p, priceValue: rounded, price: `$${rounded.toFixed(2)}` };
+}
+
+/** Products in a currently-visible, non-hidden category, priced per config. */
+function visibleProducts(all: ShopProduct[], cfg: ShopConfig): ShopProduct[] {
+  return all
+    .filter((p) => isCategoryVisible(leafCategory(p), cfg) && !cfg.overrides.get(p.id)?.hidden)
+    .map((p) => applyPricing(p, cfg));
+}
+
 /* ----------------------------- public API -------------------------------- */
 
+/** All feed products with their raw leaf category (admin catalogue view). */
+export async function getAllFeedProducts(): Promise<ShopProduct[]> {
+  return getAllProducts();
+}
+
 export async function getShopProducts(): Promise<ShopResult> {
-  const { products } = await getShopData();
+  const all = await getAllProducts();
   // Feed unreachable or empty → show placeholders so the page isn't blank.
-  if (products.length === 0) return { products: PLACEHOLDER_PRODUCTS, source: "placeholder" };
-  // Feed live → only show products currently in stock.
-  return { products: products.filter((p) => p.inStock), source: "feed" };
+  if (all.length === 0) return { products: PLACEHOLDER_PRODUCTS, source: "placeholder" };
+  const cfg = await getShopConfig();
+  // Visible category + not hidden + currently in stock, priced per config.
+  const products = visibleProducts(all, cfg).filter((p) => p.inStock);
+  return { products, source: "feed" };
 }
 
 /**
  * The three homepage picks: cheapest 50" digital signage, cheapest laptop, and
  * cheapest mini PC, each preferring in-stock (a homepage hero should be
- * buyable). Falls back to placeholders when the feed is unavailable.
+ * buyable). Respects the admin config (hidden/category/pricing). Falls back to
+ * placeholders when the feed is unavailable.
  */
 export async function getFeaturedProducts(): Promise<ShopProduct[]> {
-  const { featured } = await getShopData();
+  const all = await getAllProducts();
+  if (all.length === 0) return FEATURED_PLACEHOLDERS;
+  const cfg = await getShopConfig();
+  const featured = selectFeatured(visibleProducts(all, cfg));
   return featured.length > 0 ? featured : FEATURED_PLACEHOLDERS;
 }
 
