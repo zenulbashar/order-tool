@@ -74,8 +74,6 @@ const FEATURED_PLACEHOLDERS: ShopProduct[] = [
   PLACEHOLDER_PRODUCTS[2],
 ];
 
-const MAX_SHOP_PRODUCTS = 120;
-
 // Exact MMT category names to KEEP in the /shop grid, matched against a
 // product's category AND subcategory (case-insensitive). Edit to taste.
 const HOSPITALITY_CATEGORIES = new Set<string>([
@@ -223,7 +221,7 @@ const getShopData = unstable_cache(
     const relevant = await fetchRelevantProducts();
     if (relevant.length === 0) return { products: [], featured: [] };
     return {
-      products: relevant.slice(0, MAX_SHOP_PRODUCTS),
+      products: relevant,
       featured: selectFeatured(relevant),
     };
   },
