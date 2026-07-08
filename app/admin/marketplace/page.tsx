@@ -96,6 +96,12 @@ export default async function AdminMarketplacePage() {
           {orders.filter((o) => o.status === "requested").length} awaiting
           confirmation
         </p>
+        <Link
+          href="/admin/marketplace/shop"
+          className="mt-2 inline-block rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+        >
+          Shop page controls →
+        </Link>
       </header>
 
       {/* Orders */}
