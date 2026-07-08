@@ -8,7 +8,7 @@ import { ShopGrid } from "./shop-grid";
 export const metadata: Metadata = {
   title: "Shop · Prompt2Eat",
   description:
-    "Table stands, signage, receipt rolls, and packaging for your venue. Ordered from the same place you run Prompt2Eat.",
+    "Screens, laptops, tablets, networking, security cameras, and everything else your venue needs to open its doors.",
 };
 
 // The feed is fetched with its own 1h cache; render dynamically so the page
@@ -57,9 +57,9 @@ export default async function ShopPage() {
             Everything your venue needs.
           </h1>
           <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
-            Tablets, cases, stands, power, and the gear that keeps your venue
-            running. Ordered from the same place you run Prompt2Eat, and shipped
-            to your door.
+            Screens, laptops, network gear, security cameras, and the rest of
+            the hardware it takes to open your doors. Ordered from the same
+            place you run Prompt2Eat, and shipped to your door.
           </p>
         </div>
 
