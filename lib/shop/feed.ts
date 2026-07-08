@@ -80,7 +80,7 @@ const MAX_SHOP_PRODUCTS = 120;
 // product's category AND subcategory (case-insensitive). Edit to taste.
 const HOSPITALITY_CATEGORIES = new Set<string>([
   // Computing
-  "Computers", "Desktop Computers", "Notebooks", "Tablet",
+  "Computers", "Desktop Computers", "Desktop Computers Workstation", "Notebooks", "Notebooks Workstation", "Tablet",
   // Displays / signage
   "Display", "Monitors", "Monitors - Digital Signage", "LED TV", "Interactive Flat Panels",
   // Projectors (devices only)
@@ -235,9 +235,10 @@ const getShopData = unstable_cache(
 
 export async function getShopProducts(): Promise<ShopResult> {
   const { products } = await getShopData();
-  return products.length > 0
-    ? { products, source: "feed" }
-    : { products: PLACEHOLDER_PRODUCTS, source: "placeholder" };
+  // Feed unreachable or empty → show placeholders so the page isn't blank.
+  if (products.length === 0) return { products: PLACEHOLDER_PRODUCTS, source: "placeholder" };
+  // Feed live → only show products currently in stock.
+  return { products: products.filter((p) => p.inStock), source: "feed" };
 }
 
 /**
