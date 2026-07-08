@@ -16,11 +16,13 @@ const eyebrow = "font-mono text-[9px] font-bold uppercase tracking-[0.16em]";
 
 export function ShopGrid({ products }: { products: ShopProduct[] }) {
   const categories = useMemo(
-    () => ["All", ...Array.from(new Set(products.map((p) => p.category)))],
+    () => ["All", ...Array.from(new Set(products.map((p) => p.subcategory ?? p.category)))],
     [products],
   );
   const [cat, setCat] = useState("All");
-  const visible = cat === "All" ? products : products.filter((p) => p.category === cat);
+  const visible = cat === "All" ? products : products.filter(
+    (p) => (p.subcategory ?? p.category) === cat,
+  );
 
   return (
     <>
