@@ -76,32 +76,36 @@ export default async function AdminShopPage({
         <>
           {/* Global markup */}
           <section className="mb-8">
-            <p className={`${eyebrow} mb-2`}>Global markup</p>
+            <p className={`${eyebrow} mb-2`}>Global markup on cost</p>
             <form
               action={saveShopMarkup}
-              className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface-elevated p-4 shadow-sm"
+              className="rounded-card border border-line bg-surface-elevated p-4 shadow-sm"
             >
-              <label className="text-sm text-ink">
-                Add
-                <input
-                  type="number"
-                  name="markupPct"
-                  step="0.1"
-                  min="0"
-                  defaultValue={(cfg.markupBps / 100).toString()}
-                  className="mx-2 w-24 rounded-control border border-line-strong px-2 py-1 text-sm text-ink"
-                />
-                % on top of every feed price
-              </label>
-              <button
-                type="submit"
-                className="rounded-control bg-[var(--action)] px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
-              >
-                Save markup
-              </button>
-              <span className="text-xs text-muted">
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="text-sm text-ink">
+                  Add
+                  <input
+                    type="number"
+                    name="markupPct"
+                    step="0.1"
+                    min="0"
+                    defaultValue={(cfg.markupBps / 100).toString()}
+                    className="mx-2 w-24 rounded-control border border-line-strong px-2 py-1 text-sm text-ink"
+                  />
+                  % on top of your cost
+                </label>
+                <button
+                  type="submit"
+                  className="rounded-control bg-[var(--action)] px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
+                >
+                  Save markup
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                Marks up your cost (the feed&rsquo;s YourPrice) to set the selling price. At 0% the
+                feed&rsquo;s RRP is shown. Products with no cost on record fall back to their RRP.
                 Per-product price overrides win over this.
-              </span>
+              </p>
             </form>
           </section>
 
@@ -176,6 +180,12 @@ export default async function AdminShopPage({
                 <ul className="divide-y divide-line/60">
                   {matches.map((p) => {
                     const ovr = cfg.overrides.get(p.id);
+                    const sellsCents =
+                      ovr?.priceOverrideCents != null
+                        ? ovr.priceOverrideCents
+                        : cfg.markupBps > 0 && p.costValue > 0
+                          ? Math.round(p.costValue * (1 + cfg.markupBps / 10000) * 100)
+                          : Math.round(p.priceValue * 100);
                     return (
                       <li key={p.id} className="px-4 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -191,7 +201,9 @@ export default async function AdminShopPage({
                             ) : null}
                           </span>
                           <span className="font-mono text-[10px] text-muted">
-                            {p.id} · feed {p.price || "—"} · {p.inStock ? "in stock" : "out of stock"}
+                            {p.id} · cost {p.costValue > 0 ? `$${p.costValue.toFixed(2)}` : "—"} ·
+                            RRP {p.rrpValue > 0 ? `$${p.rrpValue.toFixed(2)}` : "—"} · sells $
+                            {(sellsCents / 100).toFixed(2)} · {p.inStock ? "in stock" : "out of stock"}
                           </span>
                         </div>
                         <form

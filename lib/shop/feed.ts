@@ -19,7 +19,8 @@ import { getShopConfig, isCategoryVisible, type ShopConfig } from "./config";
  * MMT schema mapping:
  *   MMTPriceList > Products > Product
  *     Description/ShortDescription   -> name
- *     Pricing/RRPInc (else YourPrice)-> price (+ numeric priceValue)
+ *     Pricing/YourPrice              -> costValue (your cost; markup base)
+ *     Pricing/RRPInc                 -> rrpValue + default selling price
  *     Category/ParentCategoryName    -> category ; CategoryName -> subcategory
  *     Files/LargeImageURL            -> image (spaces URL-encoded)
  *     MMTCode -> id ; Availability -> inStock + "In stock" badge
@@ -28,8 +29,14 @@ import { getShopConfig, isCategoryVisible, type ShopConfig } from "./config";
 export type ShopProduct = {
   id: string;
   name: string;
+  /** Effective selling price string ("$X") after config; empty when unknown. */
   price: string;
+  /** Effective selling price (numeric). Default = RRP; markup recomputes it. */
   priceValue: number;
+  /** Your cost from the feed (YourPrice). 0 when the feed omits it. */
+  costValue: number;
+  /** Recommended retail from the feed (RRPInc). 0 when the feed omits it. */
+  rrpValue: number;
   category: string;
   subcategory: string | null;
   imageUrl: string | null;
@@ -53,6 +60,8 @@ function ph(
     name,
     price: `$${price.toFixed(2)}`,
     priceValue: price,
+    costValue: 0,
+    rrpValue: price,
     category,
     subcategory,
     imageUrl: null,
@@ -121,9 +130,16 @@ function mapProduct(product: MmtNode, index: number): ShopProduct | null {
   if (!name) return null;
 
   const pricing = product["Pricing"] as MmtNode | undefined;
-  const rawPrice = textOf(pricing?.["RRPInc"]) || textOf(pricing?.["YourPrice"]);
-  const priceValue = Number(rawPrice.replace(/[^0-9.]/g, ""));
-  const price = Number.isFinite(priceValue) && priceValue > 0 ? `$${priceValue.toFixed(2)}` : "";
+  const parsePrice = (raw: string): number => {
+    const n = Number(raw.replace(/[^0-9.]/g, ""));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
+  const rrpValue = parsePrice(textOf(pricing?.["RRPInc"]));
+  const costValue = parsePrice(textOf(pricing?.["YourPrice"]));
+  // Default selling price = RRP (else cost). A configured markup recomputes it
+  // from cost in applyPricing(); a per-product override replaces it outright.
+  const priceValue = rrpValue > 0 ? rrpValue : costValue;
+  const price = priceValue > 0 ? `$${priceValue.toFixed(2)}` : "";
 
   const cat = product["Category"] as MmtNode | undefined;
   const category = textOf(cat?.["ParentCategoryName"]) || textOf(cat?.["CategoryName"]) || "Shop";
@@ -144,7 +160,9 @@ function mapProduct(product: MmtNode, index: number): ShopProduct | null {
     id,
     name,
     price,
-    priceValue: Number.isFinite(priceValue) ? priceValue : 0,
+    priceValue,
+    costValue,
+    rrpValue,
     category,
     subcategory: subRaw && subRaw !== category ? subRaw : null,
     imageUrl,
@@ -192,16 +210,21 @@ const getAllProducts = unstable_cache(
   { revalidate: 3600 },
 );
 
-/** Apply a per-product price override (wins) or the global markup to a product. */
+/**
+ * Resolve the selling price. A per-product override wins outright; otherwise a
+ * configured markup is applied to YOUR COST (the feed's YourPrice), NOT the RRP
+ * — the RRP is already a retail price, so marking it up would price above
+ * retail. With no markup (or no cost on record) the default RRP price stands.
+ */
 function applyPricing(p: ShopProduct, cfg: ShopConfig): ShopProduct {
   const override = cfg.overrides.get(p.id);
   let dollars: number;
   if (override?.priceOverrideCents != null) {
     dollars = override.priceOverrideCents / 100;
-  } else if (cfg.markupBps > 0 && p.priceValue > 0) {
-    dollars = p.priceValue * (1 + cfg.markupBps / 10000);
+  } else if (cfg.markupBps > 0 && p.costValue > 0) {
+    dollars = p.costValue * (1 + cfg.markupBps / 10000);
   } else {
-    return p; // no override, no markup → leave the feed price untouched
+    return p; // no override, no cost-based markup → keep the default (RRP) price
   }
   if (!(dollars > 0)) return p;
   const rounded = Math.round(dollars * 100) / 100;
