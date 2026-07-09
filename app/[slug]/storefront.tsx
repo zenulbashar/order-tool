@@ -7,8 +7,8 @@ import { readableOn } from "@/app/_components/brand-contrast";
 import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
 
 import { CartBar } from "./cart-bar";
-import { BrandBackdrop } from "./brand-backdrop";
 import { CartProvider, useCart } from "./cart-provider";
+import { CartRail } from "./cart-rail";
 import { CartReview } from "./cart-review";
 import { CategoryNav } from "./category-nav";
 import { ConciergePanel } from "./concierge/concierge-panel";
@@ -17,6 +17,7 @@ import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
 import { RecommendationsProvider } from "./recommendations";
+import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
 import { SearchEmptyState } from "./search-empty-state";
 import type {
@@ -207,86 +208,27 @@ function StorefrontInner({
 
   return (
     <>
-      <BrandBackdrop backgroundUrl={venue.backgroundUrl} />
       <div
-        style={brandStyle} data-domain="diner"
-        className="relative mx-auto min-h-dvh max-w-3xl bg-surface pb-24 lg:shadow-xl"
+        style={brandStyle}
+        data-domain="diner"
+        className="min-h-dvh bg-surface pb-24 lg:pb-12"
       >
-      {venue.coverUrl ? (
-        // Owner-supplied cover image fills the band. Owner-supplied URL; next/image
-        // would need remote config (house rule).
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={venue.coverUrl}
-          alt=""
-          className="h-32 w-full object-cover sm:h-40"
-        />
-      ) : (
-        // Default cover band — a decorative warm glow in the venue's OWN --brand
-        // colour (sign-in's color-mix technique). No photo or fabricated data.
-        <div
-          className="h-32 w-full sm:h-40"
-          style={{
-            background:
-              "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-forest-deep)",
-          }}
-        />
-      )}
-      {/* Only the LOGO overlaps the band (-mt-10). The name + description sit
-          below the band in normal flow on the cream surface, fully readable. */}
-      <header className="px-5 pb-4">
-        <div className="flex items-start justify-between gap-4">
-          {venue.logoUrl ? (
-            // Arbitrary owner-supplied URL; next/image would need remote config.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={venue.logoUrl}
-              alt={`${venue.name} logo`}
-              className="-mt-10 h-16 w-16 shrink-0 rounded-pill object-cover ring-4 ring-surface"
-            />
-          ) : (
-            <span
-              className="-mt-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-pill text-2xl font-semibold text-[var(--action-contrast)] ring-4 ring-surface"
-              style={{ backgroundColor: "var(--action)" }}
-            >
-              {venue.name.charAt(0).toUpperCase()}
-            </span>
-          )}
-          {/* Opt-in customer area (#7) — never blocks ordering; guests ignore it. */}
-          <Link
-            href={`/${venue.slug}/account`}
-            className="shrink-0 text-xs font-medium text-muted transition hover:text-ink"
-          >
-            Your orders
-          </Link>
-        </div>
-        {/* No truncate, so a long venue name wraps instead of clipping. */}
-        <div className="mt-3">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
-            {venue.name}
-          </h1>
-          {venue.storefrontDescription ? (
-            <p className="mt-0.5 text-sm text-muted">
-              {venue.storefrontDescription}
-            </p>
-          ) : null}
-        </div>
-      </header>
-
-      {/* Menu search pinned directly under the header (A1): the primary way to
-          find an item, kept above the AI launcher rather than stacked beneath it.
-          Sticky so it stays reachable while scrolling a long menu. */}
-      {menu.length > 0 ? (
-        <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur">
-          <div className="space-y-2 px-5 pb-3 pt-3">
-            {/* Search shares one row with the dietary chips: chips scroll on the
-                LEFT, the search control is pinned RIGHT (shrink-0, never pushed
-                off). Tapping the search icon expands it to a full-width input
-                (the chips yield the row); it collapses back to the icon when
-                cleared. The input still drives the same `query`/onChange and all
-                filter logic is unchanged. */}
-            <div className="flex items-start gap-2">
-              {searchOpen ? (
+        {/* ============ Desktop app bar (lg+) — full-width shell ============ */}
+        <div className="hidden border-b border-sand bg-surface-elevated lg:block">
+          <div className="mx-auto flex h-[66px] max-w-[1280px] items-center gap-4 px-6">
+            <div className="flex shrink-0 items-center gap-2.5">
+              <BrandTile
+                venue={venue}
+                sizeClass="h-[38px] w-[38px]"
+                radiusClass="rounded-[11px]"
+                textClass="text-base"
+              />
+              <span className="max-w-[220px] truncate font-display text-[19px] font-extrabold tracking-tight text-ink">
+                {venue.name}
+              </span>
+            </div>
+            {menu.length > 0 ? (
+              <div className="mx-auto w-full max-w-[420px]">
                 <MenuSearch
                   expanded
                   onExpand={() => setSearchExpanded(true)}
@@ -295,125 +237,288 @@ function StorefrontInner({
                   onChange={setQuery}
                   resultCount={isSearching ? visibleItemCount : null}
                 />
+              </div>
+            ) : (
+              <div className="flex-1" />
+            )}
+            <div className="flex shrink-0 items-center gap-3">
+              {tableLabel.trim() ? (
+                <span className="rounded-pill bg-[var(--color-success)]/12 px-3 py-1.5 text-xs font-semibold text-success-deep">
+                  Dine-in · Table {tableLabel.trim()}
+                </span>
+              ) : null}
+              <Link
+                href={`/${venue.slug}/account`}
+                aria-label="Your orders"
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-pill bg-sand text-muted transition hover:text-ink"
+              >
+                <PersonIcon />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* ============ Desktop hero (lg+) ============ */}
+        <div className="hidden lg:block">
+          <StorefrontHero venue={venue} />
+        </div>
+
+        {/* ============ Mobile header (below lg) — unchanged ============ */}
+        <div className="lg:hidden">
+          {venue.coverUrl ? (
+            // Owner-supplied cover image fills the band. next/image would need
+            // remote config (house rule).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={venue.coverUrl}
+              alt=""
+              className="h-32 w-full object-cover sm:h-40"
+            />
+          ) : (
+            // Default cover band — a decorative warm glow in the venue's --brand.
+            <div
+              className="h-32 w-full sm:h-40"
+              style={{
+                background:
+                  "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-forest-deep)",
+              }}
+            />
+          )}
+          {/* Only the LOGO overlaps the band (-mt-10); name + description sit
+              below on the cream surface, fully readable. */}
+          <header className="px-5 pb-4">
+            <div className="flex items-start justify-between gap-4">
+              {venue.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={venue.logoUrl}
+                  alt={`${venue.name} logo`}
+                  className="-mt-10 h-16 w-16 shrink-0 rounded-pill object-cover ring-4 ring-surface"
+                />
               ) : (
-                <>
-                  <div className="min-w-0 flex-1">
+                <span
+                  className="-mt-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-pill text-2xl font-semibold text-[var(--action-contrast)] ring-4 ring-surface"
+                  style={{ backgroundColor: "var(--action)" }}
+                >
+                  {venue.name.charAt(0).toUpperCase()}
+                </span>
+              )}
+              <Link
+                href={`/${venue.slug}/account`}
+                className="shrink-0 text-xs font-medium text-muted transition hover:text-ink"
+              >
+                Your orders
+              </Link>
+            </div>
+            <div className="mt-3">
+              <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+                {venue.name}
+              </h1>
+              {venue.storefrontDescription ? (
+                <p className="mt-0.5 text-sm text-muted">
+                  {venue.storefrontDescription}
+                </p>
+              ) : null}
+            </div>
+          </header>
+        </div>
+
+        {/* ============ Sticky category / search strip ============ */}
+        {menu.length > 0 ? (
+          <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur lg:bg-surface-elevated/95">
+            {/* Mobile: search + dietary chips + disclaimer + pill nav (unchanged) */}
+            <div className="lg:hidden">
+              <div className="space-y-2 px-5 pb-3 pt-3">
+                <div className="flex items-start gap-2">
+                  {searchOpen ? (
+                    <MenuSearch
+                      expanded
+                      onExpand={() => setSearchExpanded(true)}
+                      onCollapse={() => setSearchExpanded(false)}
+                      value={query}
+                      onChange={setQuery}
+                      resultCount={isSearching ? visibleItemCount : null}
+                    />
+                  ) : (
+                    <>
+                      <div className="min-w-0 flex-1">
+                        <DietaryFilter
+                          available={availableTags}
+                          selected={activeTags}
+                          onToggle={toggleTag}
+                        />
+                      </div>
+                      <MenuSearch
+                        expanded={false}
+                        onExpand={() => setSearchExpanded(true)}
+                        onCollapse={() => setSearchExpanded(false)}
+                        value={query}
+                        onChange={setQuery}
+                        resultCount={isSearching ? visibleItemCount : null}
+                      />
+                    </>
+                  )}
+                </div>
+                {availableTags.length > 0 ? <DietaryDisclaimer /> : null}
+              </div>
+              {navCategories.length > 0 ? (
+                <CategoryNav categories={navCategories} />
+              ) : null}
+            </div>
+
+            {/* Desktop: underline tab strip + dietary chips on the right */}
+            <div className="mx-auto hidden max-w-[1280px] px-6 lg:block">
+              <div className="flex items-center justify-between gap-4">
+                {navCategories.length > 0 ? (
+                  <CategoryNav categories={navCategories} variant="tabs" />
+                ) : (
+                  <span />
+                )}
+                {availableTags.length > 0 ? (
+                  <div className="shrink-0 py-2">
                     <DietaryFilter
                       available={availableTags}
                       selected={activeTags}
                       onToggle={toggleTag}
                     />
                   </div>
-                  <MenuSearch
-                    expanded={false}
-                    onExpand={() => setSearchExpanded(true)}
-                    onCollapse={() => setSearchExpanded(false)}
-                    value={query}
-                    onChange={setQuery}
-                    resultCount={isSearching ? visibleItemCount : null}
-                  />
-                </>
+                ) : null}
+              </div>
+              {availableTags.length > 0 ? (
+                <div className="pb-2">
+                  <DietaryDisclaimer />
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {/* ============ Body: inner-capped grid (menu · cart rail) ============ */}
+        <div className="mx-auto w-full max-w-[1280px] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7">
+          <div className="min-w-0">
+            {/* AI ordering concierge (#12). Proposes items; tapping one routes
+                through setActiveItem -> ItemModifierSheet -> addItem, exactly like
+                the menu tiles, never a direct cart write. The CartRail nudge links
+                here via #concierge. */}
+            {conciergeEnabled && menu.length > 0 ? (
+              <div id="concierge" className="scroll-mt-24 pb-2 pt-4 lg:pt-1">
+                <ConciergePanel
+                  slug={venue.slug}
+                  menu={menu}
+                  onSelectItem={setActiveItem}
+                  onOpenCart={() => setCartOpen(true)}
+                  prefill={conciergePrefill}
+                />
+              </div>
+            ) : null}
+
+            <div className="space-y-8 py-6 lg:py-0">
+              {menu.length === 0 ? (
+                <p className="rounded-card border border-dashed border-sand p-8 text-center text-sm text-muted">
+                  This venue hasn’t published a menu yet. Check back soon.
+                </p>
+              ) : visibleMenu.length === 0 ? (
+                <SearchEmptyState
+                  query={trimmedQuery}
+                  venueName={venue.name}
+                  conciergeEnabled={conciergeEnabled}
+                  categories={menu.map((category) => ({
+                    id: category.id,
+                    name: category.name,
+                  }))}
+                  onAskConcierge={(text) =>
+                    setConciergePrefill((current) => ({
+                      text,
+                      nonce: current.nonce + 1,
+                    }))
+                  }
+                  onClearFilters={clearFilters}
+                  onGoToCategory={(id) => {
+                    pendingCategoryRef.current = id;
+                    clearFilters();
+                  }}
+                />
+              ) : (
+                visibleMenu.map((category) => (
+                  <section
+                    key={category.id}
+                    id={category.id}
+                    className="scroll-mt-32"
+                  >
+                    <h2 className="font-display text-xl font-semibold tracking-tight text-ink lg:text-2xl">
+                      {category.name}
+                    </h2>
+                    {category.description ? (
+                      <p className="mt-0.5 text-sm text-muted">
+                        {category.description}
+                      </p>
+                    ) : null}
+                    <ul className="mt-3 space-y-3 lg:grid lg:grid-cols-2 lg:gap-[18px] lg:space-y-0">
+                      {category.items.map((item) => (
+                        <li key={item.id}>
+                          <ItemCard item={item} onSelect={setActiveItem} />
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))
               )}
             </div>
-            {/* Life-safety dietary disclaimer stays ALWAYS visible, independent
-                of the search expand state. */}
-            {availableTags.length > 0 ? <DietaryDisclaimer /> : null}
           </div>
-          {navCategories.length > 0 ? (
-            <CategoryNav categories={navCategories} />
+
+          {menu.length > 0 ? (
+            <CartRail
+              slug={venue.slug}
+              tableLabel={tableLabel}
+              conciergeEnabled={conciergeEnabled}
+            />
           ) : null}
         </div>
-      ) : null}
 
-      {/* AI ordering concierge (#12). Gated on the single canUseConcierge seam
-          and hidden when there's no menu to ground in. Proposes items; tapping
-          one routes through setActiveItem -> the existing ItemModifierSheet ->
-          addItem, exactly like the menu tiles, never a direct cart write. Sits
-          just below the menu search (A1), above the menu list. */}
-      {conciergeEnabled && menu.length > 0 ? (
-        <div className="px-5 pb-2 pt-4">
-          <ConciergePanel
-            slug={venue.slug}
-            menu={menu}
+        {activeItem ? (
+          <ItemModifierSheet
+            key={activeItem.id}
+            item={activeItem}
+            onClose={() => setActiveItem(null)}
+            onAdd={addItem}
             onSelectItem={setActiveItem}
-            onOpenCart={() => setCartOpen(true)}
-            prefill={conciergePrefill}
           />
+        ) : null}
+
+        {/* Mobile cart bar — the persistent rail replaces it at lg+. */}
+        <div className="lg:hidden">
+          <CartBar onOpen={() => setCartOpen(true)} />
         </div>
-      ) : null}
 
-      <div className="space-y-8 px-5 py-6">
-        {menu.length === 0 ? (
-          <p className="rounded-card border border-dashed border-sand p-8 text-center text-sm text-muted">
-            This venue hasn’t published a menu yet. Check back soon.
-          </p>
-        ) : visibleMenu.length === 0 ? (
-          <SearchEmptyState
-            query={trimmedQuery}
-            venueName={venue.name}
-            conciergeEnabled={conciergeEnabled}
-            categories={menu.map((category) => ({
-              id: category.id,
-              name: category.name,
-            }))}
-            onAskConcierge={(text) =>
-              setConciergePrefill((current) => ({
-                text,
-                nonce: current.nonce + 1,
-              }))
-            }
-            onClearFilters={clearFilters}
-            onGoToCategory={(id) => {
-              pendingCategoryRef.current = id;
-              clearFilters();
-            }}
+        {/* Cart review drawer. Open-state lives here so the cart bar and the
+            concierge can both open it; on desktop the rail is primary. */}
+        {cartOpen ? (
+          <CartReview
+            slug={venue.slug}
+            tableLabel={tableLabel}
+            onClose={() => setCartOpen(false)}
+            onSelectItem={setActiveItem}
           />
-        ) : (
-          visibleMenu.map((category) => (
-            <section key={category.id} id={category.id} className="scroll-mt-32">
-              <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
-                {category.name}
-              </h2>
-              {category.description ? (
-                <p className="mt-0.5 text-sm text-muted">
-                  {category.description}
-                </p>
-              ) : null}
-              <ul className="mt-3 space-y-3">
-                {category.items.map((item) => (
-                  <li key={item.id}>
-                    <ItemCard item={item} onSelect={setActiveItem} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))
-        )}
-      </div>
-
-      {activeItem ? (
-        <ItemModifierSheet
-          key={activeItem.id}
-          item={activeItem}
-          onClose={() => setActiveItem(null)}
-          onAdd={addItem}
-          onSelectItem={setActiveItem}
-        />
-      ) : null}
-
-      <CartBar onOpen={() => setCartOpen(true)} />
-
-      {/* Cart review drawer. Its open-state lives here in StorefrontInner so both
-          the cart bar and (in a later step) the concierge panel can open it. */}
-      {cartOpen ? (
-        <CartReview
-          slug={venue.slug}
-          tableLabel={tableLabel}
-          onClose={() => setCartOpen(false)}
-          onSelectItem={setActiveItem}
-        />
-      ) : null}
+        ) : null}
       </div>
     </>
+  );
+}
+
+function PersonIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-[18px] w-[18px]"
+    >
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5" />
+    </svg>
   );
 }

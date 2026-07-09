@@ -14,8 +14,13 @@ import { useEffect, useState } from "react";
  */
 export function CategoryNav({
   categories,
+  variant = "pills",
 }: {
   categories: { id: string; name: string }[];
+  // "pills" — the mobile chip row (default). "tabs" — the desktop underline strip
+  // (active tab = ink text + a 3px brand underline), used in the storefront's
+  // sticky desktop tab strip. Both share the same scroll-spy behaviour.
+  variant?: "pills" | "tabs";
 }) {
   const [active, setActive] = useState(categories[0]?.id ?? "");
 
@@ -46,6 +51,37 @@ export function CategoryNav({
     document
       .getElementById(id)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  if (variant === "tabs") {
+    return (
+      <nav className="min-w-0">
+        <ul className="flex gap-6 overflow-x-auto">
+          {categories.map((category) => {
+            const isActive = category.id === active;
+            return (
+              <li key={category.id} className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleClick(category.id)}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`relative border-b-[3px] py-4 text-sm font-semibold transition ${
+                    isActive
+                      ? "text-ink"
+                      : "border-transparent text-muted hover:text-ink"
+                  }`}
+                  style={
+                    isActive ? { borderColor: "var(--action)" } : undefined
+                  }
+                >
+                  {category.name}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    );
   }
 
   return (

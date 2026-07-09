@@ -12,7 +12,6 @@ import { getCustomer } from "@/lib/customer/auth";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
 
-import { BrandBackdrop } from "../../brand-backdrop";
 import { getPublicVenueBySlug } from "../../queries";
 import { PaymentStatusPoller } from "./payment-status-poller";
 import { getOrderByToken, type ConfirmedOrder } from "./queries";
@@ -289,13 +288,11 @@ export default async function OrderConfirmationPage({
         : "Order cancelled";
 
   return (
-    <>
-      <BrandBackdrop backgroundUrl={venue.backgroundUrl} />
-      <main
-        style={brandStyle}
-        data-domain="diner"
-        className="relative mx-auto min-h-dvh max-w-2xl bg-surface lg:shadow-xl"
-      >
+    <main
+      style={brandStyle}
+      data-domain="diner"
+      className="mx-auto min-h-dvh max-w-2xl bg-surface"
+    >
       {/* Status banner — paid / processing / failed must each be unmistakable
           and, for the unhappy paths, calm and non-alarming. */}
       {isPaid ? (
@@ -532,7 +529,6 @@ export default async function OrderConfirmationPage({
           </Link>
         )}
       </div>
-      </main>
-    </>
+    </main>
   );
 }

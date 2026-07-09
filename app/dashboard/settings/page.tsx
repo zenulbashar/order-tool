@@ -38,26 +38,17 @@ export default async function SettingsPage() {
                 Storefront imagery
               </h2>
               <p className="mt-0.5 text-xs text-muted">
-                Brand your storefront with a cover photo and a backdrop that
-                fills the space beside your menu on larger screens. JPEG, PNG or
-                WebP, up to 5MB each. Both are optional — leave them off to keep
-                the current look.
+                Add a cover photo that spans the top of your storefront — the
+                header hero on desktop and the banner on mobile. JPEG, PNG or
+                WebP, up to 5MB. Optional — leave it off for a brand-colour band.
               </p>
             </div>
             <ImageryControl
               slot="cover"
               title="Cover image"
-              description="Replaces the coloured banner across the top of your storefront. A wide, landscape photo works best."
+              description="Spans the top of your storefront. A wide, landscape photo works best; text sits over a scrim so it stays legible."
               imageUrl={venue.coverUrl}
             />
-            <div className="border-t border-line pt-6">
-              <ImageryControl
-                slot="background"
-                title="Background image"
-                description="Fills the empty space on either side of your menu on wide screens (desktop), shown softly blurred and dimmed so it reads as a calm backdrop behind your menu, checkout, order, and account pages. Almost any photo works — richer, darker images look best."
-                imageUrl={venue.backgroundUrl}
-              />
-            </div>
           </div>
         </Card>
         <p className="text-xs text-muted">

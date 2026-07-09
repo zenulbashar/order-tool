@@ -13,7 +13,6 @@ import { type SchedulingConfig } from "@/lib/schedule";
 import { formatCents, type OrderTypeValue } from "@/lib/validation";
 
 import { claimOrder } from "../account/actions";
-import { BrandBackdrop } from "../brand-backdrop";
 import { useCart } from "../cart-provider";
 import { SchedulePicker } from "../schedule-picker";
 import type { PublicVenue } from "../types";
@@ -189,13 +188,11 @@ export function CheckoutClient({
   }
 
   return (
-    <>
-      <BrandBackdrop backgroundUrl={venue.backgroundUrl} />
-      <main
-        style={brandStyle}
-        data-domain="diner"
-        className="relative mx-auto min-h-dvh max-w-2xl bg-surface lg:shadow-xl"
-      >
+    <main
+      style={brandStyle}
+      data-domain="diner"
+      className="mx-auto min-h-dvh max-w-2xl bg-surface"
+    >
       <header className="border-b border-line px-5 py-5">
         <Link
           href={`/${venue.slug}`}
@@ -360,7 +357,6 @@ export function CheckoutClient({
           Next, pay securely with Stripe.
         </p>
       </form>
-      </main>
-    </>
+    </main>
   );
 }
