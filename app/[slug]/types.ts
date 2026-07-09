@@ -13,6 +13,12 @@ export type PublicVenue = {
   name: string;
   brandColor: string;
   logoUrl: string | null;
+  // Owner-uploaded storefront brand imagery. coverUrl replaces the storefront's
+  // brand-colour cover band with a hero image; backgroundUrl fills the empty
+  // side gutters (behind the centered column) on wide screens across all diner
+  // pages. Both null by default — the storefront looks exactly as before.
+  coverUrl: string | null;
+  backgroundUrl: string | null;
   storefrontDescription: string | null;
   // Structured-data inputs (Phase 6). Public by design — they power the venue's
   // search listing via JSON-LD (see json-ld.tsx). Any field may be null, and

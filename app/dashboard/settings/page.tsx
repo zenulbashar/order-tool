@@ -4,6 +4,7 @@ import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
+import { ImageryControl } from "./imagery-control";
 import { LogoControl } from "./logo-control";
 import { NotifyToggle } from "./notify-toggle";
 import { SettingsDetailsForm } from "./settings-details-form";
@@ -29,6 +30,35 @@ export default async function SettingsPage() {
         </Card>
         <Card>
           <LogoControl logoUrl={venue.logoUrl} />
+        </Card>
+        <Card>
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                Storefront imagery
+              </h2>
+              <p className="mt-0.5 text-xs text-muted">
+                Brand your storefront with a cover photo and a backdrop that
+                fills the space beside your menu on larger screens. JPEG, PNG or
+                WebP, up to 5MB each. Both are optional — leave them off to keep
+                the current look.
+              </p>
+            </div>
+            <ImageryControl
+              slot="cover"
+              title="Cover image"
+              description="Replaces the coloured banner across the top of your storefront. A wide, landscape photo works best."
+              imageUrl={venue.coverUrl}
+            />
+            <div className="border-t border-line pt-6">
+              <ImageryControl
+                slot="background"
+                title="Background image"
+                description="Fills the empty space on either side of your menu on wide screens (desktop). Shown on your menu, checkout, order, and account pages. Keep the focus toward the edges — the centre sits behind your menu."
+                imageUrl={venue.backgroundUrl}
+              />
+            </div>
+          </div>
         </Card>
         <p className="text-xs text-muted">
           Your storefront is live at{" "}

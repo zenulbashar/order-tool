@@ -6,6 +6,7 @@ import { readableOn } from "@/app/_components/brand-contrast";
 import { getCustomer } from "@/lib/customer/auth";
 import { isReservedSlug } from "@/lib/validation";
 
+import { BrandBackdrop } from "../brand-backdrop";
 import { getPublicVenueBySlug } from "../queries";
 import { OrderHistory } from "./order-history";
 import { getCustomerOrders, getCustomerUsual } from "./queries";
@@ -56,7 +57,13 @@ export default async function AccountPage({
   } as React.CSSProperties;
 
   return (
-    <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-surface">
+    <>
+      <BrandBackdrop backgroundUrl={venue.backgroundUrl} />
+      <main
+        style={brandStyle}
+        data-domain="diner"
+        className="relative mx-auto min-h-dvh max-w-2xl bg-surface lg:shadow-xl"
+      >
       <header className="border-b border-line px-5 py-5">
         <Link
           href={`/${venue.slug}`}
@@ -84,6 +91,7 @@ export default async function AccountPage({
           linkError={linkError}
         />
       )}
-    </main>
+      </main>
+    </>
   );
 }

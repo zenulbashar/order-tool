@@ -469,6 +469,13 @@ export const logoUrlSchema = z
   )
   .transform((value) => (value.length > 0 ? value : null));
 
+/**
+ * Any owner-pasted hosted image URL (storefront cover / gutter background). Same
+ * rule as logoUrlSchema — empty → null, else an http(s) URL — reused so the
+ * brand-imagery paste paths validate identically to the logo.
+ */
+export const hostedImageUrlSchema = logoUrlSchema;
+
 /** Optional public blurb shown under the venue name on the storefront. */
 export const storefrontDescriptionSchema = z
   .string()

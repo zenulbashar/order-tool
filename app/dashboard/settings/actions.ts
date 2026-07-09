@@ -14,6 +14,7 @@ import {
 } from "@/lib/r2";
 import { requireVenue } from "@/lib/tenant";
 import {
+  hostedImageUrlSchema,
   logoUrlSchema,
   OPENING_DAYS,
   venueDetailsSchema,
@@ -260,6 +261,159 @@ export async function removeVenueLogo(): Promise<void> {
 
   revalidatePath("/dashboard/settings");
   revalidatePath(`/${venue.slug}`);
+}
+
+/* ----------------------- Storefront brand imagery ------------------------- */
+/* Two owner-uploaded images: the storefront COVER (hero band) and the diner    */
+/* BACKGROUND (fills the side gutters behind the centered column on wide         */
+/* screens). Same discipline and security as the logo above — owned by these     */
+/* dedicated actions (never the theme save), uploaded server-side to R2, type +  */
+/* size re-validated here, ownership scoped WHERE id = venue.id, old R2 objects   */
+/* cleaned up best-effort. Photographic, so a slightly larger 5MB cap than the    */
+/* logo's 2MB (well under serverActions.bodySizeLimit).                          */
+
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024; // 5MB
+type ImagerySlot = "cover" | "background";
+
+/** Read the venue's current URL for one imagery slot, or null. */
+async function currentImageUrl(
+  venueId: string,
+  slot: ImagerySlot,
+): Promise<string | null> {
+  const columns =
+    slot === "cover" ? { url: venues.coverUrl } : { url: venues.backgroundUrl };
+  const [row] = await db
+    .select(columns)
+    .from(venues)
+    .where(eq(venues.id, venueId))
+    .limit(1);
+  return row?.url ?? null;
+}
+
+/** Set one imagery slot's column (explicit branch keeps the update type-safe). */
+function setImageColumn(venueId: string, slot: ImagerySlot, url: string | null) {
+  const values = slot === "cover" ? { coverUrl: url } : { backgroundUrl: url };
+  return db.update(venues).set(values).where(eq(venues.id, venueId));
+}
+
+/** Upload a file to one imagery slot. Server-side validation is the real gate. */
+async function uploadVenueImage(
+  slot: ImagerySlot,
+  formData: FormData,
+): Promise<LogoState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const file = formData.get("image");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose an image to upload." };
+  }
+  if (file.size > IMAGE_MAX_BYTES) {
+    return { error: "Image must be 5MB or smaller." };
+  }
+  const ext = LOGO_TYPE_EXT[file.type];
+  if (!ext) {
+    return { error: "Image must be a JPEG, PNG, or WebP image." };
+  }
+
+  const previousUrl = await currentImageUrl(venue.id, slot);
+  const key = `venues/${venue.id}/${slot}/${crypto.randomUUID()}.${ext}`;
+
+  let publicUrl: string;
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    publicUrl = await uploadToR2(key, buffer, file.type);
+  } catch {
+    return { error: "Couldn't upload the image right now. Please try again." };
+  }
+
+  await setImageColumn(venue.id, slot, publicUrl);
+  await bestEffortDeleteLogo(previousUrl);
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/${venue.slug}`);
+  return {};
+}
+
+/** Point one imagery slot at a pasted hosted URL (the pre-upload path). */
+async function setVenueImageUrl(
+  slot: ImagerySlot,
+  formData: FormData,
+): Promise<LogoState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const parsed = hostedImageUrlSchema.safeParse(formData.get("imageUrl") ?? "");
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Enter a valid URL." };
+  }
+
+  const previousUrl = await currentImageUrl(venue.id, slot);
+  await setImageColumn(venue.id, slot, parsed.data);
+
+  if (previousUrl && previousUrl !== parsed.data) {
+    await bestEffortDeleteLogo(previousUrl);
+  }
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/${venue.slug}`);
+  return {};
+}
+
+/** Clear one imagery slot (reverts that surface to its default look). */
+async function removeVenueImage(slot: ImagerySlot): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const previousUrl = await currentImageUrl(venue.id, slot);
+  await setImageColumn(venue.id, slot, null);
+
+  await bestEffortDeleteLogo(previousUrl);
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath(`/${venue.slug}`);
+}
+
+// Thin per-slot server actions the imagery control binds directly. Each keeps
+// the (prev, formData) shape useActionState expects; remove is a plain action.
+export async function uploadVenueCover(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return uploadVenueImage("cover", formData);
+}
+export async function setVenueCoverUrl(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return setVenueImageUrl("cover", formData);
+}
+export async function removeVenueCover(): Promise<void> {
+  return removeVenueImage("cover");
+}
+export async function uploadVenueBackground(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return uploadVenueImage("background", formData);
+}
+export async function setVenueBackgroundUrl(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return setVenueImageUrl("background", formData);
+}
+export async function removeVenueBackground(): Promise<void> {
+  return removeVenueImage("background");
 }
 
 /**

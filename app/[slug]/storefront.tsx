@@ -7,6 +7,7 @@ import { readableOn } from "@/app/_components/brand-contrast";
 import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
 
 import { CartBar } from "./cart-bar";
+import { BrandBackdrop } from "./brand-backdrop";
 import { CartProvider, useCart } from "./cart-provider";
 import { CartReview } from "./cart-review";
 import { CategoryNav } from "./category-nav";
@@ -205,20 +206,32 @@ function StorefrontInner({
   );
 
   return (
-    <div
-      style={brandStyle} data-domain="diner"
-      className="mx-auto min-h-dvh max-w-3xl bg-surface pb-24"
-    >
-      {/* Cover band — a decorative warm glow in the venue's OWN --brand colour
-          (sign-in's color-mix technique). No photo or fabricated data; a real
-          venue cover image could later fill this same band as an <img>. */}
+    <>
+      <BrandBackdrop backgroundUrl={venue.backgroundUrl} />
       <div
-        className="h-32 w-full sm:h-40"
-        style={{
-          background:
-            "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-forest-deep)",
-        }}
-      />
+        style={brandStyle} data-domain="diner"
+        className="relative mx-auto min-h-dvh max-w-3xl bg-surface pb-24 lg:shadow-xl"
+      >
+      {venue.coverUrl ? (
+        // Owner-supplied cover image fills the band. Owner-supplied URL; next/image
+        // would need remote config (house rule).
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={venue.coverUrl}
+          alt=""
+          className="h-32 w-full object-cover sm:h-40"
+        />
+      ) : (
+        // Default cover band — a decorative warm glow in the venue's OWN --brand
+        // colour (sign-in's color-mix technique). No photo or fabricated data.
+        <div
+          className="h-32 w-full sm:h-40"
+          style={{
+            background:
+              "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-forest-deep)",
+          }}
+        />
+      )}
       {/* Only the LOGO overlaps the band (-mt-10). The name + description sit
           below the band in normal flow on the cream surface, fully readable. */}
       <header className="px-5 pb-4">
@@ -400,6 +413,7 @@ function StorefrontInner({
           onSelectItem={setActiveItem}
         />
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }
