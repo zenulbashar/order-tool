@@ -40,6 +40,10 @@ export const getPublicVenueBySlug = cache(
         name: venues.name,
         brandColor: venues.brandColor,
         logoUrl: venues.logoUrl,
+        // Owner-uploaded brand imagery (cover band + gutter background). Both
+        // nullable; the storefront/diner pages render their prior look when unset.
+        coverUrl: venues.coverUrl,
+        backgroundUrl: venues.backgroundUrl,
         storefrontDescription: venues.storefrontDescription,
         // Structured-data inputs (Phase 6) — public, consumed by the JSON-LD on
         // the storefront. Selected here so generateMetadata + the page + the

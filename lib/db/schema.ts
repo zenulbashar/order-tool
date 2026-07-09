@@ -148,6 +148,14 @@ export const venues = pgTable(
     // only (no upload yet). storefront_description is optional public copy.
     brandColor: text("brand_color").notNull().default("#111827"),
     logoUrl: text("logo_url"),
+    // Storefront brand imagery (owner-uploaded, both nullable — unset ⇒ no
+    // change to today's look). cover_url replaces the storefront's brand-colour
+    // cover band with a real hero image; background_url is a full-bleed image
+    // revealed in the empty side gutters behind the centered menu column on wide
+    // screens (all diner pages). Written server-side to R2 by the dedicated
+    // imagery actions, mirroring logo_url — never by the theme save.
+    coverUrl: text("cover_url"),
+    backgroundUrl: text("background_url"),
     storefrontDescription: text("storefront_description"),
     // Stripe Connect (Phase 2c). The venue connects its OWN Express account;
     // customers are charged directly on it and the platform takes a per-order
