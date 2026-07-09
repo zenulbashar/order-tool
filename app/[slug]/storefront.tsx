@@ -11,7 +11,7 @@ import { CartProvider, useCart } from "./cart-provider";
 import { CartRail } from "./cart-rail";
 import { CartReview } from "./cart-review";
 import { CategoryNav } from "./category-nav";
-import { ConciergePanel } from "./concierge/concierge-panel";
+import { ConciergeLauncher } from "./concierge-launcher";
 import { DietaryDisclaimer, DietaryFilter } from "./dietary-filter";
 import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
@@ -83,6 +83,11 @@ function StorefrontInner({
   // input. Separate from `query` (the filter state) — toggling this never
   // touches the search/filter logic below.
   const [searchExpanded, setSearchExpanded] = useState(false);
+  // Concierge open-state — drives the desktop FAB overlay (mobile shows the panel
+  // inline always). Opened by the FAB, the cart-rail nudge, and search handoff.
+  const [conciergeOpen, setConciergeOpen] = useState(false);
+  // Desktop "Dietary filters" popover (the mobile chip row is always visible).
+  const [dietaryOpen, setDietaryOpen] = useState(false);
   // Search no-results → concierge handoff: each nonce bump asks the mounted
   // ConciergePanel to open with the text prefilled (never auto-submitted).
   const [conciergePrefill, setConciergePrefill] = useState({
@@ -366,27 +371,56 @@ function StorefrontInner({
               ) : null}
             </div>
 
-            {/* Desktop: underline tab strip + dietary chips on the right */}
-            <div className="mx-auto hidden max-w-[1280px] px-6 lg:block">
-              <div className="flex items-center justify-between gap-4">
-                {navCategories.length > 0 ? (
-                  <CategoryNav categories={navCategories} variant="tabs" />
-                ) : (
-                  <span />
-                )}
-                {availableTags.length > 0 ? (
-                  <div className="shrink-0 py-2">
-                    <DietaryFilter
-                      available={availableTags}
-                      selected={activeTags}
-                      onToggle={toggleTag}
-                    />
-                  </div>
-                ) : null}
-              </div>
+            {/* Desktop: underline tab strip + a single aligned "Dietary
+                filters" pill that opens a popover (chips + the life-safety
+                disclaimer), matching the design. */}
+            <div className="mx-auto hidden max-w-[1280px] items-center justify-between gap-4 px-6 lg:flex">
+              {navCategories.length > 0 ? (
+                <CategoryNav categories={navCategories} variant="tabs" />
+              ) : (
+                <span />
+              )}
               {availableTags.length > 0 ? (
-                <div className="pb-2">
-                  <DietaryDisclaimer />
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setDietaryOpen((open) => !open)}
+                    aria-expanded={dietaryOpen}
+                    className={`inline-flex items-center gap-1.5 rounded-pill border px-3.5 py-2 text-xs font-semibold transition ${
+                      activeTags.length > 0
+                        ? "border-transparent text-[var(--action-contrast)]"
+                        : "border-line-strong bg-surface-elevated text-ink hover:bg-hover-secondary"
+                    }`}
+                    style={
+                      activeTags.length > 0
+                        ? { backgroundColor: "var(--action)" }
+                        : undefined
+                    }
+                  >
+                    <SlidersIcon />
+                    Dietary filters
+                    {activeTags.length > 0 ? ` · ${activeTags.length}` : ""}
+                  </button>
+                  {dietaryOpen ? (
+                    <>
+                      {/* click-away */}
+                      <button
+                        type="button"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                        onClick={() => setDietaryOpen(false)}
+                        className="fixed inset-0 z-20 cursor-default"
+                      />
+                      <div className="absolute right-0 top-full z-30 mt-2 w-72 space-y-3 rounded-card border border-sand bg-surface-elevated p-3 shadow-card">
+                        <DietaryFilter
+                          available={availableTags}
+                          selected={activeTags}
+                          onToggle={toggleTag}
+                        />
+                        <DietaryDisclaimer />
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -401,15 +435,15 @@ function StorefrontInner({
                 the menu tiles, never a direct cart write. The CartRail nudge links
                 here via #concierge. */}
             {conciergeEnabled && menu.length > 0 ? (
-              <div id="concierge" className="scroll-mt-24 pb-2 pt-4 lg:pt-1">
-                <ConciergePanel
-                  slug={venue.slug}
-                  menu={menu}
-                  onSelectItem={setActiveItem}
-                  onOpenCart={() => setCartOpen(true)}
-                  prefill={conciergePrefill}
-                />
-              </div>
+              <ConciergeLauncher
+                slug={venue.slug}
+                menu={menu}
+                onSelectItem={setActiveItem}
+                onOpenCart={() => setCartOpen(true)}
+                prefill={conciergePrefill}
+                open={conciergeOpen}
+                onOpenChange={setConciergeOpen}
+              />
             ) : null}
 
             <div className="space-y-8 py-6 lg:py-0">
@@ -426,12 +460,13 @@ function StorefrontInner({
                     id: category.id,
                     name: category.name,
                   }))}
-                  onAskConcierge={(text) =>
+                  onAskConcierge={(text) => {
                     setConciergePrefill((current) => ({
                       text,
                       nonce: current.nonce + 1,
-                    }))
-                  }
+                    }));
+                    setConciergeOpen(true);
+                  }}
                   onClearFilters={clearFilters}
                   onGoToCategory={(id) => {
                     pendingCategoryRef.current = id;
@@ -471,6 +506,7 @@ function StorefrontInner({
               slug={venue.slug}
               tableLabel={tableLabel}
               conciergeEnabled={conciergeEnabled}
+              onAskConcierge={() => setConciergeOpen(true)}
             />
           ) : null}
         </div>
@@ -519,6 +555,26 @@ function PersonIcon() {
     >
       <circle cx="12" cy="8" r="3.5" />
       <path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5" />
+    </svg>
+  );
+}
+
+function SlidersIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-3.5 w-3.5"
+    >
+      <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h8M16 18h4" />
+      <circle cx="16" cy="6" r="2" />
+      <circle cx="8" cy="12" r="2" />
+      <circle cx="14" cy="18" r="2" />
     </svg>
   );
 }
