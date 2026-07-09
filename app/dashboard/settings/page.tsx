@@ -54,7 +54,7 @@ export default async function SettingsPage() {
               <ImageryControl
                 slot="background"
                 title="Background image"
-                description="Fills the empty space on either side of your menu on wide screens (desktop). Shown on your menu, checkout, order, and account pages. Keep the focus toward the edges — the centre sits behind your menu."
+                description="Fills the empty space on either side of your menu on wide screens (desktop), shown softly blurred and dimmed so it reads as a calm backdrop behind your menu, checkout, order, and account pages. Almost any photo works — richer, darker images look best."
                 imageUrl={venue.backgroundUrl}
               />
             </div>

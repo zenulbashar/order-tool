@@ -16,8 +16,10 @@ import type { CSSProperties } from "react";
  *  - The centered column keeps its opaque `bg-surface`, so it MASKS the image's
  *    center for free — one full-bleed image works for any aspect ratio and the
  *    menu text never sits on the photo.
- *  - A literal dark scrim (`bg-black/25`, not a theme token that flips light in
- *    dark mode) knocks the image back so it stays ambient, never loud.
+ *  - Heavy blur + a strong literal dark scrim (`bg-black/55`, not a theme token
+ *    that flips light in dark mode) turn even a busy, bright photo into calm
+ *    ambient texture so the menu always stays the focus. `scale-110` hides the
+ *    feathered edges the blur would otherwise leave inside the viewport.
  *
  * Returns null when the venue has no background image — the default look.
  * Plain (directive-free) component so it renders in both the client storefront
@@ -42,9 +44,9 @@ export function BrandBackdrop({
       <img
         src={backgroundUrl}
         alt=""
-        className="h-full w-full object-cover"
+        className="h-full w-full scale-110 object-cover blur-2xl"
       />
-      <div className="absolute inset-0 bg-black/25" />
+      <div className="absolute inset-0 bg-black/55" />
     </div>
   );
 }
