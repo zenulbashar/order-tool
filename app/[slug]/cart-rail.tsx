@@ -22,10 +22,12 @@ export function CartRail({
   slug,
   tableLabel,
   conciergeEnabled,
+  onAskConcierge,
 }: {
   slug: string;
   tableLabel: string;
   conciergeEnabled: boolean;
+  onAskConcierge: () => void;
 }) {
   const { displayLines, subtotalCents, count } = useCart();
 
@@ -122,16 +124,17 @@ export function CartRail({
           )}
         </div>
 
-        {/* Concierge nudge — scrolls to the inline concierge panel below the
-            header. Only shown when the concierge is available for this venue. */}
+        {/* Concierge nudge — opens the floating concierge. Only shown when the
+            concierge is available for this venue. */}
         {conciergeEnabled ? (
-          <a
-            href="#concierge"
-            className="block rounded-card border border-[#eccbb8] bg-[#f7e7de] px-4 py-3 text-xs text-[var(--color-accent-deep)] transition hover:brightness-[0.98]"
+          <button
+            type="button"
+            onClick={onAskConcierge}
+            className="block w-full rounded-card border border-[#eccbb8] bg-[#f7e7de] px-4 py-3 text-left text-xs text-[var(--color-accent-deep)] transition hover:brightness-[0.98]"
           >
             <span className="mr-1 text-accent">✦</span>
             Not sure what to get? The concierge can build an order from a craving.
-          </a>
+          </button>
         ) : null}
       </div>
     </aside>
