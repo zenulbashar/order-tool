@@ -206,156 +206,197 @@ export function CheckoutClient({
         <p className="text-sm text-muted">{venue.name}</p>
       </header>
 
-      <section className="px-5 py-5">
-        <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
-          Your order
-        </h2>
-        <ul className="mt-2 divide-y divide-line">
-          {displayLines.map((line) => (
-            <li
-              key={line.lineId}
-              className="flex items-start justify-between gap-3 py-2"
-            >
-              <div className="min-w-0">
-                <p className="text-sm text-ink">
-                  <span className="text-muted">{line.quantity}×</span>{" "}
-                  {line.itemName}
-                  {line.variantName ? ` (${line.variantName})` : ""}
-                </p>
-                {line.options.length > 0 ? (
-                  <p className="mt-0.5 text-xs text-muted">
-                    {line.options.map((o) => o.name).join(", ")}
-                  </p>
-                ) : null}
-              </div>
-              <span className="shrink-0 text-sm text-ink">
-                ${formatCents(line.lineCents)}
+      {/* Desktop reflows to two columns (form left, sticky order + pay summary
+          right); mobile is the original single column — summary, fields, then
+          the CTA at the bottom. One <form> wraps both so a single submit stays,
+          and the CTA is duplicated per breakpoint (never the inputs, so no
+          duplicate ids). */}
+      <form onSubmit={handleSubmit}>
+        <div className="px-5 py-5 lg:mx-auto lg:grid lg:max-w-[900px] lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6 lg:px-6">
+          {/* Order summary + pay — top on mobile, sticky right column on desktop */}
+          <aside className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-6 lg:rounded-card lg:border lg:border-line lg:bg-surface-elevated lg:p-5 lg:shadow-card">
+            <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+              Your order
+            </h2>
+            <ul className="mt-2 divide-y divide-line">
+              {displayLines.map((line) => (
+                <li
+                  key={line.lineId}
+                  className="flex items-start justify-between gap-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm text-ink">
+                      <span className="text-muted">{line.quantity}×</span>{" "}
+                      {line.itemName}
+                      {line.variantName ? ` (${line.variantName})` : ""}
+                    </p>
+                    {line.options.length > 0 ? (
+                      <p className="mt-0.5 text-xs text-muted">
+                        {line.options.map((o) => o.name).join(", ")}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span className="shrink-0 text-sm text-ink">
+                    ${formatCents(line.lineCents)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
+              <span className="font-medium text-ink">Total</span>
+              <span className="font-display font-semibold text-ink">
+                ${formatCents(subtotalCents)}
               </span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
-          <span className="font-medium text-ink">Total</span>
-          <span className="font-display font-semibold text-ink">
-            ${formatCents(subtotalCents)}
-          </span>
+            </div>
+            {venue.taxEnabled && venue.taxRateBps > 0 ? (
+              <p className="mt-1 text-right text-xs text-muted">
+                incl. {venue.taxLabel} $
+                {formatCents(
+                  Math.round(
+                    (subtotalCents * venue.taxRateBps) /
+                      (10000 + venue.taxRateBps),
+                  ),
+                )}
+              </p>
+            ) : null}
+
+            {/* Desktop CTA (mobile CTA sits at the foot of the form below). */}
+            <div className="mt-4 hidden lg:block">
+              {error ? (
+                <p
+                  className="mb-2 text-sm text-[var(--color-warm)]"
+                  role="alert"
+                >
+                  {error}
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                variant="primary"
+                loading={pending}
+                loadingLabel="Starting payment…"
+                className="w-full"
+              >
+                {`Continue to payment · $${formatCents(subtotalCents)}`}
+              </Button>
+              <p className="mt-2 text-center text-xs text-muted">
+                Next, pay securely with Stripe.
+              </p>
+            </div>
+          </aside>
+
+          {/* Details — below the summary on mobile, left column on desktop. */}
+          <div className="mt-5 space-y-5 lg:col-start-1 lg:row-start-1 lg:mt-0">
+            <div className="space-y-1.5">
+              <span className="block font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+                Order type
+              </span>
+              <Segmented
+                label="Order type"
+                value={orderType}
+                onChange={handleOrderType}
+                options={ORDER_TYPE_OPTIONS}
+              />
+            </div>
+
+            {orderType === "dine_in" ? (
+              <Field label="Table number" htmlFor="table">
+                <Input
+                  id="table"
+                  type="text"
+                  value={tableLabel}
+                  onChange={(event) => setTableLabel(event.target.value)}
+                  maxLength={40}
+                  required
+                  placeholder="e.g. 12"
+                />
+              </Field>
+            ) : null}
+
+            {orderType === "pickup" ? (
+              <SchedulePicker
+                scheduling={scheduling}
+                scheduledFor={scheduledFor}
+                onScheduledFor={setScheduledFor}
+                nowMs={nowMs}
+              />
+            ) : null}
+
+            <Field label="Name" htmlFor="name">
+              <Input
+                id="name"
+                type="text"
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                maxLength={80}
+                required
+                autoComplete="name"
+              />
+            </Field>
+
+            <Field
+              label={
+                <>
+                  Phone <span className="font-normal text-muted">(optional)</span>
+                </>
+              }
+              htmlFor="phone"
+            >
+              <Input
+                id="phone"
+                type="tel"
+                value={customerPhone}
+                onChange={(event) => setCustomerPhone(event.target.value)}
+                maxLength={30}
+                autoComplete="tel"
+              />
+            </Field>
+
+            <Field
+              label={
+                <>
+                  Order notes{" "}
+                  <span className="font-normal text-muted">(optional)</span>
+                </>
+              }
+              htmlFor="notes"
+            >
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                maxLength={280}
+                rows={2}
+                placeholder="Special requests, e.g. no onion"
+                className="resize-none"
+              />
+            </Field>
+
+            {/* Mobile CTA (desktop CTA lives in the summary aside). */}
+            <div className="lg:hidden">
+              {error ? (
+                <p
+                  className="mb-2 text-sm text-[var(--color-warm)]"
+                  role="alert"
+                >
+                  {error}
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                variant="primary"
+                loading={pending}
+                loadingLabel="Starting payment…"
+                className="w-full"
+              >
+                {`Continue to payment · $${formatCents(subtotalCents)}`}
+              </Button>
+              <p className="mt-2 text-center text-xs text-muted">
+                Next, pay securely with Stripe.
+              </p>
+            </div>
+          </div>
         </div>
-        {venue.taxEnabled && venue.taxRateBps > 0 ? (
-          <p className="mt-1 text-right text-xs text-muted">
-            incl. {venue.taxLabel} $
-            {formatCents(
-              Math.round(
-                (subtotalCents * venue.taxRateBps) / (10000 + venue.taxRateBps),
-              ),
-            )}
-          </p>
-        ) : null}
-      </section>
-
-      <form onSubmit={handleSubmit} className="space-y-5 px-5 pb-10">
-        <div className="space-y-1.5">
-          <span className="block font-mono text-[11px] font-bold uppercase tracking-wider text-label">
-            Order type
-          </span>
-          <Segmented
-            label="Order type"
-            value={orderType}
-            onChange={handleOrderType}
-            options={ORDER_TYPE_OPTIONS}
-          />
-        </div>
-
-        {orderType === "dine_in" ? (
-          <Field label="Table number" htmlFor="table">
-            <Input
-              id="table"
-              type="text"
-              value={tableLabel}
-              onChange={(event) => setTableLabel(event.target.value)}
-              maxLength={40}
-              required
-              placeholder="e.g. 12"
-            />
-          </Field>
-        ) : null}
-
-        {orderType === "pickup" ? (
-          <SchedulePicker
-            scheduling={scheduling}
-            scheduledFor={scheduledFor}
-            onScheduledFor={setScheduledFor}
-            nowMs={nowMs}
-          />
-        ) : null}
-
-        <Field label="Name" htmlFor="name">
-          <Input
-            id="name"
-            type="text"
-            value={customerName}
-            onChange={(event) => setCustomerName(event.target.value)}
-            maxLength={80}
-            required
-            autoComplete="name"
-          />
-        </Field>
-
-        <Field
-          label={
-            <>
-              Phone <span className="font-normal text-muted">(optional)</span>
-            </>
-          }
-          htmlFor="phone"
-        >
-          <Input
-            id="phone"
-            type="tel"
-            value={customerPhone}
-            onChange={(event) => setCustomerPhone(event.target.value)}
-            maxLength={30}
-            autoComplete="tel"
-          />
-        </Field>
-
-        <Field
-          label={
-            <>
-              Order notes{" "}
-              <span className="font-normal text-muted">(optional)</span>
-            </>
-          }
-          htmlFor="notes"
-        >
-          <Textarea
-            id="notes"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            maxLength={280}
-            rows={2}
-            placeholder="Special requests, e.g. no onion"
-            className="resize-none"
-          />
-        </Field>
-
-        {error ? (
-          <p className="text-sm text-[var(--color-warm)]" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <Button
-          type="submit"
-          variant="primary"
-          loading={pending}
-          loadingLabel="Starting payment…"
-          className="w-full"
-        >
-          {`Continue to payment · $${formatCents(subtotalCents)}`}
-        </Button>
-        <p className="text-center text-xs text-muted">
-          Next, pay securely with Stripe.
-        </p>
       </form>
     </main>
   );

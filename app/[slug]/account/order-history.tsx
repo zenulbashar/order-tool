@@ -149,7 +149,7 @@ export function OrderHistory({
           <h2 className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
             Earlier
           </h2>
-          <ul className="mt-2 space-y-2.5">
+          <ul className="mt-2 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
             {orders.map((order) => {
               const reordering = pendingToken === order.publicToken;
               return (

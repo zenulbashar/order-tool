@@ -291,7 +291,7 @@ export default async function OrderConfirmationPage({
     <main
       style={brandStyle}
       data-domain="diner"
-      className="mx-auto min-h-dvh max-w-2xl bg-surface"
+      className="mx-auto min-h-dvh max-w-2xl bg-surface lg:max-w-[720px]"
     >
       {/* Status banner — paid / processing / failed must each be unmistakable
           and, for the unhappy paths, calm and non-alarming. */}
