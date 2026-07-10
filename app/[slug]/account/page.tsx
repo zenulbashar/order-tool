@@ -59,7 +59,7 @@ export default async function AccountPage({
     <main
       style={brandStyle}
       data-domain="diner"
-      className="mx-auto min-h-dvh max-w-2xl bg-surface"
+      className="mx-auto min-h-dvh max-w-2xl bg-surface lg:max-w-[920px]"
     >
       <header className="border-b border-line px-5 py-5">
         <Link
