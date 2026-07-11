@@ -25,6 +25,8 @@ export default async function SettingsPage() {
             settings={{
               brandColor: venue.brandColor,
               textColor: venue.brandTextColor,
+              announcement: venue.announcement,
+              instagramUrl: venue.instagramUrl,
               storefrontDescription: venue.storefrontDescription,
             }}
           />

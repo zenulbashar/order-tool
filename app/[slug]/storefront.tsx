@@ -16,7 +16,9 @@ import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
 import { RecommendationsProvider } from "./recommendations";
+import { AnnouncementBar } from "./announcement-bar";
 import { dinerBrandStyle } from "./brand-style";
+import { CategoryTiles } from "./category-tiles";
 import { StorefrontFooter } from "./storefront-footer";
 import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
@@ -226,6 +228,19 @@ function StorefrontInner({
     [visibleMenu],
   );
 
+  // Visual "browse by category" tiles: each category's first item photo, or null
+  // (the tile then shows a brand-tinted monogram). Derived from the FULL menu.
+  const categoryTiles = useMemo(
+    () =>
+      menu.map((category) => ({
+        id: category.id,
+        name: category.name,
+        image:
+          category.items.find((item) => item.imageUrl)?.imageUrl ?? null,
+      })),
+    [menu],
+  );
+
   const visibleItemCount = useMemo(
     () =>
       visibleMenu.reduce((total, category) => total + category.items.length, 0),
@@ -239,6 +254,9 @@ function StorefrontInner({
         data-domain="diner"
         className="min-h-dvh bg-surface pb-24 lg:pb-0"
       >
+        {/* Owner promo bar — very top, scrolls away, dismissible. */}
+        <AnnouncementBar slug={venue.slug} text={venue.announcement} />
+
         {/* ============ Desktop app bar (lg+) — centered brand logo, search on
             the right (big-brand hospitality pattern). Sticky so the logo stays a
             one-click "home" (scroll to top) while browsing. ============ */}
@@ -508,6 +526,14 @@ function StorefrontInner({
                 prefill={conciergePrefill}
                 onOpenConcierge={openConcierge}
               />
+            ) : null}
+
+            {/* Visual "browse by category" tiles — desktop, full browse view only
+                (hidden while searching/filtering, since sections change). */}
+            {!isFiltering ? (
+              <div className="hidden pt-1 lg:block">
+                <CategoryTiles categories={categoryTiles} onJump={scrollToId} />
+              </div>
             ) : null}
 
             <div className="space-y-8 py-6 lg:py-0">

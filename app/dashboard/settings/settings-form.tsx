@@ -4,6 +4,7 @@ import { useActionState, useRef, useState } from "react";
 
 import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
+import { Input } from "@/app/_components/input";
 import { Textarea } from "@/app/_components/textarea";
 
 import { updateVenueSettings, type VenueSettingsState } from "./actions";
@@ -21,6 +22,8 @@ const BRAND_PRESETS = ["#f4b43c", "#e2553a", "#13301f", "#3fa66a", "#635bff"];
 type VenueSettings = {
   brandColor: string;
   textColor: string | null;
+  announcement: string | null;
+  instagramUrl: string | null;
   storefrontDescription: string | null;
 };
 
@@ -155,6 +158,43 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
             placeholder="A short welcome line shown under your venue name."
           />
         </label>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="block">
+          <span className={microLabel}>
+            Announcement bar{" "}
+            <span className="font-normal normal-case text-muted">(optional)</span>
+          </span>
+          <Input
+            name="announcement"
+            maxLength={140}
+            defaultValue={settings.announcement ?? ""}
+            placeholder="e.g. Order your cake online — pick up in store"
+          />
+        </label>
+        <p className="text-xs text-muted">
+          A slim promo bar shown across the top of your storefront. Leave blank
+          to hide it.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="block">
+          <span className={microLabel}>
+            Instagram{" "}
+            <span className="font-normal normal-case text-muted">(optional)</span>
+          </span>
+          <Input
+            name="instagramUrl"
+            maxLength={200}
+            defaultValue={settings.instagramUrl ?? ""}
+            placeholder="@yourvenue or instagram.com/yourvenue"
+          />
+        </label>
+        <p className="text-xs text-muted">
+          Adds a &ldquo;Follow us&rdquo; link to your storefront footer.
+        </p>
       </div>
 
       {state.error ? (
