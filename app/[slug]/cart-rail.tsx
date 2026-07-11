@@ -41,7 +41,8 @@ export function CartRail({
       aria-label="Your order"
       className="hidden lg:block"
     >
-      <div className="sticky top-[76px] max-h-[calc(100dvh-96px)] space-y-3 overflow-y-auto pb-2">
+      {/* Sits below the sticky app bar (64px) + category strip (~56px). */}
+      <div className="sticky top-[136px] max-h-[calc(100dvh-156px)] space-y-3 overflow-y-auto pb-2">
         <div className="rounded-card border border-sand bg-surface-elevated shadow-card">
           <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
             <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
@@ -107,12 +108,14 @@ export function CartRail({
                     ${formatCents(subtotalCents)}
                   </span>
                 </div>
+                {/* Ink CTA — follows the venue's text colour (two-colour rule:
+                    no Prompt2Eat forest/amber on venue pages). */}
                 <Link
                   href={checkoutHref}
-                  className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-[var(--color-forest)] px-4 py-3.5 text-sm font-semibold text-surface transition hover:-translate-y-px hover:shadow-lift"
+                  className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-ink px-4 py-3.5 text-sm font-semibold text-surface transition hover:-translate-y-px hover:shadow-lift"
                 >
                   <span>Checkout</span>
-                  <span className="font-display text-accent">
+                  <span className="font-display">
                     ${formatCents(subtotalCents)}
                   </span>
                 </Link>

@@ -10,10 +10,16 @@ import {
   type LogoState,
   removeVenueBackground,
   removeVenueCover,
+  removeVenueCover2,
+  removeVenueCover3,
   setVenueBackgroundUrl,
+  setVenueCover2Url,
+  setVenueCover3Url,
   setVenueCoverUrl,
   uploadVenueBackground,
   uploadVenueCover,
+  uploadVenueCover2,
+  uploadVenueCover3,
 } from "./actions";
 
 /**
@@ -34,13 +40,23 @@ const microLabel =
   "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
 const initialState: LogoState = {};
 
-type Slot = "cover" | "background";
+type Slot = "cover" | "cover2" | "cover3" | "background";
 
 const ACTIONS = {
   cover: {
     upload: uploadVenueCover,
     setUrl: setVenueCoverUrl,
     remove: removeVenueCover,
+  },
+  cover2: {
+    upload: uploadVenueCover2,
+    setUrl: setVenueCover2Url,
+    remove: removeVenueCover2,
+  },
+  cover3: {
+    upload: uploadVenueCover3,
+    setUrl: setVenueCover3Url,
+    remove: removeVenueCover3,
   },
   background: {
     upload: uploadVenueBackground,

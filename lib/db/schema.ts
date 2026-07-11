@@ -147,6 +147,11 @@ export const venues = pgTable(
     // neutral default so existing rows backfill safely. logo_url is a URL field
     // only (no upload yet). storefront_description is optional public copy.
     brandColor: text("brand_color").notNull().default("#111827"),
+    // Optional venue TEXT colour (the diner side's two-colour system: --brand +
+    // this). NULL = automatic (the shared ink default) — the storefront only
+    // overrides --color-ink when the owner explicitly set one. Auto-derivation
+    // from the logo applies to brand_color at upload time, never this.
+    brandTextColor: text("brand_text_color"),
     logoUrl: text("logo_url"),
     // Storefront brand imagery (owner-uploaded, both nullable — unset ⇒ no
     // change to today's look). cover_url replaces the storefront's brand-colour
@@ -155,6 +160,12 @@ export const venues = pgTable(
     // screens (all diner pages). Written server-side to R2 by the dedicated
     // imagery actions, mirroring logo_url — never by the theme save.
     coverUrl: text("cover_url"),
+    // Two more optional hero slots — the desktop storefront hero rotates through
+    // cover_url → cover_url_2 → cover_url_3 (NULLs skipped). Additive; the
+    // mobile band keeps using cover_url alone. background_url is retired from
+    // the UI but the column stays (no destructive migration).
+    coverUrl2: text("cover_url_2"),
+    coverUrl3: text("cover_url_3"),
     backgroundUrl: text("background_url"),
     storefrontDescription: text("storefront_description"),
     // Stripe Connect (Phase 2c). The venue connects its OWN Express account;

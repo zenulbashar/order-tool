@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { readableOn } from "@/app/_components/brand-contrast";
 import { type DietaryTag, normalizeDietaryTags } from "@/lib/validation";
 
 import { CartBar } from "./cart-bar";
@@ -17,6 +16,7 @@ import { ItemCard } from "./item-card";
 import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
 import { RecommendationsProvider } from "./recommendations";
+import { dinerBrandStyle } from "./brand-style";
 import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
 import { SearchEmptyState } from "./search-empty-state";
@@ -118,10 +118,12 @@ function StorefrontInner({
     setConciergePrefill((current) => ({ text: "", nonce: current.nonce + 1 }));
   }
 
-  const brandStyle = {
-    "--brand": venue.brandColor,
-    "--brand-contrast": readableOn(venue.brandColor),
-  } as React.CSSProperties;
+  // Two-colour venue theming (--brand + optional --color-ink override).
+  const brandStyle = dinerBrandStyle(venue);
+  // Desktop hero rotation: the non-empty of up to three owner photos.
+  const heroImages = [venue.coverUrl, venue.coverUrl2, venue.coverUrl3].filter(
+    (url): url is string => Boolean(url),
+  );
 
   // The dietary tags actually in use across this venue's menu, in canonical
   // order — only these become filter chips, so there are never dead chips.
@@ -222,44 +224,56 @@ function StorefrontInner({
         data-domain="diner"
         className="min-h-dvh bg-surface pb-24 lg:pb-12"
       >
-        {/* ============ Desktop app bar (lg+) — full-width shell ============ */}
-        <div className="hidden border-b border-sand bg-surface-elevated lg:block">
-          <div className="mx-auto flex h-[66px] max-w-[1280px] items-center gap-4 px-6">
-            <div className="flex shrink-0 items-center gap-2.5">
+        {/* ============ Desktop app bar (lg+) — centered brand logo, search on
+            the right (big-brand hospitality pattern). Sticky so the logo stays a
+            one-click "home" (scroll to top) while browsing. ============ */}
+        <div className="hidden border-b border-sand bg-surface-elevated lg:sticky lg:top-0 lg:z-30 lg:block">
+          <div className="relative mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
+            {/* Left: venue name (kept small — the hero carries the identity). */}
+            <span className="max-w-[280px] truncate text-sm font-semibold text-ink">
+              {venue.name}
+            </span>
+
+            {/* Center: the brand logo, a scroll-to-top "home". */}
+            <button
+              type="button"
+              onClick={() =>
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }
+              aria-label={`${venue.name} — back to top`}
+              className="absolute left-1/2 -translate-x-1/2"
+            >
               <BrandTile
                 venue={venue}
-                sizeClass="h-[38px] w-[38px]"
+                sizeClass="h-10 w-10"
                 radiusClass="rounded-[11px]"
                 textClass="text-base"
               />
-              <span className="max-w-[220px] truncate font-display text-[19px] font-extrabold tracking-tight text-ink">
-                {venue.name}
-              </span>
-            </div>
-            {menu.length > 0 ? (
-              <div className="mx-auto w-full max-w-[420px]">
-                <MenuSearch
-                  expanded
-                  onExpand={() => setSearchExpanded(true)}
-                  onCollapse={() => setSearchExpanded(false)}
-                  value={query}
-                  onChange={setQuery}
-                  resultCount={isSearching ? visibleItemCount : null}
-                />
-              </div>
-            ) : (
-              <div className="flex-1" />
-            )}
+            </button>
+
+            {/* Right: search lens (expands to an input), context, account. */}
             <div className="flex shrink-0 items-center gap-3">
               {tableLabel.trim() ? (
                 <span className="rounded-pill bg-[var(--color-success)]/12 px-3 py-1.5 text-xs font-semibold text-success-deep">
                   Dine-in · Table {tableLabel.trim()}
                 </span>
               ) : null}
+              {menu.length > 0 ? (
+                <div className={searchOpen ? "w-72" : ""}>
+                  <MenuSearch
+                    expanded={searchOpen}
+                    onExpand={() => setSearchExpanded(true)}
+                    onCollapse={() => setSearchExpanded(false)}
+                    value={query}
+                    onChange={setQuery}
+                    resultCount={isSearching ? visibleItemCount : null}
+                  />
+                </div>
+              ) : null}
               <Link
                 href={`/${venue.slug}/account`}
                 aria-label="Your orders"
-                className="flex h-[38px] w-[38px] items-center justify-center rounded-pill bg-sand text-muted transition hover:text-ink"
+                className="flex h-10 w-10 items-center justify-center rounded-pill bg-sand text-muted transition hover:text-ink"
               >
                 <PersonIcon />
               </Link>
@@ -267,9 +281,9 @@ function StorefrontInner({
           </div>
         </div>
 
-        {/* ============ Desktop hero (lg+) ============ */}
+        {/* ============ Desktop hero (lg+) — full-page rotating imagery ============ */}
         <div className="hidden lg:block">
-          <StorefrontHero venue={venue} />
+          <StorefrontHero venue={venue} images={heroImages} />
         </div>
 
         {/* ============ Mobile header (below lg) — unchanged ============ */}
@@ -334,7 +348,7 @@ function StorefrontInner({
 
         {/* ============ Sticky category / search strip ============ */}
         {menu.length > 0 ? (
-          <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur lg:bg-surface-elevated/95">
+          <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur lg:top-16 lg:bg-surface-elevated/95">
             {/* Mobile: search + dietary chips + disclaimer + pill nav (unchanged) */}
             <div className="lg:hidden">
               <div className="space-y-2 px-5 pb-3 pt-3">
@@ -432,7 +446,10 @@ function StorefrontInner({
         ) : null}
 
         {/* ============ Body: inner-capped grid (menu · cart rail) ============ */}
-        <div className="mx-auto w-full max-w-[1280px] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7">
+        <div
+          id="menu-top"
+          className="mx-auto w-full max-w-[1280px] scroll-mt-[124px] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7"
+        >
           <div className="min-w-0">
             {/* AI ordering concierge (#12). Proposes items; tapping one routes
                 through setActiveItem -> ItemModifierSheet -> addItem, exactly like

@@ -24,6 +24,7 @@ export default async function SettingsPage() {
           <SettingsForm
             settings={{
               brandColor: venue.brandColor,
+              textColor: venue.brandTextColor,
               storefrontDescription: venue.storefrontDescription,
             }}
           />
@@ -38,17 +39,34 @@ export default async function SettingsPage() {
                 Storefront imagery
               </h2>
               <p className="mt-0.5 text-xs text-muted">
-                Add a cover photo that spans the top of your storefront — the
-                header hero on desktop and the banner on mobile. JPEG, PNG or
-                WebP, up to 5MB. Optional — leave it off for a brand-colour band.
+                Up to three hero photos. On desktop they fill the top of your
+                storefront and rotate; on mobile the first one is the banner.
+                Wide, landscape shots work best — your venue name sits over a
+                scrim so it stays readable. JPEG, PNG or WebP, up to 5MB each.
               </p>
             </div>
             <ImageryControl
               slot="cover"
-              title="Cover image"
-              description="Spans the top of your storefront. A wide, landscape photo works best; text sits over a scrim so it stays legible."
+              title="Hero image 1"
+              description="The lead image — also the mobile banner."
               imageUrl={venue.coverUrl}
             />
+            <div className="border-t border-line pt-6">
+              <ImageryControl
+                slot="cover2"
+                title="Hero image 2"
+                description="Optional — joins the rotation on desktop."
+                imageUrl={venue.coverUrl2}
+              />
+            </div>
+            <div className="border-t border-line pt-6">
+              <ImageryControl
+                slot="cover3"
+                title="Hero image 3"
+                description="Optional — joins the rotation on desktop."
+                imageUrl={venue.coverUrl3}
+              />
+            </div>
           </div>
         </Card>
         <p className="text-xs text-muted">

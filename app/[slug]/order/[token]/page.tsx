@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { readableOn } from "@/app/_components/brand-contrast";
 import {
   StatusBadge,
   type KitchenTone,
@@ -12,6 +11,7 @@ import { getCustomer } from "@/lib/customer/auth";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
 
+import { dinerBrandStyle } from "../../brand-style";
 import { getPublicVenueBySlug } from "../../queries";
 import { PaymentStatusPoller } from "./payment-status-poller";
 import { getOrderByToken, type ConfirmedOrder } from "./queries";
@@ -250,10 +250,7 @@ export default async function OrderConfirmationPage({
   // order itself — linking is a separate, explicit action.
   const customer = await getCustomer(venue.id);
 
-  const brandStyle = {
-    "--brand": venue.brandColor,
-    "--brand-contrast": readableOn(venue.brandColor),
-  } as React.CSSProperties;
+  const brandStyle = dinerBrandStyle(venue);
   const reference = orderReference(order.publicToken);
 
   const isPaid = order.status === "confirmed";

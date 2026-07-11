@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import type { PublicVenue } from "./types";
 
 /**
@@ -40,78 +44,174 @@ export function BrandTile({
   );
 }
 
+const ROTATE_MS = 6000;
+
 /**
- * Desktop header hero (Direction A). A full-bleed cover image with a bottom-up
- * scrim that guarantees legible text over ANY photo; with no cover, a calm
- * brand-tint band (never an empty/black band). Over it, bottom-aligned inside the
- * inner max-width: the logo tile, the venue name, and a real meta row (only the
- * fields we actually have — description + open state — never a fabricated rating).
- * Desktop only; the mobile header (cover band + overlapping logo) is unchanged.
+ * Desktop storefront hero (world-class hospitality pattern): a FULL-PAGE image —
+ * rotating through up to three owner-uploaded photos — with a dark scrim, the
+ * venue's logo + name centered over it, and a "View menu" cue that scrolls to
+ * the menu. Rotation is a slow 6s crossfade with manual dots (carousel best
+ * practice) and is disabled entirely under prefers-reduced-motion or with a
+ * single image. With NO images it falls back to the short brand-tint band —
+ * never a full page of empty colour. Desktop only; the mobile banner is
+ * unchanged and rendered by the storefront itself.
  */
-export function StorefrontHero({ venue }: { venue: PublicVenue }) {
-  const hasCover = Boolean(venue.coverUrl);
-  const nameColor = hasCover ? "text-white" : "text-ink";
-  const metaColor = hasCover ? "text-[#f3ede1]" : "text-muted";
+export function StorefrontHero({
+  venue,
+  images,
+}: {
+  venue: PublicVenue;
+  images: string[];
+}) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setInterval(
+      () => setIndex((current) => (current + 1) % images.length),
+      ROTATE_MS,
+    );
+    return () => clearInterval(id);
+  }, [images.length]);
+
+  function scrollToMenu() {
+    document
+      .getElementById("menu-top")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  if (images.length === 0) {
+    // No photos: a calm brand-tint band of the classic height.
+    return (
+      <div
+        className="relative flex min-h-[232px] items-end"
+        style={{
+          background:
+            "color-mix(in srgb, var(--brand) 12%, var(--color-surface))",
+        }}
+      >
+        <div className="mx-auto flex w-full max-w-[1280px] items-end gap-5 px-6 pb-7">
+          <BrandTile
+            venue={venue}
+            sizeClass="h-24 w-24"
+            radiusClass="rounded-[20px]"
+            textClass="text-4xl"
+            ringClass="ring-[3px] ring-white/90"
+          />
+          <div className="min-w-0 pb-1">
+            <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight text-ink">
+              {venue.name}
+            </h1>
+            <VenueMeta venue={venue} toneClass="text-muted" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative min-h-[232px] overflow-hidden">
-      {hasCover ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={venue.coverUrl ?? ""}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(14,31,24,.12), rgba(14,31,24,.66))",
-            }}
-          />
-        </>
-      ) : (
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "color-mix(in srgb, var(--brand) 12%, var(--color-surface))",
-          }}
+    <div className="relative h-[calc(100dvh-64px)] min-h-[480px] overflow-hidden">
+      {images.map((src, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={src}
+          src={src}
+          alt=""
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+            i === index ? "opacity-100" : "opacity-0"
+          }`}
         />
-      )}
+      ))}
+      {/* Scrim — guarantees legible centered text over ANY photo. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(14,31,24,.30), rgba(14,31,24,.42) 55%, rgba(14,31,24,.62))",
+        }}
+      />
 
-      <div className="relative mx-auto flex min-h-[232px] max-w-[1280px] items-end gap-5 px-6 pb-7 pt-24">
+      {/* Centered identity — the premium hospitality composition. */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
         <BrandTile
           venue={venue}
           sizeClass="h-24 w-24"
-          radiusClass="rounded-[20px]"
+          radiusClass="rounded-[24px]"
           textClass="text-4xl"
           ringClass="ring-[3px] ring-white/90"
         />
-        <div className="min-w-0 pb-1">
-          <h1
-            className={`font-display text-4xl font-extrabold leading-tight tracking-tight ${nameColor}`}
-          >
-            {venue.name}
-          </h1>
-          {venue.storefrontDescription || venue.isLive ? (
-            <div
-              className={`mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium ${metaColor}`}
-            >
-              {venue.storefrontDescription ? (
-                <span>{venue.storefrontDescription}</span>
-              ) : null}
-              {venue.isLive ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-pill bg-[var(--color-success)]" />
-                  Open
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+        <h1 className="mt-6 font-display text-5xl font-extrabold leading-tight tracking-tight text-white xl:text-6xl">
+          {venue.name}
+        </h1>
+        <VenueMeta venue={venue} toneClass="text-[#f3ede1]" />
       </div>
+
+      {/* Bottom controls: manual slide dots + the scroll-to-menu cue. */}
+      <div className="absolute inset-x-0 bottom-6 flex flex-col items-center gap-4">
+        {images.length > 1 ? (
+          <div className="flex items-center gap-2">
+            {images.map((src, i) => (
+              <button
+                key={src}
+                type="button"
+                onClick={() => setIndex(i)}
+                aria-label={`Show photo ${i + 1}`}
+                aria-current={i === index ? "true" : undefined}
+                className={`h-2 rounded-pill transition-all ${
+                  i === index ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
+                }`}
+              />
+            ))}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={scrollToMenu}
+          className="flex items-center gap-2 rounded-pill bg-white/12 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+        >
+          View menu
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Description + open-state row — only real fields, never fabricated meta. */
+function VenueMeta({
+  venue,
+  toneClass,
+}: {
+  venue: Pick<PublicVenue, "storefrontDescription" | "isLive">;
+  toneClass: string;
+}) {
+  if (!venue.storefrontDescription && !venue.isLive) return null;
+  return (
+    <div
+      className={`mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-medium ${toneClass}`}
+    >
+      {venue.storefrontDescription ? (
+        <span>{venue.storefrontDescription}</span>
+      ) : null}
+      {venue.isLive ? (
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-pill bg-[var(--color-success)]" />
+          Open
+        </span>
+      ) : null}
     </div>
   );
 }

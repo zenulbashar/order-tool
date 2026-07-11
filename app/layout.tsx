@@ -29,6 +29,10 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Prompt2Eat",
   description: "Branded online ordering for hospitality venues.",
+  // Prompt2Eat favicon for the platform's own surfaces (owner dashboard,
+  // sign-in, marketing). Diner pages override this per-venue with the venue's
+  // logo (see app/[slug]/layout.tsx).
+  icons: { icon: "/p2e-icon.svg" },
 };
 
 export default function RootLayout({

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 
-import { readableOn } from "@/app/_components/brand-contrast";
 import { Button } from "@/app/_components/button";
 import { Field } from "@/app/_components/field";
 import { Input } from "@/app/_components/input";
@@ -12,6 +11,7 @@ import { Textarea } from "@/app/_components/textarea";
 import { type SchedulingConfig } from "@/lib/schedule";
 import { formatCents, type OrderTypeValue } from "@/lib/validation";
 
+import { dinerBrandStyle } from "../brand-style";
 import { claimOrder } from "../account/actions";
 import { useCart } from "../cart-provider";
 import { SchedulePicker } from "../schedule-picker";
@@ -68,10 +68,7 @@ export function CheckoutClient({
   const [pending, startTransition] = useTransition();
   const [payment, setPayment] = useState<PaymentSession | null>(null);
 
-  const brandStyle = {
-    "--brand": venue.brandColor,
-    "--brand-contrast": readableOn(venue.brandColor),
-  } as React.CSSProperties;
+  const brandStyle = dinerBrandStyle(venue);
 
   // Scheduled-pickup config for the picker (Phase 8) — the same values the server
   // gate validates against. Offered only when enabled + opening hours are set.
