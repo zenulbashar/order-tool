@@ -83,9 +83,6 @@ function StorefrontInner({
   // input. Separate from `query` (the filter state) — toggling this never
   // touches the search/filter logic below.
   const [searchExpanded, setSearchExpanded] = useState(false);
-  // Concierge open-state — drives the desktop FAB overlay (mobile shows the panel
-  // inline always). Opened by the FAB, the cart-rail nudge, and search handoff.
-  const [conciergeOpen, setConciergeOpen] = useState(false);
   // Desktop "Dietary filters" popover (the mobile chip row is always visible).
   const [dietaryOpen, setDietaryOpen] = useState(false);
   // Search no-results → concierge handoff: each nonce bump asks the mounted
@@ -112,6 +109,13 @@ function StorefrontInner({
     setQuery("");
     setSelectedTags([]);
     setSearchExpanded(false);
+  }
+
+  // Open the concierge modal directly (desktop FAB + cart-rail nudge). Reuses the
+  // panel's prefill-nonce open path with empty text, so it lands straight on the
+  // AI input — no intermediate "ask" tile.
+  function openConcierge() {
+    setConciergePrefill((current) => ({ text: "", nonce: current.nonce + 1 }));
   }
 
   const brandStyle = {
@@ -441,8 +445,7 @@ function StorefrontInner({
                 onSelectItem={setActiveItem}
                 onOpenCart={() => setCartOpen(true)}
                 prefill={conciergePrefill}
-                open={conciergeOpen}
-                onOpenChange={setConciergeOpen}
+                onOpenConcierge={openConcierge}
               />
             ) : null}
 
@@ -460,13 +463,12 @@ function StorefrontInner({
                     id: category.id,
                     name: category.name,
                   }))}
-                  onAskConcierge={(text) => {
+                  onAskConcierge={(text) =>
                     setConciergePrefill((current) => ({
                       text,
                       nonce: current.nonce + 1,
-                    }));
-                    setConciergeOpen(true);
-                  }}
+                    }))
+                  }
                   onClearFilters={clearFilters}
                   onGoToCategory={(id) => {
                     pendingCategoryRef.current = id;
@@ -488,7 +490,7 @@ function StorefrontInner({
                         {category.description}
                       </p>
                     ) : null}
-                    <ul className="mt-3 space-y-3 lg:grid lg:grid-cols-2 lg:gap-[18px] lg:space-y-0">
+                    <ul className="mt-3 space-y-3 lg:grid lg:grid-cols-3 lg:gap-3 lg:space-y-0 2xl:grid-cols-4">
                       {category.items.map((item) => (
                         <li key={item.id}>
                           <ItemCard item={item} onSelect={setActiveItem} />
@@ -506,7 +508,7 @@ function StorefrontInner({
               slug={venue.slug}
               tableLabel={tableLabel}
               conciergeEnabled={conciergeEnabled}
-              onAskConcierge={() => setConciergeOpen(true)}
+              onAskConcierge={openConcierge}
             />
           ) : null}
         </div>

@@ -172,15 +172,18 @@ export function ConciergePanel({
 
   return (
     <>
+      {/* Inline trigger — mobile only. On desktop the storefront's floating FAB
+          opens this same panel directly (via the prefill nonce), so we hide this
+          to avoid a redundant second entry point. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center gap-2 rounded-full border border-sand bg-surface-elevated px-4 py-2.5 text-sm font-medium text-ink shadow-sm transition hover:bg-sand"
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-sand bg-surface-elevated px-4 py-2.5 text-sm font-medium text-ink shadow-sm transition hover:bg-sand lg:hidden"
       >
         <span className="text-accent">
           <SparkleIcon />
         </span>
-        Not sure what to get? Ask Prompt2Eat
+        Not sure what to eat? Ask Prompt2Eat
       </button>
 
       {open ? (

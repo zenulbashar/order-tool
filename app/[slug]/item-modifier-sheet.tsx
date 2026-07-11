@@ -74,9 +74,19 @@ export function ItemModifierSheet({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-card bg-surface-elevated sm:rounded-card"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-card bg-surface-elevated sm:rounded-card"
         onClick={(event) => event.stopPropagation()}
       >
+        {/* Big hero image of the dish when it has one — the "see it large on tap"
+            moment. Owner-supplied URL; next/image would need remote config. */}
+        {item.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="h-52 w-full shrink-0 object-cover sm:h-60"
+          />
+        ) : null}
         <div className="flex items-start justify-between gap-4 border-b border-sand px-5 py-4">
           <div className="min-w-0">
             <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
