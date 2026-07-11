@@ -57,7 +57,8 @@ export async function sendCustomerMagicLinkEmail(opts: {
 export async function sendOrderEmail(opts: {
   to: string;
   subject: string;
-  lines: string[];
+  html: string;
+  text: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
@@ -73,7 +74,9 @@ export async function sendOrderEmail(opts: {
       from,
       to: opts.to,
       subject: opts.subject,
-      text: opts.lines.join("\n"),
+      html: opts.html,
+      // Plain-text alternative for clients that don't render HTML.
+      text: opts.text,
     }),
   });
 

@@ -761,6 +761,12 @@ export const orders = pgTable(
     tableLabel: text("table_label"),
     customerName: text("customer_name").notNull(),
     customerPhone: text("customer_phone"),
+    // Contact email captured at checkout (now a required field). NULLABLE in the
+    // column so pre-existing guest orders backfill safely; new orders always set
+    // it. Used to email the confirmed/ready notification to guests (signed-in
+    // customers are messaged via their account per their prefs). Never a pricing
+    // input; inert to the recompute / app fee / PaymentIntent / webhook.
+    customerEmail: text("customer_email"),
     // OPTIONAL, NULLABLE free-text "special requests" the customer types at
     // checkout (e.g. "no onion", "extra napkins"). ADDITIVE and deliberately
     // INERT to money: it is captured/trimmed/length-capped text only, stored on

@@ -15,6 +15,22 @@
  * rather than erroring. Never called on the money path directly; callers treat
  * it as best-effort.
  */
+/**
+ * Best-effort E.164 normalisation for a user-entered phone (AU-centric, since
+ * that's the venue base). Returns null when it can't safely normalise, so the
+ * caller skips the text channel rather than sending to a malformed number.
+ *   "+61…" / "+…"     → kept if it looks like E.164
+ *   "0400 000 000"    → "+61400000000" (AU local)
+ *   "61400000000"     → "+61400000000"
+ */
+export function toE164(phone: string): string | null {
+  const t = phone.replace(/[\s()-]/g, "");
+  if (/^\+\d{8,15}$/.test(t)) return t;
+  if (/^0\d{9}$/.test(t)) return `+61${t.slice(1)}`;
+  if (/^61\d{9}$/.test(t)) return `+${t}`;
+  return null;
+}
+
 export function smsConfigured(): boolean {
   return Boolean(
     process.env.TWILIO_ACCOUNT_SID &&

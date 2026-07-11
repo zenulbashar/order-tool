@@ -774,6 +774,21 @@ export const placeOrderSchema = z
       .nullish()
       .transform((value) => (value && value.length > 0 ? value : null)),
     customerName: customerNameSchema,
+    // REQUIRED contact email (trimmed + lowercased, RFC-ish shape) — same rule as
+    // the customer sign-in email, inlined because customerEmailSchema is declared
+    // later in this file. Captured for order-notification delivery (and receipts);
+    // not an auth factor and NEVER auto-links a guest to an account (that stays
+    // magic-link-verified only).
+    customerEmail: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .min(3, "Enter your email.")
+      .max(254, "Email is too long.")
+      .refine(
+        (value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
+        "Enter a valid email address.",
+      ),
     // Optional, same nullish contract as tableLabel: blank input arrives as null
     // (or "") and is stored as null; length is only checked when a value is given.
     customerPhone: z
@@ -805,6 +820,7 @@ export type PlaceOrderInput = {
   orderType: OrderTypeValue;
   tableLabel?: string | null;
   customerName: string;
+  customerEmail: string;
   customerPhone?: string | null;
   notes?: string | null;
   // Naive venue-local wall-clock "YYYY-MM-DDTHH:MM" for a scheduled pickup, or

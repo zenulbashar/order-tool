@@ -39,6 +39,7 @@ export function CheckoutClient({
   initialOrderType,
   initialTable,
   initialName,
+  initialEmail,
   initialPhone,
   nowMs,
 }: {
@@ -48,6 +49,7 @@ export function CheckoutClient({
   // Name/phone form DEFAULTS resolved server-side (session record, else the
   // device remember-me cookie, else empty). Pre-filled but fully editable.
   initialName: string;
+  initialEmail: string;
   initialPhone: string;
   // Request-time "now" (server-captured) so the picker offers fresh slots with no
   // client clock read; the server re-validates on submit.
@@ -59,6 +61,7 @@ export function CheckoutClient({
   const [tableLabel, setTableLabel] = useState(initialTable);
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState(initialName);
+  const [customerEmail, setCustomerEmail] = useState(initialEmail);
   const [customerPhone, setCustomerPhone] = useState(initialPhone);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +106,7 @@ export function CheckoutClient({
         orderType,
         tableLabel: orderType === "dine_in" ? tableLabel : null,
         customerName,
+        customerEmail,
         // Send null (not "") when blank, consistent with tableLabel's shape; the
         // schema accepts both, but this keeps the optional contract uniform.
         customerPhone: customerPhone.trim() ? customerPhone : null,
@@ -333,6 +337,22 @@ export function CheckoutClient({
                 autoComplete="name"
               />
             </Field>
+
+            <Field label="Email" htmlFor="email">
+              <Input
+                id="email"
+                type="email"
+                value={customerEmail}
+                onChange={(event) => setCustomerEmail(event.target.value)}
+                maxLength={254}
+                required
+                autoComplete="email"
+                placeholder="you@email.com"
+              />
+            </Field>
+            <p className="-mt-3 text-xs text-muted">
+              For your receipt and order updates.
+            </p>
 
             <Field
               label={
