@@ -287,11 +287,92 @@ export default async function OrderConfirmationPage({
         ? "Payment not completed"
         : "Order cancelled";
 
+  // The order summary + notes are shared: on the paid screen they sit in the
+  // sticky right column beside the tracker; on the other states they stack below
+  // the status. Extracted so the two layouts render the exact same markup.
+  const orderSummaryCard = (
+    <div className="rounded-card border border-line bg-surface p-4">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+        Your order
+      </p>
+      <ul className="mt-2 divide-y divide-line">
+        {order.items.map((item) => (
+          <li
+            key={item.id}
+            className="flex items-start justify-between gap-3 py-3"
+          >
+            <div className="min-w-0">
+              <p className="text-sm text-ink">
+                <span className="text-muted">{item.quantity}×</span>{" "}
+                {item.name}
+                {item.variantName ? ` (${item.variantName})` : ""}
+              </p>
+              {item.modifiers.length > 0 ? (
+                <p className="mt-0.5 text-xs text-muted">
+                  {item.modifiers.map((m) => m.name).join(", ")}
+                </p>
+              ) : null}
+            </div>
+            <span className="shrink-0 text-sm text-ink">
+              ${formatCents(item.lineTotalCents)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {order.discountCents > 0 ? (
+        <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
+          <span className="text-muted">Subtotal</span>
+          <span className="text-ink">${formatCents(order.subtotalCents)}</span>
+        </div>
+      ) : null}
+      {order.promoDiscountCents > 0 ? (
+        <div className="mt-1 flex items-center justify-between text-sm">
+          <span className="text-success-deep">Promotion</span>
+          <span className="text-success-deep">
+            −${formatCents(order.promoDiscountCents)}
+          </span>
+        </div>
+      ) : null}
+      {order.discountCents - order.promoDiscountCents > 0 ? (
+        <div className="mt-1 flex items-center justify-between text-sm">
+          <span className="text-success-deep">Bank discount</span>
+          <span className="text-success-deep">
+            −${formatCents(order.discountCents - order.promoDiscountCents)}
+          </span>
+        </div>
+      ) : null}
+      <div
+        className={`flex items-center justify-between ${
+          order.discountCents > 0 ? "mt-2" : "mt-3 border-t border-line pt-3"
+        }`}
+      >
+        <span className="text-sm font-medium text-ink">Total</span>
+        <span className="font-display text-lg font-extrabold text-ink">
+          ${formatCents(order.totalCents)}
+        </span>
+      </div>
+      {order.taxCents > 0 ? (
+        <p className="mt-1 text-right text-xs text-muted">
+          incl. {venue.taxLabel} ${formatCents(order.taxCents)}
+        </p>
+      ) : null}
+    </div>
+  );
+
+  const orderNotes = order.notes ? (
+    <div className="mt-4 rounded-card border border-line bg-surface p-3">
+      <p className="text-xs uppercase tracking-wide text-muted">Notes</p>
+      <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink">
+        {order.notes}
+      </p>
+    </div>
+  ) : null;
+
   return (
     <main
       style={brandStyle}
       data-domain="diner"
-      className="mx-auto min-h-dvh max-w-2xl bg-surface lg:max-w-[720px]"
+      className="mx-auto min-h-dvh max-w-2xl bg-surface lg:max-w-[880px]"
     >
       {/* Status banner — paid / processing / failed must each be unmistakable
           and, for the unhappy paths, calm and non-alarming. */}
@@ -340,147 +421,85 @@ export default async function OrderConfirmationPage({
       </header>
 
       {isPaid ? (
-        /* Paid → the live kitchen tracker replaces the payment-status card. */
-        <section className="space-y-4 px-5 py-5">
-          <OrderTracker order={order} timeZone={venue.timezone} />
-          {order.fulfillmentStatus !== "completed" ? (
-            <div className="flex items-start gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-4 py-3">
-              <span
-                aria-hidden
-                className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
-              />
-              <p className="text-xs leading-relaxed text-accent-deep">
-                <b className="text-ink">The kitchen&apos;s on it.</b> We&apos;ll
-                let you know the moment it&apos;s ready — no need to watch this
-                screen.
-              </p>
-            </div>
-          ) : null}
-        </section>
-      ) : isBankPending ? (
-        /* Bank (PayTo) pending → the forest-dark approve-in-your-bank-app screen
-           with the gentler, longer poll. */
-        <section className="space-y-3 px-5 py-5">
-          <PayToWaiting amountCents={order.totalCents} />
-          <PaymentStatusPoller variant="bank" />
-          <div className="rounded-card border border-line p-3 text-sm">
-            <p className="text-xs uppercase tracking-wide text-muted">
-              {order.orderType === "dine_in" ? "Dine-in" : "Pickup"}
-            </p>
-            <p className="mt-0.5 font-medium text-ink">
-              {order.orderType === "dine_in"
-                ? `Table ${order.tableLabel ?? "—"}`
-                : "Collect at the counter"}
-            </p>
-          </div>
-        </section>
-      ) : (
-        /* Pre-payment states keep the payment-status card + bounded poller. */
-        <section className="grid gap-3 px-5 py-5 text-sm sm:grid-cols-2">
-          <div className="rounded-card border border-line p-3">
-            <p className="text-xs uppercase tracking-wide text-muted">Status</p>
-            <p className="mt-1">
-              <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
-            </p>
-            {isPending ? <PaymentStatusPoller /> : null}
-            {isFailed ? (
-              <p className="mt-2 text-sm text-muted">
-                No payment was taken. You can try again from the menu.
-              </p>
-            ) : null}
-          </div>
-          <div className="rounded-card border border-line p-3">
-            <p className="text-xs uppercase tracking-wide text-muted">
-              {order.orderType === "dine_in" ? "Dine-in" : "Pickup"}
-            </p>
-            <p className="mt-0.5 font-medium text-ink">
-              {order.orderType === "dine_in"
-                ? `Table ${order.tableLabel ?? "—"}`
-                : "Collect at the counter"}
-            </p>
-          </div>
-        </section>
-      )}
-
-      <section className="px-5 pb-6">
-        <div className="rounded-card border border-line bg-surface p-4">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
-            Your order
-          </p>
-          <ul className="mt-2 divide-y divide-line">
-          {order.items.map((item) => (
-            <li key={item.id} className="flex items-start justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <p className="text-sm text-ink">
-                  <span className="text-muted">{item.quantity}×</span>{" "}
-                  {item.name}
-                  {item.variantName ? ` (${item.variantName})` : ""}
+        /* Paid → live tracker (left) beside the order summary (right) on desktop;
+           a single stacked column on mobile. */
+        <div className="px-5 py-5 lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6">
+          <section className="space-y-4">
+            <OrderTracker order={order} timeZone={venue.timezone} />
+            {order.fulfillmentStatus !== "completed" ? (
+              <div className="flex items-start gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-4 py-3">
+                <span
+                  aria-hidden
+                  className="mt-1 inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-accent"
+                />
+                <p className="text-xs leading-relaxed text-accent-deep">
+                  <b className="text-ink">The kitchen&apos;s on it.</b>{" "}
+                  We&apos;ll let you know the moment it&apos;s ready — no need to
+                  watch this screen.
                 </p>
-                {item.modifiers.length > 0 ? (
-                  <p className="mt-0.5 text-xs text-muted">
-                    {item.modifiers.map((m) => m.name).join(", ")}
+              </div>
+            ) : null}
+          </section>
+          <aside className="mt-5 lg:mt-0 lg:sticky lg:top-6">
+            {orderSummaryCard}
+            {orderNotes}
+          </aside>
+        </div>
+      ) : (
+        <>
+          {isBankPending ? (
+            /* Bank (PayTo) pending → the forest-dark approve-in-your-bank-app
+               screen with the gentler, longer poll. */
+            <section className="space-y-3 px-5 py-5">
+              <PayToWaiting amountCents={order.totalCents} />
+              <PaymentStatusPoller variant="bank" />
+              <div className="rounded-card border border-line p-3 text-sm">
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  {order.orderType === "dine_in" ? "Dine-in" : "Pickup"}
+                </p>
+                <p className="mt-0.5 font-medium text-ink">
+                  {order.orderType === "dine_in"
+                    ? `Table ${order.tableLabel ?? "—"}`
+                    : "Collect at the counter"}
+                </p>
+              </div>
+            </section>
+          ) : (
+            /* Pre-payment states keep the payment-status card + bounded poller. */
+            <section className="grid gap-3 px-5 py-5 text-sm sm:grid-cols-2">
+              <div className="rounded-card border border-line p-3">
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  Status
+                </p>
+                <p className="mt-1">
+                  <StatusBadge tone={statusTone}>{statusLabel}</StatusBadge>
+                </p>
+                {isPending ? <PaymentStatusPoller /> : null}
+                {isFailed ? (
+                  <p className="mt-2 text-sm text-muted">
+                    No payment was taken. You can try again from the menu.
                   </p>
                 ) : null}
               </div>
-              <span className="shrink-0 text-sm text-ink">
-                ${formatCents(item.lineTotalCents)}
-              </span>
-            </li>
-          ))}
-        </ul>
+              <div className="rounded-card border border-line p-3">
+                <p className="text-xs uppercase tracking-wide text-muted">
+                  {order.orderType === "dine_in" ? "Dine-in" : "Pickup"}
+                </p>
+                <p className="mt-0.5 font-medium text-ink">
+                  {order.orderType === "dine_in"
+                    ? `Table ${order.tableLabel ?? "—"}`
+                    : "Collect at the counter"}
+                </p>
+              </div>
+            </section>
+          )}
 
-          {order.discountCents > 0 ? (
-            <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-sm">
-              <span className="text-muted">Subtotal</span>
-              <span className="text-ink">${formatCents(order.subtotalCents)}</span>
-            </div>
-          ) : null}
-          {order.promoDiscountCents > 0 ? (
-            <div className="mt-1 flex items-center justify-between text-sm">
-              <span className="text-success-deep">Promotion</span>
-              <span className="text-success-deep">
-                −${formatCents(order.promoDiscountCents)}
-              </span>
-            </div>
-          ) : null}
-          {order.discountCents - order.promoDiscountCents > 0 ? (
-            <div className="mt-1 flex items-center justify-between text-sm">
-              <span className="text-success-deep">Bank discount</span>
-              <span className="text-success-deep">
-                −${formatCents(order.discountCents - order.promoDiscountCents)}
-              </span>
-            </div>
-          ) : null}
-          <div
-            className={`flex items-center justify-between ${
-              order.discountCents > 0
-                ? "mt-2"
-                : "mt-3 border-t border-line pt-3"
-            }`}
-          >
-            <span className="text-sm font-medium text-ink">Total</span>
-            <span className="font-display text-lg font-extrabold text-ink">
-              ${formatCents(order.totalCents)}
-            </span>
-          </div>
-          {order.taxCents > 0 ? (
-            <p className="mt-1 text-right text-xs text-muted">
-              incl. {venue.taxLabel} ${formatCents(order.taxCents)}
-            </p>
-          ) : null}
-        </div>
-
-        {/* Special request the customer left, echoed back. Plain (React-escaped)
-            text node — never raw HTML. */}
-        {order.notes ? (
-          <div className="mt-4 rounded-card border border-line bg-surface p-3">
-            <p className="text-xs uppercase tracking-wide text-muted">Notes</p>
-            <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink">
-              {order.notes}
-            </p>
-          </div>
-        ) : null}
-      </section>
+          <section className="px-5 pb-6">
+            {orderSummaryCard}
+            {orderNotes}
+          </section>
+        </>
+      )}
 
       {/* Opt-in account association (#7). A SIGNED-IN customer's order is already
           auto-linked at checkout (the fire-and-forget claimOrder), so it's

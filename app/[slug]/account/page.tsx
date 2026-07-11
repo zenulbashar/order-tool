@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { readableOn } from "@/app/_components/brand-contrast";
 import { getCustomer } from "@/lib/customer/auth";
 import { isReservedSlug } from "@/lib/validation";
 
@@ -50,44 +48,12 @@ export default async function AccountPage({
         getCustomerOrders(venue.id, customer.id),
       ])
     : [null, []];
-  const brandStyle = {
-    "--brand": venue.brandColor,
-    "--brand-contrast": readableOn(venue.brandColor),
-  } as React.CSSProperties;
 
-  return (
-    <main
-      style={brandStyle}
-      data-domain="diner"
-      className="mx-auto min-h-dvh max-w-2xl bg-surface lg:max-w-[920px]"
-    >
-      <header className="border-b border-line px-5 py-5">
-        <Link
-          href={`/${venue.slug}`}
-          className="text-xs text-muted hover:text-ink"
-        >
-          ← Back to {venue.name}
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-ink">
-          Your orders
-        </h1>
-        <p className="text-sm text-muted">{venue.name}</p>
-      </header>
-
-      {customer ? (
-        <OrderHistory
-          slug={venue.slug}
-          customerEmail={customer.email}
-          usual={usual}
-          orders={orders}
-        />
-      ) : (
-        <SignInForm
-          slug={venue.slug}
-          venueName={venue.name}
-          linkError={linkError}
-        />
-      )}
-    </main>
+  // The shared account layout (layout.tsx) provides the diner chrome + nav rail;
+  // this page renders only the Orders content (signed in) or the sign-in form.
+  return customer ? (
+    <OrderHistory slug={venue.slug} usual={usual} orders={orders} />
+  ) : (
+    <SignInForm slug={venue.slug} venueName={venue.name} linkError={linkError} />
   );
 }

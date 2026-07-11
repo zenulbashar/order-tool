@@ -1,6 +1,7 @@
 "use server";
 
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import {
@@ -11,6 +12,7 @@ import {
 import { sendCustomerMagicLinkEmail } from "@/lib/customer/email";
 import { db } from "@/lib/db";
 import {
+  customers,
   orderItemModifiers,
   orderItems,
   orders,
@@ -99,6 +101,37 @@ export async function requestCustomerMagicLink(
 /** Sign the customer out (delete the session row + clear the cookie). */
 export async function signOutCustomer(): Promise<void> {
   await destroyCustomerSession();
+}
+
+export type DetailsResult = { error?: string; success?: boolean };
+
+/**
+ * Update the signed-in customer's optional profile (display name + phone).
+ * Ownership is the SESSION-derived customer (never client input); email is the
+ * verified auth identity and is NOT editable here. Both fields are optional and
+ * empty is stored as NULL — nothing is ever fabricated. Scoped WHERE id =
+ * customer.id, so a customer can only edit their own record.
+ */
+export async function updateCustomerDetails(
+  _prev: DetailsResult,
+  formData: FormData,
+): Promise<DetailsResult> {
+  const venue = await resolveVenue(String(formData.get("slug") ?? ""));
+  if (!venue) return { error: "Venue not found." };
+
+  const customer = await getCustomer(venue.id);
+  if (!customer) return { error: "Please sign in again." };
+
+  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+  const phone = String(formData.get("phone") ?? "").trim().slice(0, 30);
+
+  await db
+    .update(customers)
+    .set({ name: name || null, phone: phone || null })
+    .where(eq(customers.id, customer.id));
+
+  revalidatePath(`/${venue.slug}/account/details`);
+  return { success: true };
 }
 
 /**
