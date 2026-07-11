@@ -78,9 +78,9 @@ export function ItemCard({
         </div>
       </div>
 
-      {/* ---- Desktop: vertical card ---- */}
+      {/* ---- Desktop: compact vertical card ---- */}
       <div className="hidden lg:flex lg:flex-col">
-        <div className="h-[140px] w-full overflow-hidden">
+        <div className="h-24 w-full overflow-hidden">
           {item.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -93,7 +93,7 @@ export function ItemCard({
           ) : (
             <span
               aria-hidden="true"
-              className="flex h-full w-full items-center justify-center font-display text-[46px] font-extrabold"
+              className="flex h-full w-full items-center justify-center font-display text-[32px] font-extrabold"
               style={{
                 background:
                   "color-mix(in srgb, var(--brand) 9%, var(--color-surface))",
@@ -104,29 +104,29 @@ export function ItemCard({
             </span>
           )}
         </div>
-        <div className="flex flex-col gap-2 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <p className="min-w-0 font-body text-[15px] font-semibold text-ink">
+        <div className="flex flex-col gap-1 p-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <p className="min-w-0 font-body text-[13px] font-semibold leading-snug text-ink">
               {item.name}
             </p>
-            <p className="shrink-0 font-display text-[15px] font-semibold text-ink">
+            <p className="shrink-0 font-display text-[13px] font-semibold text-ink">
               {priceLabel}
             </p>
           </div>
           {item.description ? (
-            <p className="line-clamp-2 text-[12.5px] leading-relaxed text-muted">
+            <p className="line-clamp-2 text-[11.5px] leading-snug text-muted">
               {item.description}
             </p>
           ) : null}
-          <div className="mt-0.5 flex items-center justify-between gap-3">
+          <div className="mt-0.5 flex items-center justify-between gap-2">
             {item.tags.length > 0 ? (
-              <TagList tags={item.tags} className="min-w-0" />
+              <TagList tags={item.tags.slice(0, 2)} className="min-w-0" />
             ) : (
               <span />
             )}
             <span
               aria-hidden="true"
-              className="inline-flex shrink-0 items-center gap-1 rounded-control-sm px-3.5 py-2 text-xs font-semibold text-[var(--action-contrast)]"
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-control-sm px-2.5 py-1 text-[11px] font-semibold text-[var(--action-contrast)]"
               style={{ backgroundColor: "var(--action)" }}
             >
               Add <PlusIcon />
