@@ -632,6 +632,13 @@ export const customers = pgTable(
     phone: text("phone"),
     // Optional display name; minimal PII by design.
     name: text("name"),
+    // Per-customer order-notification preferences (opt-in). Email defaults ON
+    // (we already have the verified address and it's low-friction); SMS defaults
+    // OFF (it needs a phone AND a configured provider). Both additive, NOT NULL
+    // with defaults so existing rows backfill safely. Consulted best-effort at
+    // send time — they gate notifications, never the order/money path.
+    notifyOrderEmail: boolean("notify_order_email").notNull().default(true),
+    notifyOrderSms: boolean("notify_order_sms").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

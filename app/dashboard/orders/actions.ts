@@ -2,7 +2,9 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
+import { notifyCustomerOrder } from "@/lib/customer/notify";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
@@ -42,6 +44,15 @@ export async function updateOrderFulfillmentStatus(
     .where(and(eq(orders.id, id.data), scopedToVenue(orders.venueId, venue.id)))
     .returning({ id: orders.id });
   if (updated.length !== 1) return { error: "Order not found." };
+
+  // ADDITIVE (customer notifications) — when the kitchen marks an order READY,
+  // fire the ready email/SMS to the linked customer per their opt-in. Best-effort
+  // and isolated in after() so it can never affect this action's result; a no-op
+  // for guest orders and when the channels are unconfigured. Only "ready" is
+  // notified (confirmation is sent from the payment webhook).
+  if (status.data === "ready") {
+    after(() => notifyCustomerOrder(id.data, "ready").catch(() => {}));
+  }
 
   revalidatePath(ORDERS_PATH);
   return {};

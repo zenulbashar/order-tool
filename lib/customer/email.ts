@@ -46,3 +46,38 @@ export async function sendCustomerMagicLinkEmail(opts: {
     throw new Error(`Resend send failed with status ${response.status}.`);
   }
 }
+
+/**
+ * Best-effort order-notification email (order confirmed / ready). Reuses the
+ * SAME Resend credentials as the magic link. Unlike the magic link — which is
+ * required and throws when unconfigured — this is a NOTIFICATION, so it is a
+ * silent no-op when RESEND_API_KEY / EMAIL_FROM are unset (parity with the SMS
+ * and push paths). Plain-text only; the caller composes the lines.
+ */
+export async function sendOrderEmail(opts: {
+  to: string;
+  subject: string;
+  lines: string[];
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) return;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: opts.to,
+      subject: opts.subject,
+      text: opts.lines.join("\n"),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Resend send failed with status ${response.status}.`);
+  }
+}

@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
+import { notifyCustomerOrder } from "@/lib/customer/notify";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
@@ -56,7 +57,10 @@ export async function POST(request: Request): Promise<Response> {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object;
-        await db
+        // `.returning()` captures the ACTUAL transition: the WHERE only matches a
+        // still-pending order, so a retried webhook (already confirmed) returns
+        // zero rows — used below to fire the customer notification exactly once.
+        const confirmed = await db
           .update(orders)
           .set({ status: "confirmed" })
           .where(
@@ -64,7 +68,8 @@ export async function POST(request: Request): Promise<Response> {
               eq(orders.stripePaymentIntentId, paymentIntent.id),
               eq(orders.status, "pending_payment"),
             ),
-          );
+          )
+          .returning({ id: orders.id });
         // ADDITIVE (Track 0) — the SINGLE integrations touch in this handler.
         // Runs strictly AFTER the confirm UPDATE above (which is unchanged),
         // and its try/catch swallows EVERYTHING: an integrations failure can
@@ -103,6 +108,22 @@ export async function POST(request: Request): Promise<Response> {
           after(() => notifyNewOrder(paymentIntent.id).catch(() => {}));
         } catch {
           // Swallowed by design.
+        }
+        // ADDITIVE (customer notifications) — order-confirmed email/SMS to the
+        // LINKED customer per their opt-in. Same best-effort contract as the
+        // blocks above: gated on the ACTUAL transition (confirmed.length, so a
+        // retried webhook never double-sends), isolated, and done in after() so
+        // it can never delay or fail this response. No-op for guest orders and
+        // when Resend / Twilio are unconfigured.
+        if (confirmed.length > 0) {
+          const confirmedId = confirmed[0].id;
+          try {
+            after(() =>
+              notifyCustomerOrder(confirmedId, "confirmed").catch(() => {}),
+            );
+          } catch {
+            // Swallowed by design.
+          }
         }
         break;
       }
