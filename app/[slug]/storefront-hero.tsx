@@ -26,11 +26,14 @@ export function BrandTile({
   if (venue.logoUrl) {
     return (
       // Arbitrary owner-supplied URL; next/image would need remote config.
+      // object-CONTAIN (not cover) so the FULL logo shows — a wordmark/wide mark
+      // is never cropped to its centre. A cream backing + slight padding gives a
+      // transparent logo a clean field.
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={venue.logoUrl}
         alt={`${venue.name} logo`}
-        className={`${sizeClass} ${radiusClass} ${ringClass} shrink-0 object-cover`}
+        className={`${sizeClass} ${radiusClass} ${ringClass} shrink-0 bg-surface-elevated object-contain p-1`}
       />
     );
   }
