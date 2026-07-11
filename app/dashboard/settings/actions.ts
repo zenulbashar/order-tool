@@ -54,6 +54,8 @@ export async function updateVenueSettings(
         formData.get("textColorMode") === "custom"
           ? (formData.get("textColor") ?? "")
           : "",
+      announcement: formData.get("announcement") ?? "",
+      instagramUrl: formData.get("instagramUrl") ?? "",
       storefrontDescription: formData.get("storefrontDescription") ?? "",
     });
   if (!parsed.success) {
@@ -65,6 +67,8 @@ export async function updateVenueSettings(
     .set({
       brandColor: parsed.data.brandColor,
       brandTextColor: parsed.data.textColor,
+      announcement: parsed.data.announcement,
+      instagramUrl: parsed.data.instagramUrl,
       storefrontDescription: parsed.data.storefrontDescription,
     })
     .where(eq(venues.id, venue.id));

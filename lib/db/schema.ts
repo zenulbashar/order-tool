@@ -152,6 +152,12 @@ export const venues = pgTable(
     // overrides --color-ink when the owner explicitly set one. Auto-derivation
     // from the logo applies to brand_color at upload time, never this.
     brandTextColor: text("brand_text_color"),
+    // Optional owner-authored promo shown as a slim dismissible bar at the top
+    // of the storefront (e.g. "Order your cake online — pick up in store").
+    announcement: text("announcement"),
+    // Optional Instagram URL/handle → a "Follow us" link in the storefront
+    // footer. Nullable; normalised to a full URL at save time.
+    instagramUrl: text("instagram_url"),
     logoUrl: text("logo_url"),
     // Storefront brand imagery (owner-uploaded, both nullable — unset ⇒ no
     // change to today's look). cover_url replaces the storefront's brand-colour

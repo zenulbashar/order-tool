@@ -496,9 +496,43 @@ export const storefrontDescriptionSchema = z
   .max(500, "Description is too long.")
   .transform((value) => (value.length > 0 ? value : null));
 
+/** Optional slim promo bar text. Trimmed; empty → null; short by design. */
+export const announcementSchema = z
+  .string()
+  .trim()
+  .max(140, "Announcement is too long (140 characters max).")
+  .transform((value) => (value.length > 0 ? value : null));
+
+/**
+ * Optional Instagram, entered as a full URL, an "instagram.com/…" path, or a
+ * "@handle" / "handle" — normalised to a canonical https URL (empty → null).
+ * Invalid-looking non-empty input is rejected so the footer link is always safe.
+ */
+export const instagramUrlSchema = z
+  .string()
+  .trim()
+  .max(200, "Instagram link is too long.")
+  .transform((value) => value.replace(/^@/, ""))
+  .refine(
+    (value) =>
+      value === "" ||
+      /^https?:\/\/(www\.)?instagram\.com\/.+/i.test(value) ||
+      /^(www\.)?instagram\.com\/.+/i.test(value) ||
+      /^[A-Za-z0-9._]{1,30}$/.test(value),
+    "Enter your Instagram handle or profile link.",
+  )
+  .transform((value) => {
+    if (value === "") return null;
+    if (/^https?:\/\//i.test(value)) return value;
+    if (/^(www\.)?instagram\.com\//i.test(value)) return `https://${value}`;
+    return `https://instagram.com/${value}`;
+  });
+
 export const venueSettingsSchema = z.object({
   brandColor: brandColorSchema,
   textColor: brandTextColorSchema,
+  announcement: announcementSchema,
+  instagramUrl: instagramUrlSchema,
   logoUrl: logoUrlSchema,
   storefrontDescription: storefrontDescriptionSchema,
 });
