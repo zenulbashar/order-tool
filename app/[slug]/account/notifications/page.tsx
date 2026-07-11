@@ -5,15 +5,15 @@ import { getCustomer } from "@/lib/customer/auth";
 import { isReservedSlug } from "@/lib/validation";
 
 import { getPublicVenueBySlug } from "../../queries";
+import { NotifyPrefsForm } from "./notify-prefs-form";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Notifications" };
 
 /**
- * Honest "Notifications" page. Order receipts are transactional emails to the
- * customer's verified address, and live order status shows on the order page —
- * there are no marketing sends and no stored preference to toggle, so we state
- * the actual behaviour rather than a non-functional switch.
+ * Order notifications — real, persisted opt-ins for email + SMS updates (order
+ * confirmed / ready). Both are transactional (no marketing). Preferences are
+ * saved on the customer; sends are best-effort at each order event.
  */
 export default async function AccountNotificationsPage({
   params,
@@ -33,21 +33,18 @@ export default async function AccountNotificationsPage({
       <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
         Notifications
       </h2>
-      <div className="mt-4 max-w-md space-y-3">
-        <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-card">
-          <p className="text-sm font-semibold text-ink">Order receipts</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">
-            Your confirmation and receipt for each order are emailed to{" "}
-            <span className="font-medium text-ink">{customer.email}</span>.
-          </p>
-        </div>
-        <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-card">
-          <p className="text-sm font-semibold text-ink">Live order status</p>
-          <p className="mt-1 text-sm leading-relaxed text-muted">
-            After you order, the order page updates as {venue.name} prepares it —
-            no marketing emails, ever.
-          </p>
-        </div>
+      <p className="mt-0.5 text-sm text-muted">
+        Get an update when your order is confirmed and when it&rsquo;s ready.
+        Transactional only — never marketing.
+      </p>
+      <div className="mt-4">
+        <NotifyPrefsForm
+          slug={venue.slug}
+          email={customer.email}
+          phone={customer.phone}
+          notifyOrderEmail={customer.notifyOrderEmail}
+          notifyOrderSms={customer.notifyOrderSms}
+        />
       </div>
     </section>
   );

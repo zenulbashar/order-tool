@@ -135,6 +135,34 @@ export async function updateCustomerDetails(
 }
 
 /**
+ * Save the signed-in customer's order-notification opt-ins (email + SMS). Same
+ * ownership model as updateCustomerDetails (session-derived customer, scoped
+ * WHERE id). Booleans only; nothing here touches the order/money path — the
+ * flags are consulted best-effort at send time.
+ */
+export async function updateNotificationPrefs(
+  _prev: DetailsResult,
+  formData: FormData,
+): Promise<DetailsResult> {
+  const venue = await resolveVenue(String(formData.get("slug") ?? ""));
+  if (!venue) return { error: "Venue not found." };
+
+  const customer = await getCustomer(venue.id);
+  if (!customer) return { error: "Please sign in again." };
+
+  await db
+    .update(customers)
+    .set({
+      notifyOrderEmail: formData.get("notifyOrderEmail") === "on",
+      notifyOrderSms: formData.get("notifyOrderSms") === "on",
+    })
+    .where(eq(customers.id, customer.id));
+
+  revalidatePath(`/${venue.slug}/account/notifications`);
+  return { success: true };
+}
+
+/**
  * Link an order to the signed-in customer. IDOR-safe:
  *  - the customer is SESSION-derived (never client input);
  *  - authorization is possession of the unguessable 192-bit public_token (the

@@ -70,6 +70,7 @@ export default async function CheckoutPage({
         initialOrderType={initialOrderType}
         initialTable={initialTable}
         initialName={prefill.name}
+        initialEmail={customer?.email ?? ""}
         initialPhone={prefill.phone}
         nowMs={requestNowMs()}
       />

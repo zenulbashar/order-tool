@@ -374,6 +374,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
             orderType: data.orderType,
             tableLabel: data.orderType === "dine_in" ? data.tableLabel : null,
             customerName: data.customerName,
+            customerEmail: data.customerEmail,
             customerPhone: data.customerPhone,
             // Additive capture ONLY: stored as-is from the validated/trimmed
             // input and never read back into any total. The recompute above and
