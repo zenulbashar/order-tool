@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { ConciergePanel } from "./concierge/concierge-panel";
 import type { PublicItem, PublicMenu } from "./types";
 
@@ -29,6 +31,10 @@ export function ConciergeLauncher({
   prefill?: { text: string; nonce: number };
   onOpenConcierge: () => void;
 }) {
+  // The panel docks bottom-right on desktop, exactly where the FAB sits — so hide
+  // the FAB whenever the panel is open to avoid the overlap.
+  const [panelOpen, setPanelOpen] = useState(false);
+
   return (
     <>
       {/* Mobile spacing only; on desktop the panel's inline trigger is hidden and
@@ -40,13 +46,16 @@ export function ConciergeLauncher({
           onSelectItem={onSelectItem}
           onOpenCart={onOpenCart}
           prefill={prefill}
+          onVisibilityChange={setPanelOpen}
         />
       </div>
 
       <button
         type="button"
         onClick={onOpenConcierge}
-        className="fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-pill py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lift lg:flex"
+        className={`fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-pill py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lift ${
+          panelOpen ? "" : "lg:flex"
+        }`}
         style={{ background: "linear-gradient(110deg,#13301f,#1d4a35)" }}
       >
         <span className="flex h-[30px] w-[30px] items-center justify-center rounded-pill bg-accent/20 text-base text-accent">

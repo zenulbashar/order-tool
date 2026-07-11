@@ -91,15 +91,8 @@ export function StorefrontHero({
             "color-mix(in srgb, var(--brand) 12%, var(--color-surface))",
         }}
       >
-        <div className="mx-auto flex w-full max-w-[1280px] items-end gap-5 px-6 pb-7">
-          <BrandTile
-            venue={venue}
-            sizeClass="h-24 w-24"
-            radiusClass="rounded-[20px]"
-            textClass="text-4xl"
-            ringClass="ring-[3px] ring-white/90"
-          />
-          <div className="min-w-0 pb-1">
+        <div className="mx-auto w-full max-w-[1280px] px-6 pb-7">
+          <div className="min-w-0">
             <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight text-ink">
               {venue.name}
             </h1>
@@ -132,16 +125,10 @@ export function StorefrontHero({
         }}
       />
 
-      {/* Centered identity — the premium hospitality composition. */}
+      {/* Centered venue name over the image — the logo lives only in the header
+          + footer (over a busy photo it reads poorly), per design direction. */}
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-        <BrandTile
-          venue={venue}
-          sizeClass="h-24 w-24"
-          radiusClass="rounded-[24px]"
-          textClass="text-4xl"
-          ringClass="ring-[3px] ring-white/90"
-        />
-        <h1 className="mt-6 font-display text-5xl font-extrabold leading-tight tracking-tight text-white xl:text-6xl">
+        <h1 className="font-display text-5xl font-extrabold leading-tight tracking-tight text-white drop-shadow-sm xl:text-6xl">
           {venue.name}
         </h1>
         <VenueMeta venue={venue} toneClass="text-[#f3ede1]" />

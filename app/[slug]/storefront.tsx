@@ -17,6 +17,7 @@ import { ItemModifierSheet } from "./item-modifier-sheet";
 import { MenuSearch } from "./menu-search";
 import { RecommendationsProvider } from "./recommendations";
 import { dinerBrandStyle } from "./brand-style";
+import { StorefrontFooter } from "./storefront-footer";
 import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
 import { SearchEmptyState } from "./search-empty-state";
@@ -118,11 +119,25 @@ function StorefrontInner({
     setConciergePrefill((current) => ({ text: "", nonce: current.nonce + 1 }));
   }
 
+  function scrollToId(id: string) {
+    document
+      .getElementById(id)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   // Two-colour venue theming (--brand + optional --color-ink override).
   const brandStyle = dinerBrandStyle(venue);
   // Desktop hero rotation: the non-empty of up to three owner photos.
   const heroImages = [venue.coverUrl, venue.coverUrl2, venue.coverUrl3].filter(
     (url): url is string => Boolean(url),
+  );
+  // Header nav links resolve to real content only (never dead links).
+  const hasAbout = Boolean(venue.storefrontDescription);
+  const hasContact = Boolean(
+    venue.streetAddress ||
+      venue.suburb ||
+      venue.phone ||
+      (venue.openingHours && venue.openingHours.length > 0),
   );
 
   // The dietary tags actually in use across this venue's menu, in canonical
@@ -222,7 +237,7 @@ function StorefrontInner({
       <div
         style={brandStyle}
         data-domain="diner"
-        className="min-h-dvh bg-surface pb-24 lg:pb-12"
+        className="min-h-dvh bg-surface pb-24 lg:pb-0"
       >
         {/* ============ Desktop app bar (lg+) — centered brand logo, search on
             the right (big-brand hospitality pattern). Sticky so the logo stays a
@@ -251,8 +266,37 @@ function StorefrontInner({
               />
             </button>
 
-            {/* Right: search lens (expands to an input), context, account. */}
+            {/* Right: nav links, search lens (expands to input), context, account. */}
             <div className="flex shrink-0 items-center gap-3">
+              <nav className="hidden items-center gap-5 text-sm font-medium text-muted lg:flex">
+                {menu.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("menu-top")}
+                    className="transition hover:text-ink"
+                  >
+                    Menu
+                  </button>
+                ) : null}
+                {hasAbout ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("storefront-footer")}
+                    className="transition hover:text-ink"
+                  >
+                    About
+                  </button>
+                ) : null}
+                {hasContact ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToId("storefront-footer")}
+                    className="transition hover:text-ink"
+                  >
+                    Contact
+                  </button>
+                ) : null}
+              </nav>
               {tableLabel.trim() ? (
                 <span className="rounded-pill bg-[var(--color-success)]/12 px-3 py-1.5 text-xs font-semibold text-success-deep">
                   Dine-in · Table {tableLabel.trim()}
@@ -529,6 +573,9 @@ function StorefrontInner({
             />
           ) : null}
         </div>
+
+        {/* Footer — opening hours, location, contact + the logo (end of page). */}
+        <StorefrontFooter venue={venue} />
 
         {activeItem ? (
           <ItemModifierSheet

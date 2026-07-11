@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { Spinner } from "@/app/_components/spinner";
 import {
@@ -60,6 +60,7 @@ export function ConciergePanel({
   onSelectItem,
   onOpenCart,
   prefill,
+  onVisibilityChange,
 }: {
   slug: string;
   menu: PublicMenu;
@@ -75,6 +76,9 @@ export function ConciergePanel({
   // input. Prefill ONLY — the diner still taps send, so no AI call happens
   // without their explicit action. nonce 0 = initial mount, ignored.
   prefill?: { text: string; nonce: number };
+  // Notify the parent when the panel opens/closes, so the storefront can hide the
+  // floating FAB while the panel is open (they occupy the same bottom-right spot).
+  onVisibilityChange?: (open: boolean) => void;
 }) {
   // addItem is the ONLY cart write; count drives the "View order" control.
   const { addItem, count } = useCart();
@@ -98,6 +102,11 @@ export function ConciergePanel({
     setInput(prefill?.text ?? "");
     setOpen(true);
   }
+
+  // Report open/close so the storefront can hide the FAB while we're open.
+  useEffect(() => {
+    onVisibilityChange?.(open);
+  }, [open, onVisibilityChange]);
 
   // Resolve proposed ids to the live PublicItem the menu already holds — the
   // same id-resolution as recommendations. Anything not present is skipped; the
