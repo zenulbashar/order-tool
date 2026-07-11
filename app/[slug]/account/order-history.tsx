@@ -8,7 +8,7 @@ import { StatusBadge, type PaymentTone } from "@/app/_components/status-badge";
 import { formatCents, orderReference } from "@/lib/validation";
 
 import { seedStoredCart } from "../cart-provider";
-import { reorder, signOutCustomer } from "./actions";
+import { reorder } from "./actions";
 import type { CustomerOrderSummary, CustomerUsual } from "./types";
 
 const STATUS_LABEL: Record<CustomerOrderSummary["status"], string> = {
@@ -37,12 +37,10 @@ const STATUS_TONE: Record<CustomerOrderSummary["status"], PaymentTone> = {
  */
 export function OrderHistory({
   slug,
-  customerEmail,
   usual,
   orders,
 }: {
   slug: string;
-  customerEmail: string;
   usual: CustomerUsual | null;
   orders: CustomerOrderSummary[];
 }) {
@@ -77,21 +75,6 @@ export function OrderHistory({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
-        <p className="min-w-0 truncate text-muted">
-          Signed in as{" "}
-          <span className="font-medium text-ink">{customerEmail}</span>
-        </p>
-        <form action={signOutCustomer}>
-          <button
-            type="submit"
-            className="shrink-0 text-xs font-medium text-muted underline hover:text-ink"
-          >
-            Sign out
-          </button>
-        </form>
-      </div>
-
       {error ? (
         <p
           className="mx-5 mb-2 rounded-control bg-[var(--color-warm)]/10 px-3 py-2 text-sm text-[var(--color-warm-deep)]"
