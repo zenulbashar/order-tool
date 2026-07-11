@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { readableOn } from "@/app/_components/brand-contrast";
 import { getCustomer } from "@/lib/customer/auth";
 import { isReservedSlug } from "@/lib/validation";
 
+import { dinerBrandStyle } from "../brand-style";
 import { getPublicVenueBySlug } from "../queries";
 import { AccountNav } from "./account-nav";
 
@@ -32,10 +32,7 @@ export default async function AccountLayout({
   if (!venue) notFound();
 
   const customer = await getCustomer(venue.id);
-  const brandStyle = {
-    "--brand": venue.brandColor,
-    "--brand-contrast": readableOn(venue.brandColor),
-  } as React.CSSProperties;
+  const brandStyle = dinerBrandStyle(venue);
 
   return (
     <main

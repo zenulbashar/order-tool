@@ -189,7 +189,7 @@ export function ConciergePanel({
       {open ? (
         <>
         <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center"
+          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center lg:items-end lg:justify-end lg:bg-black/15 lg:p-6"
           role="dialog"
           aria-modal="true"
           aria-label="Prompt2Eat"
@@ -199,8 +199,10 @@ export function ConciergePanel({
               hero is the other): a radial glow fading to deepest forest, built
               from concierge tokens (never raw hex). Default text is the light
               AI ink; elements override per the source spec. */}
+          {/* Desktop: docked bottom-right (where the FAB lives) as a fixed-size
+              assistant panel; mobile keeps the bottom sheet. */}
           <div
-            className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl text-concierge-ai-text sm:rounded-2xl"
+            className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl text-concierge-ai-text sm:rounded-2xl lg:h-[min(660px,85dvh)] lg:w-[420px] lg:shadow-2xl"
             style={{
               background:
                 "radial-gradient(130% 70% at 50% 0%, var(--color-concierge-glow), var(--color-forest-deepest) 72%)",

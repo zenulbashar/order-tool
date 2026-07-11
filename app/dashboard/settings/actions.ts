@@ -48,6 +48,12 @@ export async function updateVenueSettings(
     .omit({ logoUrl: true })
     .safeParse({
       brandColor: formData.get("brandColor") ?? "",
+      // "auto" posts empty → stored NULL (the diner keeps the shared ink);
+      // "custom" posts the picked hex.
+      textColor:
+        formData.get("textColorMode") === "custom"
+          ? (formData.get("textColor") ?? "")
+          : "",
       storefrontDescription: formData.get("storefrontDescription") ?? "",
     });
   if (!parsed.success) {
@@ -58,6 +64,7 @@ export async function updateVenueSettings(
     .update(venues)
     .set({
       brandColor: parsed.data.brandColor,
+      brandTextColor: parsed.data.textColor,
       storefrontDescription: parsed.data.storefrontDescription,
     })
     .where(eq(venues.id, venue.id));
@@ -153,6 +160,34 @@ async function currentLogoUrl(venueId: string): Promise<string | null> {
   return row?.logoUrl ?? null;
 }
 
+/**
+ * Best-effort dominant-colour extraction from an uploaded logo (sharp's
+ * 4096-bin histogram dominant). Returns a hex, or null when extraction fails or
+ * the dominant is too close to white/black to work as a brand accent (a logo on
+ * a white background would otherwise "brand" the venue white). Never throws.
+ */
+async function deriveBrandColorFromLogo(
+  buffer: Buffer,
+): Promise<string | null> {
+  try {
+    const sharp = (await import("sharp")).default;
+    const { dominant } = await sharp(buffer).stats();
+    const { r, g, b } = dominant;
+    // Relative-luminance guard: skip near-white / near-black dominants.
+    const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    if (lum > 0.88 || lum < 0.06) return null;
+    const hex = (v: number) => v.toString(16).padStart(2, "0");
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
+  } catch {
+    return null;
+  }
+}
+
+// The venues.brand_color schema default — auto-derivation from the logo applies
+// ONLY while the venue is still on this untouched default, so an owner's chosen
+// colour is never overwritten by an upload.
+const BRAND_COLOR_DEFAULT = "#111827";
+
 /** Best-effort delete of an R2 object behind a stored public URL. Never throws. */
 async function bestEffortDeleteLogo(url: string | null): Promise<void> {
   if (!url) return;
@@ -192,18 +227,29 @@ export async function uploadVenueLogo(
   const previousUrl = await currentLogoUrl(venue.id);
   const key = `venues/${venue.id}/logo/${crypto.randomUUID()}.${ext}`;
 
+  const buffer = Buffer.from(await file.arrayBuffer());
   let publicUrl: string;
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
     publicUrl = await uploadToR2(key, buffer, file.type);
   } catch {
     // Upload failed (network, or R2 not configured) — leave the DB untouched.
     return { error: "Couldn't upload the logo right now. Please try again." };
   }
 
+  // Auto-brand from the logo (two-colour theming): ONLY while brand_color is
+  // still the untouched schema default — a colour the owner chose is never
+  // overwritten. Best-effort; extraction failure changes nothing.
+  const derivedBrand =
+    venue.brandColor === BRAND_COLOR_DEFAULT
+      ? await deriveBrandColorFromLogo(buffer)
+      : null;
+
   await db
     .update(venues)
-    .set({ logoUrl: publicUrl })
+    .set({
+      logoUrl: publicUrl,
+      ...(derivedBrand ? { brandColor: derivedBrand } : {}),
+    })
     .where(eq(venues.id, venue.id));
 
   await bestEffortDeleteLogo(previousUrl);
@@ -273,17 +319,24 @@ export async function removeVenueLogo(): Promise<void> {
 /* logo's 2MB (well under serverActions.bodySizeLimit).                          */
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024; // 5MB
-type ImagerySlot = "cover" | "background";
+// cover/cover2/cover3 are the storefront hero rotation slots; "background" is
+// retired from the UI but kept here so its actions stay valid.
+type ImagerySlot = "cover" | "cover2" | "cover3" | "background";
+
+const SLOT_COLUMN = {
+  cover: venues.coverUrl,
+  cover2: venues.coverUrl2,
+  cover3: venues.coverUrl3,
+  background: venues.backgroundUrl,
+} as const;
 
 /** Read the venue's current URL for one imagery slot, or null. */
 async function currentImageUrl(
   venueId: string,
   slot: ImagerySlot,
 ): Promise<string | null> {
-  const columns =
-    slot === "cover" ? { url: venues.coverUrl } : { url: venues.backgroundUrl };
   const [row] = await db
-    .select(columns)
+    .select({ url: SLOT_COLUMN[slot] })
     .from(venues)
     .where(eq(venues.id, venueId))
     .limit(1);
@@ -292,7 +345,14 @@ async function currentImageUrl(
 
 /** Set one imagery slot's column (explicit branch keeps the update type-safe). */
 function setImageColumn(venueId: string, slot: ImagerySlot, url: string | null) {
-  const values = slot === "cover" ? { coverUrl: url } : { backgroundUrl: url };
+  const values =
+    slot === "cover"
+      ? { coverUrl: url }
+      : slot === "cover2"
+        ? { coverUrl2: url }
+        : slot === "cover3"
+          ? { coverUrl3: url }
+          : { backgroundUrl: url };
   return db.update(venues).set(values).where(eq(venues.id, venueId));
 }
 
@@ -399,6 +459,36 @@ export async function setVenueCoverUrl(
 }
 export async function removeVenueCover(): Promise<void> {
   return removeVenueImage("cover");
+}
+export async function uploadVenueCover2(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return uploadVenueImage("cover2", formData);
+}
+export async function setVenueCover2Url(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return setVenueImageUrl("cover2", formData);
+}
+export async function removeVenueCover2(): Promise<void> {
+  return removeVenueImage("cover2");
+}
+export async function uploadVenueCover3(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return uploadVenueImage("cover3", formData);
+}
+export async function setVenueCover3Url(
+  _prev: LogoState,
+  formData: FormData,
+): Promise<LogoState> {
+  return setVenueImageUrl("cover3", formData);
+}
+export async function removeVenueCover3(): Promise<void> {
+  return removeVenueImage("cover3");
 }
 export async function uploadVenueBackground(
   _prev: LogoState,

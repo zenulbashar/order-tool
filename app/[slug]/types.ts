@@ -12,12 +12,19 @@ export type PublicVenue = {
   slug: string;
   name: string;
   brandColor: string;
+  // Optional venue text colour (two-colour theming). Null = automatic — the
+  // diner root only overrides --color-ink when this is set.
+  textColor: string | null;
   logoUrl: string | null;
   // Owner-uploaded storefront brand imagery. coverUrl replaces the storefront's
   // brand-colour cover band with a hero image; backgroundUrl fills the empty
   // side gutters (behind the centered column) on wide screens across all diner
   // pages. Both null by default — the storefront looks exactly as before.
   coverUrl: string | null;
+  // Hero rotation slots 2 & 3 (desktop). The storefront rotates through the
+  // non-null of [coverUrl, coverUrl2, coverUrl3]; mobile uses coverUrl alone.
+  coverUrl2: string | null;
+  coverUrl3: string | null;
   backgroundUrl: string | null;
   storefrontDescription: string | null;
   // Structured-data inputs (Phase 6). Public by design — they power the venue's

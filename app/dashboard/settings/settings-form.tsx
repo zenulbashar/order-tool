@@ -20,6 +20,7 @@ const BRAND_PRESETS = ["#f4b43c", "#e2553a", "#13301f", "#3fa66a", "#635bff"];
 
 type VenueSettings = {
   brandColor: string;
+  textColor: string | null;
   storefrontDescription: string | null;
 };
 
@@ -35,6 +36,10 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
   // drives the selection ring + hex readout, mirrored from the input's onChange.
   const colorRef = useRef<HTMLInputElement>(null);
   const [brandColor, setBrandColor] = useState(settings.brandColor);
+  // Text colour: "auto" (null → the storefront's default ink) unless the owner
+  // opts into a custom one. The mode posts alongside the picker value.
+  const [customText, setCustomText] = useState(Boolean(settings.textColor));
+  const [textColor, setTextColor] = useState(settings.textColor ?? "#0e1f18");
 
   const pickPreset = (hex: string) => {
     if (colorRef.current) colorRef.current.value = hex;
@@ -86,6 +91,53 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
             />
           </label>
           <span className="font-mono text-xs text-muted">{brandColor}</span>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <span className={microLabel}>
+          Text colour{" "}
+          <span className="font-normal normal-case text-muted">
+            (storefront headings &amp; body)
+          </span>
+        </span>
+        <input
+          type="hidden"
+          name="textColorMode"
+          value={customText ? "custom" : "auto"}
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={customText}
+              onChange={(event) => setCustomText(event.target.checked)}
+              className="h-4 w-4 accent-[var(--color-forest)]"
+            />
+            Custom
+          </label>
+          {customText ? (
+            <>
+              <label className="relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-control border border-line">
+                <span
+                  className="h-5 w-5 rounded"
+                  style={{ backgroundColor: textColor }}
+                />
+                <input
+                  name="textColor"
+                  type="color"
+                  value={textColor}
+                  onChange={(event) => setTextColor(event.target.value)}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
+              <span className="font-mono text-xs text-muted">{textColor}</span>
+            </>
+          ) : (
+            <span className="text-xs text-muted">
+              Auto — a deep neutral chosen to read well with your brand colour.
+            </span>
+          )}
         </div>
       </div>
 

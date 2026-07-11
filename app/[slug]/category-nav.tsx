@@ -56,7 +56,8 @@ export function CategoryNav({
   if (variant === "tabs") {
     return (
       <nav className="min-w-0">
-        <ul className="flex gap-6 overflow-x-auto">
+        {/* Scrollbar hidden: a long category list pans without the grey bar. */}
+        <ul className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categories.map((category) => {
             const isActive = category.id === active;
             return (

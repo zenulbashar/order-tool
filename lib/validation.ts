@@ -458,6 +458,19 @@ export const brandColorSchema = z
     "Enter a hex colour like #1d4ed8.",
   );
 
+/**
+ * Optional venue TEXT colour (two-colour diner theming). Empty → null (= auto:
+ * the shared ink default); else a 6-digit hex, lowercased.
+ */
+export const brandTextColorSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value === "" || /^#[0-9a-fA-F]{6}$/.test(value),
+    "Enter a hex colour like #1d2b22.",
+  )
+  .transform((value) => (value.length > 0 ? value.toLowerCase() : null));
+
 /** Field only this phase (no upload). Empty stored as null; else http(s) URL. */
 export const logoUrlSchema = z
   .string()
@@ -485,6 +498,7 @@ export const storefrontDescriptionSchema = z
 
 export const venueSettingsSchema = z.object({
   brandColor: brandColorSchema,
+  textColor: brandTextColorSchema,
   logoUrl: logoUrlSchema,
   storefrontDescription: storefrontDescriptionSchema,
 });
