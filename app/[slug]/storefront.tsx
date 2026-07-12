@@ -270,7 +270,7 @@ function StorefrontInner({
             the right (big-brand hospitality pattern). Sticky so the logo stays a
             one-click "home" (scroll to top) while browsing. ============ */}
         <div className="hidden border-b border-sand bg-surface-elevated lg:sticky lg:top-0 lg:z-30 lg:block">
-          <div className="relative mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
+          <div className="relative mx-auto flex h-16 max-w-[1440px] 2xl:max-w-[1680px] items-center justify-between px-6">
             {/* Left: venue name (kept small — the hero carries the identity). */}
             <span className="max-w-[280px] truncate text-sm font-semibold text-ink">
               {venue.name}
@@ -287,9 +287,10 @@ function StorefrontInner({
             >
               <BrandTile
                 venue={venue}
-                sizeClass="h-10 w-10"
+                heightClass="h-12"
+                maxWClass="max-w-[220px]"
                 radiusClass="rounded-[11px]"
-                textClass="text-base"
+                textClass="text-lg"
               />
             </button>
 
@@ -465,7 +466,7 @@ function StorefrontInner({
 
         {/* ============ Categories landing — big tiles (both breakpoints) ============ */}
         {isLanding ? (
-          <div className="mx-auto w-full max-w-[1280px] px-5 py-8 lg:px-6 lg:py-12">
+          <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1680px] px-5 py-8 lg:px-6 lg:py-12">
             <h2 className="mb-5 font-display text-2xl font-bold tracking-tight text-ink">
               Browse by category
             </h2>
@@ -532,7 +533,7 @@ function StorefrontInner({
             {/* Desktop: underline tab strip + a single aligned "Dietary
                 filters" pill that opens a popover (chips + the life-safety
                 disclaimer), matching the design. */}
-            <div className="mx-auto hidden max-w-[1280px] items-center justify-between gap-4 px-6 lg:flex">
+            <div className="mx-auto hidden max-w-[1440px] 2xl:max-w-[1680px] items-center justify-between gap-4 px-6 lg:flex">
               {navCategories.length > 0 ? (
                 <CategoryNav categories={navCategories} variant="tabs" />
               ) : (
@@ -589,7 +590,7 @@ function StorefrontInner({
         {!isLanding ? (
         <div
           id="menu-top"
-          className="mx-auto w-full max-w-[1280px] scroll-mt-[124px] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7"
+          className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1680px] scroll-mt-[124px] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7"
         >
           <div className="min-w-0">
             {/* AI ordering concierge (#12). Proposes items; tapping one routes

@@ -41,7 +41,7 @@ export function AnnouncementBar({
 
   return (
     <div className="relative bg-ink text-center text-[13px] font-medium text-surface">
-      <p className="mx-auto max-w-[1280px] px-10 py-2">{text}</p>
+      <p className="mx-auto max-w-[1440px] 2xl:max-w-[1680px] px-10 py-2">{text}</p>
       <button
         type="button"
         aria-label="Dismiss announcement"

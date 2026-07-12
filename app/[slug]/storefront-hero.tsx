@@ -12,13 +12,18 @@ import type { PublicVenue } from "./types";
  */
 export function BrandTile({
   venue,
-  sizeClass,
+  heightClass,
+  maxWClass = "max-w-[220px]",
   radiusClass,
   textClass,
   ringClass = "",
 }: {
   venue: Pick<PublicVenue, "logoUrl" | "name">;
-  sizeClass: string;
+  // The logo is sized by HEIGHT with natural width (so a wide wordmark isn't
+  // squeezed into a tiny square); the initial fallback is a square of the same
+  // height.
+  heightClass: string;
+  maxWClass?: string;
   radiusClass: string;
   textClass: string;
   ringClass?: string;
@@ -26,20 +31,19 @@ export function BrandTile({
   if (venue.logoUrl) {
     return (
       // Arbitrary owner-supplied URL; next/image would need remote config.
-      // object-CONTAIN (not cover) so the FULL logo shows — a wordmark/wide mark
-      // is never cropped to its centre. A cream backing + slight padding gives a
-      // transparent logo a clean field.
+      // object-CONTAIN + w-auto: the FULL logo shows at its natural aspect ratio,
+      // never cropped or crushed to a square.
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={venue.logoUrl}
         alt={`${venue.name} logo`}
-        className={`${sizeClass} ${radiusClass} ${ringClass} shrink-0 bg-surface-elevated object-contain p-1`}
+        className={`${heightClass} ${maxWClass} ${radiusClass} ${ringClass} w-auto shrink-0 object-contain`}
       />
     );
   }
   return (
     <span
-      className={`${sizeClass} ${radiusClass} ${ringClass} flex shrink-0 items-center justify-center font-display font-semibold text-[var(--action-contrast)] ${textClass}`}
+      className={`${heightClass} ${radiusClass} ${ringClass} flex aspect-square shrink-0 items-center justify-center font-display font-semibold text-[var(--action-contrast)] ${textClass}`}
       style={{ backgroundColor: "var(--action)" }}
     >
       {venue.name.charAt(0).toUpperCase()}
@@ -94,7 +98,7 @@ export function StorefrontHero({
             "color-mix(in srgb, var(--brand) 12%, var(--color-surface))",
         }}
       >
-        <div className="mx-auto w-full max-w-[1280px] px-6 pb-7">
+        <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1680px] px-6 pb-7">
           <div className="min-w-0">
             <h1 className="font-display text-4xl font-extrabold leading-tight tracking-tight text-ink">
               {venue.name}
