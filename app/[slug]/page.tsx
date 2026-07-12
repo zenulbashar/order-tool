@@ -92,6 +92,7 @@ export default async function StorefrontPage({
         initialTable={initialTable}
         recommendations={recommendations}
         conciergeEnabled={conciergeEnabled}
+        view="landing"
       />
     </>
   );

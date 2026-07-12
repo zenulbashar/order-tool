@@ -41,12 +41,17 @@ export function Storefront({
   initialTable,
   recommendations,
   conciergeEnabled,
+  view = "menu",
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
   recommendations: PublicRecommendations;
   conciergeEnabled: boolean;
+  // "landing" = the categories page (hero + big category tiles, no menu/rail);
+  // "menu" = the ordering page (tabs + item grid + cart rail). Split across two
+  // routes so neither page is a long scroll.
+  view?: "landing" | "menu";
 }) {
   return (
     <CartProvider slug={venue.slug} menu={menu}>
@@ -56,6 +61,7 @@ export function Storefront({
           menu={menu}
           initialTable={initialTable}
           conciergeEnabled={conciergeEnabled}
+          view={view}
         />
       </RecommendationsProvider>
     </CartProvider>
@@ -67,13 +73,16 @@ function StorefrontInner({
   menu,
   initialTable,
   conciergeEnabled,
+  view,
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
   conciergeEnabled: boolean;
+  view: "landing" | "menu";
 }) {
-  const { addItem } = useCart();
+  const { addItem, count: cartCount } = useCart();
+  const isLanding = view === "landing";
   // A table-QR arrival (?table=) is implicitly dine-in; this hint is forwarded to
   // checkout, which is now the single place the order type is chosen (A2). The
   // landing no longer shows a pickup/dine-in toggle.
@@ -284,18 +293,26 @@ function StorefrontInner({
               />
             </button>
 
-            {/* Right: nav links, search lens (expands to input), context, account. */}
+            {/* Right: nav links, search lens (menu only), cart, account. */}
             <div className="flex shrink-0 items-center gap-3">
               <nav className="hidden items-center gap-5 text-sm font-medium text-muted lg:flex">
-                {menu.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => scrollToId("menu-top")}
+                {isLanding ? (
+                  menu.length > 0 ? (
+                    <Link
+                      href={`/${venue.slug}/menu`}
+                      className="transition hover:text-ink"
+                    >
+                      Menu
+                    </Link>
+                  ) : null
+                ) : (
+                  <Link
+                    href={`/${venue.slug}`}
                     className="transition hover:text-ink"
                   >
-                    Menu
-                  </button>
-                ) : null}
+                    Categories
+                  </Link>
+                )}
                 {hasAbout ? (
                   <button
                     type="button"
@@ -320,7 +337,7 @@ function StorefrontInner({
                   Dine-in · Table {tableLabel.trim()}
                 </span>
               ) : null}
-              {menu.length > 0 ? (
+              {!isLanding && menu.length > 0 ? (
                 <div className={searchOpen ? "w-72" : ""}>
                   <MenuSearch
                     expanded={searchOpen}
@@ -332,6 +349,23 @@ function StorefrontInner({
                   />
                 </div>
               ) : null}
+              {/* Cart icon — opens the review drawer; badge shows item count. */}
+              <button
+                type="button"
+                onClick={() => setCartOpen(true)}
+                aria-label={`View cart${cartCount > 0 ? ` (${cartCount})` : ""}`}
+                className="relative flex h-10 w-10 items-center justify-center rounded-pill bg-sand text-muted transition hover:text-ink"
+              >
+                <CartIcon />
+                {cartCount > 0 ? (
+                  <span
+                    className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-pill px-1 text-[10px] font-bold text-[var(--action-contrast)]"
+                    style={{ backgroundColor: "var(--action)" }}
+                  >
+                    {cartCount}
+                  </span>
+                ) : null}
+              </button>
               <Link
                 href={`/${venue.slug}/account`}
                 aria-label="Your orders"
@@ -343,51 +377,82 @@ function StorefrontInner({
           </div>
         </div>
 
-        {/* ============ Desktop hero (lg+) — full-page rotating imagery ============ */}
-        <div className="hidden lg:block">
-          <StorefrontHero venue={venue} images={heroImages} />
-        </div>
+        {/* ============ Desktop hero (lg+) — LANDING only ============ */}
+        {isLanding ? (
+          <div className="hidden lg:block">
+            <StorefrontHero venue={venue} images={heroImages} />
+          </div>
+        ) : null}
 
-        {/* ============ Mobile header (below lg) — unchanged ============ */}
-        <div className="lg:hidden">
-          {venue.coverUrl ? (
-            // Owner-supplied cover image fills the band. next/image would need
-            // remote config (house rule).
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={venue.coverUrl}
-              alt=""
-              className="h-32 w-full object-cover sm:h-40"
-            />
-          ) : (
-            // Default cover band — a decorative warm glow in the venue's --brand.
-            <div
-              className="h-32 w-full sm:h-40"
-              style={{
-                background:
-                  "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-forest-deep)",
-              }}
-            />
-          )}
-          {/* Only the LOGO overlaps the band (-mt-10); name + description sit
-              below on the cream surface, fully readable. */}
-          <header className="px-5 pb-4">
-            <div className="flex items-start justify-between gap-4">
-              {venue.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={venue.logoUrl}
-                  alt={`${venue.name} logo`}
-                  className="-mt-10 h-16 w-16 shrink-0 rounded-pill object-cover ring-4 ring-surface"
-                />
-              ) : (
-                <span
-                  className="-mt-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-pill text-2xl font-semibold text-[var(--action-contrast)] ring-4 ring-surface"
-                  style={{ backgroundColor: "var(--action)" }}
+        {/* ============ Mobile header (below lg) ============ */}
+        {isLanding ? (
+          <div className="lg:hidden">
+            {venue.coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={venue.coverUrl}
+                alt=""
+                className="h-32 w-full object-cover sm:h-40"
+              />
+            ) : (
+              <div
+                className="h-32 w-full sm:h-40"
+                style={{
+                  background:
+                    "radial-gradient(75% 70% at 28% 25%, color-mix(in oklab, var(--brand) 50%, transparent), transparent 72%), var(--color-forest-deep)",
+                }}
+              />
+            )}
+            <header className="px-5 pb-4">
+              <div className="flex items-start justify-between gap-4">
+                {venue.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={venue.logoUrl}
+                    alt={`${venue.name} logo`}
+                    className="-mt-10 h-16 w-16 shrink-0 rounded-2xl bg-surface-elevated object-contain p-1 ring-4 ring-surface"
+                  />
+                ) : (
+                  <span
+                    className="-mt-10 flex h-16 w-16 shrink-0 items-center justify-center rounded-pill text-2xl font-semibold text-[var(--action-contrast)] ring-4 ring-surface"
+                    style={{ backgroundColor: "var(--action)" }}
+                  >
+                    {venue.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <Link
+                  href={`/${venue.slug}/account`}
+                  className="shrink-0 text-xs font-medium text-muted transition hover:text-ink"
                 >
-                  {venue.name.charAt(0).toUpperCase()}
-                </span>
-              )}
+                  Your orders
+                </Link>
+              </div>
+              <div className="mt-3">
+                <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
+                  {venue.name}
+                </h1>
+                {venue.storefrontDescription ? (
+                  <p className="mt-0.5 text-sm text-muted">
+                    {venue.storefrontDescription}
+                  </p>
+                ) : null}
+              </div>
+            </header>
+          </div>
+        ) : (
+          // Menu view (mobile): a slim bar with a back-to-categories link — no big
+          // cover band, so the items are reachable without a long scroll.
+          <div className="border-b border-sand bg-surface-elevated px-5 py-3 lg:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href={`/${venue.slug}`}
+                className="shrink-0 text-xs font-medium text-muted transition hover:text-ink"
+              >
+                ← Categories
+              </Link>
+              <span className="truncate font-display text-base font-semibold text-ink">
+                {venue.name}
+              </span>
               <Link
                 href={`/${venue.slug}/account`}
                 className="shrink-0 text-xs font-medium text-muted transition hover:text-ink"
@@ -395,21 +460,34 @@ function StorefrontInner({
                 Your orders
               </Link>
             </div>
-            <div className="mt-3">
-              <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
-                {venue.name}
-              </h1>
-              {venue.storefrontDescription ? (
-                <p className="mt-0.5 text-sm text-muted">
-                  {venue.storefrontDescription}
-                </p>
-              ) : null}
-            </div>
-          </header>
-        </div>
+          </div>
+        )}
 
-        {/* ============ Sticky category / search strip ============ */}
-        {menu.length > 0 ? (
+        {/* ============ Categories landing — big tiles (both breakpoints) ============ */}
+        {isLanding ? (
+          <div className="mx-auto w-full max-w-[1280px] px-5 py-8 lg:px-6 lg:py-12">
+            <h2 className="mb-5 font-display text-2xl font-bold tracking-tight text-ink">
+              Browse by category
+            </h2>
+            <CategoryTiles
+              slug={venue.slug}
+              categories={categoryTiles.slice(0, 6)}
+            />
+            {menu.length > 0 ? (
+              <div className="mt-8 text-center">
+                <Link
+                  href={`/${venue.slug}/menu`}
+                  className="inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-semibold text-surface transition hover:-translate-y-px hover:shadow-lift"
+                >
+                  View the full menu
+                </Link>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* ============ Sticky category / search strip (MENU view) ============ */}
+        {!isLanding && menu.length > 0 ? (
           <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur lg:top-16 lg:bg-surface-elevated/95">
             {/* Mobile: search + dietary chips + disclaimer + pill nav (unchanged) */}
             <div className="lg:hidden">
@@ -507,7 +585,8 @@ function StorefrontInner({
           </div>
         ) : null}
 
-        {/* ============ Body: inner-capped grid (menu · cart rail) ============ */}
+        {/* ============ Body: inner-capped grid (MENU view — menu · cart rail) ============ */}
+        {!isLanding ? (
         <div
           id="menu-top"
           className="mx-auto w-full max-w-[1280px] scroll-mt-[124px] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7"
@@ -526,14 +605,6 @@ function StorefrontInner({
                 prefill={conciergePrefill}
                 onOpenConcierge={openConcierge}
               />
-            ) : null}
-
-            {/* Visual "browse by category" tiles — desktop, full browse view only
-                (hidden while searching/filtering, since sections change). */}
-            {!isFiltering ? (
-              <div className="hidden pt-1 lg:block">
-                <CategoryTiles categories={categoryTiles} onJump={scrollToId} />
-              </div>
             ) : null}
 
             <div className="space-y-8 py-6 lg:py-0">
@@ -599,6 +670,7 @@ function StorefrontInner({
             />
           ) : null}
         </div>
+        ) : null}
 
         {/* Footer — opening hours, location, contact + the logo (end of page). */}
         <StorefrontFooter venue={venue} />
@@ -647,6 +719,25 @@ function PersonIcon() {
     >
       <circle cx="12" cy="8" r="3.5" />
       <path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5" />
+    </svg>
+  );
+}
+
+function CartIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-[18px] w-[18px]"
+    >
+      <circle cx="9" cy="20" r="1.4" />
+      <circle cx="18" cy="20" r="1.4" />
+      <path d="M2.5 3h2l2.2 12.2a1.5 1.5 0 0 0 1.5 1.3h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6" />
     </svg>
   );
 }

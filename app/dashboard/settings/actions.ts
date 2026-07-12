@@ -187,11 +187,6 @@ async function deriveBrandColorFromLogo(
   }
 }
 
-// The venues.brand_color schema default — auto-derivation from the logo applies
-// ONLY while the venue is still on this untouched default, so an owner's chosen
-// colour is never overwritten by an upload.
-const BRAND_COLOR_DEFAULT = "#111827";
-
 /** Best-effort delete of an R2 object behind a stored public URL. Never throws. */
 async function bestEffortDeleteLogo(url: string | null): Promise<void> {
   if (!url) return;
@@ -240,13 +235,11 @@ export async function uploadVenueLogo(
     return { error: "Couldn't upload the logo right now. Please try again." };
   }
 
-  // Auto-brand from the logo (two-colour theming): ONLY while brand_color is
-  // still the untouched schema default — a colour the owner chose is never
-  // overwritten. Best-effort; extraction failure changes nothing.
-  const derivedBrand =
-    venue.brandColor === BRAND_COLOR_DEFAULT
-      ? await deriveBrandColorFromLogo(buffer)
-      : null;
+  // Auto-brand from the logo (two-colour theming) — apply the logo's dominant
+  // colour as the venue brand so the diner immediately reflects the logo. The
+  // owner can still override it in Settings afterwards. Best-effort: extraction
+  // failure (or a near-white/black logo) leaves the current brand colour intact.
+  const derivedBrand = await deriveBrandColorFromLogo(buffer);
 
   await db
     .update(venues)
