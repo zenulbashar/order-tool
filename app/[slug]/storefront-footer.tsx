@@ -44,13 +44,14 @@ export function StorefrontFooter({ venue }: { venue: PublicVenue }) {
       id="storefront-footer"
       className="scroll-mt-[124px] border-t border-line bg-surface-elevated"
     >
-      <div className="mx-auto grid max-w-[1280px] gap-10 px-6 py-12 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mx-auto grid max-w-[1440px] 2xl:max-w-[1680px] gap-10 px-6 py-12 sm:grid-cols-2 lg:grid-cols-3">
         {/* Brand + about */}
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <BrandTile
               venue={venue}
-              sizeClass="h-11 w-11"
+              heightClass="h-12"
+              maxWClass="max-w-[200px]"
               radiusClass="rounded-[12px]"
               textClass="text-lg"
             />
@@ -152,7 +153,7 @@ export function StorefrontFooter({ venue }: { venue: PublicVenue }) {
       </div>
 
       <div className="border-t border-line px-6 py-4">
-        <p className="mx-auto max-w-[1280px] text-center text-xs text-label sm:text-left">
+        <p className="mx-auto max-w-[1440px] 2xl:max-w-[1680px] text-center text-xs text-label sm:text-left">
           Powered by Prompt2Eat
         </p>
       </div>
