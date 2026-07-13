@@ -21,7 +21,15 @@ export type MenuArtworkData = {
   logoDataUri?: string | null;
   categories: {
     name: string;
-    items: { name: string; priceCents: number; description: string | null }[];
+    items: {
+      name: string;
+      priceCents: number;
+      description: string | null;
+      /** Item photo pre-inlined as a data: URI (server-side), or null. Same
+       * CORS-safe rule as the logo — only drawn when the "Show photos" toggle is
+       * on (withPhotos). */
+      imageDataUri?: string | null;
+    }[];
   }[];
 };
 
@@ -75,11 +83,14 @@ export function MenuArtwork({
   preset,
   showPrices = true,
   showDescriptions = true,
+  withPhotos = false,
 }: {
   data: MenuArtworkData;
   preset: SizePreset;
   showPrices?: boolean;
   showDescriptions?: boolean;
+  /** Draw each item's inlined photo as a thumbnail (data URIs only). */
+  withPhotos?: boolean;
 }) {
   const { width: W, height: H } = preset;
   const ink = readableOn(data.brandColor);
@@ -106,7 +117,13 @@ export function MenuArtwork({
   // Flatten to a block stream (category header + items).
   type Block =
     | { type: "cat"; name: string }
-    | { type: "item"; name: string; priceCents: number; description: string | null };
+    | {
+        type: "item";
+        name: string;
+        priceCents: number;
+        description: string | null;
+        imageDataUri?: string | null;
+      };
   const blocks: Block[] = [];
   for (const cat of data.categories) {
     if (cat.items.length === 0) continue;
@@ -123,6 +140,10 @@ export function MenuArtwork({
     itemSize: number;
     catSize: number;
     descSize: number;
+    // Per-row photo: thumbnail size (0 = none) + the text indent it forces.
+    thumb: number;
+    indent: number;
+    image: string | null;
   };
 
   // Try to fit the WHOLE menu: pick the biggest font (then shed descriptions,
@@ -140,22 +161,43 @@ export function MenuArtwork({
     const catH = catSize * 1.9;
     const rowH = itemSize * 1.32;
     const descH = descSize * 1.2;
+    // Photo thumbnail: a square roughly 2.6× the item text height, drawn to the
+    // left of the name; the text indents past it. Only for items that have a
+    // photo (a mixed row of photo / no-photo items is fine).
+    const thumb = withPhotos ? Math.round(itemSize * 2.6) : 0;
+    const thumbGap = Math.round(itemSize * 0.55);
     // Char budgets (rough monospace-free estimate at ~0.55em). With prices
     // hidden the name gets the full column width.
     const priceReserve = showPrices ? itemSize * 4.2 : 0; // room for "$00.00" + gap
-    const nameMaxChars = Math.max(6, Math.floor((colW - priceReserve) / (itemSize * 0.52)));
-    const descMaxChars = Math.max(8, Math.floor(colW / (descSize * 0.52)));
 
     const placed: Placed[] = [];
     let col = 0;
     let y = bodyTop;
     for (let i = 0; i < blocks.length; i += 1) {
       const block = blocks[i];
+      const image =
+        withPhotos && block.type === "item" ? block.imageDataUri ?? null : null;
+      const rowThumb = image ? thumb : 0;
+      const indent = rowThumb ? rowThumb + thumbGap : 0;
+      const nameMaxChars = Math.max(
+        4,
+        Math.floor((colW - priceReserve - indent) / (itemSize * 0.52)),
+      );
+      const descMaxChars = Math.max(
+        6,
+        Math.floor((colW - indent) / (descSize * 0.52)),
+      );
       const descLines =
         descCap > 0 && block.type === "item" && block.description
           ? wrap(block.description, descMaxChars, descCap)
           : [];
-      const blockH = block.type === "cat" ? catH : rowH + descLines.length * descH;
+      const textH = rowH + descLines.length * descH;
+      const blockH =
+        block.type === "cat"
+          ? catH
+          : rowThumb
+            ? Math.max(textH, rowThumb + Math.round(itemSize * 0.3))
+            : textH;
       if (y + blockH > bodyBottom) {
         col += 1;
         y = bodyTop;
@@ -170,6 +212,9 @@ export function MenuArtwork({
         itemSize,
         catSize,
         descSize,
+        thumb: rowThumb,
+        indent,
+        image,
       });
       y += blockH;
     }
@@ -273,8 +318,32 @@ export function MenuArtwork({
         }
         return (
           <g key={idx}>
+            {/* Square photo thumbnail (data URI only) to the left; the text
+                indents past it. slice crops to fill the square, and the <image>
+                box clips it — no clipPath, so PNG export stays reliable. */}
+            {p.image ? (
+              <>
+                <image
+                  href={p.image}
+                  x={x}
+                  y={p.y}
+                  width={p.thumb}
+                  height={p.thumb}
+                  preserveAspectRatio="xMidYMid slice"
+                />
+                <rect
+                  x={x}
+                  y={p.y}
+                  width={p.thumb}
+                  height={p.thumb}
+                  fill="none"
+                  stroke="#0e1f18"
+                  strokeOpacity={0.1}
+                />
+              </>
+            ) : null}
             {/* Name reserves room for the right-aligned price (truncated to fit). */}
-            <text x={x} y={p.y + p.itemSize} fontFamily={FONT} fontSize={p.itemSize} fontWeight={700} fill="#0e1f18">
+            <text x={x + p.indent} y={p.y + p.itemSize} fontFamily={FONT} fontSize={p.itemSize} fontWeight={700} fill="#0e1f18">
               {p.name}
             </text>
             {showPrices ? (
@@ -293,7 +362,7 @@ export function MenuArtwork({
             {p.descLines.map((line, li) => (
               <text
                 key={li}
-                x={x}
+                x={x + p.indent}
                 y={p.y + p.itemSize + p.descSize * 1.2 * (li + 1)}
                 fontFamily={FONT}
                 fontSize={p.descSize}

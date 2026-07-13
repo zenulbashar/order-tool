@@ -12,6 +12,9 @@ import { menuItems } from "@/lib/db/schema";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 
+import type { MenuArtworkData } from "./artwork";
+import { buildMenuCategories } from "./menu-data";
+
 /* -------------------------------------------------------------------------- */
 /* AI banner copy (Track G, Studio v2 / option A).                             */
 /*                                                                            */
@@ -187,4 +190,16 @@ export async function generateBannerCopy(input: {
 
   // No write, no revalidate: the copy only populates the editable banner fields.
   return { ok: true, headline, subtext, offer };
+}
+
+/**
+ * Lazily inline the venue's item photos for the Studio "Show photos" toggle.
+ * Returns the same menu categories the page built, but with each item's photo
+ * fetched + base64-inlined server-side (CORS-safe data URIs, so the client PNG
+ * export never taints). Kept off the initial page load so Studio opens fast; the
+ * client caches the result after the first toggle. Read-only, venue-scoped.
+ */
+export async function loadMenuPhotos(): Promise<MenuArtworkData["categories"]> {
+  const venue = await requireVenueForAction();
+  return buildMenuCategories(venue.id, { withPhotos: true });
 }
