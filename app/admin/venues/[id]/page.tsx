@@ -9,6 +9,7 @@ import { menuCategories, menuItems, venues } from "@/lib/db/schema";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { formatCents } from "@/lib/validation";
 
+import { openVenueAsAdmin } from "../../actions";
 import { setVenueItemPrice } from "./actions";
 import { PlanDiscountForm } from "./plan-discount-form";
 
@@ -55,6 +56,16 @@ export default async function AdminVenuePage({ params }: Params) {
           </StatusBadge>
         </div>
         <p className="mt-1 font-mono text-xs text-muted">/{venue.slug}</p>
+        {/* Open the owner dashboard scoped to this venue (audited support tool). */}
+        <form action={openVenueAsAdmin} className="mt-3">
+          <input type="hidden" name="venueId" value={venue.id} />
+          <button
+            type="submit"
+            className="rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+          >
+            Open owner dashboard as this venue →
+          </button>
+        </form>
       </header>
 
       {/* Plan fee discount (E2c). */}
