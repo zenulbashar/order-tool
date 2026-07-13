@@ -172,7 +172,13 @@ export default async function IntegrationsPage({
     locations,
     remapHref: `${HUB_PATH}?remap=square`,
     detailHref: `${HUB_PATH}?detail=square`,
-    sandbox: (process.env.SQUARE_ENVIRONMENT ?? "sandbox") !== "production",
+    // The blank-authorize workaround is a Square SANDBOX developer quirk, not
+    // something a real owner should ever read. Only surface it when running
+    // against Square sandbox AND locally (never on a deployed site, where every
+    // viewer is a live owner) — so the word "Sandbox" never reaches an owner.
+    sandbox:
+      (process.env.SQUARE_ENVIRONMENT ?? "sandbox") !== "production" &&
+      process.env.NODE_ENV !== "production",
   };
 
   const activityRows: ActivityRow[] = recentJobs.map((job) => {
