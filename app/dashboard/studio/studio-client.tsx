@@ -5,7 +5,7 @@ import { useRef, useState, useTransition } from "react";
 import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
 
-import { generateBannerCopy } from "./actions";
+import { generateBannerCopy, loadMenuPhotos } from "./actions";
 import {
   BannerArtwork,
   type BannerArtworkData,
@@ -139,8 +139,33 @@ export function StudioClient({
   const [showDescriptions, setShowDescriptions] = useState(true);
   const [showLogo, setShowLogo] = useState(true);
 
+  // Item photos are fetched lazily (inlined server-side to CORS-safe data URIs)
+  // the first time the owner turns them on, then cached for the session.
+  const [showPhotos, setShowPhotos] = useState(false);
+  const [photoCats, setPhotoCats] = useState<
+    MenuArtworkData["categories"] | null
+  >(null);
+  const [photoPending, startPhotos] = useTransition();
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  function togglePhotos(value: boolean) {
+    setShowPhotos(value);
+    if (value && !photoCats && !photoPending) {
+      setPhotoError(null);
+      startPhotos(async () => {
+        try {
+          setPhotoCats(await loadMenuPhotos());
+        } catch {
+          setPhotoError("Couldn't load photos just then — try again.");
+          setShowPhotos(false);
+        }
+      });
+    }
+  }
+
   const hasLogo = Boolean(menuData.logoDataUri);
   const logoOn = hasLogo && showLogo;
+  const photosReady = showPhotos && photoCats !== null;
 
   function toggleCategory(name: string) {
     setIncludedCats((prev) => {
@@ -157,11 +182,15 @@ export function StudioClient({
     setShareMsg(null);
   }
 
-  // Menu artwork honours the owner's category picks + logo toggle.
+  // Menu artwork honours the owner's category picks + logo/photo toggles. When
+  // photos are ready, the photo-enriched categories (same names) replace the
+  // text-only ones so the category filter still applies unchanged.
+  const activeCategories =
+    photosReady && photoCats ? photoCats : menuData.categories;
   const filteredMenuData: MenuArtworkData = {
     ...menuData,
     logoDataUri: logoOn ? menuData.logoDataUri : null,
-    categories: menuData.categories.filter((c) => includedCats.has(c.name)),
+    categories: activeCategories.filter((c) => includedCats.has(c.name)),
   };
 
   const bannerData: BannerArtworkData = {
@@ -197,9 +226,9 @@ export function StudioClient({
   }
 
   // Rasterize the current SVG to a PNG Blob at the preset's exact pixel size.
-  // Resolves null on any failure. The only image in the artwork is the logo,
-  // inlined server-side as a same-origin data: URI ⇒ the canvas never taints,
-  // so toBlob always succeeds.
+  // Resolves null on any failure. Every image in the artwork (the logo and any
+  // item photos) is inlined server-side as a same-origin data: URI ⇒ the canvas
+  // never taints, so toBlob always succeeds.
   function renderPng(): Promise<Blob | null> {
     const svg = currentSvg();
     if (!svg) return Promise.resolve(null);
@@ -534,6 +563,21 @@ export function StudioClient({
                 <p className={microLabel}>Content</p>
                 <Toggle checked={showPrices} onChange={setShowPrices} label="Show prices" />
                 <Toggle checked={showDescriptions} onChange={setShowDescriptions} label="Show descriptions" />
+                <Toggle
+                  checked={showPhotos}
+                  onChange={togglePhotos}
+                  label={photoPending ? "Loading photos…" : "Show item photos"}
+                />
+                {photoError ? (
+                  <p className="text-[11px] text-[var(--color-warm)]" role="alert">
+                    {photoError}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted">
+                    Adds a thumbnail beside each item that has a photo. Best on
+                    larger sizes.
+                  </p>
+                )}
                 {hasLogo ? (
                   <Toggle checked={showLogo} onChange={setShowLogo} label="Show logo" />
                 ) : null}
@@ -602,6 +646,7 @@ export function StudioClient({
                   preset={preset}
                   showPrices={showPrices}
                   showDescriptions={showDescriptions}
+                  withPhotos={photosReady}
                 />
               ) : (
                 <BannerArtwork data={bannerData} preset={preset} />
