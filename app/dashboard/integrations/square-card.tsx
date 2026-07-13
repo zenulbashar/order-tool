@@ -37,7 +37,11 @@ export type SquareCardData = {
   locations: { id: string; name: string }[] | null;
   remapHref: string;
   detailHref: string;
-  /** Sandbox env — surfaces the "open a test-account dashboard first" hint. */
+  /**
+   * Show the Square-sandbox "open a test-account dashboard first" developer
+   * hint. True only when running against Square sandbox AND locally, so a live
+   * owner on a deployed site never sees any sandbox/test wording.
+   */
   sandbox: boolean;
 };
 
