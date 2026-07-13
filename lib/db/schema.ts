@@ -155,9 +155,16 @@ export const venues = pgTable(
     // Optional owner-authored promo shown as a slim dismissible bar at the top
     // of the storefront (e.g. "Order your cake online — pick up in store").
     announcement: text("announcement"),
-    // Optional Instagram URL/handle → a "Follow us" link in the storefront
-    // footer. Nullable; normalised to a full URL at save time.
+    // Optional social profile links → "Follow us" icons in the storefront
+    // footer. All nullable; each normalised to a full URL at save time. Instagram
+    // came first; the rest are additive and independent (any subset can be set).
     instagramUrl: text("instagram_url"),
+    facebookUrl: text("facebook_url"),
+    xUrl: text("x_url"),
+    youtubeUrl: text("youtube_url"),
+    tiktokUrl: text("tiktok_url"),
+    linkedinUrl: text("linkedin_url"),
+    websiteUrl: text("website_url"),
     logoUrl: text("logo_url"),
     // Storefront brand imagery (owner-uploaded, both nullable — unset ⇒ no
     // change to today's look). cover_url replaces the storefront's brand-colour

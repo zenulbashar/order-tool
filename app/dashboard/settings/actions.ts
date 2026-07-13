@@ -141,15 +141,39 @@ export async function updateSocialLinks(
   const venue = await requireVenue();
 
   const parsed = venueSettingsSchema
-    .pick({ instagramUrl: true })
-    .safeParse({ instagramUrl: formData.get("instagramUrl") ?? "" });
+    .pick({
+      instagramUrl: true,
+      facebookUrl: true,
+      xUrl: true,
+      youtubeUrl: true,
+      tiktokUrl: true,
+      linkedinUrl: true,
+      websiteUrl: true,
+    })
+    .safeParse({
+      instagramUrl: formData.get("instagramUrl") ?? "",
+      facebookUrl: formData.get("facebookUrl") ?? "",
+      xUrl: formData.get("xUrl") ?? "",
+      youtubeUrl: formData.get("youtubeUrl") ?? "",
+      tiktokUrl: formData.get("tiktokUrl") ?? "",
+      linkedinUrl: formData.get("linkedinUrl") ?? "",
+      websiteUrl: formData.get("websiteUrl") ?? "",
+    });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
   await db
     .update(venues)
-    .set({ instagramUrl: parsed.data.instagramUrl })
+    .set({
+      instagramUrl: parsed.data.instagramUrl,
+      facebookUrl: parsed.data.facebookUrl,
+      xUrl: parsed.data.xUrl,
+      youtubeUrl: parsed.data.youtubeUrl,
+      tiktokUrl: parsed.data.tiktokUrl,
+      linkedinUrl: parsed.data.linkedinUrl,
+      websiteUrl: parsed.data.websiteUrl,
+    })
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/settings/social");

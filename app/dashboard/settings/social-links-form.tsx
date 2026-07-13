@@ -12,37 +12,64 @@ const initialState: VenueSettingsState = {};
 const microLabel =
   "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
 
-/**
- * Social profile links shown as "Follow us" icons in the storefront footer.
- * v1 carries Instagram; the other platforms follow in a later change (each is a
- * nullable column with the same normalise-empty-to-null rule).
- */
-export function SocialLinksForm({
-  instagramUrl,
-}: {
+export type SocialLinks = {
   instagramUrl: string | null;
-}) {
+  facebookUrl: string | null;
+  xUrl: string | null;
+  youtubeUrl: string | null;
+  tiktokUrl: string | null;
+  linkedinUrl: string | null;
+  websiteUrl: string | null;
+};
+
+// Each field: the form input name (matches the server action), a label, and a
+// placeholder that shows both the handle and the URL shape a layman can copy.
+const FIELDS: {
+  name: keyof SocialLinks;
+  label: string;
+  placeholder: string;
+}[] = [
+  { name: "instagramUrl", label: "Instagram", placeholder: "@yourvenue or instagram.com/yourvenue" },
+  { name: "facebookUrl", label: "Facebook", placeholder: "yourvenue or facebook.com/yourvenue" },
+  { name: "xUrl", label: "X (Twitter)", placeholder: "@yourvenue or x.com/yourvenue" },
+  { name: "youtubeUrl", label: "YouTube", placeholder: "@yourvenue or youtube.com/@yourvenue" },
+  { name: "tiktokUrl", label: "TikTok", placeholder: "@yourvenue or tiktok.com/@yourvenue" },
+  { name: "linkedinUrl", label: "LinkedIn", placeholder: "yourvenue or linkedin.com/company/yourvenue" },
+  { name: "websiteUrl", label: "Website", placeholder: "yourvenue.com" },
+];
+
+/**
+ * Social profile links shown as "Follow us" icons in the storefront footer. Each
+ * platform is its own nullable column; the owner fills in any subset and blanks
+ * are stored as null (never fabricated). A bare handle is normalised to the
+ * platform's canonical URL server-side, so the footer links are always safe.
+ */
+export function SocialLinksForm({ links }: { links: SocialLinks }) {
   const [state, formAction, pending] = useActionState(
     updateSocialLinks,
     initialState,
   );
 
   return (
-    <form action={formAction} className="space-y-3">
-      <label className="block">
-        <span className={microLabel}>
-          Instagram{" "}
-          <span className="font-normal normal-case text-muted">(optional)</span>
-        </span>
-        <Input
-          name="instagramUrl"
-          maxLength={200}
-          defaultValue={instagramUrl ?? ""}
-          placeholder="@yourvenue or instagram.com/yourvenue"
-        />
-      </label>
+    <form action={formAction} className="space-y-4">
+      {FIELDS.map((field) => (
+        <label key={field.name} className="block">
+          <span className={microLabel}>
+            {field.label}{" "}
+            <span className="font-normal normal-case text-muted">(optional)</span>
+          </span>
+          <Input
+            name={field.name}
+            maxLength={200}
+            defaultValue={links[field.name] ?? ""}
+            placeholder={field.placeholder}
+          />
+        </label>
+      ))}
+
       <p className="text-xs text-muted">
-        Adds a &ldquo;Follow us&rdquo; link to your storefront footer.
+        Each link you add shows as a &ldquo;Follow us&rdquo; icon in your
+        storefront footer. Leave a field blank to hide it.
       </p>
 
       {state.error ? (
