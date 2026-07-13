@@ -1,3 +1,4 @@
+import { and, eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import {
@@ -5,6 +6,8 @@ import {
   setVenuePlanStatus,
   syncVenueFromSubscription,
 } from "@/lib/billing/sync";
+import { db } from "@/lib/db";
+import { marketplaceOrders } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
 
 // Stripe signature verification uses Node crypto, and the Neon pool needs Node —
@@ -57,9 +60,32 @@ export async function POST(request: Request): Promise<Response> {
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        // The owner finished hosted Checkout. Link the subscription to the venue
-        // and sync from the authoritative subscription object.
         const session = event.data.object;
+
+        // One-off PAYMENT Checkout = a hardware marketplace order (Track F2), on
+        // the platform account like billing. Confirm the order idempotently: flip
+        // it out of pending_payment exactly once (the .returning() guard makes
+        // Stripe retries / duplicate deliveries no-ops). This shares nothing with
+        // the diner money path — it's a platform charge, resolved by our own
+        // marketplaceOrderId metadata, never a payment_intent event.
+        if (session.mode === "payment") {
+          const marketplaceOrderId = session.metadata?.marketplaceOrderId;
+          if (marketplaceOrderId && session.payment_status === "paid") {
+            await db
+              .update(marketplaceOrders)
+              .set({ status: "requested", paidAt: new Date() })
+              .where(
+                and(
+                  eq(marketplaceOrders.id, marketplaceOrderId),
+                  eq(marketplaceOrders.status, "pending_payment"),
+                ),
+              );
+          }
+          break;
+        }
+
+        // Otherwise it's the platform SUBSCRIPTION checkout. Link the subscription
+        // to the venue and sync from the authoritative subscription object.
         if (session.mode !== "subscription") break;
         const subscriptionId = stripeId(session.subscription);
         const venueId = await resolveVenueId({

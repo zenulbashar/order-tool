@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, ne } from "drizzle-orm";
 
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
@@ -27,6 +27,8 @@ const STATUS_TONE = {
   confirmed: "ready",
   shipped: "paid",
   cancelled: "cancelled",
+  // Unpaid orders are filtered out of the list; present only for type-safety.
+  pending_payment: "processing",
 } as const;
 
 const NEXT_STATUS: Record<string, { value: string; label: string }[]> = {
@@ -62,6 +64,8 @@ export default async function AdminMarketplacePage() {
       })
       .from(marketplaceOrders)
       .innerJoin(venues, eq(venues.id, marketplaceOrders.venueId))
+      // Hide unpaid (abandoned-checkout) orders — only paid orders are fulfillable.
+      .where(ne(marketplaceOrders.status, "pending_payment"))
       .orderBy(desc(marketplaceOrders.createdAt))
       .limit(50),
   ]);

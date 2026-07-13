@@ -6,7 +6,7 @@ import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
 import { formatCents } from "@/lib/validation";
 
-import { placeMarketplaceOrder } from "./actions";
+import { checkoutMarketplaceOrder } from "./actions";
 
 export type ShopProduct = {
   id: string;
@@ -31,8 +31,6 @@ const CATEGORY_LABEL: Record<string, string> = {
 export function ShopClient({ products }: { products: ShopProduct[] }) {
   const [cart, setCart] = useState<Map<string, number>>(new Map());
   const [note, setNote] = useState("");
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [cartOpen, setCartOpen] = useState(false);
 
@@ -48,8 +46,6 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
   );
 
   function setQty(id: string, qty: number) {
-    setDone(false);
-    setError(null);
     setCart((prev) => {
       const next = new Map(prev);
       if (qty <= 0) next.delete(id);
@@ -60,20 +56,14 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
 
   function submit() {
     if (lines.length === 0) return;
-    setError(null);
+    // The action redirects to Stripe Checkout on success (or back with
+    // ?error=checkout), so there's nothing to handle here — the page shows the
+    // success/error banner on return.
     startTransition(async () => {
-      const result = await placeMarketplaceOrder({
+      await checkoutMarketplaceOrder({
         note,
         items: lines.map(([productId, quantity]) => ({ productId, quantity })),
       });
-      if (result.ok) {
-        setCart(new Map());
-        setNote("");
-        setDone(true);
-        setCartOpen(false);
-      } else {
-        setError(result.error);
-      }
     });
   }
 
@@ -96,13 +86,6 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
   return (
     <section className="grid gap-6 px-5 py-8 lg:grid-cols-[1fr_320px]">
       <div className="space-y-4">
-        {done ? (
-          <div className="rounded-card border border-[var(--color-success)]/30 bg-[var(--color-success)]/8 px-4 py-3 text-sm text-success-deep">
-            Order requested — we&apos;ll confirm it and send an invoice. Track it
-            under &ldquo;Your orders&rdquo; below.
-          </div>
-        ) : null}
-
         {/* Category pills */}
         <div className="flex flex-wrap gap-2">
           {[{ id: "all", label: "All" }, ...categories.map((c) => ({ id: c, label: CATEGORY_LABEL[c] ?? c }))].map(
@@ -186,8 +169,8 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
           </div>
           {lines.length === 0 ? (
             <p className="mt-3 text-sm text-muted">
-              Add items to build an order. You&apos;ll be invoiced — nothing is
-              charged now.
+              Add items to build an order — you&apos;ll pay securely by card at
+              checkout.
             </p>
           ) : (
             <>
@@ -221,8 +204,8 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted">Est. shipping</span>
-                  <span className="text-muted">Quoted on invoice</span>
+                  <span className="text-muted">Shipping</span>
+                  <span className="text-muted">Billed separately</span>
                 </div>
               </div>
               <textarea
@@ -234,23 +217,19 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                 className="mt-3 w-full resize-none rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
               />
               <p className="mt-3 rounded-control bg-hover-secondary px-3 py-2 text-[11px] text-muted">
-                <span className="font-bold text-ink">Invoice later.</span> No card
-                charged now — added to your monthly Prompt2Eat invoice.
+                <span className="font-bold text-ink">Secure checkout.</span>{" "}
+                You&apos;ll pay by card on the next screen (Stripe). Shipping, if
+                any, is billed separately.
               </p>
-              {error ? (
-                <p className="mt-2 text-sm text-warm-deep" role="alert">
-                  {error}
-                </p>
-              ) : null}
               <Button
                 type="button"
                 variant="primary"
                 onClick={submit}
                 loading={pending}
-                loadingLabel="Sending…"
+                loadingLabel="Opening checkout…"
                 className="mt-3 w-full"
               >
-                Request order →
+                Checkout · ${formatCents(total)} →
               </Button>
             </>
           )}
@@ -330,14 +309,10 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                   className="mt-4 w-full resize-none rounded-input border border-white/15 bg-white/5 px-2.5 py-2 text-sm text-white placeholder:text-[var(--color-sidebar-muted)] focus-visible:border-[var(--color-accent)] focus-visible:outline-none"
                 />
                 <p className="mt-3 rounded-control bg-white/5 px-3 py-2 text-[11px] text-[var(--color-sidebar-muted)]">
-                  <span className="font-bold text-white">Invoice later.</span> No
-                  card charged now — added to your monthly Prompt2Eat invoice.
+                  <span className="font-bold text-white">Secure checkout.</span>{" "}
+                  You&apos;ll pay by card on the next screen. Shipping, if any, is
+                  billed separately.
                 </p>
-                {error ? (
-                  <p className="mt-2 text-sm text-[var(--color-warm)]" role="alert">
-                    {error}
-                  </p>
-                ) : null}
               </>
             )}
           </div>
@@ -356,7 +331,9 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                 disabled={pending}
                 className="w-full rounded-control bg-[var(--color-accent)] px-4 py-3 text-sm font-bold text-forest transition hover:opacity-90 disabled:opacity-50"
               >
-                {pending ? "Sending…" : "Request order →"}
+                {pending
+                  ? "Opening checkout…"
+                  : `Checkout · $${formatCents(total)} →`}
               </button>
             </div>
           ) : null}
