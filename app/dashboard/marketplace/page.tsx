@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 
 import { PageHeader } from "@/app/_components/page-header";
 import { StatusBadge } from "@/app/_components/status-badge";
@@ -16,6 +16,9 @@ const STATUS_TONE = {
   confirmed: "ready",
   shipped: "paid",
   cancelled: "cancelled",
+  // Never rendered (pending_payment rows are filtered from the list) — present
+  // only so indexing the map by the enum type type-checks.
+  pending_payment: "processing",
 } as const;
 
 /**
@@ -24,9 +27,14 @@ const STATUS_TONE = {
  * card is charged, so this never touches the diner money path. Owner-only
  * surface; orders are venue-scoped.
  */
-export default async function MarketplacePage() {
+export default async function MarketplacePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string; error?: string }>;
+}) {
   await requireUser();
   const venue = await requireVenue();
+  const params = await searchParams;
 
   const [products, orders] = await Promise.all([
     db
@@ -37,7 +45,14 @@ export default async function MarketplacePage() {
     db
       .select()
       .from(marketplaceOrders)
-      .where(scopedToVenue(marketplaceOrders.venueId, venue.id))
+      // Only PAID orders belong in the list — an abandoned checkout leaves a
+      // pending_payment row that never became a real order.
+      .where(
+        and(
+          scopedToVenue(marketplaceOrders.venueId, venue.id),
+          ne(marketplaceOrders.status, "pending_payment"),
+        ),
+      )
       .orderBy(desc(marketplaceOrders.createdAt))
       .limit(10),
   ]);
@@ -56,6 +71,23 @@ export default async function MarketplacePage() {
   return (
     <main className="mx-auto max-w-6xl">
       <PageHeader title="Shop" description="Hardware & supplies for your venue" />
+
+      {params.checkout === "success" ? (
+        <div className="mx-5 mt-6 rounded-card border border-[var(--color-success)]/30 bg-[var(--color-success)]/8 px-4 py-3 text-sm text-success-deep">
+          Payment received — we&apos;ll confirm and ship your order. It&apos;ll
+          appear under &ldquo;Your orders&rdquo; below in a moment.
+        </div>
+      ) : null}
+      {params.checkout === "cancel" ? (
+        <div className="mx-5 mt-6 rounded-card border border-line bg-surface-elevated px-4 py-3 text-sm text-muted">
+          Checkout cancelled — your cart wasn&apos;t charged.
+        </div>
+      ) : null}
+      {params.error === "checkout" ? (
+        <div className="mx-5 mt-6 rounded-card border border-[var(--color-warm)]/40 bg-[var(--color-warm)]/10 px-4 py-3 text-sm text-ink">
+          We couldn&apos;t start checkout just then. Please try again.
+        </div>
+      ) : null}
 
       {shopProducts.length === 0 ? (
         <div className="px-5 py-8">

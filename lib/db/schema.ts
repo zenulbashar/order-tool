@@ -1473,6 +1473,11 @@ export const marketplaceOrderStatus = pgEnum("marketplace_order_status", [
   "confirmed",
   "shipped",
   "cancelled",
+  // Pre-payment holding state: the order exists but the venue hasn't completed
+  // Stripe Checkout yet. On payment it transitions to `requested` (a PAID order
+  // awaiting admin fulfilment), so the admin flow is unchanged. Hidden from the
+  // venue + admin order lists until paid.
+  "pending_payment",
 ]);
 
 export const marketplaceProducts = pgTable(
@@ -1511,6 +1516,12 @@ export const marketplaceOrders = pgTable(
     // Snapshot of the order total at submission (sum of line snapshots).
     totalCents: integer("total_cents").notNull(),
     note: text("note"),
+    // Platform Stripe Checkout session that collects payment for this order (the
+    // marketplace is charged on the PLATFORM account, like billing — never the
+    // venue's Connect account / diner money path). Null for legacy invoice-later
+    // rows. paidAt is stamped by the billing webhook on payment.
+    stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
