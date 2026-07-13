@@ -4,10 +4,8 @@ import { useActionState, useRef, useState } from "react";
 
 import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
-import { Input } from "@/app/_components/input";
-import { Textarea } from "@/app/_components/textarea";
 
-import { updateVenueSettings, type VenueSettingsState } from "./actions";
+import { updateBrandTheme, type VenueSettingsState } from "./actions";
 
 const initialState: VenueSettingsState = {};
 
@@ -19,17 +17,20 @@ const microLabel =
 // samples, not UI chrome. The native picker stays the full-spectrum custom entry.
 const BRAND_PRESETS = ["#f4b43c", "#e2553a", "#13301f", "#3fa66a", "#635bff"];
 
-type VenueSettings = {
+/**
+ * Brand accent colour + optional custom text colour. Split out of the old
+ * bundled settings form so this is the only thing the "Brand & colours" page
+ * saves — it posts to updateBrandTheme, which touches only these two columns.
+ */
+export function BrandThemeForm({
+  brandColor: initialBrandColor,
+  textColor: initialTextColor,
+}: {
   brandColor: string;
   textColor: string | null;
-  announcement: string | null;
-  instagramUrl: string | null;
-  storefrontDescription: string | null;
-};
-
-export function SettingsForm({ settings }: { settings: VenueSettings }) {
+}) {
   const [state, formAction, pending] = useActionState(
-    updateVenueSettings,
+    updateBrandTheme,
     initialState,
   );
 
@@ -38,11 +39,11 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
   // identical. Presets imperatively write into it; `brandColor` state only
   // drives the selection ring + hex readout, mirrored from the input's onChange.
   const colorRef = useRef<HTMLInputElement>(null);
-  const [brandColor, setBrandColor] = useState(settings.brandColor);
+  const [brandColor, setBrandColor] = useState(initialBrandColor);
   // Text colour: "auto" (null → the storefront's default ink) unless the owner
   // opts into a custom one. The mode posts alongside the picker value.
-  const [customText, setCustomText] = useState(Boolean(settings.textColor));
-  const [textColor, setTextColor] = useState(settings.textColor ?? "#0e1f18");
+  const [customText, setCustomText] = useState(Boolean(initialTextColor));
+  const [textColor, setTextColor] = useState(initialTextColor ?? "#0e1f18");
 
   const pickPreset = (hex: string) => {
     if (colorRef.current) colorRef.current.value = hex;
@@ -88,7 +89,7 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
               ref={colorRef}
               name="brandColor"
               type="color"
-              defaultValue={settings.brandColor}
+              defaultValue={initialBrandColor}
               onChange={(event) => setBrandColor(event.target.value)}
               className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             />
@@ -144,59 +145,6 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="block">
-          <span className={microLabel}>
-            Storefront description{" "}
-            <span className="font-normal normal-case text-muted">(optional)</span>
-          </span>
-          <Textarea
-            name="storefrontDescription"
-            rows={3}
-            maxLength={500}
-            defaultValue={settings.storefrontDescription ?? ""}
-            placeholder="A short welcome line shown under your venue name."
-          />
-        </label>
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="block">
-          <span className={microLabel}>
-            Announcement bar{" "}
-            <span className="font-normal normal-case text-muted">(optional)</span>
-          </span>
-          <Input
-            name="announcement"
-            maxLength={140}
-            defaultValue={settings.announcement ?? ""}
-            placeholder="e.g. Order your cake online — pick up in store"
-          />
-        </label>
-        <p className="text-xs text-muted">
-          A slim promo bar shown across the top of your storefront. Leave blank
-          to hide it.
-        </p>
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="block">
-          <span className={microLabel}>
-            Instagram{" "}
-            <span className="font-normal normal-case text-muted">(optional)</span>
-          </span>
-          <Input
-            name="instagramUrl"
-            maxLength={200}
-            defaultValue={settings.instagramUrl ?? ""}
-            placeholder="@yourvenue or instagram.com/yourvenue"
-          />
-        </label>
-        <p className="text-xs text-muted">
-          Adds a &ldquo;Follow us&rdquo; link to your storefront footer.
-        </p>
-      </div>
-
       {state.error ? (
         <p className="text-sm text-[var(--color-warm)]" role="alert">
           {state.error}
@@ -209,7 +157,7 @@ export function SettingsForm({ settings }: { settings: VenueSettings }) {
       ) : null}
 
       <Button type="submit" variant="primary" loading={pending} loadingLabel="Saving…">
-        Save settings <span aria-hidden="true">→</span>
+        Save <span aria-hidden="true">→</span>
       </Button>
     </form>
   );

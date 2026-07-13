@@ -25,16 +25,17 @@ export type VenueSettingsState = { error?: string; success?: boolean };
 export type LogoState = { error?: string };
 
 /**
- * Update the current venue's storefront theming. Ownership comes from the
- * session via requireVenue() (no client-supplied id), so the update is scoped
- * to the owner's own venue. Server Functions are POST-able, so auth is
- * re-checked here; the redirect stays outside any try/catch.
- *
- * logo_url is DELIBERATELY not in this set — the logo is owned by the dedicated
- * upload/URL/remove actions below (same discipline as menu_items.image_url),
- * so a theme save can never clobber a just-uploaded logo.
+ * The storefront theming that used to live in one bundled form is now split into
+ * focused server actions — one per Settings sub-page — so each save touches ONLY
+ * its own columns and can never clobber a sibling field. They all share the same
+ * discipline: ownership comes from requireVenue() (no client-supplied id), the
+ * write is scoped WHERE id = venue.id, only whitelisted validated columns are set
+ * (no mass assignment), and both the sub-page and the storefront are revalidated.
+ * logo_url + imagery stay owned by their own upload/URL/remove actions below.
  */
-export async function updateVenueSettings(
+
+/** Brand accent colour + optional custom text colour ("auto" → NULL ink). */
+export async function updateBrandTheme(
   _prev: VenueSettingsState,
   formData: FormData,
 ): Promise<VenueSettingsState> {
@@ -45,7 +46,7 @@ export async function updateVenueSettings(
   const venue = await requireVenue();
 
   const parsed = venueSettingsSchema
-    .omit({ logoUrl: true })
+    .pick({ brandColor: true, textColor: true })
     .safeParse({
       brandColor: formData.get("brandColor") ?? "",
       // "auto" posts empty → stored NULL (the diner keeps the shared ink);
@@ -54,8 +55,36 @@ export async function updateVenueSettings(
         formData.get("textColorMode") === "custom"
           ? (formData.get("textColor") ?? "")
           : "",
-      announcement: formData.get("announcement") ?? "",
-      instagramUrl: formData.get("instagramUrl") ?? "",
+    });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await db
+    .update(venues)
+    .set({ brandColor: parsed.data.brandColor, brandTextColor: parsed.data.textColor })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/settings/brand");
+  // The storefront is force-dynamic, but clear its router cache entry too.
+  revalidatePath(`/${venue.slug}`);
+  return { success: true };
+}
+
+/** The short welcome blurb shown under the venue name on the storefront. */
+export async function updateStorefrontAbout(
+  _prev: VenueSettingsState,
+  formData: FormData,
+): Promise<VenueSettingsState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const parsed = venueSettingsSchema
+    .pick({ storefrontDescription: true })
+    .safeParse({
       storefrontDescription: formData.get("storefrontDescription") ?? "",
     });
   if (!parsed.success) {
@@ -64,17 +93,66 @@ export async function updateVenueSettings(
 
   await db
     .update(venues)
-    .set({
-      brandColor: parsed.data.brandColor,
-      brandTextColor: parsed.data.textColor,
-      announcement: parsed.data.announcement,
-      instagramUrl: parsed.data.instagramUrl,
-      storefrontDescription: parsed.data.storefrontDescription,
-    })
+    .set({ storefrontDescription: parsed.data.storefrontDescription })
     .where(eq(venues.id, venue.id));
 
-  revalidatePath("/dashboard/settings");
-  // The storefront is force-dynamic, but clear its router cache entry too.
+  revalidatePath("/dashboard/settings/about");
+  revalidatePath(`/${venue.slug}`);
+  return { success: true };
+}
+
+/** The slim promo bar across the top of the storefront (empty → hidden). */
+export async function updateAnnouncement(
+  _prev: VenueSettingsState,
+  formData: FormData,
+): Promise<VenueSettingsState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const parsed = venueSettingsSchema
+    .pick({ announcement: true })
+    .safeParse({ announcement: formData.get("announcement") ?? "" });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await db
+    .update(venues)
+    .set({ announcement: parsed.data.announcement })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/settings/announcement");
+  revalidatePath(`/${venue.slug}`);
+  return { success: true };
+}
+
+/** Social profile links shown as "Follow us" icons in the storefront footer. */
+export async function updateSocialLinks(
+  _prev: VenueSettingsState,
+  formData: FormData,
+): Promise<VenueSettingsState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenue();
+
+  const parsed = venueSettingsSchema
+    .pick({ instagramUrl: true })
+    .safeParse({ instagramUrl: formData.get("instagramUrl") ?? "" });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await db
+    .update(venues)
+    .set({ instagramUrl: parsed.data.instagramUrl })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/settings/social");
   revalidatePath(`/${venue.slug}`);
   return { success: true };
 }
@@ -115,7 +193,7 @@ export async function saveTaxSettings(
     })
     .where(eq(venues.id, venue.id));
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/tax");
   revalidatePath(`/${venue.slug}`);
   return { success: true };
 }
@@ -136,7 +214,7 @@ export async function setPushNewOrders(formData: FormData): Promise<void> {
     .update(venues)
     .set({ pushNewOrders: enabled })
     .where(eq(venues.id, venue.id));
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/notifications");
 }
 
 /* --------------------------------- Logo ----------------------------------- */
@@ -251,7 +329,7 @@ export async function uploadVenueLogo(
 
   await bestEffortDeleteLogo(previousUrl);
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/logo");
   revalidatePath(`/${venue.slug}`);
   return {};
 }
@@ -282,7 +360,7 @@ export async function setVenueLogoUrl(
     await bestEffortDeleteLogo(previousUrl);
   }
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/logo");
   revalidatePath(`/${venue.slug}`);
   return {};
 }
@@ -302,7 +380,7 @@ export async function removeVenueLogo(): Promise<void> {
 
   await bestEffortDeleteLogo(previousUrl);
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/logo");
   revalidatePath(`/${venue.slug}`);
 }
 
@@ -390,7 +468,7 @@ async function uploadVenueImage(
   await setImageColumn(venue.id, slot, publicUrl);
   await bestEffortDeleteLogo(previousUrl);
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/imagery");
   revalidatePath(`/${venue.slug}`);
   return {};
 }
@@ -418,7 +496,7 @@ async function setVenueImageUrl(
     await bestEffortDeleteLogo(previousUrl);
   }
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/imagery");
   revalidatePath(`/${venue.slug}`);
   return {};
 }
@@ -436,7 +514,7 @@ async function removeVenueImage(slot: ImagerySlot): Promise<void> {
 
   await bestEffortDeleteLogo(previousUrl);
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/imagery");
   revalidatePath(`/${venue.slug}`);
 }
 
@@ -594,7 +672,7 @@ export async function updateVenueDetails(
     })
     .where(eq(venues.id, venue.id));
 
-  revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/settings/hours");
   revalidatePath(`/${venue.slug}`);
   return { success: true };
 }
