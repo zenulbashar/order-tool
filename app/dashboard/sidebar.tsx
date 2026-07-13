@@ -11,62 +11,127 @@ import { signOutOwner } from "./actions";
 import { setSidebarCollapsed, useSidebarCollapsed } from "./sidebar-preference";
 import { VenueSwitcher } from "./venue-switcher";
 
-type NavItem = {
+type NavLeaf = {
   label: string;
   href: string;
-  icon: ReactNode;
-  /** Exact-match only (Overview), else section-prefix match. */
+  /** Exact-match only, else section-prefix match. */
   exact?: boolean;
-  /** External link (Storefront) — opens a new tab, never "active". */
+  /** External link (View storefront) — opens a new tab, never "active". */
   external?: boolean;
   /** Optional live count pill (e.g. active orders); hidden when 0. */
   badge?: number;
 };
 
-/** Two grouped sections, per the P2ESidebar reference. */
-function navGroups(
-  slug: string,
-  activeOrderCount: number,
-): { title: string; items: NavItem[] }[] {
+/** A standalone top-level link (no children). */
+type NavLink = { kind: "link"; icon: ReactNode } & NavLeaf;
+/** A collapsible top-level category with child links. */
+type NavGroup = {
+  kind: "group";
+  key: string;
+  label: string;
+  icon: ReactNode;
+  items: NavLeaf[];
+};
+type NavEntry = NavLink | NavGroup;
+
+/**
+ * Two-level navigation: a few standalone links plus collapsible categories, each
+ * grouping the pages that belong together in plain-language terms. Categories are
+ * collapsed by default; the one containing the current page opens automatically,
+ * and the owner's expand/collapse choices are remembered per device. The 76px
+ * rail-collapse still works — there, each category shows a single icon linking to
+ * its first page.
+ */
+function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
   return [
+    { kind: "link", label: "Home", href: "/dashboard", icon: <IconHome />, exact: true },
     {
-      title: "Manage",
+      kind: "group",
+      key: "menu",
+      label: "Menu & photos",
+      icon: <IconMenu />,
       items: [
-        { label: "Overview", href: "/dashboard", icon: <IconHome />, exact: true },
-        { label: "Menu", href: "/dashboard/menu", icon: <IconMenu /> },
-        { label: "Media", href: "/dashboard/media", icon: <IconMedia /> },
-        { label: "Studio", href: "/dashboard/studio", icon: <IconStudio /> },
-        { label: "Stock", href: "/dashboard/stock", icon: <IconStock /> },
-        {
-          label: "Orders",
-          href: "/dashboard/orders",
-          icon: <IconOrders />,
-          badge: activeOrderCount,
-        },
-        { label: "Tables", href: "/dashboard/tables", icon: <IconTables /> },
-        { label: "Reports", href: "/dashboard/reports", icon: <IconReports /> },
-        { label: "Customers", href: "/dashboard/customers", icon: <IconCustomers /> },
-        { label: "Storefront", href: `/${slug}`, icon: <IconStorefront />, external: true },
+        { label: "Menu", href: "/dashboard/menu", exact: true },
+        { label: "Import menu", href: "/dashboard/menu/import" },
+        { label: "Write descriptions", href: "/dashboard/menu/descriptions" },
+        { label: "Photo library", href: "/dashboard/media" },
+        { label: "Design studio", href: "/dashboard/studio" },
       ],
     },
     {
-      title: "Business",
+      kind: "group",
+      key: "orders",
+      label: "Orders & customers",
+      icon: <IconOrders />,
       items: [
-        { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
-        { label: "Payments", href: "/dashboard/payments", icon: <IconPayments /> },
-        { label: "Discounts", href: "/dashboard/discounts", icon: <IconDiscount /> },
-        {
-          label: "Integrations",
-          href: "/dashboard/integrations",
-          icon: <IconIntegrations />,
-        },
-        { label: "Apps", href: "/dashboard/apps", icon: <IconApps /> },
-        { label: "Shop", href: "/dashboard/marketplace", icon: <IconShop /> },
-        { label: "Billing", href: "/dashboard/billing", icon: <IconBilling /> },
+        { label: "Live orders", href: "/dashboard/orders", badge: activeOrderCount },
+        { label: "Tables & QR codes", href: "/dashboard/tables" },
+        { label: "Sales reports", href: "/dashboard/reports" },
+        { label: "Customers", href: "/dashboard/customers" },
       ],
+    },
+    {
+      kind: "group",
+      key: "stock",
+      label: "Stock & supplies",
+      icon: <IconStock />,
+      items: [
+        { label: "Ingredients", href: "/dashboard/stock", exact: true },
+        { label: "Stock overview", href: "/dashboard/stock/overview" },
+        { label: "Reorder suggestions", href: "/dashboard/stock/suggestions" },
+        { label: "Scan invoice", href: "/dashboard/stock/scan" },
+        { label: "Shop supplies", href: "/dashboard/marketplace" },
+      ],
+    },
+    {
+      kind: "group",
+      key: "storefront",
+      label: "Storefront setup",
+      icon: <IconSettings />,
+      items: [
+        { label: "Brand & colours", href: "/dashboard/settings/brand" },
+        { label: "Logo", href: "/dashboard/settings/logo" },
+        { label: "Photos & hero", href: "/dashboard/settings/imagery" },
+        { label: "Announcement bar", href: "/dashboard/settings/announcement" },
+        { label: "Social links", href: "/dashboard/settings/social" },
+        { label: "About & description", href: "/dashboard/settings/about" },
+        { label: "Opening hours & location", href: "/dashboard/settings/hours" },
+        { label: "Tax (GST)", href: "/dashboard/settings/tax" },
+        { label: "Order notifications", href: "/dashboard/settings/notifications" },
+      ],
+    },
+    {
+      kind: "group",
+      key: "money",
+      label: "Payments & billing",
+      icon: <IconPayments />,
+      items: [
+        { label: "Payments & payouts", href: "/dashboard/payments" },
+        { label: "Discount codes", href: "/dashboard/discounts" },
+        { label: "Plan & billing", href: "/dashboard/billing" },
+      ],
+    },
+    {
+      kind: "group",
+      key: "connections",
+      label: "Connections",
+      icon: <IconIntegrations />,
+      items: [
+        { label: "Integrations", href: "/dashboard/integrations" },
+        { label: "Apps", href: "/dashboard/apps" },
+      ],
+    },
+    {
+      kind: "link",
+      label: "View storefront",
+      href: `/${slug}`,
+      icon: <IconStorefront />,
+      external: true,
     },
   ];
 }
+
+const GROUPS_KEY = "p2e:sidebar:groups";
 
 const PLAN_LABEL: Record<string, string> = {
   trial: "Trial",
@@ -104,6 +169,23 @@ export function Sidebar({
   // lg:-prefixed classes below; the mobile drawer (`open`) ignores it entirely.
   const collapsed = useSidebarCollapsed();
 
+  // Per-device record of the owner's explicit expand/collapse choices per
+  // category. Undefined for a category => fall back to the default (open only
+  // when it contains the current page). Read from localStorage after mount to
+  // stay SSR-safe (same tradeoff as the rail collapse).
+  const [explicitOpen, setExplicitOpen] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(GROUPS_KEY);
+      if (raw) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setExplicitOpen(JSON.parse(raw) as Record<string, boolean>);
+      }
+    } catch {
+      // Private mode / bad JSON — categories just use their defaults.
+    }
+  }, []);
+
   // Closing the drawer is driven by the nav links' onClick (close-on-navigate),
   // not a route-watching effect — keeps state changes out of effects.
   const closeDrawer = () => setOpen(false);
@@ -121,15 +203,42 @@ export function Sidebar({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [collapsed]);
 
-  const groups = navGroups(currentSlug, activeOrderCount);
+  const entries = navEntries(currentSlug, activeOrderCount);
   const ownerLabel = userName ?? userEmail ?? "Owner";
 
-  function isActive(item: NavItem): boolean {
+  function leafActive(item: NavLeaf): boolean {
     if (item.external) return false;
     return item.exact
       ? pathname === item.href
       : pathname === item.href || pathname.startsWith(`${item.href}/`);
   }
+  function groupActive(group: NavGroup): boolean {
+    return group.items.some(leafActive);
+  }
+  function groupOpen(group: NavGroup): boolean {
+    return explicitOpen[group.key] ?? groupActive(group);
+  }
+  function toggleGroup(group: NavGroup) {
+    setExplicitOpen((prev) => {
+      const next = { ...prev, [group.key]: !groupOpen(group) };
+      try {
+        window.localStorage.setItem(GROUPS_KEY, JSON.stringify(next));
+      } catch {
+        // Non-fatal — the toggle just won't persist.
+      }
+      return next;
+    });
+  }
+
+  const linkRow = (
+    active: boolean,
+    extra?: string,
+  ): string =>
+    cx(
+      "flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium transition",
+      active ? "bg-accent text-forest" : "text-sidebar-ink hover:bg-forest",
+      extra,
+    );
 
   return (
     <>
@@ -232,94 +341,165 @@ export function Sidebar({
           )}
         </div>
 
-        <nav className="flex-1 space-y-6 px-3 py-2">
-          {groups.map((group, groupIndex) => (
-            <div
-              key={group.title}
-              className={cx(
-                // Collapsed hides the group titles, so a hairline keeps the
-                // Manage / Business clusters visually separated.
-                collapsed &&
-                  groupIndex > 0 &&
-                  "lg:border-t lg:border-forest lg:pt-4",
-              )}
-            >
-              <p
-                className={cx(
-                  "px-3 pb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-sidebar-muted",
-                  collapsed && "lg:hidden",
-                )}
-              >
-                {group.title}
-              </p>
-              <ul className="space-y-0.5">
-                {group.items.map((item) => {
-                  const active = isActive(item);
-                  const hasBadge = Boolean(item.badge && item.badge > 0);
-                  return (
-                    <li key={item.label}>
-                      <Link
-                        href={item.href}
-                        onClick={closeDrawer}
-                        {...(item.external
-                          ? { target: "_blank", rel: "noreferrer" }
-                          : {})}
-                        aria-current={active ? "page" : undefined}
-                        title={collapsed ? item.label : undefined}
-                        className={cx(
-                          "flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium transition",
-                          active
-                            ? "bg-accent text-forest"
-                            : "text-sidebar-ink hover:bg-forest",
-                          collapsed && "lg:justify-center lg:gap-0 lg:px-0",
-                        )}
+        <nav className="flex-1 space-y-1 px-3 py-2">
+          {entries.map((entry) => {
+            /* --- Standalone link --- */
+            if (entry.kind === "link") {
+              const active = leafActive(entry);
+              return (
+                <Link
+                  key={entry.label}
+                  href={entry.href}
+                  onClick={closeDrawer}
+                  {...(entry.external
+                    ? { target: "_blank", rel: "noreferrer" }
+                    : {})}
+                  aria-current={active ? "page" : undefined}
+                  title={collapsed ? entry.label : undefined}
+                  className={linkRow(
+                    active,
+                    collapsed ? "lg:justify-center lg:gap-0 lg:px-0" : undefined,
+                  )}
+                >
+                  <span aria-hidden="true" className="shrink-0">
+                    {entry.icon}
+                  </span>
+                  <span className={cx("flex-1 truncate", collapsed && "lg:sr-only")}>
+                    {entry.label}
+                  </span>
+                </Link>
+              );
+            }
+
+            /* --- Category with collapsible children. The 76px collapsed rail
+                   and the expanded rail are toggled by CSS only (never a JS
+                   branch on `collapsed`), so the mobile drawer always shows the
+                   full expandable groups no matter the desktop preference. --- */
+            const containsActive = groupActive(entry);
+            const groupBadge = entry.items.reduce(
+              (sum, item) => sum + (item.badge && item.badge > 0 ? item.badge : 0),
+              0,
+            );
+            const first = entry.items[0];
+            const isOpen = groupOpen(entry);
+            const sublistId = `nav-${entry.key}`;
+            return (
+              <div key={entry.key}>
+                {/* Collapsed rail: a single icon → the category's first page.
+                    Only rendered on desktop, only when the rail is collapsed. */}
+                <Link
+                  href={first.href}
+                  onClick={closeDrawer}
+                  title={entry.label}
+                  aria-current={containsActive ? "page" : undefined}
+                  className={cx(
+                    "hidden min-h-11 items-center justify-center rounded-control transition",
+                    collapsed ? "lg:flex" : "",
+                    containsActive
+                      ? "bg-accent text-forest"
+                      : "text-sidebar-ink hover:bg-forest",
+                  )}
+                >
+                  <span aria-hidden="true" className="relative shrink-0">
+                    {entry.icon}
+                    {groupBadge > 0 ? (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-sidebar"
+                      />
+                    ) : null}
+                  </span>
+                  <span className="sr-only">{entry.label}</span>
+                </Link>
+
+                {/* Expanded: category header toggle + child links. Shown on
+                    mobile always; on desktop only when the rail is expanded. */}
+                <div className={cx(collapsed && "lg:hidden")}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(entry)}
+                    aria-expanded={isOpen}
+                    aria-controls={sublistId}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 text-sm font-medium text-sidebar-ink transition hover:bg-forest"
+                  >
+                    <span aria-hidden="true" className="shrink-0">
+                      {entry.icon}
+                    </span>
+                    <span
+                      className={cx(
+                        "flex-1 truncate text-left",
+                        containsActive && "font-semibold",
+                      )}
+                    >
+                      {entry.label}
+                    </span>
+                    {/* Pending count on a closed category so nothing hides. */}
+                    {!isOpen && groupBadge > 0 ? (
+                      <span
+                        aria-hidden="true"
+                        className="min-w-5 shrink-0 rounded-pill bg-accent px-1.5 text-center font-mono text-[10px] font-bold leading-5 text-forest"
                       >
-                        <span aria-hidden="true" className="relative shrink-0">
-                          {item.icon}
-                          {/* Collapsed: the numeric pill can't fit at 76px, so an
-                              active-order count shows as a dot on the icon. */}
-                          {hasBadge ? (
-                            <span
-                              aria-hidden="true"
+                        {groupBadge}
+                      </span>
+                    ) : null}
+                    <span
+                      aria-hidden="true"
+                      className={cx(
+                        "shrink-0 text-sidebar-muted transition-transform",
+                        isOpen && "rotate-180",
+                      )}
+                    >
+                      <IconChevron />
+                    </span>
+                  </button>
+                  {isOpen ? (
+                    <ul
+                      id={sublistId}
+                      className="ml-[22px] mt-0.5 space-y-0.5 border-l border-forest pl-3"
+                    >
+                      {entry.items.map((item) => {
+                        const active = leafActive(item);
+                        const hasBadge = Boolean(item.badge && item.badge > 0);
+                        return (
+                          <li key={item.href}>
+                            <Link
+                              href={item.href}
+                              onClick={closeDrawer}
+                              aria-current={active ? "page" : undefined}
                               className={cx(
-                                "absolute -right-0.5 -top-0.5 hidden h-2 w-2 rounded-full bg-accent ring-2 ring-sidebar",
-                                collapsed && "lg:block",
+                                "flex min-h-9 items-center gap-2 rounded-control px-3 py-1.5 text-[13px] transition",
+                                active
+                                  ? "bg-accent font-semibold text-forest"
+                                  : "text-sidebar-muted hover:bg-forest hover:text-sidebar-ink",
                               )}
-                            />
-                          ) : null}
-                        </span>
-                        <span
-                          className={cx("flex-1 truncate", collapsed && "lg:sr-only")}
-                        >
-                          {item.label}
-                        </span>
-                        {/* Visible numeric pill (decorative — aria-hidden); the
-                            count is conveyed to screen readers by the sr-only
-                            span below, so it survives the collapsed dot too. */}
-                        {hasBadge ? (
-                          <span
-                            aria-hidden="true"
-                            className={cx(
-                              "min-w-5 shrink-0 rounded-pill px-1.5 text-center font-mono text-[10px] font-bold leading-5",
-                              active
-                                ? "bg-forest text-sidebar-ink"
-                                : "bg-accent text-forest",
-                              collapsed && "lg:hidden",
-                            )}
-                          >
-                            {item.badge}
-                          </span>
-                        ) : null}
-                        {hasBadge ? (
-                          <span className="sr-only">{` — ${item.badge} active`}</span>
-                        ) : null}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+                            >
+                              <span className="flex-1 truncate">{item.label}</span>
+                              {hasBadge ? (
+                                <span
+                                  aria-hidden="true"
+                                  className={cx(
+                                    "min-w-5 shrink-0 rounded-pill px-1.5 text-center font-mono text-[10px] font-bold leading-5",
+                                    active
+                                      ? "bg-forest text-sidebar-ink"
+                                      : "bg-accent text-forest",
+                                  )}
+                                >
+                                  {item.badge}
+                                </span>
+                              ) : null}
+                              {hasBadge ? (
+                                <span className="sr-only">{` — ${item.badge} active`}</span>
+                              ) : null}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
         {/* Desktop-only collapse toggle, just above the footer. The mobile
@@ -428,6 +608,21 @@ function svg(children: ReactNode) {
     </svg>
   );
 }
+function IconChevron() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
 function IconHome() {
   return svg(<path d="M3 11l9-8 9 8M5 10v10h14V10" />);
 }
@@ -442,67 +637,12 @@ function IconOrders() {
     </>,
   );
 }
-function IconTables() {
-  return svg(
-    <>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <path d="M3 10h18M9 10v10" />
-    </>,
-  );
-}
-function IconReports() {
-  return svg(<path d="M4 20h16M7 20v-7M12 20V6M17 20v-4" />);
-}
-function IconCustomers() {
-  return svg(
-    <>
-      <circle cx="9" cy="8" r="3" />
-      <path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 6.5a3 3 0 0 1 0 5.8M18.5 20a5.5 5.5 0 0 0-3-4.9" />
-    </>,
-  );
-}
-function IconDiscount() {
-  return svg(
-    <>
-      <path d="M20.6 12.4 12 21l-8-8 .1-6.9L11 5l9.6 9.6a1.3 1.3 0 0 1 0 1.8Z" />
-      <circle cx="8.5" cy="8.5" r="1.2" />
-    </>,
-  );
-}
-function IconMedia() {
-  return svg(
-    <>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <circle cx="8.5" cy="9.5" r="1.5" />
-      <path d="m4 17 5-5 4 4 3-3 4 4" />
-    </>,
-  );
-}
 // 3D box — the design bundle's stock glyph (P2ESidebar).
 function IconStock() {
   return svg(
     <>
       <path d="M4 7.6 12 3.6l8 4v8.8l-8 4-8-4z" />
       <path d="M4 7.6l8 4 8-4M12 11.6v8.8" />
-    </>,
-  );
-}
-
-function IconStudio() {
-  return svg(
-    <>
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <path d="M4 15l4-4 3 3 4-5 5 6" />
-      <circle cx="9" cy="9" r="1.4" />
-    </>,
-  );
-}
-
-function IconShop() {
-  return svg(
-    <>
-      <path d="M4 8h16l-1 4H5z" />
-      <path d="M5 12v7h14v-7M4 8l1.5-4h13L20 8" />
     </>,
   );
 }
@@ -529,13 +669,6 @@ function IconPayments() {
     </>,
   );
 }
-function IconBilling() {
-  return svg(
-    <>
-      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" />
-    </>,
-  );
-}
 // Two linked nodes — the design bundle's integrations glyph (P2ESidebar).
 function IconIntegrations() {
   return svg(
@@ -543,17 +676,6 @@ function IconIntegrations() {
       <circle cx="6.4" cy="17.6" r="3" />
       <circle cx="17.6" cy="6.4" r="3" />
       <path d="M8.8 15.2 15.2 8.8" />
-    </>,
-  );
-}
-// 2×2 app grid, the fourth cell a circle — the design bundle's apps glyph.
-function IconApps() {
-  return svg(
-    <>
-      <rect x="3.2" y="3.2" width="7.2" height="7.2" rx="2" />
-      <rect x="13.6" y="3.2" width="7.2" height="7.2" rx="2" />
-      <rect x="3.2" y="13.6" width="7.2" height="7.2" rx="2" />
-      <circle cx="17.2" cy="17.2" r="3.8" />
     </>,
   );
 }

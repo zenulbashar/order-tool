@@ -4,12 +4,59 @@ import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
-import { ImageryControl } from "./imagery-control";
-import { LogoControl } from "./logo-control";
-import { NotifyToggle } from "./notify-toggle";
-import { SettingsDetailsForm } from "./settings-details-form";
-import { SettingsForm } from "./settings-form";
-import { TaxForm } from "./tax-form";
+/**
+ * Storefront settings hub. The settings that used to live on one long page are
+ * now focused sub-pages (each reachable from the sidebar's "Storefront setup"
+ * dropdown too); this hub links to all of them so there's a single home for the
+ * section and an in-page path to each.
+ */
+const SECTIONS: { href: string; title: string; description: string }[] = [
+  {
+    href: "/dashboard/settings/brand",
+    title: "Brand & colours",
+    description: "Your accent and text colours.",
+  },
+  {
+    href: "/dashboard/settings/logo",
+    title: "Logo",
+    description: "The logo shown in your storefront header and footer.",
+  },
+  {
+    href: "/dashboard/settings/imagery",
+    title: "Photos & hero",
+    description: "Up to three rotating hero photos.",
+  },
+  {
+    href: "/dashboard/settings/announcement",
+    title: "Announcement bar",
+    description: "A slim promo message across the top.",
+  },
+  {
+    href: "/dashboard/settings/social",
+    title: "Social links",
+    description: "“Follow us” links in your footer.",
+  },
+  {
+    href: "/dashboard/settings/about",
+    title: "About & description",
+    description: "A short welcome line under your name.",
+  },
+  {
+    href: "/dashboard/settings/hours",
+    title: "Opening hours & location",
+    description: "Address, phone, hours and pickup scheduling.",
+  },
+  {
+    href: "/dashboard/settings/tax",
+    title: "Tax (GST)",
+    description: "Show the GST portion on receipts.",
+  },
+  {
+    href: "/dashboard/settings/notifications",
+    title: "Order notifications",
+    description: "New-order push alerts on your phone.",
+  },
+];
 
 export default async function SettingsPage() {
   await requireUser();
@@ -19,59 +66,33 @@ export default async function SettingsPage() {
     <main className="mx-auto max-w-3xl">
       <PageHeader title="Storefront settings" description={venue.name} />
 
-      <section className="space-y-4 px-5 py-8">
-        <Card>
-          <SettingsForm
-            settings={{
-              brandColor: venue.brandColor,
-              textColor: venue.brandTextColor,
-              announcement: venue.announcement,
-              instagramUrl: venue.instagramUrl,
-              storefrontDescription: venue.storefrontDescription,
-            }}
-          />
-        </Card>
-        <Card>
-          <LogoControl logoUrl={venue.logoUrl} />
-        </Card>
-        <Card>
-          <div className="space-y-6">
-            <div>
-              <h2 className="font-display text-base font-semibold tracking-tight text-ink">
-                Storefront imagery
-              </h2>
-              <p className="mt-0.5 text-xs text-muted">
-                Up to three hero photos. On desktop they fill the top of your
-                storefront and rotate; on mobile the first one is the banner.
-                Wide, landscape shots work best — your venue name sits over a
-                scrim so it stays readable. JPEG, PNG or WebP, up to 5MB each.
-              </p>
-            </div>
-            <ImageryControl
-              slot="cover"
-              title="Hero image 1"
-              description="The lead image — also the mobile banner."
-              imageUrl={venue.coverUrl}
-            />
-            <div className="border-t border-line pt-6">
-              <ImageryControl
-                slot="cover2"
-                title="Hero image 2"
-                description="Optional — joins the rotation on desktop."
-                imageUrl={venue.coverUrl2}
-              />
-            </div>
-            <div className="border-t border-line pt-6">
-              <ImageryControl
-                slot="cover3"
-                title="Hero image 3"
-                description="Optional — joins the rotation on desktop."
-                imageUrl={venue.coverUrl3}
-              />
-            </div>
-          </div>
-        </Card>
-        <p className="text-xs text-muted">
+      <section className="px-5 py-8">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {SECTIONS.map((section) => (
+            <Link key={section.href} href={section.href} className="group block">
+              <Card className="h-full transition group-hover:border-muted/50 group-hover:shadow-lift">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-display text-base font-semibold tracking-tight text-ink">
+                      {section.title}
+                    </p>
+                    <p className="mt-0.5 text-sm text-muted">
+                      {section.description}
+                    </p>
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className="shrink-0 text-muted transition group-hover:translate-x-0.5"
+                  >
+                    →
+                  </span>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        <p className="mt-6 text-xs text-muted">
           Your storefront is live at{" "}
           <Link
             href={`/${venue.slug}`}
@@ -82,78 +103,6 @@ export default async function SettingsPage() {
           </Link>
           .
         </p>
-      </section>
-
-      <section className="border-t border-line px-5 py-8">
-        <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
-          Notifications
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Get a push notification on your phone the moment a new order comes in
-          (needs the Prompt2Eat app installed and signed in).
-        </p>
-        <Card className="mt-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-ink">
-                New-order notifications
-              </p>
-              <p className="text-xs text-muted">
-                Sent to every device signed in to this venue.
-              </p>
-            </div>
-            <NotifyToggle enabled={venue.pushNewOrders} />
-          </div>
-        </Card>
-      </section>
-
-      <section className="border-t border-line px-5 py-8">
-        <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
-          Tax (GST)
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Australian prices include GST. Turn this on to show the GST portion on
-          diner receipts and your order records — your menu prices and the amount
-          charged stay exactly the same.
-        </p>
-        <Card className="mt-4">
-          <TaxForm
-            tax={{
-              enabled: venue.taxEnabled,
-              ratePercent: venue.taxRateBps ? (venue.taxRateBps / 100).toString() : "",
-              label: venue.taxLabel,
-            }}
-          />
-        </Card>
-      </section>
-
-      <section className="border-t border-line px-5 py-8">
-        <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
-          Business details
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          These power your venue&rsquo;s Google search listing (structured data).
-          Everything here is optional, and only the fields you fill in are
-          published — blanks are never guessed.
-        </p>
-        <Card className="mt-4">
-          <SettingsDetailsForm
-            details={{
-              streetAddress: venue.streetAddress,
-              suburb: venue.suburb,
-              state: venue.state,
-              postcode: venue.postcode,
-              country: venue.country,
-              phone: venue.phone,
-              openingHours: venue.openingHours,
-              latitude: venue.latitude,
-              longitude: venue.longitude,
-              schedulingEnabled: venue.schedulingEnabled,
-              schedulingLeadMinutes: venue.schedulingLeadMinutes,
-              schedulingMaxDaysAhead: venue.schedulingMaxDaysAhead,
-            }}
-          />
-        </Card>
       </section>
     </main>
   );
