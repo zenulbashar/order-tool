@@ -65,8 +65,15 @@ function TableTent({
     >
       <div className="flex items-center justify-center gap-2">
         {logoUrl ? (
+          // Sized by HEIGHT with natural width + object-contain so the FULL
+          // brand logo shows on the tent (a wide wordmark was being cropped to
+          // its centre by a fixed square + object-cover).
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt="" className="h-6 w-6 rounded object-cover" />
+          <img
+            src={logoUrl}
+            alt=""
+            className="h-6 w-auto max-w-[120px] rounded object-contain"
+          />
         ) : (
           <span className="text-[var(--color-accent)]" aria-hidden>
             ✦
