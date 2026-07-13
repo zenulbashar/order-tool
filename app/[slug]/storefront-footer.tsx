@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { OPENING_DAYS } from "@/lib/validation";
 
 import { BrandTile } from "./storefront-hero";
@@ -64,29 +66,7 @@ export function StorefrontFooter({ venue }: { venue: PublicVenue }) {
               {venue.storefrontDescription}
             </p>
           ) : null}
-          {venue.instagramUrl ? (
-            <a
-              href={venue.instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-ink transition hover:opacity-70"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                aria-hidden="true"
-                className="h-5 w-5"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-              </svg>
-              Follow us
-            </a>
-          ) : null}
+          <SocialRow venue={venue} />
         </div>
 
         {/* Opening hours */}
@@ -158,5 +138,119 @@ export function StorefrontFooter({ venue }: { venue: PublicVenue }) {
         </p>
       </div>
     </footer>
+  );
+}
+
+/**
+ * The "Follow us" row: one icon link per social profile the owner filled in.
+ * Renders nothing when no links are set (never a fabricated handle). Order is
+ * stable; each link opens in a new tab and is labelled for screen readers.
+ */
+function SocialRow({ venue }: { venue: PublicVenue }) {
+  const entries: { url: string | null; label: string; icon: ReactNode }[] = [
+    { url: venue.instagramUrl, label: "Instagram", icon: <IgIcon /> },
+    { url: venue.facebookUrl, label: "Facebook", icon: <FbIcon /> },
+    { url: venue.xUrl, label: "X", icon: <XIcon /> },
+    { url: venue.youtubeUrl, label: "YouTube", icon: <YtIcon /> },
+    { url: venue.tiktokUrl, label: "TikTok", icon: <TtIcon /> },
+    { url: venue.linkedinUrl, label: "LinkedIn", icon: <LiIcon /> },
+    { url: venue.websiteUrl, label: "Website", icon: <WebIcon /> },
+  ];
+  const links = entries.filter(
+    (link): link is { url: string; label: string; icon: ReactNode } =>
+      Boolean(link.url),
+  );
+
+  if (links.length === 0) return null;
+
+  return (
+    <div className="mt-4">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+        Follow us
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {links.map((link) => (
+          <a
+            key={link.label}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={link.label}
+            title={link.label}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink transition hover:border-muted/50 hover:opacity-70"
+          >
+            {link.icon}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* — social glyphs (24×24). Brand marks use fill; the website uses a stroke globe. */
+function IgIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      aria-hidden="true"
+      className="h-[18px] w-[18px]"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+function FbIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[18px] w-[18px]">
+      <path d="M13.5 21v-7.3h2.4l.4-2.9h-2.8V8.9c0-.8.2-1.4 1.4-1.4h1.5V4.9c-.3 0-1.2-.1-2.2-.1-2.1 0-3.6 1.3-3.6 3.7v2.1H8.2v2.9h2.4V21h2.9z" />
+    </svg>
+  );
+}
+function XIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[16px] w-[16px]">
+      <path d="M17.5 3h3l-6.6 7.5L21.8 21h-6l-4.3-5.6L6.5 21h-3l7-8L2.5 3h6.1l3.9 5.2L17.5 3zm-1.1 16.2h1.7L7.7 4.7H5.9l10.5 14.5z" />
+    </svg>
+  );
+}
+function YtIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[18px] w-[18px]">
+      <path d="M22 8.2a3 3 0 0 0-2.1-2.1C18 5.6 12 5.6 12 5.6s-6 0-7.9.5A3 3 0 0 0 2 8.2 31 31 0 0 0 1.7 12 31 31 0 0 0 2 15.8a3 3 0 0 0 2.1 2.1c1.9.5 7.9.5 7.9.5s6 0 7.9-.5A3 3 0 0 0 22 15.8 31 31 0 0 0 22.3 12 31 31 0 0 0 22 8.2zM10 15V9l5.2 3L10 15z" />
+    </svg>
+  );
+}
+function TtIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[17px] w-[17px]">
+      <path d="M16.5 3c.3 2 1.5 3.6 3.5 3.9v2.6c-1.3.1-2.5-.3-3.6-1v5.9a5.4 5.4 0 1 1-5.4-5.4c.3 0 .5 0 .8.1v2.7a2.8 2.8 0 1 0 2 2.6V3h2.7z" />
+    </svg>
+  );
+}
+function LiIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="h-[17px] w-[17px]">
+      <path d="M6.9 8.6H4.2V20h2.7V8.6zM5.5 4A1.6 1.6 0 1 0 5.5 7.2 1.6 1.6 0 0 0 5.5 4zM20 20v-6.3c0-3.1-1.7-4.6-3.9-4.6-1.8 0-2.6 1-3 1.7V8.6H10.4V20h2.7v-6.1c0-.3 0-.6.1-.8.3-.6.8-1.2 1.7-1.2 1.2 0 1.7 1 1.7 2.3V20H20z" />
+    </svg>
+  );
+}
+function WebIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      aria-hidden="true"
+      className="h-[18px] w-[18px]"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.4 2.5 2.4 15 0 18M12 3c-2.4 2.5-2.4 15 0 18" />
+    </svg>
   );
 }

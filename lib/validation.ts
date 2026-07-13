@@ -528,11 +528,78 @@ export const instagramUrlSchema = z
     return `https://instagram.com/${value}`;
   });
 
+/**
+ * Generic "handle or profile link" for a social platform, mirroring
+ * instagramUrlSchema: a full http(s) URL is kept, a "host.com/…" path is given a
+ * scheme, and a bare "@handle"/"handle" is normalised to the platform's canonical
+ * profile URL (`https://{host}/{pathPrefix}{handle}`). Empty → null. The
+ * pathPrefix captures each platform's shape (YouTube/TikTok use "@", LinkedIn
+ * "in/", Facebook/X none), so the footer link is always safe.
+ */
+function socialHandleSchema(label: string, host: string, pathPrefix: string) {
+  const hostPattern = host.replace(/\./g, "\\.");
+  const hostAnywhere = new RegExp(`^(www\\.)?${hostPattern}\\/.+`, "i");
+  const hostStart = new RegExp(`^(www\\.)?${hostPattern}\\/`, "i");
+  return z
+    .string()
+    .trim()
+    .max(200, `${label} link is too long.`)
+    .transform((value) => value.replace(/^@/, ""))
+    .refine(
+      (value) =>
+        value === "" ||
+        /^https?:\/\/.+/i.test(value) ||
+        hostAnywhere.test(value) ||
+        /^[A-Za-z0-9._-]{1,60}$/.test(value),
+      `Enter your ${label} handle or profile link.`,
+    )
+    .transform((value) => {
+      if (value === "") return null;
+      if (/^https?:\/\//i.test(value)) return value;
+      if (hostStart.test(value)) return `https://${value}`;
+      return `https://${host}/${pathPrefix}${value}`;
+    });
+}
+
+export const facebookUrlSchema = socialHandleSchema("Facebook", "facebook.com", "");
+export const xUrlSchema = socialHandleSchema("X", "x.com", "");
+export const youtubeUrlSchema = socialHandleSchema("YouTube", "youtube.com", "@");
+export const tiktokUrlSchema = socialHandleSchema("TikTok", "tiktok.com", "@");
+export const linkedinUrlSchema = socialHandleSchema(
+  "LinkedIn",
+  "linkedin.com",
+  "in/",
+);
+
+/** A plain website URL: full http(s) URL, or a bare domain given https://. */
+export const websiteUrlSchema = z
+  .string()
+  .trim()
+  .max(200, "Website link is too long.")
+  .refine(
+    (value) =>
+      value === "" ||
+      /^https?:\/\/.+/i.test(value) ||
+      /^[^\s/]+\.[^\s]{2,}/.test(value),
+    "Enter a valid website address.",
+  )
+  .transform((value) => {
+    if (value === "") return null;
+    if (/^https?:\/\//i.test(value)) return value;
+    return `https://${value}`;
+  });
+
 export const venueSettingsSchema = z.object({
   brandColor: brandColorSchema,
   textColor: brandTextColorSchema,
   announcement: announcementSchema,
   instagramUrl: instagramUrlSchema,
+  facebookUrl: facebookUrlSchema,
+  xUrl: xUrlSchema,
+  youtubeUrl: youtubeUrlSchema,
+  tiktokUrl: tiktokUrlSchema,
+  linkedinUrl: linkedinUrlSchema,
+  websiteUrl: websiteUrlSchema,
   logoUrl: logoUrlSchema,
   storefrontDescription: storefrontDescriptionSchema,
 });

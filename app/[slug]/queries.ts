@@ -42,6 +42,12 @@ export const getPublicVenueBySlug = cache(
         textColor: venues.brandTextColor,
         announcement: venues.announcement,
         instagramUrl: venues.instagramUrl,
+        facebookUrl: venues.facebookUrl,
+        xUrl: venues.xUrl,
+        youtubeUrl: venues.youtubeUrl,
+        tiktokUrl: venues.tiktokUrl,
+        linkedinUrl: venues.linkedinUrl,
+        websiteUrl: venues.websiteUrl,
         logoUrl: venues.logoUrl,
         // Owner-uploaded brand imagery (cover band + gutter background). Both
         // nullable; the storefront/diner pages render their prior look when unset.

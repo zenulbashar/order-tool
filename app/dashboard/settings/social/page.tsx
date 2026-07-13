@@ -17,7 +17,17 @@ export default async function SocialSettingsPage() {
       />
       <section className="px-5 py-8">
         <Card>
-          <SocialLinksForm instagramUrl={venue.instagramUrl} />
+          <SocialLinksForm
+            links={{
+              instagramUrl: venue.instagramUrl,
+              facebookUrl: venue.facebookUrl,
+              xUrl: venue.xUrl,
+              youtubeUrl: venue.youtubeUrl,
+              tiktokUrl: venue.tiktokUrl,
+              linkedinUrl: venue.linkedinUrl,
+              websiteUrl: venue.websiteUrl,
+            }}
+          />
         </Card>
       </section>
     </main>

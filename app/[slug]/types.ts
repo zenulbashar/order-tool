@@ -15,9 +15,16 @@ export type PublicVenue = {
   // Optional venue text colour (two-colour theming). Null = automatic — the
   // diner root only overrides --color-ink when this is set.
   textColor: string | null;
-  // Owner-authored promo bar text (null = hidden) + Instagram URL for the footer.
+  // Owner-authored promo bar text (null = hidden) + social profile links for the
+  // footer "Follow us" row. Each nullable; any subset can be set.
   announcement: string | null;
   instagramUrl: string | null;
+  facebookUrl: string | null;
+  xUrl: string | null;
+  youtubeUrl: string | null;
+  tiktokUrl: string | null;
+  linkedinUrl: string | null;
+  websiteUrl: string | null;
   logoUrl: string | null;
   // Owner-uploaded storefront brand imagery. coverUrl replaces the storefront's
   // brand-colour cover band with a hero image; backgroundUrl fills the empty
