@@ -652,7 +652,13 @@ function StorefrontInner({
                     <ul className="mt-3 space-y-3 lg:grid lg:grid-cols-3 lg:gap-3 lg:space-y-0 2xl:grid-cols-4">
                       {category.items.map((item) => (
                         <li key={item.id}>
-                          <ItemCard item={item} onSelect={setActiveItem} />
+                          <ItemCard
+                            item={item}
+                            onSelect={setActiveItem}
+                            onQuickAdd={(quick) =>
+                              addItem(quick.id, null, [], 1)
+                            }
+                          />
                         </li>
                       ))}
                     </ul>
