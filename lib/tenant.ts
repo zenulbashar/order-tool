@@ -7,6 +7,7 @@ import { cache } from "react";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { venueMembers, venues } from "@/lib/db/schema";
+import { emailIsPlatformAdmin } from "@/lib/platform-admin";
 
 export type Venue = typeof venues.$inferSelect;
 
@@ -18,6 +19,62 @@ export type Venue = typeof venues.$inferSelect;
  * it; the switcher mutates it through a server action.
  */
 const SELECTED_VENUE_COOKIE = "ot_selected_venue";
+
+/**
+ * Cookie naming the venue a PLATFORM ADMIN is currently "opening as" (the
+ * operator support tool). Unlike the selected-venue cookie, this one CAN resolve
+ * a venue outside the user's memberships — but ONLY while the session's email is
+ * still on the PLATFORM_ADMIN_EMAILS allowlist, re-checked on every resolve. For
+ * a non-admin (or an ex-admin after access is revoked) the cookie is inert and
+ * ignored, so it can never widen a normal owner's access. httpOnly; written only
+ * by the admin open/exit server actions.
+ */
+export const ADMIN_IMPERSONATE_COOKIE = "ot_admin_impersonate";
+
+/**
+ * The venue an authenticated platform admin is impersonating, or null. Resolves
+ * the cookie'd venue by id — the one place a venue is loaded outside the caller's
+ * own memberships — gated on a live allowlist re-check. Returns null (falling the
+ * caller back to normal resolution) for a non-admin, a missing cookie, or a
+ * cookie pointing at a deleted venue.
+ */
+async function resolveImpersonatedVenue(
+  email: string | null | undefined,
+): Promise<Venue | null> {
+  if (!emailIsPlatformAdmin(email)) return null;
+  const impersonateId = (await cookies()).get(ADMIN_IMPERSONATE_COOKIE)?.value;
+  if (!impersonateId) return null;
+  const [venue] = await db
+    .select()
+    .from(venues)
+    .where(eq(venues.id, impersonateId))
+    .limit(1);
+  return venue ?? null;
+}
+
+/** The impersonated venue for the current session (for the dashboard banner). */
+export async function getImpersonatedVenue(): Promise<Venue | null> {
+  const session = await auth();
+  return resolveImpersonatedVenue(session?.user?.email);
+}
+
+/** Start impersonating a venue (admin "Open as venue"). Cookie write only. */
+export async function setImpersonationCookie(venueId: string): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_IMPERSONATE_COOKIE, venueId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 4, // 4h — a support session, not a durable preference.
+  });
+}
+
+/** Stop impersonating (admin "Exit"). Cookie clear only. */
+export async function clearImpersonationCookie(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(ADMIN_IMPERSONATE_COOKIE);
+}
 
 /**
  * Require an authenticated user. Redirects to /signin when there is no
@@ -71,6 +128,12 @@ export async function getCurrentVenue(): Promise<Venue | null> {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return null;
+
+  // Platform-admin "Open as venue": when an operator is impersonating, resolve
+  // THAT venue directly (the only path outside the user's own memberships),
+  // gated on a live allowlist re-check. A non-admin falls straight through.
+  const impersonated = await resolveImpersonatedVenue(session.user.email);
+  if (impersonated) return impersonated;
 
   const myVenues = await getMembershipVenues(userId);
   if (myVenues.length === 0) return null;

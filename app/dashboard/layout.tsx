@@ -1,5 +1,11 @@
-import { getCurrentVenue, getUserVenues, requireUser } from "@/lib/tenant";
+import {
+  getCurrentVenue,
+  getImpersonatedVenue,
+  getUserVenues,
+  requireUser,
+} from "@/lib/tenant";
 
+import { exitVenueImpersonation } from "../admin/actions";
 import { getActiveOrderCount } from "./orders/queries";
 import { PushRegistrar } from "./push-registrar";
 import { Sidebar } from "./sidebar";
@@ -15,9 +21,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const [venues, current] = await Promise.all([
+  const [venues, current, impersonating] = await Promise.all([
     getUserVenues(),
     getCurrentVenue(),
+    getImpersonatedVenue(),
   ]);
 
   // Before any venue exists the page's own requireVenue() redirects to
@@ -47,7 +54,28 @@ export default async function DashboardLayout({
         activeOrderCount={activeOrderCount}
         brandColor={current.brandColor}
       />
-      <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        {impersonating ? (
+          <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-[var(--color-warm)] px-5 py-2 text-sm text-white print:hidden">
+            <p className="min-w-0">
+              <span className="font-semibold">Viewing as {impersonating.name}</span>
+              <span className="text-white/80">
+                {" "}
+                — admin support session. Changes you make apply to this venue.
+              </span>
+            </p>
+            <form action={exitVenueImpersonation}>
+              <button
+                type="submit"
+                className="rounded-control bg-white/20 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/30"
+              >
+                Exit to admin →
+              </button>
+            </form>
+          </div>
+        ) : null}
+        {children}
+      </main>
       {/* Native app only: registers this device for new-order push (no-op on web). */}
       <PushRegistrar />
     </div>

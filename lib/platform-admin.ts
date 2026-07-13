@@ -16,15 +16,29 @@ import { auth } from "@/lib/auth";
  * existence.
  */
 export async function requirePlatformAdmin(): Promise<{ email: string }> {
+  const session = await auth();
+  const email = session?.user?.email?.toLowerCase();
+  if (!email || !emailIsPlatformAdmin(email)) notFound();
+
+  return { email };
+}
+
+/**
+ * Non-throwing allowlist check (same rule as requirePlatformAdmin, fail-safe
+ * deny). Used where a plain boolean is needed rather than a notFound() — notably
+ * the "Open as venue" resolve in lib/tenant.ts, which must fall THROUGH to the
+ * normal membership path for a non-admin instead of 404-ing the dashboard. The
+ * email is re-checked on every call, so revoking admin access takes effect on
+ * the next request even mid-impersonation.
+ */
+export function emailIsPlatformAdmin(
+  email: string | null | undefined,
+): boolean {
   const allowlist = (process.env.PLATFORM_ADMIN_EMAILS ?? "")
     .split(",")
     .map((entry) => entry.trim().toLowerCase())
     .filter((entry) => entry.length > 0);
-  if (allowlist.length === 0) notFound();
-
-  const session = await auth();
-  const email = session?.user?.email?.toLowerCase();
-  if (!email || !allowlist.includes(email)) notFound();
-
-  return { email };
+  if (allowlist.length === 0) return false;
+  const normalized = email?.toLowerCase();
+  return Boolean(normalized && allowlist.includes(normalized));
 }
