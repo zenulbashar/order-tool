@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 
 import { readableOn } from "@/app/_components/brand-contrast";
 import { cx } from "@/app/_components/cx";
+import { formatCents } from "@/lib/validation";
 
 import { deleteTable } from "./actions";
-import type { TableStatus } from "./queries";
+import type { TableSession, TableStatus } from "./queries";
 import { TableForm } from "./table-form";
 
 type BoardTable = {
@@ -15,8 +17,18 @@ type BoardTable = {
   label: string;
   seats: number | null;
   status: TableStatus;
+  session: TableSession | null;
   svg: string; // server-rendered QR SVG (deterministic, script-free)
 };
+
+/** Short "how long the table's been active" label from the session start. */
+function sinceLabel(date: Date): string {
+  const mins = Math.floor((Date.now() - date.getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  return `${hours}h ${mins % 60}m`;
+}
 
 const STATUS: Record<TableStatus, { label: string; cls: string }> = {
   ordering: {
@@ -132,6 +144,16 @@ export function TablesBoard({
   const [printMode, setPrintMode] = useState<"none" | "one" | "all">("none");
   const [printId, setPrintId] = useState<string | null>(null);
 
+  // Keep table sessions live: re-run the force-dynamic page every 20s while the
+  // tab is visible (light — this page has no polling otherwise).
+  const router = useRouter();
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!document.hidden) router.refresh();
+    }, 20_000);
+    return () => clearInterval(id);
+  }, [router]);
+
   const selected =
     tables.find((t) => t.id === selectedId) ?? tables[0] ?? null;
   const occupied = tables.filter((t) => t.status !== "open").length;
@@ -232,6 +254,18 @@ export function TablesBoard({
                     className="mt-2 aspect-square w-full rounded-input border border-line bg-white p-2 [&_svg]:block [&_svg]:h-full [&_svg]:w-full"
                     dangerouslySetInnerHTML={{ __html: table.svg }}
                   />
+                  {table.session ? (
+                    <p className="mt-2 truncate text-[11px] text-ink">
+                      <span className="font-mono font-semibold">
+                        {table.session.orderRef}
+                      </span>{" "}
+                      · ${formatCents(table.session.totalCents)}
+                      {table.session.orderCount > 1
+                        ? ` · ${table.session.orderCount} orders`
+                        : ""}{" "}
+                      · {sinceLabel(table.session.placedAt)}
+                    </p>
+                  ) : null}
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-xs text-muted">
                       {table.seats != null ? `${table.seats} seats` : "—"}
@@ -300,6 +334,27 @@ export function TablesBoard({
                   Download
                 </button>
               </div>
+
+              {selected.session ? (
+                <div className="mt-3 rounded-card border border-line bg-surface-elevated p-3 shadow-sm">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                    Current session
+                  </p>
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <span className="font-mono text-sm font-semibold text-ink">
+                      {selected.session.orderRef}
+                    </span>
+                    <span className="font-display text-base font-extrabold text-ink">
+                      ${formatCents(selected.session.totalCents)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted">
+                    {selected.session.orderCount} order
+                    {selected.session.orderCount === 1 ? "" : "s"} · latest{" "}
+                    {sinceLabel(selected.session.placedAt)} ago
+                  </p>
+                </div>
+              ) : null}
 
               <div className="mt-3 rounded-card border border-line bg-surface-elevated p-3 shadow-sm">
                 {editOpen ? (

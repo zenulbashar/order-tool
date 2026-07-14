@@ -27,6 +27,7 @@ export default async function TablesPage() {
       label: table.label,
       seats: table.seats,
       status: table.status,
+      session: table.session,
       svg: await tableQrSvg(tableDeepLink(baseUrl, venue.slug, table.label)),
     })),
   );
