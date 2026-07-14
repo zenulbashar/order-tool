@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Category nav with scroll-spy. Rendered inside the storefront's sticky header
@@ -54,35 +54,7 @@ export function CategoryNav({
   }
 
   if (variant === "tabs") {
-    return (
-      <nav className="min-w-0">
-        {/* Scrollbar hidden: a long category list pans without the grey bar. */}
-        <ul className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {categories.map((category) => {
-            const isActive = category.id === active;
-            return (
-              <li key={category.id} className="shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleClick(category.id)}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`relative border-b-[3px] py-4 text-sm font-semibold transition ${
-                    isActive
-                      ? "text-ink"
-                      : "border-transparent text-muted hover:text-ink"
-                  }`}
-                  style={
-                    isActive ? { borderColor: "var(--action)" } : undefined
-                  }
-                >
-                  {category.name}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    );
+    return <CategoryTabs categories={categories} active={active} onPick={handleClick} />;
   }
 
   return (
@@ -116,5 +88,130 @@ export function CategoryNav({
         })}
       </ul>
     </nav>
+  );
+}
+
+/**
+ * Desktop tab strip (underline variant) with mouse-friendly scroll arrows. The
+ * strip pans horizontally and its scrollbar is hidden; on a touchscreen you
+ * swipe, but a MOUSE user had no way to reach categories scrolled off the right.
+ * The ‹ › buttons appear only when there's more in that direction and scroll the
+ * strip a chunk at a time. A gradient fade under each arrow masks the tabs so
+ * they don't read as clipped.
+ */
+function CategoryTabs({
+  categories,
+  active,
+  onPick,
+}: {
+  categories: { id: string; name: string }[];
+  active: string;
+  onPick: (id: string) => void;
+}) {
+  const scrollerRef = useRef<HTMLUListElement>(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  const updateArrows = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 1);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    // rAF for the initial read so we're not setting state synchronously in the
+    // effect body; scroll + resize keep it current thereafter.
+    const raf = requestAnimationFrame(updateArrows);
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    const observer = new ResizeObserver(updateArrows);
+    observer.observe(el);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener("scroll", updateArrows);
+      observer.disconnect();
+    };
+  }, [updateArrows, categories]);
+
+  const scrollByChunk = (direction: number) => {
+    scrollerRef.current?.scrollBy({ left: direction * 240, behavior: "smooth" });
+  };
+
+  return (
+    <nav className="relative min-w-0">
+      {!atStart ? (
+        <ArrowButton side="left" onClick={() => scrollByChunk(-1)} />
+      ) : null}
+      <ul
+        ref={scrollerRef}
+        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {categories.map((category) => {
+          const isActive = category.id === active;
+          return (
+            <li key={category.id} className="shrink-0">
+              <button
+                type="button"
+                onClick={() => onPick(category.id)}
+                aria-current={isActive ? "true" : undefined}
+                className={`relative border-b-[3px] py-4 text-sm font-semibold transition ${
+                  isActive
+                    ? "text-ink"
+                    : "border-transparent text-muted hover:text-ink"
+                }`}
+                style={isActive ? { borderColor: "var(--action)" } : undefined}
+              >
+                {category.name}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {!atEnd ? (
+        <ArrowButton side="right" onClick={() => scrollByChunk(1)} />
+      ) : null}
+    </nav>
+  );
+}
+
+function ArrowButton({
+  side,
+  onClick,
+}: {
+  side: "left" | "right";
+  onClick: () => void;
+}) {
+  return (
+    <div
+      className={`pointer-events-none absolute inset-y-0 z-10 flex items-center ${
+        side === "left"
+          ? "left-0 bg-gradient-to-r from-surface via-surface to-transparent pr-8"
+          : "right-0 bg-gradient-to-l from-surface via-surface to-transparent pl-8"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={
+          side === "left" ? "Scroll categories left" : "Scroll categories right"
+        }
+        className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface-elevated text-ink shadow-sm transition hover:bg-hover-secondary"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          {side === "left" ? <path d="M15 18l-6-6 6-6" /> : <path d="M9 18l6-6-6-6" />}
+        </svg>
+      </button>
+    </div>
   );
 }
