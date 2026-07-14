@@ -818,6 +818,11 @@ export const orders = pgTable(
     fulfillmentStatus: orderFulfillmentStatus("fulfillment_status")
       .notNull()
       .default("new"),
+    // When the order was handed off (fulfillment_status → completed). Set by the
+    // kitchen action, cleared if it's moved back out of completed. The Completed
+    // column windows on THIS, not created_at, so a scheduled/older order still
+    // shows as just-completed. Additive + inert to money.
+    completedAt: timestamp("completed_at", { withTimezone: true }),
     subtotalCents: integer("subtotal_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
     // GST component (inclusive) already contained in total_cents — an additive
