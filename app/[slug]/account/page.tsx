@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getCustomer } from "@/lib/customer/auth";
-import { getPointsActivity, getPointsBalance } from "@/lib/loyalty/balance";
+import {
+  getAvailablePoints,
+  getPointsActivity,
+  getPointsBalance,
+} from "@/lib/loyalty/balance";
 import { isReservedSlug } from "@/lib/validation";
 
 import { getPublicVenueBySlug } from "../queries";
@@ -58,6 +62,9 @@ export default async function AccountPage({
       ? await Promise.all([
           getPointsBalance(venue.id, customer.id),
           getPointsActivity(venue.id, customer.id),
+          // Spendable now = balance minus points reserved on pending orders.
+          // Empty exclude id → count reservations on ALL of their pending orders.
+          getAvailablePoints(venue.id, customer.id, ""),
         ])
       : null;
 
@@ -68,6 +75,7 @@ export default async function AccountPage({
       {points ? (
         <PointsPanel
           balance={points[0]}
+          available={points[2]}
           redeemValueCents={venue.loyaltyRedeemValueCents}
           activity={points[1]}
         />

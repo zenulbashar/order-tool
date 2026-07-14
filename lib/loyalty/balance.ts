@@ -68,6 +68,24 @@ export async function getAvailablePoints(
   return Math.max(0, balance - Number(row?.reserved ?? 0));
 }
 
+/**
+ * Total points outstanding across a whole venue = SUM of every ledger delta
+ * (earned − redeemed ± adjusts). Multiplied by the point value, this is the
+ * venue's loyalty LIABILITY — points its customers could still redeem. Owner
+ * reporting only; not customer-scoped.
+ */
+export async function getVenuePointsOutstanding(
+  venueId: string,
+): Promise<number> {
+  const [row] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${pointsLedger.deltaPoints}), 0)`,
+    })
+    .from(pointsLedger)
+    .where(eq(pointsLedger.venueId, venueId));
+  return Math.max(0, Number(row?.total ?? 0));
+}
+
 /** Most-recent ledger rows for the account activity list (newest first). */
 export async function getPointsActivity(
   venueId: string,

@@ -21,14 +21,17 @@ const dateFmt = new Intl.DateTimeFormat("en-AU", {
  */
 export function PointsPanel({
   balance,
+  available,
   redeemValueCents,
   activity,
 }: {
   balance: number;
+  // Points spendable right now = balance minus any reserved on pending orders.
+  available: number;
   redeemValueCents: number;
   activity: PointsActivity[];
 }) {
-  const worthCents = balance * redeemValueCents;
+  const onHold = Math.max(0, balance - available);
 
   return (
     <section className="px-5 pb-1 pt-2">
@@ -43,8 +46,15 @@ export function PointsPanel({
             </p>
           </div>
           {balance > 0 ? (
-            <p className="shrink-0 text-xs font-semibold text-muted">
-              worth ${formatCents(worthCents)}
+            <p className="shrink-0 text-right text-xs font-semibold text-muted">
+              {onHold > 0
+                ? `$${formatCents(available * redeemValueCents)} to spend`
+                : `worth $${formatCents(available * redeemValueCents)}`}
+              {onHold > 0 ? (
+                <span className="mt-0.5 block text-[11px] font-normal text-muted">
+                  {onHold.toLocaleString("en-AU")} on hold in a pending order
+                </span>
+              ) : null}
             </p>
           ) : null}
         </div>
