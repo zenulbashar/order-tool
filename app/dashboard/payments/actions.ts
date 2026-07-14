@@ -153,3 +153,48 @@ export async function setPaytoDiscount(formData: FormData): Promise<void> {
   revalidatePath("/dashboard/payments");
   revalidatePath(`/${venue.slug}`);
 }
+
+/** Point-values the redemption ratio may take (cents per point). Constrained to
+ *  a preset set so the math stays exact (discount = points × cents) and the
+ *  owner picks a familiar ratio: 1¢=100pts/$1, 2¢=50, 5¢=20, 10¢=10. */
+const LOYALTY_REDEEM_VALUES = new Set([1, 2, 5, 10]);
+
+/**
+ * Configure customer loyalty/points for this venue (PR1 — money-inert). Owner
+ * intent only: enabling changes no existing charge. Earning happens off the
+ * confirmed-order webhook; redemption (a later build) is server-recomputed at
+ * pay time through the same discount seam as promos — never a surcharge. All
+ * values are re-validated + clamped here; the checkbox follows the house
+ * convention (present ⇒ on). Disabling leaves the config + ledger intact so
+ * re-enabling resumes where it left off.
+ */
+export async function setLoyaltyConfig(formData: FormData): Promise<void> {
+  await requireUser();
+  const venue = await requireVenue();
+
+  const enabled = formData.get("enabled") === "on";
+
+  const earnRaw = Number(formData.get("earnRatePerDollar"));
+  const earnRatePerDollar =
+    Number.isInteger(earnRaw) && earnRaw >= 1 && earnRaw <= 100 ? earnRaw : 1;
+
+  const redeemRaw = Number(formData.get("redeemValueCents"));
+  const redeemValueCents = LOYALTY_REDEEM_VALUES.has(redeemRaw) ? redeemRaw : 1;
+
+  const minRaw = Number(formData.get("minRedeemPoints"));
+  const minRedeemPoints =
+    Number.isInteger(minRaw) && minRaw >= 0 && minRaw <= 100000 ? minRaw : 0;
+
+  await db
+    .update(venues)
+    .set({
+      loyaltyEnabled: enabled,
+      loyaltyEarnRatePerDollar: earnRatePerDollar,
+      loyaltyRedeemValueCents: redeemValueCents,
+      loyaltyMinRedeemPoints: minRedeemPoints,
+    })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/payments");
+  revalidatePath(`/${venue.slug}`);
+}

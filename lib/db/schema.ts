@@ -237,6 +237,24 @@ export const venues = pgTable(
       .notNull()
       .default("off"),
     paytoDiscountValue: integer("payto_discount_value").notNull().default(0),
+    // Customer loyalty / points (owner-configurable). Logged-in diners earn
+    // points on confirmed orders and redeem them as a checkout discount. All
+    // four are additive + money-inert: enabling changes no existing charge, and
+    // redemption (PR2) rides the SAME server-recomputed discount seam as promos.
+    //  - enabled: master switch (default off);
+    //  - earnRatePerDollar: points earned per whole $1 of SUBTOTAL;
+    //  - redeemValueCents: cash value of one point in cents (e.g. 1 → 100 pts = $1);
+    //  - minRedeemPoints: floor below which a customer can't redeem.
+    loyaltyEnabled: boolean("loyalty_enabled").notNull().default(false),
+    loyaltyEarnRatePerDollar: integer("loyalty_earn_rate_per_dollar")
+      .notNull()
+      .default(1),
+    loyaltyRedeemValueCents: integer("loyalty_redeem_value_cents")
+      .notNull()
+      .default(1),
+    loyaltyMinRedeemPoints: integer("loyalty_min_redeem_points")
+      .notNull()
+      .default(0),
     // Sales tax / GST (inclusive). AU menu prices are GST-INCLUSIVE, so tax is a
     // DISPLAY component of the price — never added to the charge. enabled off =
     // no GST line; rate in basis points (1000 = 10.00%); label shown on receipts.
@@ -689,6 +707,57 @@ export const customers = pgTable(
       sql`lower(${table.email})`,
     ),
     index("customers_venue_idx").on(table.venueId),
+  ],
+);
+
+// Why a points_ledger row exists. "earn" (credit on a confirmed order),
+// "redeem" (debit when points pay for an order — PR2), "adjust" (manual
+// owner correction). The balance is the SUM of deltaPoints; never a stored
+// counter, so it can't drift from its history.
+export const pointsLedgerReason = pgEnum("points_ledger_reason", [
+  "earn",
+  "redeem",
+  "adjust",
+]);
+
+/**
+ * Customer loyalty points, as an append-only LEDGER (never a mutable balance).
+ * Each row is a signed delta for one (venue, customer); the live balance is
+ * SUM(delta_points). Firewalled like every customer read — venue + customer
+ * scoped, cascades with both. Earning writes an "earn" row from the Stripe
+ * webhook's isolated after() block; the UNIQUE(order_id, reason) index makes
+ * that idempotent under webhook replays + the cron backstop (one earn per
+ * order, later one redeem per order). order_id is a real FK (SET NULL on order
+ * delete) so history survives; a manual "adjust" has no order_id.
+ */
+export const pointsLedger = pgTable(
+  "points_ledger",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    orderId: text("order_id").references(() => orders.id, {
+      onDelete: "set null",
+    }),
+    deltaPoints: integer("delta_points").notNull(),
+    reason: pointsLedgerReason("reason").notNull(),
+    note: text("note"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("points_ledger_venue_customer_idx").on(
+      table.venueId,
+      table.customerId,
+    ),
+    // One earn (and later one redeem) per order — idempotent webhook + sweep.
+    uniqueIndex("points_ledger_order_reason_idx").on(
+      table.orderId,
+      table.reason,
+    ),
   ],
 );
 

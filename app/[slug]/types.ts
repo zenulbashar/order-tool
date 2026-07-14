@@ -62,6 +62,13 @@ export type PublicVenue = {
   paytoEnabled: boolean;
   paytoDiscountMode: "off" | "flat" | "percent";
   paytoDiscountValue: number;
+  // Customer loyalty/points (PR1 exposes config; redemption is a later build).
+  // Display + client-recompute inputs only — earning/redeeming are always
+  // server-authoritative, never trusted from the client.
+  loyaltyEnabled: boolean;
+  loyaltyEarnRatePerDollar: number;
+  loyaltyRedeemValueCents: number;
+  loyaltyMinRedeemPoints: number;
   // GST/sales tax (inclusive) — display only. The checkout summary + receipt show
   // "incl. GST $X" (the tax portion already inside the price); the charge is never
   // affected. taxRateBps is basis points (1000 = 10%); taxLabel defaults to "GST".

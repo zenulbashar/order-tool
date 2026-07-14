@@ -80,6 +80,12 @@ export const getPublicVenueBySlug = cache(
         paytoEnabled: venues.paytoEnabled,
         paytoDiscountMode: venues.paytoDiscountMode,
         paytoDiscountValue: venues.paytoDiscountValue,
+        // Loyalty/points config — display + (later) client redeem inputs; the
+        // discount is always server-recomputed at pay time.
+        loyaltyEnabled: venues.loyaltyEnabled,
+        loyaltyEarnRatePerDollar: venues.loyaltyEarnRatePerDollar,
+        loyaltyRedeemValueCents: venues.loyaltyRedeemValueCents,
+        loyaltyMinRedeemPoints: venues.loyaltyMinRedeemPoints,
         // GST/sales tax (inclusive) — display only. Powers the "incl. GST $X"
         // line on the checkout summary + receipt; never changes the charge.
         taxEnabled: venues.taxEnabled,
