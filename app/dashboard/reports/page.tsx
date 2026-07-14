@@ -4,6 +4,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { orderItems, orders } from "@/lib/db/schema";
+import { getVenuePointsOutstanding } from "@/lib/loyalty/balance";
 import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
@@ -148,6 +149,14 @@ export default async function ReportsPage() {
   const takeaway = orderCount - dineIn;
   const mixMax = Math.max(1, dineIn, takeaway);
 
+  // Loyalty liability — points customers could still redeem × the point value.
+  // Independent of the 30-day window (it's a running balance).
+  const outstandingPoints = venue.loyaltyEnabled
+    ? await getVenuePointsOutstanding(venue.id)
+    : 0;
+  const loyaltyLiabilityCents =
+    outstandingPoints * venue.loyaltyRedeemValueCents;
+
   const empty = orderCount === 0;
 
   return (
@@ -172,6 +181,21 @@ export default async function ReportsPage() {
             sub={venue.taxEnabled ? "Incl. in revenue" : "Tax off"}
           />
         </div>
+
+        {venue.loyaltyEnabled ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
+            <div>
+              <p className={eyebrow}>Points liability</p>
+              <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
+                ${formatCents(loyaltyLiabilityCents)}
+              </p>
+            </div>
+            <p className="text-xs text-muted">
+              {outstandingPoints.toLocaleString("en-AU")} points outstanding ·
+              customers could still redeem this much
+            </p>
+          </div>
+        ) : null}
 
         {empty ? (
           <section className="rounded-card border border-line bg-surface-elevated p-8 text-center shadow-card">
