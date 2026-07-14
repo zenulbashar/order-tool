@@ -37,6 +37,7 @@ export default async function TablesPage() {
         tables={boardTables}
         venueName={venue.name}
         logoUrl={venue.logoUrl}
+        brandColor={venue.brandColor}
       />
     </main>
   );

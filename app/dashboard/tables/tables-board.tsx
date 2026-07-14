@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { flushSync } from "react-dom";
 
+import { readableOn } from "@/app/_components/brand-contrast";
 import { cx } from "@/app/_components/cx";
 
 import { deleteTable } from "./actions";
@@ -43,56 +44,71 @@ function StatusBadge({ status }: { status: TableStatus }) {
   );
 }
 
+/**
+ * A branded table tent: the venue's brand colour + logo in a header band, then a
+ * white body with the table number, QR, and the scan-to-order cue. Brand-colored
+ * (not the platform amber — this is the venue's own collateral); the white body
+ * keeps print toner-friendly and the QR high-contrast. Contrast-aware text via
+ * readableOn so the band reads on any brand colour.
+ */
 function TableTent({
   table,
   venueName,
   logoUrl,
+  brandColor,
   print,
 }: {
   table: BoardTable;
   venueName: string;
   logoUrl: string | null;
+  brandColor: string;
   print?: boolean;
 }) {
+  const bandInk = readableOn(brandColor);
   return (
     <div
       className={cx(
-        "break-inside-avoid rounded-card p-6 text-center",
-        print
-          ? "border border-line text-ink print:border-black"
-          : "bg-forest-deep text-white",
+        "break-inside-avoid overflow-hidden rounded-card border",
+        print ? "border-black/15" : "shadow-card",
       )}
+      style={{ borderColor: print ? undefined : `${brandColor}33` }}
     >
-      <div className="flex items-center justify-center gap-2">
+      {/* Brand header band — logo + venue name. The arbitrary print-color-adjust
+          forces the coloured band to actually print (browsers drop backgrounds
+          by default). */}
+      <div
+        className="flex items-center justify-center gap-2 px-6 py-4 [print-color-adjust:exact] [-webkit-print-color-adjust:exact]"
+        style={{ backgroundColor: brandColor, color: bandInk }}
+      >
         {logoUrl ? (
-          // Sized by HEIGHT with natural width + object-contain so the FULL
-          // brand logo shows on the tent (a wide wordmark was being cropped to
-          // its centre by a fixed square + object-cover).
+          // Height-sized, natural width, object-contain so the FULL wordmark
+          // shows (never centre-cropped). White chip keeps it legible on the band.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={logoUrl}
             alt=""
-            className="h-6 w-auto max-w-[120px] rounded object-contain"
+            className="h-7 w-auto max-w-[130px] rounded bg-white/95 object-contain p-0.5"
           />
-        ) : (
-          <span className="text-[var(--color-accent)]" aria-hidden>
-            ✦
-          </span>
-        )}
+        ) : null}
         <span className="font-display text-base font-bold">{venueName}</span>
       </div>
-      <p className="mt-1 font-display text-xl font-extrabold text-[var(--color-accent)]">
-        Table {table.label}
-      </p>
-      <div
-        className="mx-auto mt-4 w-40 rounded-xl bg-white p-3 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
-        // QR SVG built server-side from a server-constructed URL (no user markup).
-        dangerouslySetInnerHTML={{ __html: table.svg }}
-      />
-      <p className="mt-4 text-sm font-semibold">Scan to order &amp; pay</p>
-      <p className={cx("text-xs", print ? "text-muted" : "text-white/60")}>
-        No app. Right from your phone.
-      </p>
+
+      {/* White body — table number, QR, cue. */}
+      <div className="bg-white px-6 py-5 text-center text-ink">
+        <p
+          className="font-display text-2xl font-extrabold [print-color-adjust:exact] [-webkit-print-color-adjust:exact]"
+          style={{ color: brandColor }}
+        >
+          Table {table.label}
+        </p>
+        <div
+          className="mx-auto mt-3 w-40 rounded-xl border border-black/5 bg-white p-3 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
+          // QR SVG built server-side from a server-constructed URL (no user markup).
+          dangerouslySetInnerHTML={{ __html: table.svg }}
+        />
+        <p className="mt-4 text-sm font-semibold text-ink">Scan to order &amp; pay</p>
+        <p className="text-xs text-muted">No app — right from your phone.</p>
+      </div>
     </div>
   );
 }
@@ -101,10 +117,12 @@ export function TablesBoard({
   tables,
   venueName,
   logoUrl,
+  brandColor,
 }: {
   tables: BoardTable[];
   venueName: string;
   logoUrl: string | null;
+  brandColor: string;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(
     tables[0]?.id ?? null,
@@ -264,6 +282,7 @@ export function TablesBoard({
                 table={selected}
                 venueName={venueName}
                 logoUrl={logoUrl}
+                brandColor={brandColor}
               />
               <div className="mt-3 flex gap-2">
                 <button
@@ -340,6 +359,7 @@ export function TablesBoard({
                   table={table}
                   venueName={venueName}
                   logoUrl={logoUrl}
+                  brandColor={brandColor}
                   print
                 />
               ))}
@@ -350,6 +370,7 @@ export function TablesBoard({
                 table={printTarget}
                 venueName={venueName}
                 logoUrl={logoUrl}
+                brandColor={brandColor}
                 print
               />
             </div>
