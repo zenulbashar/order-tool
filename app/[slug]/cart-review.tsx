@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
-
 import { buttonStyles } from "@/app/_components/button-variants";
 import { Stepper } from "@/app/_components/stepper";
 import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
-import { CartUpsell } from "./recommendations";
+import { PreCheckoutUpsell } from "./recommendations";
 import type { PublicItem } from "./types";
 
 /**
@@ -129,10 +127,6 @@ export function CartReview({
             </ul>
           )}
 
-          {/* "Add a drink or side?" — aggregate co-occurrence against the cart,
-              excluding what's already in it. Hidden when thin or on no history.
-              Built last and cuttable: surface (2) stands alone without this. */}
-          {count > 0 ? <CartUpsell onSelect={handleUpsell} /> : null}
         </div>
 
         <div className="space-y-3 border-t border-sand px-5 py-4">
@@ -146,16 +140,18 @@ export function CartReview({
             Estimated total. Prices are confirmed at checkout.
           </p>
           {count > 0 ? (
-            <Link
-              href={`/${slug}/checkout${
+            <PreCheckoutUpsell
+              checkoutHref={`/${slug}/checkout${
                 tableLabel.trim()
                   ? `?type=dinein&table=${encodeURIComponent(tableLabel.trim())}`
                   : ""
               }`}
+              subtotalCents={subtotalCents}
+              onSelectItem={handleUpsell}
               className={buttonStyles("primary", "lg", { className: "w-full" })}
             >
               Continue to checkout · ${formatCents(subtotalCents)}
-            </Link>
+            </PreCheckoutUpsell>
           ) : null}
         </div>
       </div>

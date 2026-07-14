@@ -674,6 +674,7 @@ function StorefrontInner({
               tableLabel={tableLabel}
               conciergeEnabled={conciergeEnabled}
               onAskConcierge={openConcierge}
+              onSelectItem={setActiveItem}
             />
           ) : null}
         </div>

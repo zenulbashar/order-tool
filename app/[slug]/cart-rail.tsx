@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-
 import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
+import { PreCheckoutUpsell } from "./recommendations";
+import type { PublicItem } from "./types";
 
 /**
  * Persistent desktop order rail (Direction A). Lives in the storefront's `lg`
@@ -23,11 +23,15 @@ export function CartRail({
   tableLabel,
   conciergeEnabled,
   onAskConcierge,
+  onSelectItem,
 }: {
   slug: string;
   tableLabel: string;
   conciergeEnabled: boolean;
   onAskConcierge: () => void;
+  // Open an item through the existing modifier sheet — used by the pre-checkout
+  // upsell interstitial so add-ons go through required choices + pricing.
+  onSelectItem: (item: PublicItem) => void;
 }) {
   const { displayLines, subtotalCents, count } = useCart();
 
@@ -109,16 +113,20 @@ export function CartRail({
                   </span>
                 </div>
                 {/* Ink CTA — follows the venue's text colour (two-colour rule:
-                    no Prompt2Eat forest/amber on venue pages). */}
-                <Link
-                  href={checkoutHref}
+                    no Prompt2Eat forest/amber on venue pages). Opens the pre-
+                    checkout upsell when there are add-ons, else goes straight
+                    through. */}
+                <PreCheckoutUpsell
+                  checkoutHref={checkoutHref}
+                  subtotalCents={subtotalCents}
+                  onSelectItem={onSelectItem}
                   className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-ink px-4 py-3.5 text-sm font-semibold text-surface transition hover:-translate-y-px hover:shadow-lift"
                 >
                   <span>Checkout</span>
                   <span className="font-display">
                     ${formatCents(subtotalCents)}
                   </span>
-                </Link>
+                </PreCheckoutUpsell>
                 <p className="text-center text-[11px] text-label">
                   Estimated — prices are confirmed at checkout. Secured by Stripe.
                 </p>

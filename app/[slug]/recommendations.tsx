@@ -1,6 +1,17 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+import { buttonStyles } from "@/app/_components/button-variants";
+import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
 import { RecommendationRow } from "./recommendation-row";
@@ -203,5 +214,106 @@ export function CartUpsell({
       onSelect={onSelect}
       className="mt-5 border-t border-line pt-5"
     />
+  );
+}
+
+/**
+ * The checkout CTA with a pre-checkout upsell interstitial. Renders as the given
+ * button; on tap, if there are cart recommendations (and the customer hasn't
+ * already dismissed the prompt), it opens a "anything else?" modal with those
+ * add-ons before proceeding — otherwise it goes straight to checkout. Picking an
+ * add-on routes through the parent's onSelectItem (the existing modifier sheet +
+ * pricing), never a blind add; "Continue to checkout" always proceeds. Purely
+ * client UI — it never touches the order/money path, and it can't block checkout.
+ */
+export function PreCheckoutUpsell({
+  checkoutHref,
+  subtotalCents,
+  onSelectItem,
+  className,
+  children,
+}: {
+  checkoutHref: string;
+  subtotalCents: number;
+  onSelectItem: (item: PublicItem) => void;
+  className: string;
+  children: ReactNode;
+}) {
+  const router = useRouter();
+  const { recommendForCart } = useRecommendations();
+  const { lines } = useCart();
+  const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  const items = recommendForCart(lines.map((line) => line.itemId));
+
+  function handleClick() {
+    if (items.length > 0 && !dismissed) setOpen(true);
+    else router.push(checkoutHref);
+  }
+  function proceed() {
+    setOpen(false);
+    router.push(checkoutHref);
+  }
+  function dismiss() {
+    // Don't nag: once dismissed, subsequent checkout taps go straight through.
+    setDismissed(true);
+    setOpen(false);
+  }
+  function pick(item: PublicItem) {
+    setOpen(false);
+    onSelectItem(item);
+  }
+
+  return (
+    <>
+      <button type="button" onClick={handleClick} className={className}>
+        {children}
+      </button>
+      {open ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Anything else before you checkout?"
+          onClick={dismiss}
+        >
+          <div
+            className="w-full max-w-lg rounded-t-card bg-surface-elevated sm:rounded-card"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-sand px-5 py-4">
+              <h2 className="font-display text-lg font-semibold tracking-tight text-ink">
+                Anything else?
+              </h2>
+              <button
+                type="button"
+                onClick={dismiss}
+                aria-label="Close"
+                className="flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:bg-sand hover:text-ink"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <RecommendationRow
+                title="Popular with your order"
+                items={items}
+                onSelect={pick}
+              />
+            </div>
+            <div className="border-t border-sand px-5 py-4">
+              <button
+                type="button"
+                onClick={proceed}
+                className={buttonStyles("primary", "lg", { className: "w-full" })}
+              >
+                Continue to checkout · ${formatCents(subtotalCents)}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
