@@ -1,7 +1,7 @@
-import { eq, sql } from "drizzle-orm";
+import { and, count, eq, gt, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { venues } from "@/lib/db/schema";
+import { orders, venues } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
 
 export type StripeAccountStatus = {
@@ -36,6 +36,81 @@ export async function syncStripeAccountStatus(
     .where(eq(venues.id, venueId));
 
   return { accountId, chargesEnabled, detailsSubmitted };
+}
+
+export type PayoutRow = {
+  id: string;
+  amountCents: number;
+  status: string;
+  arrivalDate: number | null;
+  created: number;
+};
+
+export type PayoutSummary = {
+  availableCents: number;
+  pendingCents: number;
+  currency: string;
+  payouts: PayoutRow[];
+};
+
+/**
+ * The connected account's balance + recent payouts, for the Payments "Balance &
+ * payouts" KPIs. Read live from Stripe on the venue's OWN connected account (the
+ * account id comes from the venue row, never client input). Balance arrays are
+ * per-currency; we sum them (AU venues are single-currency). Fail-soft: any
+ * Stripe error returns null and the card shows a calm fallback. Read-only.
+ */
+export async function getPayoutSummary(
+  accountId: string,
+): Promise<PayoutSummary | null> {
+  try {
+    const stripe = getStripe();
+    const [balance, payouts] = await Promise.all([
+      stripe.balance.retrieve({}, { stripeAccount: accountId }),
+      stripe.payouts.list({ limit: 5 }, { stripeAccount: accountId }),
+    ]);
+    const sum = (rows: { amount: number }[]) =>
+      rows.reduce((total, row) => total + row.amount, 0);
+    return {
+      availableCents: sum(balance.available),
+      pendingCents: sum(balance.pending),
+      currency: (balance.available[0]?.currency ?? "aud").toUpperCase(),
+      payouts: payouts.data.map((payout) => ({
+        id: payout.id,
+        amountCents: payout.amount,
+        status: payout.status,
+        arrivalDate: payout.arrival_date ?? null,
+        created: payout.created,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Confirmed-order sales for the venue over the last 30 days (gross total +
+ * count), from OUR orders table — the money actually taken through the
+ * storefront, independent of Stripe's payout timing. Venue-scoped.
+ */
+export async function getConfirmedSalesSummary(
+  venueId: string,
+): Promise<{ last30Cents: number; count30: number }> {
+  const since = new Date(Date.now() - 30 * 86_400_000);
+  const [row] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${orders.totalCents}), 0)`,
+      n: count(),
+    })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.venueId, venueId),
+        eq(orders.status, "confirmed"),
+        gt(orders.createdAt, since),
+      ),
+    );
+  return { last30Cents: Number(row?.total ?? 0), count30: Number(row?.n ?? 0) };
 }
 
 export type PayToCapability = "active" | "pending" | "inactive" | "unavailable";
