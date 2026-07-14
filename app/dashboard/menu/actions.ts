@@ -62,6 +62,16 @@ function priceDeltaInput(formData: FormData): string {
 }
 
 /**
+ * The item's docket prep-station override. "auto" (default) defers to
+ * category-name drink detection; a forged/absent value falls back to "auto".
+ * Display-only routing — never touches money or the order snapshot.
+ */
+function stationInput(formData: FormData): "auto" | "kitchen" | "counter" {
+  const raw = formData.get("station");
+  return raw === "kitchen" || raw === "counter" ? raw : "auto";
+}
+
+/**
  * The dietary tags selected on the item form. Reads every "tags" checkbox,
  * validates each against the vocab, and de-duplicates — a forged or stale value
  * is silently dropped, never written. Customers never reach this path.
@@ -331,6 +341,7 @@ export async function createItem(
         name: parsed.data.name,
         description: parsed.data.description,
         priceCents: parsed.data.priceCents,
+        station: stationInput(formData),
         sortOrder,
       })
       .returning({ id: menuItems.id });
@@ -384,6 +395,7 @@ export async function updateItem(
         description: parsed.data.description,
         priceCents: parsed.data.priceCents,
         isAvailable,
+        station: stationInput(formData),
         categoryId: owned,
       })
       .where(

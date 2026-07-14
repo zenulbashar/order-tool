@@ -35,6 +35,7 @@ type ItemDetailData = {
   priceCents: number;
   imageUrl: string | null;
   isAvailable: boolean;
+  station: "auto" | "kitchen" | "counter";
 };
 
 type VariantRow = { id: string; name: string; priceCents: number };
@@ -101,6 +102,7 @@ export function ItemDetail({
               description: item.description,
               priceCents: item.priceCents,
               isAvailable: item.isAvailable,
+              station: item.station,
               tags,
             }}
           />

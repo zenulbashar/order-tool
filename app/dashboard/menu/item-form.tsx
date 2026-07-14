@@ -40,6 +40,7 @@ type EditableItem = {
   description: string | null;
   priceCents: number;
   isAvailable: boolean;
+  station: "auto" | "kitchen" | "counter";
   tags: DietaryTag[];
 };
 
@@ -215,6 +216,23 @@ export function ItemForm({
           ) : null}
         </div>
       </div>
+
+      {/* Prep station — which part of the docket this item's line prints on.
+          "Auto" detects drinks by category name (they route to the front
+          counter/fridge, everything else to the kitchen); the owner can pin an
+          item either way. Display-only routing — never touches price. */}
+      <label className="block">
+        <span className={microLabel}>Prep station</span>
+        <Select name="station" defaultValue={item?.station ?? "auto"}>
+          <option value="auto">Auto (detect drinks by category)</option>
+          <option value="kitchen">Kitchen docket</option>
+          <option value="counter">Front counter · Drinks</option>
+        </Select>
+        <p className="mt-1 text-xs text-muted">
+          Drinks print under a separate section so they go to the counter, not
+          the kitchen. Leave on Auto unless an item lands in the wrong place.
+        </p>
+      </label>
 
       {/* Availability as the "LIVE" switch (edit only). --action track = a
           functional state, not amber. The hidden input carries the wire. */}

@@ -351,6 +351,13 @@
       "when": 1784026025765,
       "tag": "0049_spicy_valkyrie",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1784027025414,
+      "tag": "0050_thankful_hex",
+      "breakpoints": true
     }
   ]
 }

@@ -440,6 +440,16 @@ export const menuCategories = pgTable(
   (table) => [index("menu_categories_venue_idx").on(table.venueId)],
 );
 
+// Which prep station a menu item's docket line belongs to. "auto" (default)
+// defers to category-name detection at display time (drinks/bar → front
+// counter, everything else → kitchen); "kitchen" / "counter" are explicit
+// owner overrides. Display-only — never touches money or the order snapshot.
+export const menuItemStation = pgEnum("menu_item_station", [
+  "auto",
+  "kitchen",
+  "counter",
+]);
+
 export const menuItems = pgTable(
   "menu_items",
   {
@@ -459,6 +469,10 @@ export const menuItems = pgTable(
     // item create/update form. See app/dashboard/menu/actions.ts + lib/r2.ts.
     imageUrl: text("image_url"),
     isAvailable: boolean("is_available").notNull().default(true),
+    // Prep-station routing for the kitchen docket. "auto" defers to category-
+    // name detection; owner may pin an item to "kitchen" or "counter" (drinks
+    // fridge / front counter). Display-only — order snapshots never read it.
+    station: menuItemStation("station").notNull().default("auto"),
     sortOrder: integer("sort_order").notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

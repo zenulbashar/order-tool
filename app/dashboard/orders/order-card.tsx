@@ -1,11 +1,16 @@
 import { StatusBadge, type KitchenTone } from "@/app/_components/status-badge";
+import { splitByStation } from "@/lib/orders/station";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
 import { ElapsedTime } from "./elapsed-time";
 import { OrderStatusControls } from "./order-status-controls";
 import { PrintButton } from "./print-button";
-import type { FulfillmentStatus, KitchenOrder } from "./queries";
+import type {
+  FulfillmentStatus,
+  KitchenOrder,
+  KitchenOrderItem,
+} from "./queries";
 
 // Fulfillment status → StatusBadge kitchen tone + label. "completed" maps to the
 // "done" tone (muted); the others map 1:1.
@@ -182,30 +187,7 @@ export function OrderCard({
         </div>
       ) : null}
 
-      <ul className="mt-3 divide-y divide-line border-t border-line">
-        {order.items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-start justify-between gap-3 py-2"
-          >
-            <div className="min-w-0">
-              <p className="text-sm text-ink">
-                <span className="text-muted">{item.quantity}×</span>{" "}
-                {item.name}
-                {item.variantName ? ` (${item.variantName})` : ""}
-              </p>
-              {item.modifiers.length > 0 ? (
-                <p className="mt-0.5 text-xs text-muted">
-                  {item.modifiers.map((modifier) => modifier.name).join(", ")}
-                </p>
-              ) : null}
-            </div>
-            <span className="shrink-0 text-sm text-ink">
-              ${formatCents(item.lineTotalCents)}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <DocketItems items={order.items} />
 
       <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
         <span className="text-sm font-medium text-ink">Total</span>
@@ -219,5 +201,72 @@ export function OrderCard({
         <PrintButton order={order} />
       </div>
     </li>
+  );
+}
+
+/** A single docket line (item, variant, modifiers, line total). */
+function ItemRow({ item }: { item: KitchenOrderItem }) {
+  return (
+    <li className="flex items-start justify-between gap-3 py-2">
+      <div className="min-w-0">
+        <p className="text-sm text-ink">
+          <span className="text-muted">{item.quantity}×</span> {item.name}
+          {item.variantName ? ` (${item.variantName})` : ""}
+        </p>
+        {item.modifiers.length > 0 ? (
+          <p className="mt-0.5 text-xs text-muted">
+            {item.modifiers.map((modifier) => modifier.name).join(", ")}
+          </p>
+        ) : null}
+      </div>
+      <span className="shrink-0 text-sm text-ink">
+        ${formatCents(item.lineTotalCents)}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The order's lines split into KITCHEN and FRONT-COUNTER (drinks) sections with
+ * a dotted tear-line between them, so drinks route to the counter fridge rather
+ * than onto the kitchen ticket. When only one station is present the docket
+ * renders as a single plain list (identical to before the split).
+ */
+function DocketItems({ items }: { items: KitchenOrderItem[] }) {
+  const { kitchen, counter } = splitByStation(items);
+  const split = kitchen.length > 0 && counter.length > 0;
+
+  return (
+    <div className="mt-3 border-t border-line">
+      {split ? (
+        <p className="pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+          Kitchen
+        </p>
+      ) : null}
+      {kitchen.length > 0 ? (
+        <ul className="divide-y divide-line">
+          {kitchen.map((item) => (
+            <ItemRow key={item.id} item={item} />
+          ))}
+        </ul>
+      ) : null}
+      {split ? (
+        <div className="my-1 border-t-2 border-dotted border-line" />
+      ) : null}
+      {counter.length > 0 ? (
+        <>
+          {split ? (
+            <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+              Front counter · Drinks
+            </p>
+          ) : null}
+          <ul className="divide-y divide-line">
+            {counter.map((item) => (
+              <ItemRow key={item.id} item={item} />
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </div>
   );
 }
