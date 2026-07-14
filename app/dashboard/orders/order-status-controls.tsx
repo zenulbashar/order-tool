@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/app/_components/button";
@@ -38,19 +39,24 @@ export function OrderStatusControls({
   orderId: string;
   status: FulfillmentStatus;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [target, setTarget] = useState<FulfillmentStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // One transition runner shared by the forward + back controls — same
   // mechanics as before (set the target so only the clicked button spins,
-  // disable while in flight to prevent double-submits).
+  // disable while in flight to prevent double-submits). On success we refresh
+  // immediately so the card moves to the right column at once (rather than
+  // waiting up to 12s for the next poll) — this is what made a handed-off order
+  // look like it "didn't go to Completed".
   const move = (to: FulfillmentStatus) => {
     setError(null);
     setTarget(to);
     startTransition(async () => {
       const result = await updateOrderFulfillmentStatus(orderId, to);
       if (result?.error) setError(result.error);
+      else router.refresh();
     });
   };
 

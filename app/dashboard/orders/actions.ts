@@ -40,7 +40,13 @@ export async function updateOrderFulfillmentStatus(
 
   const updated = await db
     .update(orders)
-    .set({ fulfillmentStatus: status.data })
+    .set({
+      fulfillmentStatus: status.data,
+      // Stamp the hand-off time so the Completed column can window on when the
+      // order was actually completed (not when it was placed); clear it if the
+      // order is moved back out of completed.
+      completedAt: status.data === "completed" ? new Date() : null,
+    })
     .where(and(eq(orders.id, id.data), scopedToVenue(orders.venueId, venue.id)))
     .returning({ id: orders.id });
   if (updated.length !== 1) return { error: "Order not found." };

@@ -1,13 +1,14 @@
-import { and, asc, count, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orderItemModifiers, orderItems, orders } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 
-// How far back the always-visible COMPLETED column reaches. Completed orders
-// have no dedicated completed_at, so this windows on created_at — recent enough
-// for a kitchen "just finished" glance without loading unbounded history.
-// Hardcoded for now; a sensible candidate for a venue-tunable setting later.
+// How far back the always-visible COMPLETED column reaches — windowed on
+// completed_at (when the order was handed off), so a scheduled or older order
+// still shows as just-completed. Recent enough for a kitchen "just finished"
+// glance without loading unbounded history. Hardcoded for now; a sensible
+// candidate for a venue-tunable setting later.
 const RECENT_COMPLETED_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export type FulfillmentStatus = "new" | "preparing" | "ready" | "completed";
@@ -128,6 +129,10 @@ export async function getRecentCompletedOrders(
   venueId: string,
 ): Promise<KitchenOrder[]> {
   const since = new Date(Date.now() - RECENT_COMPLETED_WINDOW_MS);
+  // Window (and sort) on when the order was completed. COALESCE to created_at so
+  // orders completed BEFORE this column existed (completed_at NULL) still show
+  // during the transition period.
+  const completedTime = sql`coalesce(${orders.completedAt}, ${orders.createdAt})`;
 
   const orderRows = await db
     .select({
@@ -150,10 +155,10 @@ export async function getRecentCompletedOrders(
         scopedToVenue(orders.venueId, venueId),
         eq(orders.status, "confirmed"),
         eq(orders.fulfillmentStatus, "completed"),
-        gte(orders.createdAt, since),
+        gte(completedTime, since),
       ),
     )
-    .orderBy(desc(orders.createdAt));
+    .orderBy(desc(completedTime));
 
   return hydrateKitchenOrders(orderRows, venueId);
 }
