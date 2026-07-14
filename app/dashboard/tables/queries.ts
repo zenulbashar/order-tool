@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { orders, venueTables } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
+import { orderReference } from "@/lib/validation";
 
 /**
  * All dine-in tables for a venue, ordered by sort_order with a created_at
@@ -18,11 +19,24 @@ export async function getTablesForVenue(venueId: string) {
 
 export type TableStatus = "ordering" | "seated" | "open";
 
+/** The live dine-in session at an occupied table (null when the table is open). */
+export type TableSession = {
+  /** Reference of the table's most recent recent order. */
+  orderRef: string;
+  /** When that most recent order was placed. */
+  placedAt: Date;
+  /** Combined spend across the table's recent confirmed dine-in orders. */
+  totalCents: number;
+  /** How many recent orders that spend covers. */
+  orderCount: number;
+};
+
 export type TableWithStatus = {
   id: string;
   label: string;
   seats: number | null;
   status: TableStatus;
+  session: TableSession | null;
 };
 
 // A table reads as occupied for this long after its last confirmed dine-in
@@ -56,6 +70,9 @@ export async function getTablesWithStatus(
     .select({
       tableLabel: orders.tableLabel,
       fulfillmentStatus: orders.fulfillmentStatus,
+      publicToken: orders.publicToken,
+      totalCents: orders.totalCents,
+      createdAt: orders.createdAt,
     })
     .from(orders)
     .where(
@@ -68,21 +85,44 @@ export async function getTablesWithStatus(
     )
     .orderBy(desc(orders.createdAt));
 
-  // First row per label is the most recent (ordered desc).
-  const statusByLabel = new Map<string, TableStatus>();
+  // Aggregate per table label. The FIRST row seen per label is the most recent
+  // (ordered desc) and sets the status + session head; later rows of the same
+  // label add to the combined session spend + count.
+  type Agg = {
+    status: TableStatus;
+    session: TableSession;
+  };
+  const byLabel = new Map<string, Agg>();
   for (const order of recent) {
     if (!order.tableLabel) continue;
     const key = order.tableLabel.toLowerCase();
-    if (statusByLabel.has(key)) continue;
-    const active =
-      order.fulfillmentStatus === "new" ||
-      order.fulfillmentStatus === "preparing" ||
-      order.fulfillmentStatus === "ready";
-    statusByLabel.set(key, active ? "ordering" : "seated");
+    const existing = byLabel.get(key);
+    if (!existing) {
+      const active =
+        order.fulfillmentStatus === "new" ||
+        order.fulfillmentStatus === "preparing" ||
+        order.fulfillmentStatus === "ready";
+      byLabel.set(key, {
+        status: active ? "ordering" : "seated",
+        session: {
+          orderRef: orderReference(order.publicToken),
+          placedAt: order.createdAt,
+          totalCents: order.totalCents,
+          orderCount: 1,
+        },
+      });
+    } else {
+      existing.session.totalCents += order.totalCents;
+      existing.session.orderCount += 1;
+    }
   }
 
-  return tables.map((table) => ({
-    ...table,
-    status: statusByLabel.get(table.label.toLowerCase()) ?? "open",
-  }));
+  return tables.map((table) => {
+    const agg = byLabel.get(table.label.toLowerCase());
+    return {
+      ...table,
+      status: agg?.status ?? "open",
+      session: agg?.session ?? null,
+    };
+  });
 }
