@@ -823,6 +823,11 @@ export const orders = pgTable(
     // column windows on THIS, not created_at, so a scheduled/older order still
     // shows as just-completed. Additive + inert to money.
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    // Short, human "call number" for this order — a per-venue sequence that
+    // resets each day (see venue_order_sequences), so staff can call "Order 7".
+    // Assigned best-effort at order creation; NULL if the counter was
+    // unavailable or for pre-existing orders. Display-only, INERT to money.
+    dailyNumber: integer("daily_number"),
     subtotalCents: integer("subtotal_cents").notNull(),
     totalCents: integer("total_cents").notNull(),
     // GST component (inclusive) already contained in total_cents — an additive
@@ -885,6 +890,25 @@ export const orders = pgTable(
     // promo_discount_cents by applied_promo_id over confirmed orders.
     index("orders_applied_promo_idx").on(table.appliedPromoId),
   ],
+);
+
+/**
+ * Per-venue, per-day counter behind orders.daily_number — the short "call
+ * number" that resets each day. service_date is a YYYY-MM-DD string in the
+ * venue's timezone (computed at order time). Incremented atomically via an
+ * INSERT … ON CONFLICT DO UPDATE … +1 RETURNING, so concurrent orders never
+ * collide. Cascades with the venue. Purely operational; never a money input.
+ */
+export const venueOrderSequences = pgTable(
+  "venue_order_sequences",
+  {
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    serviceDate: text("service_date").notNull(),
+    lastNumber: integer("last_number").notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.venueId, table.serviceDate] })],
 );
 
 export const orderItems = pgTable(

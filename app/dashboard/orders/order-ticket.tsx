@@ -35,6 +35,11 @@ export function OrderTicket({
         {venueName}
       </p>
 
+      {order.dailyNumber != null ? (
+        <p className="mt-1 text-center text-3xl font-extrabold tracking-wider">
+          ORDER {order.dailyNumber}
+        </p>
+      ) : null}
       <p className="mt-1 text-center text-2xl font-bold tracking-wider">
         {orderReference(order.publicToken)}
       </p>
