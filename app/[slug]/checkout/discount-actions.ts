@@ -4,7 +4,12 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orders, venues } from "@/lib/db/schema";
-import { BANK_METHODS, bankDiscountCents } from "@/lib/payments/bank-discount";
+import { getAvailablePoints } from "@/lib/loyalty/balance";
+import {
+  BANK_METHODS,
+  MIN_TOTAL_CENTS,
+  bankDiscountCents,
+} from "@/lib/payments/bank-discount";
 import { composeOrderDiscount } from "@/lib/payments/order-discount";
 import { resolveActivePromo } from "@/lib/promotions";
 import { computeApplicationFeeCents, getStripe } from "@/lib/stripe";
@@ -44,6 +49,10 @@ export type ApplyDiscountResult =
       totalCents: number;
       discountCents: number;
       promoDiscountCents: number;
+      // Loyalty points cash value redeemed on this order (0 when not redeeming).
+      pointsDiscountCents: number;
+      // Points actually consumed for that value (0 when not redeeming).
+      pointsRedeemed: number;
       // True only when a diner-entered CODE selected the applied promo (so the
       // checkout can confirm "code applied" vs an auto promo). An invalid code
       // leaves this false while any auto discount still applies.
@@ -56,6 +65,7 @@ export async function applyOrderDiscounts(
   token: string,
   method: string,
   code?: string,
+  redeemPoints?: boolean,
 ): Promise<ApplyDiscountResult> {
   const trimmedToken = token.trim();
   if (!trimmedToken) return { ok: false };
@@ -67,6 +77,9 @@ export async function applyOrderDiscounts(
       paytoEnabled: venues.paytoEnabled,
       mode: venues.paytoDiscountMode,
       value: venues.paytoDiscountValue,
+      loyaltyEnabled: venues.loyaltyEnabled,
+      loyaltyRedeemValueCents: venues.loyaltyRedeemValueCents,
+      loyaltyMinRedeemPoints: venues.loyaltyMinRedeemPoints,
     })
     .from(venues)
     .where(eq(venues.slug, slug))
@@ -102,11 +115,47 @@ export async function applyOrderDiscounts(
     BANK_METHODS.has(method) && venue.paytoEnabled
       ? bankDiscountCents(pre.subtotalCents, venue.mode, venue.value)
       : 0;
-  const { discountCents, promoDiscountCents, totalCents } = composeOrderDiscount({
+  const {
+    discountCents: baseDiscount,
+    promoDiscountCents,
+    totalCents: baseTotal,
+  } = composeOrderDiscount({
     subtotalCents: pre.subtotalCents,
     promoRaw,
     bankRaw,
   });
+
+  // Loyalty redemption fills whatever discount room promo + bank leave. Kept
+  // OUTSIDE composeOrderDiscount so that proven promo/bank clamp is untouched:
+  // points are bounded by the room left (maxDiscount − promo − bank), so the
+  // combined discount can never exceed the subtotal or push the charge below
+  // Stripe's minimum. Server-authoritative — the client only asks to redeem;
+  // the amount is derived from the customer's available balance (net of points
+  // reserved on their other pending orders) in whole points × the point value.
+  let pointsRedeemed = 0;
+  let pointsDiscountCents = 0;
+  if (redeemPoints && venue.loyaltyEnabled && pre.customerId) {
+    const redeemValue =
+      venue.loyaltyRedeemValueCents > 0 ? venue.loyaltyRedeemValueCents : 1;
+    const available = await getAvailablePoints(
+      venue.id,
+      pre.customerId,
+      pre.id,
+    );
+    const roomLeft = Math.max(
+      0,
+      pre.subtotalCents - MIN_TOTAL_CENTS - baseDiscount,
+    );
+    const candidate = Math.min(available, Math.floor(roomLeft / redeemValue));
+    // All-or-nothing above the venue's minimum: redeem as many points as fit.
+    if (candidate >= Math.max(1, venue.loyaltyMinRedeemPoints)) {
+      pointsRedeemed = candidate;
+      pointsDiscountCents = pointsRedeemed * redeemValue;
+    }
+  }
+
+  const discountCents = baseDiscount + pointsDiscountCents;
+  const totalCents = baseTotal - pointsDiscountCents;
   const appliedPromoId = promoDiscountCents > 0 ? promo?.id ?? null : null;
   // The platform's co-funded share of the (post-clamp) promo discount — a
   // tracked liability, settled out of band. Does not change the charge or fee.
@@ -130,6 +179,8 @@ export async function applyOrderDiscounts(
           totalCents: orders.totalCents,
           discountCents: orders.discountCents,
           promoDiscountCents: orders.promoDiscountCents,
+          pointsDiscountCents: orders.pointsDiscountCents,
+          pointsRedeemed: orders.pointsRedeemed,
           appliedPromoId: orders.appliedPromoId,
         })
         .from(orders)
@@ -144,9 +195,19 @@ export async function applyOrderDiscounts(
         locked.totalCents === totalCents &&
         locked.discountCents === discountCents &&
         locked.promoDiscountCents === promoDiscountCents &&
+        locked.pointsDiscountCents === pointsDiscountCents &&
+        locked.pointsRedeemed === pointsRedeemed &&
         (locked.appliedPromoId ?? null) === appliedPromoId
       ) {
-        result = { ok: true, totalCents, discountCents, promoDiscountCents, codeApplied };
+        result = {
+          ok: true,
+          totalCents,
+          discountCents,
+          promoDiscountCents,
+          pointsDiscountCents,
+          pointsRedeemed,
+          codeApplied,
+        };
         return;
       }
 
@@ -158,6 +219,8 @@ export async function applyOrderDiscounts(
           totalCents,
           discountCents,
           promoDiscountCents,
+          pointsDiscountCents,
+          pointsRedeemed,
           appliedPromoId,
           platformFundedCents,
         })
@@ -175,7 +238,15 @@ export async function applyOrderDiscounts(
         },
       );
 
-      result = { ok: true, totalCents, discountCents, promoDiscountCents, codeApplied };
+      result = {
+        ok: true,
+        totalCents,
+        discountCents,
+        promoDiscountCents,
+        pointsDiscountCents,
+        pointsRedeemed,
+        codeApplied,
+      };
     });
   } catch {
     return { ok: false };

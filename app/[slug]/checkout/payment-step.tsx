@@ -34,6 +34,7 @@ export function PaymentStep({
   publishableKey,
   token,
   amountCents,
+  pointsBalance,
 }: {
   venue: PublicVenue;
   clientSecret: string;
@@ -41,6 +42,7 @@ export function PaymentStep({
   publishableKey: string;
   token: string;
   amountCents: number;
+  pointsBalance: number;
 }) {
   const stripePromise = useMemo(
     () => loadStripe(publishableKey, { stripeAccount: stripeAccountId }),
@@ -85,7 +87,12 @@ export function PaymentStep({
           },
         }}
       >
-        <PaymentForm venue={venue} token={token} amountCents={amountCents} />
+        <PaymentForm
+          venue={venue}
+          token={token}
+          amountCents={amountCents}
+          pointsBalance={pointsBalance}
+        />
       </Elements>
     </main>
   );
@@ -95,10 +102,12 @@ function PaymentForm({
   venue,
   token,
   amountCents,
+  pointsBalance,
 }: {
   venue: PublicVenue;
   token: string;
   amountCents: number;
+  pointsBalance: number;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -124,6 +133,12 @@ function PaymentForm({
   const [recomputing, setRecomputing] = useState(false);
   // The platform promotion applied to this order (cents), from the server.
   const [promoDiscountCents, setPromoDiscountCents] = useState(0);
+  // Loyalty points redemption (cents) applied by the server this recompute, plus
+  // the toggle state + a ref so every recompute (mount / method / code) carries
+  // the current redeem choice. Server-authoritative — the client only asks.
+  const [pointsDiscountCents, setPointsDiscountCents] = useState(0);
+  const [redeeming, setRedeeming] = useState(false);
+  const redeemRef = useRef(false);
   const lastMethodRef = useRef<string>("card");
   // Diner-entered promo/discount CODE in effect (re-sent on every recompute so a
   // method change keeps it). Empty = no code → auto promos only. The server is
@@ -157,10 +172,16 @@ function PaymentForm({
         token,
         type,
         appliedCodeRef.current || undefined,
+        redeemRef.current,
       );
       if (result.ok) {
         setDisplayAmount(result.totalCents);
         setPromoDiscountCents(result.promoDiscountCents);
+        setPointsDiscountCents(result.pointsDiscountCents);
+        // Reconcile the toggle with what the server actually redeemed (e.g. a
+        // small basket may leave no room, or the balance was already spent).
+        setRedeeming(result.pointsRedeemed > 0);
+        redeemRef.current = result.pointsRedeemed > 0;
         // Reflect whether an entered code took (auto-only applies leave it idle).
         if (appliedCodeRef.current) {
           setCodeStatus(result.codeApplied ? "applied" : "invalid");
@@ -196,6 +217,24 @@ function PaymentForm({
     void runDiscount(lastMethodRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Whether to offer redeeming points: the venue runs loyalty and the signed-in
+  // diner has at least the minimum redeemable balance. The exact amount is
+  // server-computed on apply; this only gates the control.
+  const canRedeem =
+    venue.loyaltyEnabled &&
+    pointsBalance > 0 &&
+    pointsBalance >= Math.max(1, venue.loyaltyMinRedeemPoints);
+
+  // Toggle points redemption, then recompute at the current method (the server
+  // reconciles the toggle to what it could actually redeem).
+  function handleRedeemToggle() {
+    if (recomputing) return;
+    const next = !redeemRef.current;
+    redeemRef.current = next;
+    setRedeeming(next);
+    void runDiscount(lastMethodRef.current);
+  }
 
   // On an actual method-type change, recompute (adds/removes the bank saving on
   // top of any promo). The server no-op guard makes a redundant selection cheap.
@@ -362,6 +401,35 @@ function PaymentForm({
             <span className="text-xs text-ink">
               Pay by bank to save on top of any promotion.
             </span>
+          </div>
+        ) : null}
+
+        {/* Loyalty redemption — signed-in diners with a redeemable balance can
+            apply their points as a discount. The server computes the exact
+            amount; this toggle just asks. */}
+        {canRedeem ? (
+          <div className="mb-3 rounded-input border border-line bg-surface-elevated px-3 py-2.5">
+            <label className="flex cursor-pointer items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className="text-sm font-medium text-ink">
+                  Use your points
+                </span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  {pointsBalance.toLocaleString("en-AU")} points available
+                  {pointsDiscountCents > 0
+                    ? ` · −$${formatCents(pointsDiscountCents)} applied`
+                    : ""}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={redeeming}
+                onChange={handleRedeemToggle}
+                disabled={recomputing}
+                aria-label="Redeem points on this order"
+                className="h-5 w-5 shrink-0 accent-[var(--color-accent)]"
+              />
+            </label>
           </div>
         ) : null}
 

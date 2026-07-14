@@ -1,7 +1,7 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { pointsLedger } from "@/lib/db/schema";
+import { orders, pointsLedger } from "@/lib/db/schema";
 
 /**
  * Loyalty balance + activity reads. The balance is ALWAYS derived — SUM of the
@@ -34,6 +34,38 @@ export async function getPointsBalance(
       ),
     );
   return Number(row?.balance ?? 0);
+}
+
+/**
+ * Points a customer can actually redeem RIGHT NOW = their ledger balance minus
+ * points already reserved on their OTHER pending orders (a reservation is the
+ * `points_redeemed` recorded on a pending order; the matching ledger debit is
+ * only written at confirmation). Excludes `excludeOrderId` — the order being
+ * recomputed — so re-applying returns its own reservation to the pool first.
+ * This keeps a customer from spending the same points across two open carts on
+ * the common path; a truly simultaneous double-apply across two orders is an
+ * accepted v1 edge (each recompute is serialized only on its own order row).
+ */
+export async function getAvailablePoints(
+  venueId: string,
+  customerId: string,
+  excludeOrderId: string,
+): Promise<number> {
+  const balance = await getPointsBalance(venueId, customerId);
+  const [row] = await db
+    .select({
+      reserved: sql<number>`coalesce(sum(${orders.pointsRedeemed}), 0)`,
+    })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.venueId, venueId),
+        eq(orders.customerId, customerId),
+        eq(orders.status, "pending_payment"),
+        ne(orders.id, excludeOrderId),
+      ),
+    );
+  return Math.max(0, balance - Number(row?.reserved ?? 0));
 }
 
 /** Most-recent ledger rows for the account activity list (newest first). */
