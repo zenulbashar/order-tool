@@ -2,15 +2,36 @@ import { Button } from "@/app/_components/button";
 import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
+import { formatCents } from "@/lib/validation";
 
 import { connectStripe, refreshStripeStatus } from "./actions";
 import {
+  getConfirmedSalesSummary,
   getPayToCapabilityStatus,
+  getPayoutSummary,
+  type PayoutSummary,
   type PayToCapability,
   syncStripeAccountStatus,
 } from "./queries";
 import { PaytoDiscountForm } from "./payto-discount-form";
 import { PayToToggle } from "./payto-toggle";
+
+/** Payout status → badge tone + label (Stripe payout lifecycle). */
+const PAYOUT_TONE: Partial<Record<string, { tone: BadgeTone; label: string }>> = {
+  paid: { tone: "green", label: "Paid" },
+  in_transit: { tone: "amber", label: "On the way" },
+  pending: { tone: "amber", label: "Pending" },
+  canceled: { tone: "gray", label: "Canceled" },
+  failed: { tone: "gray", label: "Failed" },
+};
+
+/** Unix seconds → a short en-AU date (payout arrival / created). */
+function fmtDay(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+  });
+}
 
 // Authed + reads live Stripe status on return from onboarding; never prerendered.
 export const dynamic = "force-dynamic";
@@ -70,6 +91,16 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
   let paytoCapability: PayToCapability = "unavailable";
   if (venue.paytoEnabled && venue.stripeAccountId && chargesEnabled) {
     paytoCapability = await getPayToCapabilityStatus(venue.stripeAccountId);
+  }
+
+  // Balance & payouts KPIs — only meaningful once the venue can actually charge.
+  let payouts: PayoutSummary | null = null;
+  let sales = { last30Cents: 0, count30: 0 };
+  if (chargesEnabled && venue.stripeAccountId) {
+    [payouts, sales] = await Promise.all([
+      getPayoutSummary(venue.stripeAccountId),
+      getConfirmedSalesSummary(venue.id),
+    ]);
   }
 
   return (
@@ -142,6 +173,103 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
             </div>
           )}
         </Card>
+
+        {/* Balance & payouts — read live from the connected account, plus 30-day
+            sales from our own confirmed orders. Shown once the venue can charge. */}
+        {chargesEnabled && venue.stripeAccountId ? (
+          <Card className="mt-4">
+            <div className="mb-3 flex items-center gap-3 border-b border-line pb-3">
+              <span
+                aria-hidden="true"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-forest text-base text-[var(--color-accent)]"
+              >
+                $
+              </span>
+              <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                Balance &amp; payouts
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                  Available
+                </p>
+                <p className="mt-1 font-display text-lg font-extrabold text-ink">
+                  {payouts ? `$${formatCents(payouts.availableCents)}` : "—"}
+                </p>
+                <p className="text-[10px] text-muted">ready to pay out</p>
+              </div>
+              <div>
+                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                  On the way
+                </p>
+                <p className="mt-1 font-display text-lg font-extrabold text-ink">
+                  {payouts ? `$${formatCents(payouts.pendingCents)}` : "—"}
+                </p>
+                <p className="text-[10px] text-muted">pending in Stripe</p>
+              </div>
+              <div>
+                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                  Sales · 30d
+                </p>
+                <p className="mt-1 font-display text-lg font-extrabold text-ink">
+                  ${formatCents(sales.last30Cents)}
+                </p>
+                <p className="text-[10px] text-muted">
+                  {sales.count30} order{sales.count30 === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+
+            {payouts === null ? (
+              <p className="mt-3 rounded-control border border-line px-3 py-2 text-xs text-muted">
+                Couldn&apos;t load your balance from Stripe just now — try Refresh
+                status above.
+              </p>
+            ) : payouts.payouts.length === 0 ? (
+              <p className="mt-3 text-xs text-muted">
+                No payouts yet — Stripe sends your takings to your bank on its
+                payout schedule, and they&apos;ll appear here.
+              </p>
+            ) : (
+              <div className="mt-3 border-t border-line pt-3">
+                <p className="mb-2 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                  Recent payouts
+                </p>
+                <ul className="space-y-1.5">
+                  {payouts.payouts.map((p) => {
+                    const meta = PAYOUT_TONE[p.status];
+                    return (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between gap-3 text-sm"
+                      >
+                        <span className="flex items-center gap-2">
+                          <StatusBadge
+                            tone={meta?.tone ?? "gray"}
+                            label={meta?.label ?? p.status.replace(/_/g, " ")}
+                          />
+                          <span className="font-mono text-[11px] text-muted">
+                            {fmtDay(p.arrivalDate ?? p.created)}
+                          </span>
+                        </span>
+                        <span className="font-display text-[13px] font-extrabold text-ink">
+                          ${formatCents(p.amountCents)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            <p className="mt-3 text-[11px] text-muted">
+              Balance and payouts are read live from your Stripe account; sales
+              are the orders confirmed on your storefront.
+            </p>
+          </Card>
+        ) : null}
 
         {/* Pay by bank (PayTo) — only relevant once the venue can charge.
             Turning it on requests the capability; PayTo then appears at
