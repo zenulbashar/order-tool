@@ -14,6 +14,7 @@ import {
 } from "./kitchen-sound";
 import { OrderCard } from "./order-card";
 import type { FulfillmentStatus, KitchenOrder } from "./queries";
+import { TicketDrawer } from "./ticket-drawer";
 
 // Order-type filter. "all" is no filter; the other two map to the orderType enum
 // (Takeaway = pickup). Pure client-side over already-fetched orders — no query.
@@ -55,6 +56,16 @@ export function OrdersBoard({
 }) {
   const [filter, setFilter] = useState<TypeFilter>("all");
   const soundEnabled = useSoundEnabled();
+
+  // Focused ticket drawer: hold the order ID and re-derive the live order each
+  // render, so board refreshes keep the drawer in sync (and it auto-closes when
+  // the order leaves the visible sets).
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeOrder = activeId
+    ? [...makeNowOrders, ...upcomingOrders, ...completedOrders].find(
+        (order) => order.id === activeId,
+      ) ?? null
+    : null;
 
   // New-order chime. CRITICAL: the diff input is the UNFILTERED make-now prop
   // (just narrowed to status "new"), NOT the post-filter `makeNow` array below —
@@ -164,7 +175,12 @@ export function OrdersBoard({
           </p>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {upcoming.map((order) => (
-              <OrderCard key={order.id} order={order} timezone={timezone} />
+              <OrderCard
+                key={order.id}
+                order={order}
+                timezone={timezone}
+                onOpen={() => setActiveId(order.id)}
+              />
             ))}
           </ul>
         </section>
@@ -198,6 +214,9 @@ export function OrdersBoard({
                         timezone={timezone}
                         compact={isCompleted}
                         showElapsed={!isCompleted}
+                        onOpen={
+                          isCompleted ? undefined : () => setActiveId(order.id)
+                        }
                       />
                     ))}
                   </ul>
@@ -207,6 +226,14 @@ export function OrdersBoard({
           })}
         </div>
       </section>
+
+      {activeOrder ? (
+        <TicketDrawer
+          order={activeOrder}
+          timezone={timezone}
+          onClose={() => setActiveId(null)}
+        />
+      ) : null}
     </div>
   );
 }
