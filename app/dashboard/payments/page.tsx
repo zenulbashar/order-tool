@@ -13,6 +13,7 @@ import {
   type PayToCapability,
   syncStripeAccountStatus,
 } from "./queries";
+import { LoyaltyForm } from "./loyalty-form";
 import { PaytoDiscountForm } from "./payto-discount-form";
 import { PayToToggle } from "./payto-toggle";
 
@@ -342,6 +343,36 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 value={venue.paytoDiscountValue}
               />
             ) : null}
+          </Card>
+        ) : null}
+
+        {/* Customer loyalty / points — earn on confirmed orders, redeem as a
+            checkout discount. Only relevant once the venue can take orders. */}
+        {connected && chargesEnabled ? (
+          <Card className="mt-4">
+            <div className="flex min-w-0 gap-3">
+              <span
+                aria-hidden="true"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-forest text-base text-[var(--color-accent)]"
+              >
+                ★
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-display text-base font-semibold tracking-tight text-ink">
+                  Loyalty &amp; points
+                </h2>
+                <p className="mt-0.5 text-sm text-muted">
+                  Reward repeat diners — they earn points as they order and
+                  redeem them for a discount.
+                </p>
+              </div>
+            </div>
+            <LoyaltyForm
+              enabled={venue.loyaltyEnabled}
+              earnRatePerDollar={venue.loyaltyEarnRatePerDollar}
+              redeemValueCents={venue.loyaltyRedeemValueCents}
+              minRedeemPoints={venue.loyaltyMinRedeemPoints}
+            />
           </Card>
         ) : null}
 

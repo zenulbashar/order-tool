@@ -7,6 +7,7 @@ import { notifyCustomerOrder } from "@/lib/customer/notify";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
+import { earnPointsForOrder } from "@/lib/loyalty/earn";
 import { notifyNewOrder } from "@/lib/push";
 import { depleteStockForOrder } from "@/lib/stock/depletion";
 import { getStripe } from "@/lib/stripe";
@@ -123,6 +124,21 @@ export async function POST(request: Request): Promise<Response> {
             );
           } catch {
             // Swallowed by design.
+          }
+        }
+        // ADDITIVE (loyalty) — credit points to a LINKED customer on the ACTUAL
+        // confirmation transition. Same best-effort contract as the blocks
+        // above: gated on confirmed.length (earn once per order), isolated, and
+        // done in after() so it can never delay or fail this response.
+        // Idempotent via the ledger's unique(order_id, reason) index; a no-op
+        // for guest orders and loyalty-disabled venues. sweepLoyaltyEarn()
+        // (cron) re-derives any earn missed here — e.g. if the customer link
+        // (claimOrder) landed after this webhook.
+        if (confirmed.length > 0) {
+          try {
+            after(() => earnPointsForOrder(paymentIntent.id).catch(() => {}));
+          } catch {
+            // Swallowed by design — the sweep is the guarantee.
           }
         }
         break;

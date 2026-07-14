@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getCustomer } from "@/lib/customer/auth";
+import { getPointsActivity, getPointsBalance } from "@/lib/loyalty/balance";
 import { isReservedSlug } from "@/lib/validation";
 
 import { getPublicVenueBySlug } from "../queries";
 import { OrderHistory } from "./order-history";
+import { PointsPanel } from "./points-panel";
 import { getCustomerOrders, getCustomerUsual } from "./queries";
 import { SignInForm } from "./signin-form";
 
@@ -49,10 +51,29 @@ export default async function AccountPage({
       ])
     : [null, []];
 
+  // Loyalty balance + recent activity — only when the venue runs loyalty AND
+  // the customer is signed in (guests never earn). Same IDOR-safe scoping.
+  const points =
+    customer && venue.loyaltyEnabled
+      ? await Promise.all([
+          getPointsBalance(venue.id, customer.id),
+          getPointsActivity(venue.id, customer.id),
+        ])
+      : null;
+
   // The shared account layout (layout.tsx) provides the diner chrome + nav rail;
   // this page renders only the Orders content (signed in) or the sign-in form.
   return customer ? (
-    <OrderHistory slug={venue.slug} usual={usual} orders={orders} />
+    <>
+      {points ? (
+        <PointsPanel
+          balance={points[0]}
+          redeemValueCents={venue.loyaltyRedeemValueCents}
+          activity={points[1]}
+        />
+      ) : null}
+      <OrderHistory slug={venue.slug} usual={usual} orders={orders} />
+    </>
   ) : (
     <SignInForm slug={venue.slug} venueName={venue.name} linkError={linkError} />
   );
