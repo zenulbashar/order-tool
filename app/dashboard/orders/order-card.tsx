@@ -32,6 +32,7 @@ export function OrderCard({
   timezone,
   compact = false,
   showElapsed = false,
+  onOpen,
 }: {
   order: KitchenOrder;
   timezone: string;
@@ -40,6 +41,8 @@ export function OrderCard({
   /** Show the elapsed-since-placed indicator (active board columns only; never
    *  the Scheduled band — those show pickup time — or compact completed cards). */
   showElapsed?: boolean;
+  /** When set, an "enlarge" control opens this order in the focused ticket drawer. */
+  onOpen?: () => void;
 }) {
   const isNew = order.fulfillmentStatus === "new";
 
@@ -92,6 +95,28 @@ export function OrderCard({
             <span className="font-mono text-sm font-semibold text-ink">
               {orderReference(order.publicToken)}
             </span>
+            {onOpen ? (
+              <button
+                type="button"
+                onClick={onOpen}
+                aria-label={`Open ticket ${orderReference(order.publicToken)}`}
+                title="Open ticket"
+                className="flex h-6 w-6 items-center justify-center rounded-control text-muted transition hover:bg-sand hover:text-ink"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                </svg>
+              </button>
+            ) : null}
           </div>
           <p className="mt-0.5 font-mono text-xs text-muted">
             {formatVenueTime(order.createdAt, timezone)}
