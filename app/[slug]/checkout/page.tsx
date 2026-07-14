@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getCustomer } from "@/lib/customer/auth";
 import { readCustomerPrefill } from "@/lib/customer/prefill";
+import { getPointsBalance } from "@/lib/loyalty/balance";
 import { requestNowMs } from "@/lib/schedule";
 import { isReservedSlug, normalizeOrderType } from "@/lib/validation";
 
@@ -63,6 +64,14 @@ export default async function CheckoutPage({
     ? { name: customer.name ?? "", phone: customer.phone ?? "" }
     : ((await readCustomerPrefill()) ?? { name: "", phone: "" });
 
+  // Loyalty balance for the redeem-at-checkout control (0 unless the venue runs
+  // loyalty AND the diner is signed in — guests can't redeem). Display only; the
+  // redeemable amount is always server-recomputed at pay time.
+  const pointsBalance =
+    customer && venue.loyaltyEnabled
+      ? await getPointsBalance(venue.id, customer.id)
+      : 0;
+
   return (
     <CartProvider slug={venue.slug} menu={menu}>
       <CheckoutClient
@@ -72,6 +81,7 @@ export default async function CheckoutPage({
         initialName={prefill.name}
         initialEmail={customer?.email ?? ""}
         initialPhone={prefill.phone}
+        pointsBalance={pointsBalance}
         nowMs={requestNowMs()}
       />
     </CartProvider>

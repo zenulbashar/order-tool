@@ -4,6 +4,7 @@ import {
   sweepMissedOrders,
 } from "@/lib/integrations/dispatch";
 import { sweepLoyaltyEarn } from "@/lib/loyalty/earn";
+import { sweepLoyaltyRedeem } from "@/lib/loyalty/redeem";
 import { sweepStockDepletion } from "@/lib/stock/depletion";
 
 // The dispatch engine uses the Neon pool + node crypto — keep off Edge.
@@ -53,5 +54,20 @@ export async function GET(request: Request): Promise<Response> {
   } catch {
     // Advisory backstop — surfaces on the next tick.
   }
-  return Response.json({ ok: true, swept, processed, depleted, earned });
+  // Loyalty redemption debit backstop (PR2) — writes the ledger debit for any
+  // confirmed order that redeemed points but missed the webhook. Isolated.
+  let redeemed = 0;
+  try {
+    redeemed = await sweepLoyaltyRedeem();
+  } catch {
+    // Advisory backstop — surfaces on the next tick.
+  }
+  return Response.json({
+    ok: true,
+    swept,
+    processed,
+    depleted,
+    earned,
+    redeemed,
+  });
 }

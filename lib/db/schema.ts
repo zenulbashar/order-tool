@@ -929,6 +929,15 @@ export const orders = pgTable(
     // a promo never rewrites a placed order. bank portion = discount − promo.
     promoDiscountCents: integer("promo_discount_cents").notNull().default(0),
     appliedPromoId: text("applied_promo_id"),
+    // Loyalty points redeemed on THIS order (Loyalty PR2). Like the promo
+    // breakdown above, these decompose `discount_cents`: points_discount_cents
+    // is the cash value redeemed (part of the combined discount), and
+    // points_redeemed is how many points that consumed. Both default 0 —
+    // placeOrder never sets them; the same server recompute (applyOrderDiscounts)
+    // sets them when the diner opts to redeem, and the webhook writes the ledger
+    // debit at confirmation. Inert to the fee model (fee is on the final total).
+    pointsDiscountCents: integer("points_discount_cents").notNull().default(0),
+    pointsRedeemed: integer("points_redeemed").notNull().default(0),
     // The platform's co-funded share of this order's promo discount (Track
     // E2d-3), recorded at apply time = round(promo_discount_cents ×
     // promotion.platform_funded_percent ÷ 100). A tracked liability the platform

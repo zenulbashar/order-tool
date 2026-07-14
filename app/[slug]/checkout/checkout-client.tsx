@@ -41,6 +41,7 @@ export function CheckoutClient({
   initialName,
   initialEmail,
   initialPhone,
+  pointsBalance,
   nowMs,
 }: {
   venue: PublicVenue;
@@ -51,6 +52,9 @@ export function CheckoutClient({
   initialName: string;
   initialEmail: string;
   initialPhone: string;
+  // Signed-in diner's loyalty balance (0 for guests / loyalty-off). Powers the
+  // redeem-at-checkout control; the redeemable amount is server-authoritative.
+  pointsBalance: number;
   // Request-time "now" (server-captured) so the picker offers fresh slots with no
   // client clock read; the server re-validates on submit.
   nowMs: number;
@@ -166,6 +170,7 @@ export function CheckoutClient({
         publishableKey={payment.publishableKey}
         token={payment.token}
         amountCents={payment.amountCents}
+        pointsBalance={pointsBalance}
       />
     );
   }

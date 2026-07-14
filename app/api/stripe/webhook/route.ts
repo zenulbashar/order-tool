@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
 import { earnPointsForOrder } from "@/lib/loyalty/earn";
+import { redeemPointsForOrder } from "@/lib/loyalty/redeem";
 import { notifyNewOrder } from "@/lib/push";
 import { depleteStockForOrder } from "@/lib/stock/depletion";
 import { getStripe } from "@/lib/stripe";
@@ -137,6 +138,18 @@ export async function POST(request: Request): Promise<Response> {
         if (confirmed.length > 0) {
           try {
             after(() => earnPointsForOrder(paymentIntent.id).catch(() => {}));
+          } catch {
+            // Swallowed by design — the sweep is the guarantee.
+          }
+        }
+        // ADDITIVE (loyalty · PR2) — debit the points this order redeemed, now
+        // that it's paid. Same best-effort contract: gated on the confirmation
+        // transition, isolated, done in after(). Idempotent via the ledger's
+        // unique(order_id, reason) index; a no-op unless the order actually
+        // redeemed points. sweepLoyaltyRedeem() (cron) is the backstop.
+        if (confirmed.length > 0) {
+          try {
+            after(() => redeemPointsForOrder(paymentIntent.id).catch(() => {}));
           } catch {
             // Swallowed by design — the sweep is the guarantee.
           }
