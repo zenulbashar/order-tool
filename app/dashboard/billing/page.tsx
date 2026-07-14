@@ -13,10 +13,10 @@ import { formatCents } from "@/lib/validation";
 
 import {
   addRosterAddon,
-  createBillingCheckout,
   createBillingPortalSession,
   removeRosterAddon,
 } from "./actions";
+import { PlanComparison } from "./plan-comparison";
 
 // Authed + reads the live plan/status + subscription/invoices; never prerendered.
 export const dynamic = "force-dynamic";
@@ -41,12 +41,6 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
     </span>
   );
 }
-
-const selectClass =
-  "rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
-
-const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
 
 const PLAN_LABELS: Record<string, string> = {
   trial: "Trial",
@@ -293,43 +287,18 @@ export default async function BillingPage({ searchParams }: BillingParams) {
             {hasCustomer ? "Change plan" : "Choose a plan"}
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Pricing is shown on the secure Stripe Checkout page. Annual billing
-            is discounted.
+            Compare what each plan includes, then pick one — pricing is shown on
+            the secure Stripe Checkout page.
           </p>
-          <form
-            action={createBillingCheckout}
-            className="mt-4 flex flex-wrap items-end gap-3"
-          >
-            <label className="block">
-              <span className={microLabel}>Plan</span>
-              <select id="plan" name="plan" defaultValue="pro" className={selectClass}>
-                <option value="pro">Pro</option>
-                <option value="scale">Scale</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className={microLabel}>Billing interval</span>
-              <select
-                id="interval"
-                name="interval"
-                defaultValue="monthly"
-                className={selectClass}
-              >
-                <option value="monthly">Billed monthly</option>
-                <option value="annual">Billed annually</option>
-              </select>
-            </label>
-            <Button type="submit" variant="primary">
-              {hasCustomer ? "Update subscription" : "Start subscription"}
-            </Button>
-          </form>
           {overview?.rosterPresent ? (
-            <p className="mt-3 text-xs text-muted">
-              Changing your plan or interval while Roster is added is done from
-              the &ldquo;Manage billing&rdquo; portal below, so both lines stay
-              in sync on one invoice.
+            <p className="mt-3 rounded-control border border-line px-3 py-2 text-xs text-muted">
+              While Roster is added, change your plan or interval from the
+              &ldquo;Manage billing&rdquo; portal below so both lines stay in sync
+              on one invoice.
             </p>
-          ) : null}
+          ) : (
+            <PlanComparison currentPlan={venue.plan} hasCustomer={hasCustomer} />
+          )}
         </Card>
 
         {/* Invoice history — real Stripe invoices. */}
