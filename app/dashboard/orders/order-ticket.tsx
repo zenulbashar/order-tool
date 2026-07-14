@@ -1,7 +1,8 @@
+import { splitByStation } from "@/lib/orders/station";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
-import type { KitchenOrder } from "./queries";
+import type { KitchenOrder, KitchenOrderItem } from "./queries";
 
 /**
  * Print-only paper ticket for a single order, rendered entirely from the
@@ -80,26 +81,7 @@ export function OrderTicket({
         </div>
       ) : null}
 
-      <ul className="mt-2 border-t border-dashed border-black pt-1">
-        {order.items.map((item) => (
-          <li key={item.id} className="mt-1 first:mt-0">
-            <div className="flex justify-between gap-2">
-              <span className="font-bold">
-                {item.quantity}× {item.name}
-                {item.variantName ? ` (${item.variantName})` : ""}
-              </span>
-              <span className="font-bold">${formatCents(item.lineTotalCents)}</span>
-            </div>
-            {item.modifiers.length > 0 ? (
-              <ul className="pl-3">
-                {item.modifiers.map((modifier) => (
-                  <li key={modifier.id}>+ {modifier.name}</li>
-                ))}
-              </ul>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+      <TicketDocket items={order.items} />
 
       <div className="mt-2 flex justify-between border-t-2 border-black pt-1 text-base font-bold">
         <span>Total</span>
@@ -107,6 +89,64 @@ export function OrderTicket({
       </div>
 
       <p className="mt-3 text-center text-[11px]">Thank you</p>
+    </div>
+  );
+}
+
+/** One printed docket line + its modifiers. */
+function TicketItemRow({ item }: { item: KitchenOrderItem }) {
+  return (
+    <li className="mt-1 first:mt-0">
+      <div className="flex justify-between gap-2">
+        <span className="font-bold">
+          {item.quantity}× {item.name}
+          {item.variantName ? ` (${item.variantName})` : ""}
+        </span>
+        <span className="font-bold">${formatCents(item.lineTotalCents)}</span>
+      </div>
+      {item.modifiers.length > 0 ? (
+        <ul className="pl-3">
+          {item.modifiers.map((modifier) => (
+            <li key={modifier.id}>+ {modifier.name}</li>
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  );
+}
+
+/**
+ * Printed lines split into KITCHEN and FRONT-COUNTER (drinks) sections. When
+ * both are present they're separated by a bold dotted tear-line with section
+ * headers, so the drinks portion can be torn off for the counter/fridge; a
+ * single-station order prints as one plain list (as it did before the split).
+ */
+function TicketDocket({ items }: { items: KitchenOrderItem[] }) {
+  const { kitchen, counter } = splitByStation(items);
+  const split = kitchen.length > 0 && counter.length > 0;
+
+  return (
+    <div className="mt-2 border-t border-dashed border-black pt-1">
+      {split ? <p className="font-bold uppercase">Kitchen</p> : null}
+      {kitchen.length > 0 ? (
+        <ul>
+          {kitchen.map((item) => (
+            <TicketItemRow key={item.id} item={item} />
+          ))}
+        </ul>
+      ) : null}
+      {split ? (
+        <div className="my-1.5 border-t-2 border-dotted border-black pt-1 text-center text-[10px] font-bold uppercase tracking-widest">
+          Front counter · Drinks
+        </div>
+      ) : null}
+      {counter.length > 0 ? (
+        <ul>
+          {counter.map((item) => (
+            <TicketItemRow key={item.id} item={item} />
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

@@ -1,7 +1,14 @@
 import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { orderItemModifiers, orderItems, orders } from "@/lib/db/schema";
+import {
+  menuCategories,
+  menuItems,
+  orderItemModifiers,
+  orderItems,
+  orders,
+} from "@/lib/db/schema";
+import { resolveStation, type Station } from "@/lib/orders/station";
 import { scopedToVenue } from "@/lib/tenant";
 
 // How far back the always-visible COMPLETED column reaches — windowed on
@@ -28,6 +35,10 @@ export type KitchenOrderItem = {
   unitPriceCents: number;
   lineTotalCents: number;
   modifiers: KitchenOrderModifier[];
+  // Docket routing, resolved at DISPLAY time from the live menu item's station
+  // override + its category name (never snapshotted — inert to money). Drinks
+  // land on "counter" (front-counter fridge), everything else "kitchen".
+  station: Station;
 };
 
 export type KitchenOrder = {
@@ -200,6 +211,12 @@ async function hydrateKitchenOrders(
   // Snapshot lines for exactly these orders, venue-scoped. One query for all
   // orders' items, one for all their modifiers — independent of order count.
   const orderIds = orderRows.map((order) => order.id);
+  // LEFT JOIN the LIVE menu item (soft ref) + its category ONLY to resolve the
+  // docket station (item override / category-name drink detection). This is a
+  // display-time attribute, not financial truth — the money columns still come
+  // from the immutable order snapshots. A since-deleted/reassigned item yields
+  // null → resolveStation falls back to "kitchen" (nothing vanishes off the
+  // kitchen ticket). Venue-scoped on both the order line and the menu item.
   const itemRows = await db
     .select({
       id: orderItems.id,
@@ -209,8 +226,18 @@ async function hydrateKitchenOrders(
       quantity: orderItems.quantity,
       unitPriceCents: orderItems.unitPriceCentsSnapshot,
       lineTotalCents: orderItems.lineTotalCents,
+      stationSetting: menuItems.station,
+      categoryName: menuCategories.name,
     })
     .from(orderItems)
+    .leftJoin(
+      menuItems,
+      and(
+        eq(menuItems.id, orderItems.menuItemId),
+        scopedToVenue(menuItems.venueId, venueId),
+      ),
+    )
+    .leftJoin(menuCategories, eq(menuCategories.id, menuItems.categoryId))
     .where(
       and(
         inArray(orderItems.orderId, orderIds),
@@ -259,6 +286,7 @@ async function hydrateKitchenOrders(
       unitPriceCents: item.unitPriceCents,
       lineTotalCents: item.lineTotalCents,
       modifiers: modsByItem.get(item.id) ?? [],
+      station: resolveStation(item.stationSetting, item.categoryName),
     });
     itemsByOrder.set(item.orderId, list);
   }

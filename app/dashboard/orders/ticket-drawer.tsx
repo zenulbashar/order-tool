@@ -2,12 +2,13 @@
 
 import { useEffect } from "react";
 
+import { splitByStation } from "@/lib/orders/station";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
 import { OrderStatusControls } from "./order-status-controls";
 import { PrintButton } from "./print-button";
-import type { KitchenOrder } from "./queries";
+import type { KitchenOrder, KitchenOrderItem } from "./queries";
 
 /**
  * Focused, enlarged single-order ticket in a right-side drawer (deferred design-
@@ -120,27 +121,9 @@ export function TicketDrawer({
             </div>
           ) : null}
 
-          {/* Items — enlarged for across-the-kitchen readability. */}
-          <ul className="mt-4 divide-y divide-line border-t border-line">
-            {order.items.map((item) => (
-              <li key={item.id} className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="text-lg font-bold text-ink">
-                    {item.quantity}× {item.name}
-                    {item.variantName ? ` (${item.variantName})` : ""}
-                  </p>
-                  {item.modifiers.length > 0 ? (
-                    <p className="mt-0.5 text-sm text-muted">
-                      {item.modifiers.map((modifier) => modifier.name).join(", ")}
-                    </p>
-                  ) : null}
-                </div>
-                <span className="shrink-0 text-sm text-ink">
-                  ${formatCents(item.lineTotalCents)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* Items — enlarged for across-the-kitchen readability, split into
+              kitchen vs front-counter (drinks) sections. */}
+          <DrawerDocketItems items={order.items} />
 
           <div className="mt-2 flex items-center justify-between border-t border-line pt-3">
             <span className="text-base font-semibold text-ink">Total</span>
@@ -159,6 +142,72 @@ export function TicketDrawer({
           <PrintButton order={order} />
         </div>
       </div>
+    </div>
+  );
+}
+
+/** A single enlarged docket line in the drawer. */
+function DrawerItemRow({ item }: { item: KitchenOrderItem }) {
+  return (
+    <li className="flex items-start justify-between gap-3 py-3">
+      <div className="min-w-0">
+        <p className="text-lg font-bold text-ink">
+          {item.quantity}× {item.name}
+          {item.variantName ? ` (${item.variantName})` : ""}
+        </p>
+        {item.modifiers.length > 0 ? (
+          <p className="mt-0.5 text-sm text-muted">
+            {item.modifiers.map((modifier) => modifier.name).join(", ")}
+          </p>
+        ) : null}
+      </div>
+      <span className="shrink-0 text-sm text-ink">
+        ${formatCents(item.lineTotalCents)}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The drawer's lines split into KITCHEN and FRONT-COUNTER (drinks) sections
+ * with a dotted tear-line between them. A single-station order renders as one
+ * plain list (unchanged from before the split).
+ */
+function DrawerDocketItems({ items }: { items: KitchenOrderItem[] }) {
+  const { kitchen, counter } = splitByStation(items);
+  const split = kitchen.length > 0 && counter.length > 0;
+
+  return (
+    <div className="mt-4 border-t border-line">
+      {split ? (
+        <p className="pt-3 text-xs font-bold uppercase tracking-wide text-muted">
+          Kitchen
+        </p>
+      ) : null}
+      {kitchen.length > 0 ? (
+        <ul className="divide-y divide-line">
+          {kitchen.map((item) => (
+            <DrawerItemRow key={item.id} item={item} />
+          ))}
+        </ul>
+      ) : null}
+      {split ? (
+        <div className="my-2 border-t-2 border-dotted border-line" />
+      ) : null}
+      {counter.length > 0 ? (
+        <>
+          {split ? (
+            <p className="pt-1 text-xs font-bold uppercase tracking-wide text-muted">
+              Front counter · Drinks
+            </p>
+          ) : null}
+          <ul className="divide-y divide-line">
+            {counter.map((item) => (
+              <DrawerItemRow key={item.id} item={item} />
+            ))}
+          </ul>
+        </>
+      ) : null}
     </div>
   );
 }

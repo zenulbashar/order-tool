@@ -39,6 +39,7 @@ type ItemData = {
   priceCents: number;
   imageUrl: string | null;
   isAvailable: boolean;
+  station: "auto" | "kitchen" | "counter";
 };
 
 type GroupData = {
