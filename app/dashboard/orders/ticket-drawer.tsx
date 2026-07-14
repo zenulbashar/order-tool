@@ -55,9 +55,16 @@ export function TicketDrawer({
         {/* Header */}
         <div className="sticky top-0 flex items-start justify-between gap-3 border-b border-line bg-surface px-5 py-4">
           <div className="min-w-0">
-            <p className="font-mono text-xl font-bold text-ink">
-              {orderReference(order.publicToken)}
-            </p>
+            <div className="flex items-center gap-2">
+              {order.dailyNumber != null ? (
+                <span className="rounded-md bg-ink px-2 py-1 font-display text-xl font-extrabold leading-none text-surface">
+                  #{order.dailyNumber}
+                </span>
+              ) : null}
+              <p className="font-mono text-xl font-bold text-ink">
+                {orderReference(order.publicToken)}
+              </p>
+            </div>
             <p className="mt-0.5 font-mono text-xs text-muted">
               {formatVenueTime(order.createdAt, timezone)}
             </p>

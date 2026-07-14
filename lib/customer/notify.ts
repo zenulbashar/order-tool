@@ -34,6 +34,7 @@ export async function notifyCustomerOrder(
   const [row] = await db
     .select({
       publicToken: orders.publicToken,
+      dailyNumber: orders.dailyNumber,
       orderType: orders.orderType,
       customerName: orders.customerName,
       orderEmail: orders.customerEmail,
@@ -73,6 +74,10 @@ export async function notifyCustomerOrder(
 
   const first = row.customerName.split(" ")[0] || "there";
   const reference = orderReference(row.publicToken);
+  // Friendly call-out label: prefer the short daily number ("order 7"), else the
+  // opaque reference. Used in the SMS so a diner hears the same number staff call.
+  const callNo =
+    row.dailyNumber != null ? `order ${row.dailyNumber}` : `order ${reference}`;
   const url = `${await getBaseUrl()}/${row.venueSlug}/order/${row.publicToken}`;
   const collect = row.orderType === "dine_in" ? "" : " to collect";
 
@@ -120,8 +125,8 @@ export async function notifyCustomerOrder(
       } else {
         const body =
           event === "confirmed"
-            ? `${row.venueName}: order ${reference} confirmed — $${formatCents(row.totalCents)}. Track: ${url}`
-            : `${row.venueName}: order ${reference} is ready${collect}. ${url}`;
+            ? `${row.venueName}: ${callNo} confirmed — $${formatCents(row.totalCents)}. Track: ${url}`
+            : `${row.venueName}: ${callNo} is ready${collect}. ${url}`;
         await sendSms(phone, body);
       }
     } catch {

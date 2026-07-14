@@ -399,6 +399,14 @@ export default async function OrderConfirmationPage({
           <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">
             Thanks, {order.customerName.split(" ")[0]}!
           </h1>
+          {isPaid && order.dailyNumber != null ? (
+            <p className="mt-2 inline-flex items-center gap-2 rounded-card bg-ink px-3 py-1.5 font-display text-lg font-extrabold text-surface">
+              Order {order.dailyNumber}
+              <span className="text-xs font-medium text-surface/70">
+                listen for this number
+              </span>
+            </p>
+          ) : null}
           <p className="mt-1 text-sm text-muted">
             {venue.name}
             {isPaid

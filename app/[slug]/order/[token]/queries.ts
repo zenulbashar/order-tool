@@ -17,6 +17,8 @@ export type ConfirmedOrderItem = {
 
 export type ConfirmedOrder = {
   publicToken: string;
+  // Short daily "call number" (resets per venue per day), or null.
+  dailyNumber: number | null;
   status: "pending_payment" | "confirmed" | "cancelled" | "payment_failed";
   // Kitchen lifecycle, separate from `status` (payment). Read-only here — drives
   // the diner's Placed → Preparing → Ready tracker once the order is paid; the
@@ -57,6 +59,7 @@ export async function getOrderByToken(
     .select({
       id: orders.id,
       publicToken: orders.publicToken,
+      dailyNumber: orders.dailyNumber,
       status: orders.status,
       fulfillmentStatus: orders.fulfillmentStatus,
       orderType: orders.orderType,
@@ -125,6 +128,7 @@ export async function getOrderByToken(
 
   return {
     publicToken: order.publicToken,
+    dailyNumber: order.dailyNumber,
     status: order.status,
     fulfillmentStatus: order.fulfillmentStatus,
     orderType: order.orderType,

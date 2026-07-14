@@ -52,8 +52,15 @@ export function OrderCard({
     return (
       <li className="rounded-card border border-line bg-surface-elevated p-3 shadow-card">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-sm font-semibold text-ink">
-            {orderReference(order.publicToken)}
+          <span className="flex items-center gap-2">
+            {order.dailyNumber != null ? (
+              <span className="rounded-md bg-ink px-1.5 py-0.5 font-display text-sm font-extrabold leading-none text-surface">
+                #{order.dailyNumber}
+              </span>
+            ) : null}
+            <span className="font-mono text-sm font-semibold text-ink">
+              {orderReference(order.publicToken)}
+            </span>
           </span>
           <StatusBadge tone="done" className="shrink-0">
             {STATUS_LABEL.completed}
@@ -92,6 +99,11 @@ export function OrderCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
+            {order.dailyNumber != null ? (
+              <span className="rounded-md bg-ink px-2 py-1 font-display text-lg font-extrabold leading-none text-surface">
+                #{order.dailyNumber}
+              </span>
+            ) : null}
             <span className="font-mono text-sm font-semibold text-ink">
               {orderReference(order.publicToken)}
             </span>

@@ -33,6 +33,8 @@ export type KitchenOrderItem = {
 export type KitchenOrder = {
   id: string;
   publicToken: string;
+  // Short daily "call number" (resets per venue per day), or null.
+  dailyNumber: number | null;
   orderType: "pickup" | "dine_in";
   tableLabel: string | null;
   customerName: string;
@@ -93,6 +95,7 @@ export async function getVenueOrders(
     .select({
       id: orders.id,
       publicToken: orders.publicToken,
+      dailyNumber: orders.dailyNumber,
       orderType: orders.orderType,
       tableLabel: orders.tableLabel,
       customerName: orders.customerName,
@@ -138,6 +141,7 @@ export async function getRecentCompletedOrders(
     .select({
       id: orders.id,
       publicToken: orders.publicToken,
+      dailyNumber: orders.dailyNumber,
       orderType: orders.orderType,
       tableLabel: orders.tableLabel,
       customerName: orders.customerName,
@@ -167,6 +171,7 @@ export async function getRecentCompletedOrders(
 type OrderHeaderRow = {
   id: string;
   publicToken: string;
+  dailyNumber: number | null;
   orderType: "pickup" | "dine_in";
   tableLabel: string | null;
   customerName: string;
@@ -261,6 +266,7 @@ async function hydrateKitchenOrders(
   return orderRows.map((order) => ({
     id: order.id,
     publicToken: order.publicToken,
+    dailyNumber: order.dailyNumber,
     orderType: order.orderType,
     tableLabel: order.tableLabel,
     customerName: order.customerName,

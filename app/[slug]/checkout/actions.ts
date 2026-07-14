@@ -16,6 +16,7 @@ import {
   orders,
   venues,
 } from "@/lib/db/schema";
+import { assignDailyNumber } from "@/lib/orders/daily-number";
 import { getVenueTaxConfig, inclusiveTaxCents } from "@/lib/payments/tax";
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import {
@@ -356,6 +357,11 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     ? inclusiveTaxCents(totalCents, taxConfig.rateBps)
     : 0;
 
+  // Short daily "call number" for the kitchen/customer (resets per venue per
+  // day). Best-effort + INERT to money: a counter hiccup returns null and never
+  // blocks the order. Assigned ONCE here so a token-collision retry reuses it.
+  const dailyNumber = await assignDailyNumber(venueId);
+
   // (f) Write order + items + modifiers in ONE transaction. Every sensitive
   // column (venue_id, token, status, all totals/snapshots) is set from
   // server-derived values — client input is never spread in. Retry on the
@@ -390,6 +396,8 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
             // Additive inert capture — the GST component of totalCents; never a
             // pricing input, never read by the recompute/app-fee/PI/webhook.
             taxCents,
+            // Short daily call number (display-only, inert to money).
+            dailyNumber,
           })
           .returning({ id: orders.id });
 
