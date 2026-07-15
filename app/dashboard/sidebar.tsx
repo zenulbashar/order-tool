@@ -108,6 +108,7 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
       items: [
         { label: "Payments & payouts", href: "/dashboard/payments" },
         { label: "Discount codes", href: "/dashboard/discounts" },
+        { label: "Gift cards", href: "/dashboard/gift-cards" },
         { label: "Plan & billing", href: "/dashboard/billing" },
       ],
     },
