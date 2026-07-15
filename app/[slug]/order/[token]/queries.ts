@@ -37,9 +37,11 @@ export type ConfirmedOrder = {
   // The platform-promotion portion of discountCents (Track E2d); bank = the rest.
   promoDiscountCents: number;
   // Loyalty-points portion of discountCents + how many points it consumed
-  // (Loyalty PR2). bank = discount − promo − points.
+  // (Loyalty PR2). bank = discount − promo − points − giftCard.
   pointsDiscountCents: number;
   pointsRedeemed: number;
+  // Gift-card portion of discountCents (Gift cards PR2).
+  giftCardRedeemedCents: number;
   // GST component (inclusive) contained in totalCents — display/receipt only.
   taxCents: number;
   totalCents: number;
@@ -76,6 +78,7 @@ export async function getOrderByToken(
       promoDiscountCents: orders.promoDiscountCents,
       pointsDiscountCents: orders.pointsDiscountCents,
       pointsRedeemed: orders.pointsRedeemed,
+      giftCardRedeemedCents: orders.giftCardRedeemedCents,
       taxCents: orders.taxCents,
       totalCents: orders.totalCents,
       createdAt: orders.createdAt,
@@ -147,6 +150,7 @@ export async function getOrderByToken(
     promoDiscountCents: order.promoDiscountCents,
     pointsDiscountCents: order.pointsDiscountCents,
     pointsRedeemed: order.pointsRedeemed,
+    giftCardRedeemedCents: order.giftCardRedeemedCents,
     taxCents: order.taxCents,
     totalCents: order.totalCents,
     createdAt: order.createdAt,

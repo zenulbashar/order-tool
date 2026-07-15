@@ -4,6 +4,10 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orders, venues } from "@/lib/db/schema";
+import {
+  getAvailableGiftCardCents,
+  resolveGiftCardForRedemption,
+} from "@/lib/giftcards/queries";
 import { getAvailablePoints } from "@/lib/loyalty/balance";
 import {
   BANK_METHODS,
@@ -53,6 +57,11 @@ export type ApplyDiscountResult =
       pointsDiscountCents: number;
       // Points actually consumed for that value (0 when not redeeming).
       pointsRedeemed: number;
+      // Gift-card cash value redeemed on this order (0 when no card applies).
+      giftCardDiscountCents: number;
+      // True when a gift-card code was entered AND put value toward the order
+      // (so the checkout can confirm "applied" vs report an invalid/empty card).
+      giftCardApplied: boolean;
       // True only when a diner-entered CODE selected the applied promo (so the
       // checkout can confirm "code applied" vs an auto promo). An invalid code
       // leaves this false while any auto discount still applies.
@@ -66,6 +75,7 @@ export async function applyOrderDiscounts(
   method: string,
   code?: string,
   redeemPoints?: boolean,
+  giftCardCode?: string,
 ): Promise<ApplyDiscountResult> {
   const trimmedToken = token.trim();
   if (!trimmedToken) return { ok: false };
@@ -154,8 +164,37 @@ export async function applyOrderDiscounts(
     }
   }
 
-  const discountCents = baseDiscount + pointsDiscountCents;
-  const totalCents = baseTotal - pointsDiscountCents;
+  // Gift card fills whatever room is left after promo + bank + points (the
+  // customer paying down the remainder with their own stored value). Cents-
+  // denominated, so no rounding — just bounded by the room left, which keeps the
+  // charge ≥ Stripe's minimum. A gift card can therefore cover all-but-MIN of an
+  // order, never reduce the PI to $0 (documented v1 limit).
+  let giftCardId: string | null = null;
+  let giftCardRedeemedCents = 0;
+  if (giftCardCode && giftCardCode.trim()) {
+    const card = await resolveGiftCardForRedemption(venue.id, giftCardCode);
+    if (card) {
+      const available = await getAvailableGiftCardCents(
+        card.id,
+        card.balanceCents,
+        pre.id,
+      );
+      const roomLeft = Math.max(
+        0,
+        pre.subtotalCents - MIN_TOTAL_CENTS - baseDiscount - pointsDiscountCents,
+      );
+      const redeem = Math.min(available, roomLeft);
+      if (redeem > 0) {
+        giftCardId = card.id;
+        giftCardRedeemedCents = redeem;
+      }
+    }
+  }
+
+  const discountCents =
+    baseDiscount + pointsDiscountCents + giftCardRedeemedCents;
+  const totalCents = baseTotal - pointsDiscountCents - giftCardRedeemedCents;
+  const giftCardApplied = giftCardRedeemedCents > 0;
   const appliedPromoId = promoDiscountCents > 0 ? promo?.id ?? null : null;
   // The platform's co-funded share of the (post-clamp) promo discount — a
   // tracked liability, settled out of band. Does not change the charge or fee.
@@ -181,6 +220,8 @@ export async function applyOrderDiscounts(
           promoDiscountCents: orders.promoDiscountCents,
           pointsDiscountCents: orders.pointsDiscountCents,
           pointsRedeemed: orders.pointsRedeemed,
+          giftCardId: orders.giftCardId,
+          giftCardRedeemedCents: orders.giftCardRedeemedCents,
           appliedPromoId: orders.appliedPromoId,
         })
         .from(orders)
@@ -197,6 +238,8 @@ export async function applyOrderDiscounts(
         locked.promoDiscountCents === promoDiscountCents &&
         locked.pointsDiscountCents === pointsDiscountCents &&
         locked.pointsRedeemed === pointsRedeemed &&
+        (locked.giftCardId ?? null) === giftCardId &&
+        locked.giftCardRedeemedCents === giftCardRedeemedCents &&
         (locked.appliedPromoId ?? null) === appliedPromoId
       ) {
         result = {
@@ -206,6 +249,8 @@ export async function applyOrderDiscounts(
           promoDiscountCents,
           pointsDiscountCents,
           pointsRedeemed,
+          giftCardDiscountCents: giftCardRedeemedCents,
+          giftCardApplied,
           codeApplied,
         };
         return;
@@ -221,6 +266,8 @@ export async function applyOrderDiscounts(
           promoDiscountCents,
           pointsDiscountCents,
           pointsRedeemed,
+          giftCardId,
+          giftCardRedeemedCents,
           appliedPromoId,
           platformFundedCents,
         })
@@ -245,6 +292,8 @@ export async function applyOrderDiscounts(
         promoDiscountCents,
         pointsDiscountCents,
         pointsRedeemed,
+        giftCardDiscountCents: giftCardRedeemedCents,
+        giftCardApplied,
         codeApplied,
       };
     });
