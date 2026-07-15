@@ -761,6 +761,82 @@ export const pointsLedger = pgTable(
   ],
 );
 
+export const giftCardStatus = pgEnum("gift_card_status", ["active", "void"]);
+
+// Why a gift_card_ledger row exists. "issue" (opening value), "topup" (owner
+// adds value), "redeem" (spent on an order), "adjust" (manual correction). The
+// card's balance is the cached counter kept in step with the SUM of these.
+export const giftCardReason = pgEnum("gift_card_reason", [
+  "issue",
+  "redeem",
+  "topup",
+  "adjust",
+]);
+
+/**
+ * Owner-issued stored-value gift cards (redeem-only v1). A card is a per-venue
+ * CODE carrying a cash balance a diner can spend at checkout. balance_cents is a
+ * CACHED counter kept in step with the append-only gift_card_ledger in the SAME
+ * transaction (the stock-ledger pattern — never drifts). The code is a BEARER
+ * credential (anyone holding it can redeem) shown to the owner, so it is stored
+ * as-is, unique per venue. Venue-scoped; cascades with the venue.
+ */
+export const giftCards = pgTable(
+  "gift_cards",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    initialCents: integer("initial_cents").notNull(),
+    balanceCents: integer("balance_cents").notNull(),
+    status: giftCardStatus("status").notNull().default("active"),
+    note: text("note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("gift_cards_venue_code_idx").on(table.venueId, table.code),
+    index("gift_cards_venue_idx").on(table.venueId),
+    check("gift_cards_balance_nonneg", sql`${table.balanceCents} >= 0`),
+  ],
+);
+
+/**
+ * Append-only ledger of every value movement on a gift card. Balance =
+ * SUM(delta_cents); the card's cached balance_cents mirrors it. A "redeem" row
+ * carries the order it paid for (soft ref, SET NULL on order delete) and is made
+ * idempotent by unique(order_id, reason) — one redeem per order (issue/topup/
+ * adjust carry no order_id; NULLs are distinct so they never collide).
+ */
+export const giftCardLedger = pgTable(
+  "gift_card_ledger",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    giftCardId: text("gift_card_id")
+      .notNull()
+      .references(() => giftCards.id, { onDelete: "cascade" }),
+    orderId: text("order_id").references(() => orders.id, {
+      onDelete: "set null",
+    }),
+    deltaCents: integer("delta_cents").notNull(),
+    reason: giftCardReason("reason").notNull(),
+    note: text("note"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("gift_card_ledger_card_idx").on(table.giftCardId),
+    uniqueIndex("gift_card_ledger_order_reason_idx").on(
+      table.orderId,
+      table.reason,
+    ),
+  ],
+);
+
 /**
  * Single-use magic-link tokens for customer sign-in — SEPARATE from the Auth.js
  * verification_tokens table. We store only a SHA-256 HASH of the token; the raw

@@ -372,6 +372,13 @@
       "when": 1784030248104,
       "tag": "0052_tricky_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1784120037268,
+      "tag": "0053_cynical_princess_powerful",
+      "breakpoints": true
     }
   ]
 }
