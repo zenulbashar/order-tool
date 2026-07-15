@@ -3,6 +3,7 @@ import {
   runMaintenance,
   sweepMissedOrders,
 } from "@/lib/integrations/dispatch";
+import { sweepGiftCardRedeem } from "@/lib/giftcards/redeem";
 import { sweepLoyaltyEarn } from "@/lib/loyalty/earn";
 import { sweepLoyaltyRedeem } from "@/lib/loyalty/redeem";
 import { sweepStockDepletion } from "@/lib/stock/depletion";
@@ -62,6 +63,14 @@ export async function GET(request: Request): Promise<Response> {
   } catch {
     // Advisory backstop — surfaces on the next tick.
   }
+  // Gift-card redemption debit backstop (PR2) — writes the ledger debit for any
+  // confirmed order that redeemed a card but missed the webhook. Isolated.
+  let giftCardsRedeemed = 0;
+  try {
+    giftCardsRedeemed = await sweepGiftCardRedeem();
+  } catch {
+    // Advisory backstop — surfaces on the next tick.
+  }
   return Response.json({
     ok: true,
     swept,
@@ -69,5 +78,6 @@ export async function GET(request: Request): Promise<Response> {
     depleted,
     earned,
     redeemed,
+    giftCardsRedeemed,
   });
 }

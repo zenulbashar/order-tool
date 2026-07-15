@@ -330,7 +330,10 @@ export default async function OrderConfirmationPage({
           </span>
         </div>
       ) : null}
-      {order.discountCents - order.promoDiscountCents - order.pointsDiscountCents >
+      {order.discountCents -
+        order.promoDiscountCents -
+        order.pointsDiscountCents -
+        order.giftCardRedeemedCents >
       0 ? (
         <div className="mt-1 flex items-center justify-between text-sm">
           <span className="text-success-deep">Bank discount</span>
@@ -339,7 +342,8 @@ export default async function OrderConfirmationPage({
             {formatCents(
               order.discountCents -
                 order.promoDiscountCents -
-                order.pointsDiscountCents,
+                order.pointsDiscountCents -
+                order.giftCardRedeemedCents,
             )}
           </span>
         </div>
@@ -351,6 +355,14 @@ export default async function OrderConfirmationPage({
           </span>
           <span className="text-success-deep">
             −${formatCents(order.pointsDiscountCents)}
+          </span>
+        </div>
+      ) : null}
+      {order.giftCardRedeemedCents > 0 ? (
+        <div className="mt-1 flex items-center justify-between text-sm">
+          <span className="text-success-deep">Gift card</span>
+          <span className="text-success-deep">
+            −${formatCents(order.giftCardRedeemedCents)}
           </span>
         </div>
       ) : null}

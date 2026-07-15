@@ -148,6 +148,15 @@ function PaymentForm({
   const [codeStatus, setCodeStatus] = useState<"idle" | "applied" | "invalid">(
     "idle",
   );
+  // Diner-entered GIFT CARD code — a separate credential from a promo code, so
+  // both can stack. Re-sent on every recompute (like the promo code). The server
+  // resolves + redeems it server-authoritatively; the client only names it.
+  const appliedGiftCardRef = useRef<string>("");
+  const [giftCardInput, setGiftCardInput] = useState("");
+  const [giftCardDiscountCents, setGiftCardDiscountCents] = useState(0);
+  const [giftCardStatus, setGiftCardStatus] = useState<
+    "idle" | "applied" | "invalid"
+  >("idle");
 
   // The pay-by-bank saving on offer for this order (0 when the venue hasn't
   // configured one). Display only; the server recompute is the source of truth.
@@ -173,11 +182,17 @@ function PaymentForm({
         type,
         appliedCodeRef.current || undefined,
         redeemRef.current,
+        appliedGiftCardRef.current || undefined,
       );
       if (result.ok) {
         setDisplayAmount(result.totalCents);
         setPromoDiscountCents(result.promoDiscountCents);
         setPointsDiscountCents(result.pointsDiscountCents);
+        setGiftCardDiscountCents(result.giftCardDiscountCents);
+        // Reflect whether an entered gift card put value toward the order.
+        if (appliedGiftCardRef.current) {
+          setGiftCardStatus(result.giftCardApplied ? "applied" : "invalid");
+        }
         // Reconcile the toggle with what the server actually redeemed (e.g. a
         // small basket may leave no room, or the balance was already spent).
         setRedeeming(result.pointsRedeemed > 0);
@@ -204,6 +219,16 @@ function PaymentForm({
     if (recomputing) return;
     appliedCodeRef.current = codeInput.trim().toUpperCase();
     setCodeStatus("idle");
+    void runDiscount(lastMethodRef.current);
+  }
+
+  // Apply (or clear) the diner-entered gift-card code, then recompute. The
+  // server resolves the card + redeems what fits; the callout reflects the
+  // result. Never removes another discount — it just adds the card's value.
+  function applyGiftCard() {
+    if (recomputing) return;
+    appliedGiftCardRef.current = giftCardInput.trim().toUpperCase();
+    setGiftCardStatus("idle");
     void runDiscount(lastMethodRef.current);
   }
 
@@ -376,6 +401,60 @@ function PaymentForm({
             <p className="mt-1 text-xs text-success-deep">Code applied.</p>
           ) : null}
         </div>
+
+        {/* Gift card code entry — a separate credential from the promo code, so
+            both stack. Server-authoritative; applies the card's value to the
+            order (partial ok). */}
+        <div className="mb-3">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={giftCardInput}
+              onChange={(event) => {
+                setGiftCardInput(event.target.value);
+                if (giftCardStatus !== "idle") setGiftCardStatus("idle");
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  applyGiftCard();
+                }
+              }}
+              placeholder="Gift card"
+              autoCapitalize="characters"
+              autoComplete="off"
+              maxLength={20}
+              aria-label="Gift card code"
+              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
+            />
+            <button
+              type="button"
+              onClick={applyGiftCard}
+              disabled={recomputing || giftCardInput.trim().length === 0}
+              className="shrink-0 rounded-control border border-line-strong bg-surface-elevated px-4 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary disabled:opacity-50"
+            >
+              Apply
+            </button>
+          </div>
+          {giftCardStatus === "invalid" ? (
+            <p className="mt-1 text-xs text-[var(--color-warm)]">
+              We couldn&rsquo;t apply that gift card.
+            </p>
+          ) : null}
+        </div>
+
+        {/* Gift card value applied (server-recomputed). */}
+        {giftCardDiscountCents > 0 ? (
+          <div className="mb-3 flex items-center gap-2 rounded-input border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-2">
+            <span
+              aria-hidden
+              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-success-deep"
+            >
+              −${formatCents(giftCardDiscountCents)}
+            </span>
+            <span className="text-xs text-ink">Gift card applied.</span>
+          </div>
+        ) : null}
 
         {/* Promotion applied automatically (Track E2d). */}
         {promoDiscountCents > 0 ? (

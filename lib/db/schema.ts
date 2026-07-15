@@ -1014,6 +1014,16 @@ export const orders = pgTable(
     // debit at confirmation. Inert to the fee model (fee is on the final total).
     pointsDiscountCents: integer("points_discount_cents").notNull().default(0),
     pointsRedeemed: integer("points_redeemed").notNull().default(0),
+    // Gift-card redemption on THIS order (Gift cards PR2). points-style
+    // decomposition of discount_cents: gift_card_redeemed_cents is the value the
+    // card paid, gift_card_id (soft ref — no FK, survives a card delete) which
+    // card. Default 0/null — placeOrder never sets them; the same recompute
+    // (applyOrderDiscounts) records the reservation and the webhook writes the
+    // card ledger debit at confirmation. Fee is on the final total.
+    giftCardId: text("gift_card_id"),
+    giftCardRedeemedCents: integer("gift_card_redeemed_cents")
+      .notNull()
+      .default(0),
     // The platform's co-funded share of this order's promo discount (Track
     // E2d-3), recorded at apply time = round(promo_discount_cents ×
     // promotion.platform_funded_percent ÷ 100). A tracked liability the platform
