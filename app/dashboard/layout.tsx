@@ -9,6 +9,7 @@ import { exitVenueImpersonation } from "../admin/actions";
 import { getActiveOrderCount } from "./orders/queries";
 import { PushRegistrar } from "./push-registrar";
 import { Sidebar } from "./sidebar";
+import { SupportWidget } from "./support-widget";
 
 /**
  * Shared dashboard chrome: a persistent forest-dark sidebar (nav + venue
@@ -78,6 +79,8 @@ export default async function DashboardLayout({
       </main>
       {/* Native app only: registers this device for new-order push (no-op on web). */}
       <PushRegistrar />
+      {/* Owner AI support chat (docs/ai-support-chat-plan.md) — FAB + panel. */}
+      <SupportWidget venueId={current.id} />
     </div>
   );
 }

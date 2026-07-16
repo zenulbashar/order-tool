@@ -136,6 +136,40 @@ export type SupportChatPayload = {
   locale?: string;
 };
 
+export type SupportFeedbackPayload = {
+  conversationId: string;
+  rating: "good" | "bad";
+  reason?: string;
+  comment?: string;
+};
+
+/** POST /v1/feedback (contract §8) — one CSAT record per conversation. */
+export async function postSupportFeedback(
+  tenantId: string,
+  subject: SupportSubject,
+  payload: SupportFeedbackPayload,
+): Promise<void> {
+  const base = getSupportApiUrl();
+  if (!base || base === MOCK_SENTINEL) {
+    throw new Error("Support API is not configured for live calls.");
+  }
+  const rawBody = JSON.stringify(payload);
+  const response = await fetch(`${base}/v1/feedback`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${mintSupportIdentity(tenantId, subject)}`,
+      "x-signature": signSupportBody(rawBody),
+    },
+    body: rawBody,
+    signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new SupportApiError(response.status);
+  }
+}
+
 /**
  * POST /v1/chat and return the upstream Response whose body is the SSE stream
  * (AI SDK UI Message Stream v1 — contract §3). The abort timeout bounds the
