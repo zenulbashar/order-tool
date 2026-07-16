@@ -1,9 +1,12 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { after } from "next/server";
+
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { supportTickets, venues } from "@/lib/db/schema";
+import { notifySupportTicketReplied } from "@/lib/support/notify";
 
 // HMAC verification + the Neon pool need Node — keep off the Edge runtime.
 export const runtime = "nodejs";
@@ -114,6 +117,18 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     // Persistence failed — 500 so Foundry redelivers.
     return new Response("Handler error.", { status: 500 });
+  }
+
+  // Best-effort owner email carrying the reply — isolated in after() so it can
+  // never delay or fail the ack (a redelivered webhook would re-send; the email
+  // is informational, so that's acceptable).
+  if (event.type === "ticket.replied") {
+    const foundryTicketId = ticket.id;
+    try {
+      after(() => notifySupportTicketReplied(foundryTicketId).catch(() => {}));
+    } catch {
+      // Swallowed by design.
+    }
   }
 
   return new Response("ok", { status: 200 });
