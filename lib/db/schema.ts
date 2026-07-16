@@ -837,6 +837,52 @@ export const giftCardLedger = pgTable(
   ],
 );
 
+export const supportDepartment = pgEnum("support_department", [
+  "tech",
+  "sales",
+  "billing",
+]);
+
+export const supportTicketStatus = pgEnum("support_ticket_status", [
+  "open",
+  "replied",
+  "closed",
+]);
+
+/**
+ * MIRROR of support tickets raised by the Foundry support agent (AI support
+ * chat — docs/ai-support-chat-plan.md). Foundry is the system of record for
+ * conversations AND tickets (decision D2); this table only mirrors the tickets
+ * that concern THIS platform's venues so they're visible in-app, populated
+ * idempotently by the signed webhook (app/api/support/webhook). Money-inert;
+ * venue-scoped like every owner surface.
+ */
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // Foundry's ticket id — the idempotency key for webhook upserts.
+    foundryTicketId: text("foundry_ticket_id").notNull(),
+    // Foundry's conversation id (opaque here; transcripts live in Foundry).
+    conversationId: text("conversation_id").notNull(),
+    department: supportDepartment("department").notNull(),
+    // Agent-written handoff brief (plain text, React-escaped on render).
+    summary: text("summary").notNull(),
+    status: supportTicketStatus("status").notNull().default("open"),
+    // The operator's reply, mirrored on ticket.replied (nullable until then).
+    reply: text("reply"),
+    createdAt: createdAt(),
+    repliedAt: timestamp("replied_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("support_tickets_foundry_idx").on(table.foundryTicketId),
+    index("support_tickets_venue_idx").on(table.venueId),
+  ],
+);
+
 /**
  * Single-use magic-link tokens for customer sign-in — SEPARATE from the Auth.js
  * verification_tokens table. We store only a SHA-256 HASH of the token; the raw

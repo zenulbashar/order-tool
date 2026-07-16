@@ -74,6 +74,9 @@ const CONFIG = {
   // from the public storefront). Keyed per venue+IP so one diner can't spam a
   // venue's concierge. Independent of the future fair-use cap (canUseConcierge).
   aiConcierge: { limit: 15, window: "1 h", prefix: "rl:ai:concierge" },
+  // SUPPORT CHAT (owner-facing, proxied to the Foundry agents service — each
+  // turn is real model spend on the Foundry side). Keyed per venue+user.
+  aiSupport: { limit: 30, window: "1 h", prefix: "rl:ai:support" },
   // CHECKOUT (moderate — stop junk-order floods, tolerate payment retries).
   checkoutIp: { limit: 20, window: "1 m", prefix: "rl:checkout:ip" },
 } as const;
