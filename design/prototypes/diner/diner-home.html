@@ -102,11 +102,13 @@ img{display:block;max-width:100%}
 }
 [data-native] body,[data-native] .app{padding-bottom:env(safe-area-inset-bottom,20px)}
 
-.announcement{ /* AnnouncementBar — forest strip, cream text */
-  background:var(--color-forest-deepest);color:#eaf3ec;text-align:center;
-  font-size:12.5px;padding:8px 16px;
+.announcement{ /* AnnouncementBar — ink strip + cream text, dismissible (source: bg-ink text-surface, NO amber) */
+  position:relative;background:var(--color-ink);color:var(--color-surface);text-align:center;
+  font-size:13px;font-weight:500;padding:8px 40px;
 }
-.announcement b{color:var(--color-accent);font-weight:700}
+.announcement .x{position:absolute;inset-block:0;right:12px;display:flex;align-items:center;
+  color:color-mix(in srgb,var(--color-surface) 70%,transparent);transition:.15s}
+.announcement .x:hover{color:var(--color-surface)}
 
 /* Mobile header (lg:hidden) — logo + name row */
 .m-header{
@@ -237,8 +239,8 @@ img{display:block;max-width:100%}
 .item .row .ph{height:96px;width:96px;flex:none;border-radius:var(--radius-control);border:1px solid var(--color-sand);background-size:cover}
 .item .card{display:none}
 .addbtn{position:absolute;z-index:10;display:flex;align-items:center;justify-content:center;
-  height:36px;width:36px;border-radius:var(--radius-pill);color:var(--action-contrast);
-  background:var(--action);box-shadow:0 2px 6px rgba(0,0,0,.18);bottom:16px;right:16px;transition:transform .1s}
+  height:44px;width:44px;border-radius:var(--radius-pill);color:var(--action-contrast); /* ≥44px touch target (a11y floor) */
+  background:var(--action);box-shadow:0 2px 6px rgba(0,0,0,.18);bottom:12px;right:12px;transition:transform .1s}
 .addbtn:active{transform:scale(.95)}
 .addbtn.pill{display:none} /* desktop-only control — hidden below lg (source lg:inline-flex) */
 
@@ -331,6 +333,26 @@ img{display:block;max-width:100%}
   border-radius:var(--radius-card);padding:14px 18px;font-size:13px}
 .think .dots{display:inline-flex;gap:4px}
 .think .dots i{height:8px;width:8px;border-radius:50%;background:var(--color-accent)}
+/* Add-to-cart fly ghost (p2e-fly) — a brand dot that arcs toward the cart. */
+.fly-ghost{position:fixed;z-index:60;height:18px;width:18px;border-radius:50%;
+  background:var(--action);box-shadow:0 2px 8px rgba(0,0,0,.28);pointer-events:none}
+/* Static illustration of the add-to-cart motion moment for capture. */
+.addmotion{position:relative;display:flex;align-items:center;justify-content:space-between;
+  max-width:420px;height:120px;padding:0 8px}
+.addmotion .src{height:44px;width:44px;border-radius:var(--radius-pill);background:var(--action);
+  color:var(--action-contrast);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700}
+.addmotion .arc{position:absolute;left:52px;right:70px;top:16px;height:64px;
+  border-top:2px dashed color-mix(in srgb,var(--action) 45%,transparent);
+  border-right:2px dashed color-mix(in srgb,var(--action) 45%,transparent);
+  border-top-right-radius:60px}
+.addmotion .ghost{position:absolute;left:44%;top:18px;height:18px;width:18px;border-radius:50%;
+  background:var(--action);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.addmotion .dest{position:relative}
+.addmotion .cart{height:48px;width:48px;border-radius:14px;background:var(--color-surface);
+  border:1px solid var(--color-line);display:flex;align-items:center;justify-content:center;font-size:22px}
+.addmotion .badge{position:absolute;top:-8px;right:-8px;height:24px;min-width:24px;padding:0 6px;
+  border-radius:var(--radius-pill);background:var(--action);color:var(--action-contrast); /* functional accent = brand, not amber */
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -339,7 +361,10 @@ img{display:block;max-width:100%}
 
   <!-- ===================== ANNOUNCEMENT ===================== -->
   <div class="announcement" data-tile="announcement">
-    <b>✦</b> Fresh sourdough out at 8am daily — order ahead for pickup.
+    Fresh sourdough out at 8am daily — order ahead for pickup.
+    <button class="x" aria-label="Dismiss announcement">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="height:16px;width:16px"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
   </div>
 
   <!-- ===================== MOBILE HEADER ===================== -->
@@ -530,10 +555,10 @@ img{display:block;max-width:100%}
     <aside class="rail" aria-label="Your order" data-tile="cart-rail">
       <div class="box">
         <div class="hd"><h2>Your order</h2><span class="tbl">Table 6</span></div>
-        <ul>
-          <li><span class="qty">2</span><span style="min-width:0;flex:1"><span class="li-nm">Country Sourdough</span><span class="li-sub" style="display:block">Sliced</span></span><span class="li-pr">$18.00</span></li>
-          <li><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Almond Croissant</span></span><span class="li-pr">$6.50</span></li>
-          <li><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Flat White</span><span class="li-sub" style="display:block">Oat milk · Large</span></span><span class="li-pr">$5.00</span></li>
+        <ul><!-- lines enter with a staggered p2e-slidein as they're added -->
+          <li class="p2e-slidein" style="animation-delay:.04s"><span class="qty">2</span><span style="min-width:0;flex:1"><span class="li-nm">Country Sourdough</span><span class="li-sub" style="display:block">Sliced</span></span><span class="li-pr">$18.00</span></li>
+          <li class="p2e-slidein" style="animation-delay:.10s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Almond Croissant</span></span><span class="li-pr">$6.50</span></li>
+          <li class="p2e-slidein" style="animation-delay:.16s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Flat White</span><span class="li-sub" style="display:block">Oat milk · Large</span></span><span class="li-pr">$5.00</span></li>
         </ul>
         <div class="totals">
           <div class="totrow"><span>Subtotal</span><span>$29.50</span></div>
@@ -557,6 +582,13 @@ img{display:block;max-width:100%}
     <div data-tile="state-thinking">
       <span class="think"><span class="dots"><i class="p2e-think"></i><i class="p2e-think" style="animation-delay:.16s"></i><i class="p2e-think" style="animation-delay:.32s"></i></span>Reading the menu…</span>
     </div>
+    <p class="lab">Add to cart — fly arc (p2e-fly) + cart pulse. Click any “+” to see it live.</p>
+    <div class="addmotion" data-tile="state-addmotion">
+      <span class="src" aria-hidden="true">+</span>
+      <span class="arc" aria-hidden="true"></span>
+      <span class="ghost p2e-glow" aria-hidden="true"></span>
+      <span class="dest"><span class="cart" aria-hidden="true">🛒</span><span class="badge">+1</span></span>
+    </div>
   </section>
 </div>
 
@@ -572,11 +604,23 @@ img{display:block;max-width:100%}
   // Native shell + forced-state toggles (for capture).
   const q = new URLSearchParams(location.search);
   if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
-  // Live add-to-cart motion (pop badge + fly ghost + cart pulse) so the
-  // prototype is a working design, not just a static mock.
+  // Live add-to-cart motion — the named priority moment: a brand ghost flies
+  // from the "+" toward the cart on the p2e-fly arc, the button pulses
+  // (p2e-cartpulse), so the prototype is a working design, not a static mock.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.querySelectorAll('.item:not(.is-added) .addbtn').forEach((btn) => {
     btn.addEventListener('click', () => {
       btn.classList.remove('p2e-cartpulse'); void btn.offsetWidth; btn.classList.add('p2e-cartpulse');
+      if (reduce) return; // honour reduced motion — pulse only, no flying ghost
+      const r = btn.getBoundingClientRect();
+      const ghost = document.createElement('span');
+      ghost.className = 'fly-ghost p2e-fly';
+      ghost.style.left = (r.left + r.width / 2 - 9) + 'px';
+      ghost.style.top = (r.top + r.height / 2 - 9) + 'px';
+      document.body.appendChild(ghost);
+      const done = () => ghost.remove();
+      ghost.addEventListener('animationend', done);
+      setTimeout(done, 900);
     });
   });
 </script>
