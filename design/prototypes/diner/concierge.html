@@ -17,11 +17,9 @@
 
   Motion uses ONLY real p2e-* keyframes: the diner-home.html library copied
   verbatim, plus p2e-spark copied verbatim from globals.css (it is real and the
-  live concierge-panel.tsx applies it). No keyframes are invented — a dedicated
-  caret blink (p2e-blink) and a count-emphasis (p2e-count) are proposed as
-  optional real-library additions and are approximated here with the existing
-  p2e-glow / p2e-pop tokens (see the notes at each use), matching the item-sheet
-  prototype's no-invention convention.
+  live concierge-panel.tsx applies it). The caret blink (p2e-blink) and the
+  count-emphasis (p2e-count) are ALSO real globals.css tokens and are used
+  directly here (both reduced-motion guarded). No keyframes are invented.
 
   Every capturable block carries data-tile="…". Query params: ?native=1
   (Capacitor status bar + safe-area).
@@ -115,9 +113,13 @@ img{display:block;max-width:100%}
 .p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
 .p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
 .p2e-pop{animation:p2e-pop .32s ease-out both}
+@keyframes p2e-blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes p2e-count{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-blink{animation:p2e-blink 1s step-end infinite}
+.p2e-count{animation:p2e-count .3s ease-out both}
 .p2e-fly{animation:p2e-fly .7s ease-in both}
 .p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
-.p2e-rise{animation:p2e-rise .4s ease-out both}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
 .p2e-slidein{animation:p2e-slidein .4s ease-out both}
 .p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
 .p2e-shimmer{
@@ -126,7 +128,7 @@ img{display:block;max-width:100%}
 }
 @media (prefers-reduced-motion:reduce){
   .p2e-float,.p2e-glow,.p2e-think,.p2e-pop,.p2e-fly,.p2e-cartpulse,.p2e-rise,
-  .p2e-slidein,.p2e-ring,.p2e-shimmer{animation:none!important}
+  .p2e-slidein,.p2e-ring,.p2e-shimmer,.p2e-blink,.p2e-count{animation:none!important}
 }
 
 /* p2e-spark — copied VERBATIM from app/globals.css. It is a real keyframe that
@@ -234,13 +236,11 @@ img{display:block;max-width:100%}
 .b-ai .bubble{border-radius:16px 16px 16px 5px;border:1px solid var(--color-concierge-ai-border);
   background:var(--color-concierge-ai-bg);padding:10px 14px;font-size:14px;line-height:1.5;
   color:var(--color-concierge-ai-text)}
-/* Trailing caret. A dedicated blink (p2e-blink) is proposed as a real-library
-   addition; here the existing p2e-glow token drives a soft caret pulse. */
+/* Trailing caret — the real p2e-blink token (step-end blink) from globals.css. */
 .caret{display:inline-block;width:2px;height:1.05em;margin-left:3px;vertical-align:-2px;
   border-radius:1px;background:var(--color-accent)}
 
-/* "Found N matches" status (mint). p2e-count (a count-emphasis) is proposed;
-   the existing p2e-pop token supplies the entrance emphasis here. */
+/* "Found N matches" status (mint) — the real p2e-count entrance token from globals.css. */
 .status{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;
   font-family:var(--font-mono);font-size:12px;letter-spacing:.03em;color:var(--color-concierge-mint)}
 .status .dot{height:7px;width:7px;border-radius:50%;background:var(--color-concierge-mint);
@@ -389,7 +389,7 @@ img{display:block;max-width:100%}
       <div style="min-width:0">
         <h2 class="p-title">
           <span class="spark p2e-spark" aria-hidden="true">✦</span>
-          Concierge
+          Prompt2Eat
           <span class="ai">AI</span>
         </h2>
         <p class="p-sub">Tell me what you feel like</p>
@@ -408,11 +408,11 @@ img{display:block;max-width:100%}
       <!-- AI bubble (reveal + trailing caret) -->
       <div class="b-ai p2e-slidein">
         <span class="icon p2e-spark" aria-hidden="true">✦</span>
-        <p class="bubble">Three warm, veg-forward plates that stay light — the roasted squash soup is my pick to start.<span class="caret p2e-glow" aria-hidden="true"></span></p>
+        <p class="bubble">Three warm, veg-forward plates that stay light — the roasted squash soup is my pick to start.<span class="caret p2e-blink" aria-hidden="true"></span></p>
       </div>
 
       <!-- found N matches status -->
-      <p class="status p2e-pop"><span class="dot" aria-hidden="true"></span>Found 3 matches</p>
+      <p class="status p2e-count"><span class="dot" aria-hidden="true"></span>Found 3 matches</p>
 
       <!-- proposed dish cards -->
       <div class="proposed" data-tile="concierge-proposed">
@@ -524,7 +524,7 @@ img{display:block;max-width:100%}
     <div class="scard"><div class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
   </div>
   <div class="fab" data-tile="concierge-launcher">
-    <button class="p2e-float" type="button"><span class="spark p2e-glow" aria-hidden="true">✦</span> Ask the menu</button>
+    <button class="p2e-float" type="button"><span class="spark p2e-glow" aria-hidden="true">✦</span> Ask Prompt2Eat</button>
   </div>
 </div>
 

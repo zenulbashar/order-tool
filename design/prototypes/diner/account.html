@@ -99,7 +99,7 @@ img{display:block;max-width:100%}
 .p2e-pop{animation:p2e-pop .32s ease-out both}
 .p2e-fly{animation:p2e-fly .7s ease-in both}
 .p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
-.p2e-rise{animation:p2e-rise .4s ease-out both}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
 .p2e-slidein{animation:p2e-slidein .4s ease-out both}
 .p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
 .p2e-shimmer{
@@ -179,8 +179,10 @@ img{display:block;max-width:100%}
 .usual .title{position:relative;margin-top:6px;font-size:15px;font-weight:700;color:#fff;line-height:1.35}
 .usual .foot{position:relative;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .usual .count{font-size:12px;font-weight:500;color:var(--color-concierge-sage)}
+/* Hero CTA is amber-on-forest (source order-history.tsx: bg-accent text-forest) —
+   the sanctioned dark-surface idiom, NOT the venue brand. */
 .usual .reorder{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:44px;
-  border-radius:var(--radius-control);background:var(--action);color:var(--action-contrast);
+  border-radius:var(--radius-control);background:var(--color-accent);color:var(--color-forest);
   padding:0 16px;font-size:13px;font-weight:700;transition:.15s}
 .usual .reorder:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
 .usual .reorder:active{transform:scale(.98)}
@@ -224,11 +226,13 @@ img{display:block;max-width:100%}
 .hist .items{margin-top:8px;font-size:14px;color:var(--color-ink);line-height:1.35}
 .hist .r2{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .hist .when{font-family:var(--font-mono);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--color-label)}
-/* ≥44px brand Reorder — fires p2e-fly + p2e-cartpulse on tap (wired below) */
+/* ≥44px list Reorder — SECONDARY/bordered (source: <Button variant="secondary"
+   size="sm">), not a brand fill; still fires p2e-fly + p2e-cartpulse on tap. */
 .reorder-btn{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:44px;
-  border-radius:var(--radius-control);background:var(--action);color:var(--action-contrast);
-  padding:0 16px;font-size:13px;font-weight:600;transition:.15s}
-.reorder-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+  border-radius:var(--radius-control);border:1px solid var(--color-line-strong);
+  background:var(--color-surface-elevated);color:var(--color-ink);
+  padding:0 14px;font-size:13px;font-weight:600;transition:.15s}
+.reorder-btn:hover{transform:translateY(-1px);background:var(--color-hover-secondary);box-shadow:var(--shadow-lift)}
 .reorder-btn:active{transform:scale(.98)}
 
 /* ---------- forms (details) ---------- */
@@ -332,11 +336,10 @@ img{display:block;max-width:100%}
         <p class="who">Signed in as <b>alex@example.com</b></p>
         <nav>
           <ul>
-            <li><a href="#" class="active" aria-current="page">Overview</a></li>
-            <li><a href="#">Orders</a></li>
-            <li><a href="#">Details</a></li>
+            <li><a href="#" class="active" aria-current="page">Orders</a></li>
+            <li><a href="#">Your details</a></li>
+            <li><a href="#">Saved payment</a></li>
             <li><a href="#">Notifications</a></li>
-            <li><a href="#">Payment</a></li>
           </ul>
         </nav>
         <a href="#" class="signout">Sign out</a>
