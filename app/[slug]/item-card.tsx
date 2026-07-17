@@ -129,7 +129,7 @@ export function ItemCard({
         onClick={handleAdd}
         aria-label={addLabel}
         className={cx(
-          "absolute z-10 flex h-9 w-9 items-center justify-center rounded-pill text-[var(--action-contrast)] shadow-md transition active:scale-95 lg:hidden",
+          "absolute z-10 flex h-11 w-11 items-center justify-center rounded-pill text-[var(--action-contrast)] shadow-md transition active:scale-95 lg:hidden",
           item.imageUrl ? "bottom-4 right-4" : "right-3 top-1/2 -translate-y-1/2",
         )}
         style={{ backgroundColor: "var(--action)" }}
