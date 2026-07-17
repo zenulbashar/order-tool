@@ -90,6 +90,14 @@ owner's one dark chrome surface where **amber is the sanctioned signature**
 - [x] O7 connections — `owner/o7-connections.html` (integrations hub: connected/not-connected/connecting/error/coming-soon · Square detail drawer · Apps/Roster launcher; amber-never firewall)
 - [x] O5 storefront settings — `owner/o5-settings.html` (settings hub · brand & colours w/ live storefront preview · logo · announcement · hours · tax · social · notifications)
 
-**Owner path complete (O0–O7).** Next: P2 — onboarding · platform admin (.admin-dark) · marketplace/shop · native app · then the cross-cutting sweeps.
+**Owner path complete (O0–O7).**
+
+## P2 — the rest
+
+- [x] Platform Admin console (.admin-dark) — `admin/admin-console.html` (operator bar · stats KPIs + GMV chart · venue directory · venue detail/plan · promotions; the one theme where --action = amber)
+- [ ] Onboarding wizard (details → service → menu import → plan → live)
+- [ ] Marketplace / Shop (public teaser · owner catalog · Your Orders)
+- [ ] Native app (Capacitor splash/push/order-ready + safe-area audit)
+- [ ] Cross-cutting sweeps (wire foundation motion into the real app · a11y · universal states)
 
 Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
