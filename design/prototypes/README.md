@@ -11,6 +11,7 @@ motion library, so they can be screenshotted per-tile.
 
 | Path | What |
 |---|---|
+| `diner/storefront-landing.html` | Diner storefront **landing** (front door) — announcement, app bar / mobile header, full-bleed desktop hero + mobile brand-tint banner, big category tiles (primary nav), footer, concierge launcher. |
 | `diner/diner-home.html` | Diner storefront **home** (menu view) — announcement, app bar / mobile header, hero, sticky category strip, category tiles, item cards (photo · monogram · choose · added), cart rail, mobile cart bar, concierge launcher, plus skeleton + AI-thinking states. |
 | `diner/item-sheet.html` | Diner **item modifier sheet** — mobile bottom-sheet ↔ `sm` centered modal ↔ `lg` two-column modal. Hero image, size picker, life-safety note, required/optional modifier groups (radio + at-cap checkbox), "goes well with", 44px stepper + gated Add CTA. |
 | `capture.mjs` | Playwright harness — renders a prototype at each breakpoint and crops every `[data-tile]`. Usage: `node design/prototypes/capture.mjs <html> <board> <prefix>`. |
@@ -48,8 +49,10 @@ with `P2E_CHROMIUM=/path/to/chrome`. Do **not** run `playwright install`.
 
 ## Diner path progress
 
+- [x] storefront landing (front door) — `diner/storefront-landing.html`
 - [x] storefront home (menu view) — `diner/diner-home.html`
 - [x] item modifier sheet — `diner/item-sheet.html`
+- [ ] menu page (category-nav / dietary filter / skeleton)
 - [ ] concierge (forest-dark AI panel)
 - [ ] checkout (card + PayTo states)
 - [ ] order status (placed → prep; bank-approval waiting)
