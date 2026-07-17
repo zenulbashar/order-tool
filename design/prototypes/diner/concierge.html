@@ -361,6 +361,14 @@ img{display:block;max-width:100%}
   padding:12px 18px;font-weight:600;font-size:14px;color:var(--color-forest-deepest);
   background:linear-gradient(180deg,#f6be4a,#efa82c);box-shadow:var(--shadow-cta)}
 .fab .spark{font-size:15px;line-height:1}
+/* Animated Prompt2Eat wordmark — amber "2" with a p2e-glow halo (identity handoff).
+   Deployed on the concierge title (forest-dark → amber-2 reads + glows). */
+.p2e-mark{display:inline-flex;align-items:baseline}
+.p2e-mark .two{color:var(--color-accent);position:relative;display:inline-block}
+.p2e-mark .two::before{content:"";position:absolute;inset:-6px -3px;z-index:-1;border-radius:999px;
+  background:radial-gradient(circle,color-mix(in srgb,var(--color-accent) 60%,transparent),transparent 68%);filter:blur(2px)}
+.p2e-mark.glow .two::before{animation:p2e-glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.p2e-mark.glow .two::before{animation:none!important;opacity:.7}}
 </style>
 </head>
 <body>
@@ -389,7 +397,7 @@ img{display:block;max-width:100%}
       <div style="min-width:0">
         <h2 class="p-title">
           <span class="spark p2e-spark" aria-hidden="true">✦</span>
-          Prompt2Eat
+          <span class="p2e-mark glow">Prompt<span class="two">2</span>Eat</span>
           <span class="ai">AI</span>
         </h2>
         <p class="p-sub">Tell me what you feel like</p>

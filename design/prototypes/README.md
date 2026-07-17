@@ -33,6 +33,16 @@ motion library, so they can be screenshotted per-tile.
 `mobile 390 · tablet 768 · laptop 1280 · desktop 1536 · native 390 (Capacitor
 status bar + safe-area)`.
 
+## Motion proof (`-motion.png`) + animated wordmark
+
+Animation-heavy tiles are captured a **second way** — live, with animations
+running (not reduced-motion) — as `<screen>-<tile>-motion.png`, so the PNGs show
+the motion in progress: the `p2e-scan` menu read, `p2e-checkloop`/`p2e-draw`
+success tick, `p2e-ring` order pulse, `p2e-think`/`p2e-shimmer`/`p2e-glow`, and
+the **animated Prompt2Eat wordmark** (amber "2" with a `p2e-glow` halo, per the
+identity handoff) on the AI processing states + the concierge header. Regenerate
+with `scratchpad/pw/capture-live.mjs <html> <board> <prefix> "<tile,tile>" <ms>`.
+
 ## Regenerate the screenshots
 
 Screenshots land in `design/design_handoff_prompt2eat/blocks/<board>/` as
