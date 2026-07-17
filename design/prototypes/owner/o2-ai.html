@@ -1,0 +1,260 @@
+<!doctype html>
+<!--
+  Prompt2Eat — OWNER · Menu AI sub-surfaces (O2-AI) · prototype.
+  Import-from-photo + Write-descriptions. These ARE the amber AI surfaces.
+
+  Source: app/dashboard/menu/import/{page,import-client}.tsx,
+  app/dashboard/menu/descriptions/{page,descriptions-client}.tsx,
+  app/_components/thinking-dots.tsx (amber p2e-think), mobile/www/index.html (the
+  animated Prompt2Eat wordmark reference).
+
+  OWNER root — --action = forest. On these AI surfaces AMBER is correct: AI
+  buttons, sparkles, the review-gate banner, and the ANIMATED PROMPT2EAT WORDMARK
+  on the processing states (the amber "2" glows, per the identity handoff). All
+  motion is real p2e-* wired + reduced-motion guarded: p2e-scan (menu read),
+  p2e-think (thinking dots), p2e-shimmer (draft skeletons), p2e-spark (✦),
+  p2e-glow (wordmark halo), p2e-count (result count), p2e-rise (reveal), p2e-spin.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Owner — menu AI (import / descriptions)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input,textarea):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+svg{display:block}
+
+/* ===== motion library (real p2e-* tokens) — reduced-motion guarded ===== */
+@keyframes p2e-scan{0%{transform:translateY(0)}100%{transform:translateY(168px)}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-spark{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-count{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+.p2e-scan{animation:p2e-scan 2s ease-in-out infinite alternate}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-shimmer{background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);background-size:200% 100%;animation:p2e-shimmer 1.4s linear infinite}
+.p2e-spark{animation:p2e-spark 1.1s ease-in-out infinite;display:inline-block}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-count{animation:p2e-count .3s ease-out both}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+.p2e-spin{animation:p2e-spin .7s linear infinite}
+@media (prefers-reduced-motion:reduce){
+  .p2e-scan,.p2e-think,.p2e-shimmer,.p2e-spark,.p2e-glow,.p2e-count,.p2e-rise,.p2e-spin{animation:none!important}
+  /* held mid-photo so the still still reads as a scan-in-progress */
+  .scanwrap .scanline{top:82px} .scanwrap .scanglow{top:36px}
+}
+
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+/* ===== animated Prompt2Eat wordmark (identity handoff: amber "2" glows) ===== */
+.p2e-mark{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;display:inline-flex;align-items:baseline;position:relative}
+.p2e-mark .two{color:var(--color-accent);position:relative;display:inline-block}
+.p2e-mark .two::before{content:"";position:absolute;inset:-8px -4px;z-index:-1;border-radius:999px;
+  background:radial-gradient(circle,color-mix(in srgb,var(--color-accent) 55%,transparent),transparent 68%);
+  filter:blur(2px)}
+.p2e-mark.glow .two::before{animation:p2e-glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.p2e-mark.glow .two::before{animation:none!important;opacity:.7}}
+
+.wrap{max-width:760px;margin:0 auto;padding:24px 20px 96px}
+.page-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label)}
+.back{font-size:13px;color:var(--action);font-weight:600}
+.page-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:26px;margin-top:6px}
+.page-sub{font-size:14px;color:var(--color-muted);margin-top:4px}
+.sect-lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:34px 0 12px}
+
+.card{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:20px;box-shadow:var(--shadow-card)}
+.card h2{font-size:15px;font-weight:600}
+.card .lead{margin-top:6px;font-size:14px;color:var(--color-muted);line-height:1.5}
+.filebox{margin-top:16px;border:1px dashed var(--color-line-strong);border-radius:var(--radius-control);padding:16px;text-align:center;background:var(--color-hover-secondary)}
+.filebox .ic{height:36px;width:36px;margin:0 auto 8px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.filebox .ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7}
+.filebox .h{font-size:14px;font-weight:600}
+.filebox .s{margin-top:2px;font-size:12px;color:var(--color-muted)}
+.filebox .pick{margin-top:12px;display:inline-flex;align-items:center;border:1px solid var(--color-line);border-radius:var(--radius-control-sm);background:var(--color-surface-elevated);padding:7px 12px;font-size:12px;font-weight:600}
+.btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:var(--radius-control);font-size:14px;font-weight:600;transition:.15s}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+/* AI button — amber gradient (aiButtonClass) */
+.btn.ai{background:linear-gradient(180deg,#f6be4a,#efa82c);color:var(--color-forest-deepest);box-shadow:var(--shadow-cta)}
+.btn.ai:hover{transform:translateY(-1px)}
+.note{margin-top:12px;font-size:12px;color:var(--color-muted);line-height:1.5}
+.gate{border-radius:var(--radius-card);border:1px solid color-mix(in srgb,var(--color-accent) 30%,transparent);background:color-mix(in srgb,var(--color-accent) 10%,transparent);padding:14px 16px}
+.gate p{font-size:14px;color:var(--color-accent-deep)}
+
+/* thinking dots */
+.think{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--color-muted)}
+.think .dots{display:inline-flex;gap:5px}
+.think .dots i{height:8px;width:8px;border-radius:999px;background:var(--color-accent)}
+
+/* ===== reading state (scan over the uploaded photo + animated wordmark) ===== */
+.reading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:8px}
+.scanwrap{position:relative;width:260px;height:180px;border-radius:var(--radius-card);overflow:hidden;border:1px solid var(--color-line);
+  background:linear-gradient(180deg,#efe7d6,#fffdf8);}
+.scanwrap .menuimg{position:absolute;inset:0;padding:14px;display:flex;flex-direction:column;gap:6px}
+.scanwrap .menuimg .ln{height:7px;border-radius:3px;background:color-mix(in srgb,var(--color-ink) 22%,transparent)}
+.scanwrap .menuimg .ln.s{width:55%}.scanwrap .menuimg .ln.t{width:80%}
+.scanwrap .scanline{position:absolute;left:0;right:0;top:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--color-accent),transparent);
+  box-shadow:0 0 14px 2px color-mix(in srgb,var(--color-accent) 60%,transparent)}
+.scanwrap .scanglow{position:absolute;left:0;right:0;top:0;height:56px;background:linear-gradient(180deg,color-mix(in srgb,var(--color-accent) 22%,transparent),transparent)}
+.reading .wm{font-size:22px}
+.reading .cap{font-size:13px;color:var(--color-muted)}
+
+/* draft skeletons */
+.sk{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.sk .row{border:1px solid var(--color-line);border-radius:var(--radius-control);padding:12px;background:var(--color-surface-elevated)}
+.sk .h{height:11px;width:40%;border-radius:5px}
+.sk .l{height:9px;width:90%;border-radius:5px;margin-top:8px}
+.sk .l2{height:9px;width:70%;border-radius:5px;margin-top:6px}
+
+/* review rows */
+.rev{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.rev .row{border:1px solid var(--color-line);border-radius:var(--radius-control);padding:12px;background:var(--color-surface-elevated)}
+.rev .row .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rev .row .nm{font-weight:600;font-size:14px}
+.rev .row .pr{font-family:var(--font-mono);font-size:13px;color:var(--color-muted)}
+.rev .row textarea{margin-top:8px;width:100%;min-height:52px;border:1px solid var(--color-line);border-radius:var(--radius-input);background:var(--color-surface);padding:9px 12px;font:500 13.5px var(--font-body);color:var(--color-ink);resize:vertical}
+.rev .row .aitag{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--color-accent-deep);font-weight:600}
+.result-count{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--color-success-deep)}
+.actions{margin-top:16px;display:flex;justify-content:flex-end;gap:8px}
+
+.motion-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.mtile{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card);text-align:center}
+.mtile .cap{margin-top:10px;font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-label)}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="wrap" data-tile="menu-ai-page">
+  <a class="back" href="#">← Back to menu</a>
+  <p class="page-eyebrow" style="margin-top:10px">Menu &amp; photos · AI</p>
+  <h1 class="page-h">Import menu from photo</h1>
+  <p class="page-sub">Fig &amp; Flour</p>
+
+  <!-- ===== IMPORT — stage 1: upload ===== -->
+  <p class="sect-lab">Import · upload</p>
+  <div class="card" data-tile="import-upload">
+    <h2>Upload a photo of your menu</h2>
+    <p class="lead">Snap or upload your printed menu and Prompt2Eat turns it into a draft you can review and fix before anything is added.</p>
+    <div class="filebox">
+      <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span>
+      <div class="h">Drop a photo here</div>
+      <div class="s">JPG, PNG or WebP · up to 5MB each</div>
+      <span class="pick">Choose file</span>
+    </div>
+    <button class="btn ai" style="margin-top:16px"><span class="p2e-spark">✦</span> Read menu</button>
+    <p class="note">Reading a menu uses AI and is a small one-time cost. The photo is sent for reading only — it is not stored.</p>
+  </div>
+
+  <!-- ===== IMPORT — reading (animated wordmark + p2e-scan) ===== -->
+  <p class="sect-lab">Import · reading (p2e-scan · animated wordmark)</p>
+  <div class="card" data-tile="import-reading">
+    <div class="reading">
+      <div class="scanwrap" data-tile="motion-scan">
+        <div class="menuimg" aria-hidden="true">
+          <span class="ln t"></span><span class="ln s"></span><span class="ln"></span>
+          <span class="ln s"></span><span class="ln t"></span><span class="ln"></span>
+          <span class="ln s"></span><span class="ln"></span>
+        </div>
+        <!-- scan overlay: sweeps top→bottom live (p2e-scan); held mid-photo for the still -->
+        <div class="scanglow p2e-scan"></div>
+        <div class="scanline p2e-scan"></div>
+      </div>
+      <div class="wm p2e-mark glow" data-tile="motion-wordmark">Prompt<span class="two">2</span>Eat</div>
+      <div class="think" data-tile="motion-thinking"><span class="dots"><i class="p2e-think"></i><i class="p2e-think" style="animation-delay:.16s"></i><i class="p2e-think" style="animation-delay:.32s"></i></span> Reading your menu…</div>
+      <p class="cap">This takes a few seconds — hang tight.</p>
+    </div>
+  </div>
+
+  <!-- ===== IMPORT — review gate ===== -->
+  <p class="sect-lab">Import · review gate</p>
+  <div data-tile="import-review">
+    <div class="gate"><p><strong>Review every line before adding it.</strong> Prices and sizes are AI-read from your photo — check them, fix anything off, then add to your menu. Nothing is saved until you publish.</p></div>
+    <p class="result-count" style="margin-top:12px"><span class="p2e-count">✓ Found 12 items across 3 categories</span></p>
+    <div class="rev">
+      <div class="row p2e-rise"><div class="top"><span class="nm">Country Sourdough</span><span class="pr">$9.00</span></div></div>
+      <div class="row p2e-rise" style="animation-delay:.06s"><div class="top"><span class="nm">Focaccia — slab</span><span class="pr">from $6.00 · 2 sizes</span></div></div>
+      <div class="row p2e-rise" style="animation-delay:.12s"><div class="top"><span class="nm">Almond Croissant</span><span class="pr">$6.50</span></div></div>
+    </div>
+    <div class="actions"><button class="btn secondary">Discard</button><button class="btn primary">Add 12 items to menu</button></div>
+  </div>
+
+  <!-- ===== WRITE DESCRIPTIONS — start ===== -->
+  <p class="sect-lab">Write descriptions · start</p>
+  <div class="card" data-tile="desc-start">
+    <h2>Draft descriptions for 3 items</h2>
+    <p class="lead">We'll write a short, appetising description for each item that doesn't have one yet, using its name, category, and price. You review and edit every line; nothing is saved until you choose “Save descriptions”.</p>
+    <button class="btn ai" style="margin-top:16px"><span class="p2e-spark">✦</span> Draft descriptions</button>
+    <p class="note">Drafting uses AI and is a small one-time cost. Only items with no description are drafted.</p>
+  </div>
+
+  <!-- ===== WRITE DESCRIPTIONS — drafting (wordmark + p2e-shimmer skeletons) ===== -->
+  <p class="sect-lab">Write descriptions · drafting (p2e-shimmer · animated wordmark)</p>
+  <div class="card" data-tile="desc-drafting">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="p2e-mark glow" style="font-size:18px">Prompt<span class="two">2</span>Eat</div>
+      <div class="think"><span class="dots"><i class="p2e-think"></i><i class="p2e-think" style="animation-delay:.16s"></i><i class="p2e-think" style="animation-delay:.32s"></i></span> Drafting descriptions…</div>
+    </div>
+    <div class="sk" data-tile="motion-shimmer">
+      <div class="row"><div class="h p2e-shimmer"></div><div class="l p2e-shimmer"></div><div class="l2 p2e-shimmer"></div></div>
+      <div class="row"><div class="h p2e-shimmer"></div><div class="l p2e-shimmer"></div><div class="l2 p2e-shimmer"></div></div>
+    </div>
+  </div>
+
+  <!-- ===== WRITE DESCRIPTIONS — review ===== -->
+  <p class="sect-lab">Write descriptions · review</p>
+  <div data-tile="desc-review">
+    <div class="gate"><p><strong>Review every description before saving.</strong> These are AI suggestions from each item's name, category, and price — edit anything off, remove any you don't want. Nothing is saved to your live menu until you choose “Save descriptions”.</p></div>
+    <div class="rev">
+      <div class="row p2e-rise"><div class="top"><span class="nm">Seeded Rye</span><span class="aitag"><span class="p2e-spark">✦</span> AI draft</span></div><textarea>Dense, malty rye packed with pumpkin and sunflower seeds — hearty, wholesome, and vegan.</textarea></div>
+      <div class="row p2e-rise" style="animation-delay:.06s"><div class="top"><span class="nm">Baguette Tradition</span><span class="aitag"><span class="p2e-spark">✦</span> AI draft</span></div><textarea>A classic French baguette with a crackling, thin crust and an airy, open crumb. Baked fresh twice daily.</textarea></div>
+    </div>
+    <div class="actions"><button class="btn secondary">Cancel</button><button class="btn primary">Save descriptions</button></div>
+  </div>
+
+  <!-- ===== motion reference ===== -->
+  <p class="sect-lab">Motion reference (all reduced-motion guarded)</p>
+  <div class="motion-grid">
+    <div class="mtile"><div class="p2e-mark glow" style="font-size:24px">Prompt<span class="two">2</span>Eat</div><div class="cap">Wordmark · amber “2” p2e-glow</div></div>
+    <div class="mtile"><span class="p2e-spark" style="font-size:26px;color:var(--color-accent)">✦</span><div class="cap">p2e-spark (AI twinkle)</div></div>
+    <div class="mtile"><span class="think"><span class="dots"><i class="p2e-think"></i><i class="p2e-think" style="animation-delay:.16s"></i><i class="p2e-think" style="animation-delay:.32s"></i></span></span><div class="cap">p2e-think (thinking dots)</div></div>
+    <div class="mtile"><span style="display:inline-block;height:22px;width:22px;border-radius:999px;border:3px solid color-mix(in srgb,var(--color-accent) 25%,transparent);border-top-color:var(--color-accent)" class="p2e-spin"></span><div class="cap">p2e-spin (loader .7s)</div></div>
+  </div>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

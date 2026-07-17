@@ -72,7 +72,8 @@ owner's one dark chrome surface where **amber is the sanctioned signature**
 - [x] O1 home overview — covered by O0's content shell (hub tiles + PageHeader)
 - [x] O3 orders & customers — `owner/o3-orders.html` (kitchen board: new p2e-ring · columns · notes · docket split · elapsed/late · status controls · ticket drawer)
 - [x] O2 menu editor + health (core) — `owner/o2-menu.html` (master-detail list/detail · item form + AI suggest · sizes/modifier editors · radial menu-health)
-  - [ ] O2 AI sub-surfaces still to build: import-from-photo, write-descriptions, Design studio
+  - [x] O2 AI: import-from-photo + write-descriptions — `owner/o2-ai.html` (animated Prompt2Eat wordmark + p2e-scan/think/shimmer/spark; `-motion` frames captured live)
+  - [ ] O2 AI: Design studio still to build
 - [ ] O4 stock · O5 storefront settings · O6 payments & billing · O7 connections
 
 Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
