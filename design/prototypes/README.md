@@ -85,6 +85,7 @@ owner's one dark chrome surface where **amber is the sanctioned signature**
   - [x] O2 AI: import-from-photo + write-descriptions — `owner/o2-ai.html` (animated Prompt2Eat wordmark + p2e-scan/think/shimmer/spark; `-motion` frames captured live)
   - [x] O2 AI: Design studio — `owner/o2-studio.html` (Menu + Banner modes, size presets, AI generate-copy panel, venue-branded artwork previews, animated-wordmark generating state)
   - **O2 complete.**
-- [ ] O4 stock · O5 storefront settings · O6 payments & billing · O7 connections
+- [x] O4 stock & supplies — `owner/o4-stock.html` (ingredients KPIs + table · AI reorder-suggestions inbox + all-clear · invoice-scan reading w/ animated wordmark + p2e-scan · review gate)
+- [ ] O5 storefront settings · O6 payments & billing · O7 connections
 
 Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
