@@ -69,6 +69,8 @@ owner's one dark chrome surface where **amber is the sanctioned signature**
 `--action`, amber only for AI (support widget, import/descriptions).
 
 - [x] O0 sidebar chrome + support widget — `owner/o0-chrome.html` (rail · collapsed · mobile drawer · home hub · support)
-- [ ] O1 home overview · O2 menu & photos cluster · O3 orders & customers · O4 stock · O5 storefront settings · O6 payments & billing · O7 connections
+- [x] O1 home overview — covered by O0's content shell (hub tiles + PageHeader)
+- [x] O3 orders & customers — `owner/o3-orders.html` (kitchen board: new p2e-ring · columns · notes · docket split · elapsed/late · status controls · ticket drawer)
+- [ ] O2 menu & photos cluster · O4 stock · O5 storefront settings · O6 payments & billing · O7 connections
 
 Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
