@@ -1,0 +1,348 @@
+<!doctype html>
+<!--
+  Prompt2Eat — OWNER · Menu & photos → MENU EDITOR + HEALTH (O2 core) · prototype.
+
+  Source: app/dashboard/menu/{page,menu-editor,menu-list-pane,item-row,item-detail,
+  item-form,has-sizes-editor,modifier-group-form,photo-control}.tsx +
+  _components/menu-health-panel.tsx.
+
+  OWNER root — --action = forest. Sanctioned amber (owner signature / AI):
+  selected item row (amber left-accent + bg-accent/8, per item-row.tsx), the AI
+  "✦ Suggest description" affordance, and the menu-health "OK" band + Medium
+  severity (SEMANTIC score colours: poor=warm / ok=amber / good=success). Form
+  primaries = forest; destructive = warm-deep; toggles/active = --action.
+
+  (AI sub-surfaces — import-from-photo, write-descriptions, Studio — are separate
+  O2 screens, still to build.) Every block carries data-tile. ?native=1 safe-area.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Owner — menu editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px; --radius-md:8px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input,textarea):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea{font-family:inherit}
+svg{display:block}
+
+@keyframes p2e-spark{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-spark{animation:p2e-spark 1.1s ease-in-out infinite;display:inline-block}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+@media (prefers-reduced-motion:reduce){.p2e-spark,.p2e-rise{animation:none!important}}
+
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 96px}
+@media(min-width:1024px){.wrap{padding:32px 24px 96px}}
+.page-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label)}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.page-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:28px;margin-top:6px}
+.page-sub{margin-top:4px;font-size:14px;color:var(--color-muted)}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:var(--radius-control);font-size:13px;font-weight:600;transition:.15s}
+.btn.sm{min-height:36px;padding:0 12px;font-size:12px;border-radius:var(--radius-control-sm)}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+.btn.secondary:hover{transform:translateY(-1px);background:var(--color-hover-secondary);box-shadow:var(--shadow-lift)}
+.btn.ghost{color:var(--color-ink)}
+.btn.ghost:hover{background:var(--color-hover-ghost)}
+.btn.danger{color:var(--color-warm-deep)}
+.btn.danger:hover{background:color-mix(in srgb,var(--color-warm) 10%,transparent)}
+.btn.ai{background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.btn.ai:hover{background:color-mix(in srgb,var(--color-accent) 22%,transparent)}
+
+/* ===== master-detail ===== */
+.editor{margin-top:20px}
+@media(min-width:1024px){.editor{display:grid;grid-template-columns:284px 1fr;overflow:hidden;border-radius:var(--radius-card);border:1px solid var(--color-line)}}
+.list{min-width:0}
+@media(min-width:1024px){.list{border-right:1px solid var(--color-line);background:var(--color-hover-secondary);padding:16px}}
+.catrow{display:flex;align-items:center;justify-content:space-between;border-radius:var(--radius-control);padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer}
+.catrow.open{background:var(--color-sand)}
+.catrow .n{color:var(--color-muted);font-family:var(--font-mono);font-size:11px}
+.items{list-style:none;margin:6px 0 12px;display:flex;flex-direction:column;gap:4px}
+.irow{display:flex;align-items:center;justify-content:space-between;gap:8px;border-left:2px solid transparent;border-radius:var(--radius-control);padding:8px 10px;background:color-mix(in srgb,var(--color-sand) 40%,transparent);transition:.12s}
+.irow:hover{background:color-mix(in srgb,var(--color-sand) 70%,transparent)}
+.irow.sel{border-left-color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 8%,transparent)}
+.irow .l{display:flex;align-items:center;gap:8px;min-width:0;text-align:left}
+.irow .th{height:24px;width:24px;flex:none;border-radius:var(--radius-md);border:1px solid var(--color-line);background-size:cover}
+.irow .nm{display:block;font-size:14px;color:var(--color-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow .meta{margin-top:1px;display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--color-muted)}
+.irow .tag{border-radius:4px;background:var(--color-sand);padding:1px 4px;font-size:10px}
+.irow .mv{display:flex;flex-direction:column;gap:1px;color:var(--color-muted)}
+.irow .mv button{height:16px;width:18px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+.irow .mv button:hover{background:var(--color-sand);color:var(--color-ink)}
+.addrow{width:100%;text-align:left;border:1px dashed var(--color-line-strong);border-radius:var(--radius-control);padding:8px 10px;font-size:13px;font-weight:600;color:var(--color-muted)}
+.addrow:hover{color:var(--color-ink);border-color:var(--color-muted)}
+
+/* detail */
+.detail{min-width:0}
+@media(min-width:1024px){.detail{padding:24px}}
+.detail .back{margin-bottom:12px;font-size:14px;font-weight:600;color:var(--action)}
+@media(min-width:1024px){.detail .back{display:none}}
+.card{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:20px;box-shadow:var(--shadow-card)}
+.card + .card{margin-top:16px}
+.card-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.card-title h3{font-family:var(--font-display);font-weight:700;font-size:15px}
+
+.form-grid{display:grid;gap:24px}
+@media(min-width:1024px){.form-grid{grid-template-columns:13rem 1fr}}
+.photo{border-radius:var(--radius-card);overflow:hidden;border:1px solid var(--color-line)}
+.photo .img{height:150px;background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)}
+.photo .pa{display:flex;gap:8px;padding:10px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.field .hint{font-size:11px;color:var(--color-muted);margin-top:4px}
+.input,.textarea{width:100%;border:1px solid var(--color-line);border-radius:var(--radius-input);background:var(--color-surface);padding:11px 14px;font:500 14px var(--font-body);color:var(--color-ink)}
+.textarea{min-height:74px;resize:vertical}
+.input::placeholder,.textarea::placeholder{font-family:var(--font-mono);font-size:12px;color:#b6ab92}
+.input.pfx{padding-left:26px}
+.pfxwrap{position:relative}
+.pfxwrap .p{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--color-muted);font-size:14px}
+.desc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.row-2{display:flex;flex-wrap:wrap;gap:16px}
+.row-2 > *{flex:1;min-width:140px}
+/* toggle */
+.toggle{position:relative;display:inline-flex;height:24px;width:44px;align-items:center;border-radius:var(--radius-pill);background:var(--action);transition:.15s}
+.toggle .knob{height:20px;width:20px;border-radius:999px;background:var(--color-surface-elevated);box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(22px);transition:.15s}
+.toggle.off{background:var(--color-sand)}
+.toggle.off .knob{transform:translateX(2px)}
+.togrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+/* segmented */
+.seg{display:inline-flex;border-radius:var(--radius-pill);border:1px solid var(--color-line);background:var(--color-surface);padding:3px}
+.seg button{border-radius:var(--radius-pill);padding:5px 12px;font-size:12px;font-weight:500;color:var(--color-muted)}
+.seg button.on{background:var(--action);color:var(--action-contrast)}
+/* dietary chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--color-line);border-radius:var(--radius-pill);padding:5px 11px;font-size:12px;color:var(--color-muted);background:var(--color-surface-elevated)}
+.chip.on{background:color-mix(in srgb,var(--color-success) 12%,transparent);border-color:color-mix(in srgb,var(--color-success) 40%,transparent);color:var(--color-success-deep)}
+/* size / option rows */
+.erow{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--color-line);border-radius:var(--radius-control);padding:9px 12px;font-size:14px}
+.erow + .erow{margin-top:8px}
+.erow .l{display:flex;align-items:center;gap:10px;min-width:0}
+.erow .price{font-family:var(--font-mono);font-size:13px;color:var(--color-muted)}
+.erow .del{color:var(--color-warm-deep);font-size:13px}
+.grouphdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px}
+.grouphdr .name{font-weight:600;font-size:14px}
+.grouphdr .rule{font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-warm)}
+
+/* ===== menu health ===== */
+.health{margin-top:32px}
+.health h2{font-family:var(--font-display);font-weight:700;font-size:16px}
+.hgrid{margin-top:14px;display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:640px){.hgrid{grid-template-columns:minmax(15rem,18rem) 1fr}}
+.ring{position:relative;height:144px;width:144px;margin:0 auto}
+.ring .score{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .score b{font-family:var(--font-display);font-weight:800;font-size:40px;line-height:1}
+.ring .score .band{margin-top:4px;font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.scale{width:100%;margin-top:16px}
+.scale .bar{display:flex;height:8px;border-radius:999px;overflow:hidden}
+.scale .lbls{margin-top:6px;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.06em}
+.breakdown{margin-top:12px}
+.breakdown .brow{display:flex;align-items:center;gap:12px;margin-top:10px}
+.breakdown .brow .k{width:96px;flex:none;font-size:12px;font-weight:500}
+.breakdown .brow .track{flex:1;height:6px;border-radius:999px;background:var(--color-sand);overflow:hidden}
+.breakdown .brow .track b{display:block;height:100%;border-radius:999px}
+.breakdown .brow .v{width:28px;text-align:right;font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--color-muted)}
+.hnote{display:flex;align-items:flex-start;gap:10px;border-radius:var(--radius-card);background:var(--color-forest-deep);padding:12px 16px;margin-top:12px}
+.hnote span{color:var(--color-success);font-size:14px}
+.hnote p{font-size:12px;line-height:1.5;color:rgba(255,255,255,.8)}
+.issues .ihead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.issues .ihead b{font-family:var(--font-display);font-weight:800;font-size:14px}
+.pill{border-radius:999px;padding:2px 10px;font-size:10px;font-weight:700}
+.pill.high{background:var(--color-warm-deep);color:#fff}
+.pill.med{background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.pill.low{background:var(--color-sand);color:var(--color-muted)}
+.issues .sub{margin-top:4px;font-size:12px;color:var(--color-muted)}
+.isec{margin-top:8px;border:1px solid var(--color-line);border-radius:var(--radius-md)}
+.isec summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;cursor:pointer;list-style:none}
+.isec summary::-webkit-details-marker{display:none}
+.badge{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500}
+.badge.med{background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.badge.low{background:var(--color-sand);color:var(--color-muted)}
+.irow-issue{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border:1px solid var(--color-line);background:color-mix(in srgb,var(--color-sand) 40%,transparent);border-radius:var(--radius-md);padding:8px 12px;margin:8px 12px}
+.irow-issue .t{font-size:14px;font-weight:500}
+.irow-issue .d{font-size:12px;color:var(--color-muted)}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="wrap" data-tile="menu-page">
+  <p class="page-eyebrow">Menu &amp; photos</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-h">Menu</h1>
+      <p class="page-sub">24 items across 6 categories</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn ai"><span class="p2e-spark">✦</span> Import from photo</button>
+      <button class="btn primary">+ Add item</button>
+    </div>
+  </div>
+
+  <!-- master-detail editor -->
+  <section class="editor" data-tile="menu-editor">
+    <!-- list pane -->
+    <div class="list" data-tile="list-pane">
+      <div class="catrow open"><span>Bread</span><span class="n">4</span></div>
+      <ul class="items">
+        <li><div class="irow sel" data-tile="item-row-selected">
+          <button class="l"><span class="th" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></span>
+            <span><span class="nm">Country Sourdough</span><span class="meta"><span>$9.00</span></span></span></button>
+          <span class="mv"><button aria-label="Move up">▲</button><button aria-label="Move down">▼</button></span>
+        </div></li>
+        <li><div class="irow">
+          <button class="l"><span class="th" style="background:color-mix(in srgb,#a6572e 12%,var(--color-surface))"></span>
+            <span><span class="nm">Seeded Rye</span><span class="meta"><span>$8.50</span></span></span></button>
+          <span class="mv"><button aria-label="Move up">▲</button><button aria-label="Move down">▼</button></span>
+        </div></li>
+        <li><div class="irow">
+          <button class="l"><span class="th" style="background:radial-gradient(75% 75% at 60% 30%,#e9cf94,transparent 60%),linear-gradient(140deg,#c49a5b,#8a6636)"></span>
+            <span><span class="nm">Focaccia — slab</span><span class="meta"><span>from $6.00</span><span class="tag">2 sizes</span></span></span></button>
+          <span class="mv"><button aria-label="Move up">▲</button><button aria-label="Move down">▼</button></span>
+        </div></li>
+        <li><div class="irow">
+          <button class="l"><span class="th" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></span>
+            <span><span class="nm">Baguette Tradition</span><span class="meta"><span>$5.50</span><span class="tag">Unavailable</span></span></span></button>
+          <span class="mv"><button aria-label="Move up">▲</button><button aria-label="Move down">▼</button></span>
+        </div></li>
+      </ul>
+      <button class="addrow">+ Add item to Bread</button>
+    </div>
+
+    <!-- detail pane -->
+    <div class="detail" data-tile="item-detail">
+      <button class="back">← Back to menu</button>
+
+      <!-- photo + core fields -->
+      <div class="card" data-tile="item-form">
+        <div class="form-grid">
+          <div>
+            <div class="photo"><div class="img"></div><div class="pa"><button class="btn secondary sm" style="flex:1;justify-content:center">Replace</button><button class="btn danger sm">Remove</button></div></div>
+          </div>
+          <div>
+            <div class="field"><label>Name</label><input class="input" value="Country Sourdough" /></div>
+            <div class="field">
+              <div class="desc-head"><label style="margin:0">Description</label><button class="btn ai sm"><span class="p2e-spark">✦</span> Suggest description</button></div>
+              <textarea class="textarea">48-hour naturally-leavened loaf with a dark, blistered crust.</textarea>
+            </div>
+            <div class="row-2">
+              <div class="field"><label>Price</label><div class="pfxwrap"><span class="p">$</span><input class="input pfx" value="9.00" /></div></div>
+              <div class="field"><label>Category</label>
+                <div class="seg"><button class="on">Bread</button><button>Pastries</button></div>
+              </div>
+            </div>
+            <div class="field togrow"><label style="margin:0">Available on storefront</label><span class="toggle" role="switch" aria-checked="true"><span class="knob"></span></span></div>
+            <div class="field"><label>Kitchen station</label>
+              <div class="seg"><button class="on">Auto</button><button>Kitchen</button><button>Counter</button></div>
+              <p class="hint">Auto routes by item type; drinks go to the front counter.</p>
+            </div>
+            <div class="field" style="margin-bottom:0"><label>Dietary tags</label>
+              <div class="chips"><button class="chip on">Vegetarian</button><button class="chip">Vegan</button><button class="chip">GF</button><button class="chip">Contains nuts</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- sizes -->
+      <div class="card" data-tile="sizes-editor">
+        <div class="card-title"><h3>Sizes</h3><span class="page-sub" style="margin:0">Optional — priced per size</span></div>
+        <p class="hint" style="margin-bottom:10px">This item has no sizes; it uses the single price above. Add sizes to price per option.</p>
+        <button class="btn secondary sm">+ Add a size</button>
+      </div>
+
+      <!-- modifier groups -->
+      <div class="card" data-tile="modifier-editor">
+        <div class="card-title"><h3>Modifier groups</h3><button class="btn secondary sm">+ Add group</button></div>
+        <div class="grouphdr"><span class="name">Toast it?</span><span class="rule">Optional · choose up to 1</span></div>
+        <div class="erow"><span class="l">Lightly toasted</span><span style="display:flex;align-items:center;gap:12px"><span class="price">+$0.00</span><button class="del">Remove</button></span></div>
+        <div class="erow"><span class="l">Well toasted</span><span style="display:flex;align-items:center;gap:12px"><span class="price">+$0.00</span><button class="del">Remove</button></span></div>
+        <div style="margin-top:10px"><button class="btn ghost sm">+ Add option</button></div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;justify-content:flex-end"><button class="btn danger">Delete item</button></div>
+    </div>
+  </section>
+
+  <!-- menu health -->
+  <section class="health" data-tile="menu-health">
+    <h2>Menu health</h2>
+    <div class="hgrid">
+      <!-- score column -->
+      <div>
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:16px" data-tile="health-ring">
+          <div class="ring">
+            <svg viewBox="0 0 136 136" style="height:100%;width:100%" aria-hidden="true">
+              <circle cx="68" cy="68" r="56" fill="none" stroke="var(--color-sand)" stroke-width="12"/>
+              <circle cx="68" cy="68" r="56" fill="none" stroke="var(--color-success)" stroke-width="12" stroke-linecap="round"
+                stroke-dasharray="351.86" stroke-dashoffset="63.3" transform="rotate(-90 68 68)"/>
+            </svg>
+            <div class="score"><b>82</b><span class="band" style="color:var(--color-success-deep)">Good</span></div>
+          </div>
+          <div class="scale">
+            <div class="bar"><span style="width:60%;background:var(--color-warm)"></span><span style="width:20%;background:var(--color-accent)"></span><span style="width:20%;background:var(--color-success)"></span></div>
+            <div class="lbls"><span style="color:var(--color-warm)">POOR 0–59</span><span style="color:var(--color-accent-deep)">OK 60–79</span><span style="color:var(--color-success-deep)">GOOD 80+</span></div>
+          </div>
+        </div>
+        <div class="card breakdown" style="margin-top:12px" data-tile="health-breakdown">
+          <p class="page-eyebrow">Breakdown</p>
+          <div class="brow"><span class="k">Photos</span><span class="track"><b style="width:92%;background:var(--color-success)"></b></span><span class="v">92</span></div>
+          <div class="brow"><span class="k">Descriptions</span><span class="track"><b style="width:75%;background:var(--color-accent)"></b></span><span class="v">75</span></div>
+          <div class="brow"><span class="k">Pricing</span><span class="track"><b style="width:100%;background:var(--color-success)"></b></span><span class="v">100</span></div>
+        </div>
+        <div class="hnote"><span aria-hidden="true">ℹ</span><p>Prompt2Eat diagnoses — it never edits your menu. Every fix is one tap to the editor, in your hands.</p></div>
+      </div>
+
+      <!-- issues column -->
+      <div class="issues" data-tile="health-issues">
+        <div class="ihead"><b>2 issues found</b><span style="display:flex;gap:6px"><span class="pill med">1 Medium</span><span class="pill low">1 Low</span></span></div>
+        <p class="sub">22 of 24 items have no high or medium issues.</p>
+        <details class="isec" open>
+          <summary><span style="display:flex;align-items:center;gap:8px"><span class="badge med">Medium</span><span style="font-size:14px;color:var(--color-muted)">(1)</span></span>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="color:var(--color-muted)"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"/></svg>
+          </summary>
+          <div class="irow-issue"><div><p class="t">Seeded Rye</p><p class="d">Description is very short — add detail to help it sell.</p></div><span class="badge med">Medium</span></div>
+        </details>
+        <details class="isec">
+          <summary><span style="display:flex;align-items:center;gap:8px"><span class="badge low">Low</span><span style="font-size:14px;color:var(--color-muted)">(1)</span></span>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="color:var(--color-muted)"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"/></svg>
+          </summary>
+          <div class="irow-issue"><div><p class="t">Baguette Tradition</p><p class="d">Currently unavailable on the storefront.</p></div><span class="badge low">Low</span></div>
+        </details>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>
