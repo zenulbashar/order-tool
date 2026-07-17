@@ -1,0 +1,954 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner MENU page (storefront view="menu") · responsive design prototype.
+
+  Source of truth: app/[slug]/menu/page.tsx (Storefront view="menu") and the live
+  components — category-nav.tsx (pills on mobile / underline TABS on desktop),
+  dietary-filter.tsx (chips + life-safety disclaimer), menu-search.tsx (compact →
+  full input, Space Mono placeholder), item-card.tsx (mobile row vs desktop card),
+  search-empty-state.tsx (amber ✦ spark + concierge nudge). Shares the menu-view
+  shell with diner-home.html — the announcement / app-bar / mobile-header /
+  category-strip / item-card / cart-rail / cart-bar / concierge-fab patterns are
+  reused verbatim.
+
+  This surface FOREGROUNDS the navigation + filter + search + loading states as
+  distinct capturable tiles: category-nav, dietary-filter, menu-search,
+  search-active, search-empty, menu-skeleton (first wiring of .p2e-shimmer).
+
+  Firewall honoured: data-domain="diner" maps --action -> the venue --brand
+  (terracotta #a6572e). AMBER (--color-accent) appears ONLY on AI affordances —
+  the search-empty p2e-spark sparkle and the concierge launcher. Dietary "active"
+  chips use a success-green tint. The cart-rail Checkout CTA is deliberately INK.
+
+  Self-contained: Google Fonts + inline <style> + minimal <script>. CSS gradients
+  and brand monograms stand in for photos — no external images.
+  Query params: ?native=1 (Capacitor status bar + safe-area).
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner menu — Fig &amp; Flour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================== TOKEN LAYER ==============================
+   Copied 1:1 from app/globals.css so the prototype and the app share values. */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e;
+  --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8;
+  --color-sand:#efe7d6; --color-line:#e6ddcb; --color-line-strong:#d8cbb0;
+  --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px;
+  --radius-control-sm:9px; --radius-control-lg:13px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  /* Owner default; the diner root overrides --action below. */
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  /* Sample venue brand (a warm artisan-bakery terracotta) — distinct from the
+     product's forest/amber so the firewall is visibly doing its job. */
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--font-body); color:var(--color-ink);
+  background:var(--color-surface); min-height:100dvh; line-height:1.4;
+}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+.mono{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em}
+.display{font-family:var(--font-display);letter-spacing:-.02em}
+
+/* ============================ MOTION LIBRARY ============================
+   The p2e-* keyframes from app/globals.css, reduced-motion guarded.
+   (Copied verbatim from diner-home.html.) */
+@keyframes p2e-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes p2e-fly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(96px,-210px) scale(.28);opacity:0}}
+@keyframes p2e-cartpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-accent) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+@keyframes order-loading-dot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.p2e-float{animation:p2e-float 4s ease-in-out infinite}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-pop{animation:p2e-pop .32s ease-out both}
+.p2e-fly{animation:p2e-fly .7s ease-in both}
+.p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
+.p2e-rise{animation:p2e-rise .4s ease-out both}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+.p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
+.p2e-shimmer{
+  background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);
+  background-size:200% 100%; animation:p2e-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion:reduce){
+  .p2e-float,.p2e-glow,.p2e-think,.p2e-pop,.p2e-fly,.p2e-cartpulse,.p2e-rise,
+  .p2e-slidein,.p2e-ring,.p2e-shimmer{animation:none!important}
+}
+/* p2e-spark — the concierge/AI sparkle (real keyframe from app/globals.css; not
+   present in diner-home.html, added here for the search-empty AI affordance). */
+@keyframes p2e-spark{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+.p2e-spark{animation:p2e-spark 1.1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.p2e-spark{animation:none!important;opacity:.9}}
+
+/* ============================== CHROME ================================= */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{
+  display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b;
+}
+[data-native] body,[data-native] .app{padding-bottom:env(safe-area-inset-bottom,20px)}
+
+.announcement{ /* AnnouncementBar — ink strip + cream text, dismissible (source: bg-ink text-surface, NO amber) */
+  position:relative;background:var(--color-ink);color:var(--color-surface);text-align:center;
+  font-size:13px;font-weight:500;padding:8px 40px;
+}
+.announcement .x{position:absolute;inset-block:0;right:12px;display:flex;align-items:center;
+  color:color-mix(in srgb,var(--color-surface) 70%,transparent);transition:.15s}
+.announcement .x:hover{color:var(--color-surface)}
+
+/* Mobile header (lg:hidden) — logo + name row */
+.m-header{
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  background:var(--color-surface-elevated);border-bottom:1px solid var(--color-sand);
+  position:sticky;top:0;z-index:25;
+}
+.m-header .logo{height:38px;width:38px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--font-display);font-weight:700;font-size:18px;
+  background:var(--action);color:var(--action-contrast)}
+.m-header .name{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:-.02em}
+.m-header .meta{font-size:11px;color:var(--color-muted)}
+
+/* Desktop app bar (lg+) — centered brand (h-16 / 64px) */
+.d-appbar{display:none}
+@media(min-width:1024px){
+  .m-header{display:none}
+  .d-appbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    height:64px;padding:0 24px;background:var(--color-surface-elevated);
+    border-bottom:1px solid var(--color-sand);position:sticky;top:0;z-index:25;
+    max-width:1680px;margin:0 auto;
+  }
+  .d-appbar .side{font-size:13px;font-weight:600;color:var(--color-muted);white-space:nowrap}
+  .d-appbar .brandwrap{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px}
+  .d-appbar .logo{height:34px;width:34px;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;font-family:var(--font-display);font-weight:700;font-size:16px;
+    background:var(--action);color:var(--action-contrast)}
+  .d-appbar .name{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.02em}
+}
+
+/* ===================== SEARCH CONTROL (menu-search) =====================
+   Source menu-search.tsx: expanded = rounded-pill input, search icon left,
+   clear icon right, Space Mono placeholder, focus ring = --action. */
+.searchbox{position:relative;width:100%;min-width:0}
+.searchbox .ic{position:absolute;top:50%;left:13px;transform:translateY(-50%);color:var(--color-muted);
+  pointer-events:none;display:flex}
+.searchbox input{
+  width:100%;border-radius:var(--radius-pill);border:1px solid var(--color-sand);
+  background:var(--color-surface-elevated);padding:11px 40px;font:500 14px var(--font-body);
+  color:var(--color-ink);box-shadow:var(--shadow-card);outline:none;transition:.15s;
+}
+.searchbox input::placeholder{font-family:var(--font-mono);text-transform:none;letter-spacing:0;
+  color:#b6ab92;font-size:12.5px}
+.searchbox input:focus{border-color:var(--action);box-shadow:0 0 0 1px var(--action)}
+.searchbox .clr{position:absolute;top:50%;right:7px;transform:translateY(-50%);display:none;
+  height:32px;width:32px;align-items:center;justify-content:center;border-radius:var(--radius-control);
+  color:var(--color-muted);transition:.15s}
+.searchbox.filled .clr{display:flex}
+.searchbox.filled .clr:hover{color:var(--color-ink)}
+
+/* ===================== STICKY CATEGORY STRIP ===================== */
+.catstrip{
+  position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--color-surface) 95%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--color-sand);
+}
+@media(min-width:1024px){ .catstrip{top:64px;background:color-mix(in srgb,var(--color-surface-elevated) 95%,transparent)} }
+.catstrip .row{max-width:1680px;margin:0 auto;padding:10px 20px;display:flex;flex-direction:column;gap:10px}
+@media(min-width:1024px){.catstrip .row{padding:8px 24px}}
+/* topline: mobile = search over the nav (column-reverse); desktop = nav left, search right */
+.topline{display:flex;flex-direction:column-reverse;gap:10px}
+@media(min-width:1024px){.topline{flex-direction:row;align-items:center;gap:16px}}
+.topline .catnav{min-width:0}
+@media(min-width:1024px){.topline .catnav{flex:1}}
+@media(min-width:1024px){.topline .searchbox{width:320px;flex:none}}
+
+/* Category nav — mobile PILL scroll-chips (active = brand fill) / desktop
+   underline TABS (active = ink text + 3px brand underline). Mirrors category-nav.tsx. */
+.catnav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.catnav::-webkit-scrollbar{display:none}
+.cnav{white-space:nowrap;display:inline-flex;align-items:center;min-height:44px;
+  border:1px solid var(--color-sand);background:var(--color-surface-elevated);
+  border-radius:var(--radius-pill);padding:0 16px;font-size:13.5px;font-weight:600;
+  color:var(--color-muted);transition:.15s}
+.cnav:hover{background:var(--color-sand);color:var(--color-ink)}
+.cnav.active{background:var(--action);border-color:var(--action);color:var(--action-contrast)}
+@media(min-width:1024px){
+  .catnav{gap:24px;overflow:visible}
+  .cnav{min-height:0;border:none;background:none;border-radius:0;padding:14px 0;
+    border-bottom:3px solid transparent;color:var(--color-muted)}
+  .cnav:hover{background:none;color:var(--color-ink)}
+  .cnav.active{background:none;color:var(--color-ink);border-bottom-color:var(--action)}
+}
+
+/* Dietary chips + life-safety disclaimer (dietary-filter.tsx). Active = SUCCESS
+   green tint per firewall (NOT brand, NOT amber). */
+.dietary{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.dietary::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--color-line);border-radius:var(--radius-pill);
+  padding:0 13px;min-height:34px;display:inline-flex;align-items:center;font-size:12px;
+  color:var(--color-muted);background:var(--color-surface-elevated);white-space:nowrap;transition:.15s}
+.chip:hover{border-color:var(--color-line-strong);color:var(--color-ink)}
+.chip.on{background:color-mix(in srgb,var(--color-success) 12%,transparent);
+  border-color:color-mix(in srgb,var(--color-success) 40%,transparent);color:var(--color-success-deep)}
+.disclaimer{display:flex;align-items:flex-start;gap:8px;border-radius:var(--radius-control);
+  border:1px solid color-mix(in srgb,var(--color-warm) 40%,transparent);
+  background:color-mix(in srgb,var(--color-warm) 10%,transparent);padding:7px 11px;
+  font-size:12px;font-weight:500;color:var(--color-ink)}
+.disclaimer svg{margin-top:1px;height:16px;width:16px;flex:none;color:var(--color-warm)}
+
+/* ===================== BODY GRID (menu · rail) ===================== */
+.body{max-width:1680px;margin:0 auto;padding:20px}
+@media(min-width:1024px){
+  .body{display:grid;grid-template-columns:1fr 336px;gap:30px;align-items:start;padding:28px 24px}
+}
+.cat-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:22px;
+  margin:26px 0 12px;scroll-margin-top:132px}
+.menusection:first-child .cat-h{margin-top:0}
+
+/* Item grid + cards (item-card.tsx — mobile row vs desktop card) */
+.itemgrid{display:grid;grid-template-columns:1fr;gap:12px;list-style:none}
+@media(min-width:1024px){.itemgrid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1536px){.itemgrid{grid-template-columns:repeat(4,1fr)}}
+
+.item{position:relative;overflow:hidden;border-radius:var(--radius-card);
+  border:1px solid var(--color-sand);background:var(--color-surface-elevated);
+  box-shadow:var(--shadow-card);transition:.2s}
+.item:hover{border-color:color-mix(in srgb,var(--color-muted) 40%,transparent);box-shadow:var(--shadow-lift)}
+
+/* Mobile item = horizontal row (lg:hidden) */
+.item .row{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;padding:12px;text-align:left;width:100%}
+.item .row .txt{min-width:0;flex:1}
+.item .row .nm{font-size:14px;font-weight:600;color:var(--color-ink)}
+.item .row .ds{margin-top:2px;font-size:14px;color:var(--color-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .row .pr{margin-top:6px;font-family:var(--font-display);font-weight:600;font-size:16px}
+.item .row .ph{height:96px;width:96px;flex:none;border-radius:var(--radius-control);border:1px solid var(--color-sand);background-size:cover}
+.item .card{display:none}
+.addbtn{position:absolute;z-index:10;display:flex;align-items:center;justify-content:center;
+  height:44px;width:44px;border-radius:var(--radius-pill);color:var(--action-contrast); /* ≥44px touch target (a11y floor) */
+  background:var(--action);box-shadow:0 2px 6px rgba(0,0,0,.18);bottom:12px;right:12px;transition:transform .1s}
+.addbtn.nophoto{bottom:auto;top:50%;transform:translateY(-50%)}
+.addbtn:active{transform:scale(.95)}
+.addbtn.nophoto:active{transform:translateY(-50%) scale(.95)}
+.addbtn.pill{display:none} /* desktop-only control — hidden below lg (source lg:inline-flex) */
+
+@media(min-width:1024px){
+  .item .row{display:none}
+  .item .card{display:flex;flex-direction:column;text-align:left;width:100%}
+  .item .card .ph{height:96px;width:100%;background-size:cover}
+  .item .card .mono-fallback{height:96px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:800;font-size:32px;
+    background:color-mix(in srgb,var(--brand) 9%,var(--color-surface));
+    color:color-mix(in srgb,var(--brand) 42%,transparent)}
+  .item .card .pad{padding:10px 10px 40px;display:flex;flex-direction:column;gap:4px}
+  .item .card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .item .card .nm{font-size:13px;font-weight:600;line-height:1.25;color:var(--color-ink)}
+  .item .card .prc{flex:none;font-family:var(--font-display);font-weight:600;font-size:13px}
+  .item .card .ds{font-size:11.5px;line-height:1.3;color:var(--color-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .item .card .tags{padding-right:64px} /* clear the bottom-right Add pill (source pr-16) */
+  .addbtn:not(.pill){display:none} /* hide the round mobile control at lg (source lg:hidden) */
+  .addbtn.pill{display:inline-flex;height:auto;width:auto;border-radius:var(--radius-control-sm);padding:4px 10px;
+    font-size:11px;font-weight:600;gap:2px;bottom:10px;right:10px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+}
+.item .mono-ph{display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:800;font-size:26px;
+  background:color-mix(in srgb,var(--brand) 9%,var(--color-surface));
+  color:color-mix(in srgb,var(--brand) 42%,transparent)}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tag{border-radius:5px;padding:2px 6px;font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;background:var(--color-sand);color:var(--color-muted)}
+.tag.plant{background:color-mix(in srgb,var(--color-success) 12%,transparent);color:var(--color-success-deep)}
+
+/* ===================== DESKTOP CART RAIL ===================== */
+.rail{display:none}
+@media(min-width:1024px){.rail{display:block}}
+.rail .box{border-radius:var(--radius-card);border:1px solid var(--color-sand);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card);position:sticky;top:136px}
+.rail .hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px}
+.rail .hd h2{font-family:var(--font-display);font-weight:600;font-size:18px;letter-spacing:-.01em}
+.rail .tbl{border-radius:var(--radius-pill);background:color-mix(in srgb,var(--color-success) 12%,transparent);
+  color:var(--color-success-deep);font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.08em;padding:4px 10px}
+.rail ul{list-style:none;border-top:1px solid var(--color-sand);padding:4px 20px}
+.rail li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--color-sand) 70%,transparent)}
+.rail li:last-child{border-bottom:none}
+.rail .qty{margin-top:2px;height:26px;width:26px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-pill);font-family:var(--font-display);font-weight:700;font-size:12px;
+  background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--action)}
+.rail .li-nm{font-size:13.5px;font-weight:600;color:var(--color-ink)}
+.rail .li-sub{margin-top:2px;font-size:11px;color:var(--color-label)}
+.rail .li-pr{flex:none;font-size:14px}
+.rail .totals{border-top:1px solid var(--color-sand);padding:16px 20px;display:flex;flex-direction:column;gap:8px}
+.rail .totrow{display:flex;justify-content:space-between;font-size:14px;color:var(--color-muted)}
+.rail .grand{display:flex;justify-content:space-between}
+.rail .grand span{font-family:var(--font-display);font-weight:600;font-size:17px;color:var(--color-ink)}
+/* INK CTA — deliberately NOT brand (source rule) */
+.rail .checkout{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  border-radius:14px;background:var(--color-ink);color:var(--color-surface);
+  padding:14px 16px;font-size:14px;font-weight:600;margin-top:4px;transition:.15s}
+.rail .checkout:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.rail .checkout .amt{font-family:var(--font-display)}
+.rail .fineprint{text-align:center;font-size:11px;color:var(--color-label)}
+/* Concierge nudge in rail — the AI (amber) exception */
+.rail .nudge{display:block;width:100%;text-align:left;margin-top:12px;border-radius:var(--radius-card);
+  border:1px solid #eccbb8;background:#f7e7de;padding:12px 16px;font-size:12px;color:var(--color-accent-deep);transition:.15s}
+.rail .nudge:hover{filter:brightness(.98)}
+.rail .nudge .spark{color:var(--color-accent);margin-right:4px}
+
+/* ===================== MOBILE CART BAR ===================== */
+.cartbar{position:fixed;inset-inline:0;bottom:0;z-index:30;max-width:768px;margin:0 auto;padding:0 20px 16px}
+[data-native] .cartbar{padding-bottom:calc(16px + env(safe-area-inset-bottom,0))}
+@media(min-width:1024px){.cartbar{display:none}}
+.cartbar button{display:flex;width:100%;align-items:center;justify-content:space-between;
+  border-radius:var(--radius-pill);padding:14px 20px;font-size:14px;font-weight:600;
+  background:var(--action);color:var(--action-contrast);box-shadow:0 8px 24px -8px rgba(0,0,0,.4)}
+.cartbar .amt{font-family:var(--font-display)}
+
+/* ===================== FLOATING CONCIERGE LAUNCHER (AI — amber) ===================== */
+.concierge-fab{position:fixed;right:20px;bottom:88px;z-index:29}
+[data-native] .concierge-fab{bottom:calc(88px + env(safe-area-inset-bottom,0))}
+@media(min-width:1024px){.concierge-fab{bottom:24px}}
+.concierge-fab button{display:flex;align-items:center;gap:8px;border-radius:var(--radius-pill);
+  padding:12px 18px;font-weight:600;font-size:14px;color:var(--color-forest-deepest);
+  background:linear-gradient(180deg,#f6be4a,#efa82c);box-shadow:var(--shadow-cta)}
+.concierge-fab .spark{font-size:15px}
+
+/* ===================== FOREGROUND STATES (search + loading) ===================== */
+.states{max-width:1680px;margin:0 auto;padding:8px 20px 130px}
+.states .lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;
+  font-weight:700;color:var(--color-label);margin:30px 0 12px}
+.states .panel{border-radius:var(--radius-card);border:1px solid var(--color-sand);
+  background:var(--color-surface);box-shadow:var(--shadow-card);padding:18px}
+
+/* search-active — filled field + count line + filtered grid */
+.resultcount{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;
+  font-size:11px;font-weight:700;color:var(--color-muted);margin:14px 2px 12px}
+.searchactivegrid{display:grid;grid-template-columns:1fr;gap:12px;list-style:none}
+@media(min-width:640px){.searchactivegrid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.searchactivegrid{grid-template-columns:repeat(3,1fr)}}
+
+/* search-empty — mirrors search-empty-state.tsx (amber spark + concierge nudge) */
+.empty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 16px;text-align:center}
+.empty .spark-badge{height:64px;width:64px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);
+  font-size:24px;color:var(--color-accent);box-shadow:var(--shadow-card)}
+.empty h3{font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;font-size:20px;color:var(--color-ink)}
+.empty > p{max-width:20rem;font-size:14px;color:var(--color-muted)}
+.empty .actions{margin-top:6px;width:100%;max-width:24rem;display:flex;flex-direction:column;gap:10px}
+.empty .ask{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--radius-input);padding:12px 16px;font-size:14px;font-weight:700;color:#fff;
+  background:linear-gradient(110deg,var(--color-forest-deep),#1c4231);box-shadow:var(--shadow-card);transition:.15s}
+.empty .ask:hover{opacity:.9}
+.empty .ask .spark{color:var(--color-accent)} /* AI amber ✦ (only sanctioned amber here) */
+.empty .clear{display:flex;width:100%;align-items:center;justify-content:center;border-radius:var(--radius-input);
+  border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:12px 16px;
+  font-size:14px;font-weight:600;color:var(--color-ink);transition:.15s}
+.empty .clear:hover{background:var(--color-sand)}
+.empty .maybe{margin-top:8px;width:100%;max-width:24rem}
+.empty .maybe .eyebrow{text-align:left;font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--color-label)}
+.empty .maybe .chips{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px}
+.empty .maybe .chips button{border-radius:var(--radius-pill);border:1px solid var(--color-sand);
+  background:var(--color-surface-elevated);padding:8px 14px;font-size:12px;font-weight:600;color:var(--color-muted);transition:.15s}
+.empty .maybe .chips button:hover{background:var(--color-sand)}
+
+/* menu-skeleton — the LOADING grid (first wiring of .p2e-shimmer) */
+.skelgrid{display:grid;grid-template-columns:1fr;gap:12px;list-style:none}
+@media(min-width:640px){.skelgrid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.skelgrid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1536px){.skelgrid{grid-template-columns:repeat(4,1fr)}}
+.skelcard{border-radius:var(--radius-card);border:1px solid var(--color-sand);
+  background:var(--color-surface-elevated);overflow:hidden;box-shadow:var(--shadow-card)}
+.skelcard .ph{height:96px}
+.skelcard .pad{padding:12px;display:flex;flex-direction:column;gap:9px}
+.skelcard .ln{height:11px;border-radius:6px}
+.skelcard .ln.w70{width:70%}
+.skelcard .ln.w40{width:40%}
+
+/* Add-to-cart fly ghost (p2e-fly) — a brand dot that arcs toward the cart. */
+.fly-ghost{position:fixed;z-index:60;height:18px;width:18px;border-radius:50%;
+  background:var(--action);box-shadow:0 2px 8px rgba(0,0,0,.28);pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="native-statusbar"></div>
+
+  <!-- ===================== ANNOUNCEMENT ===================== -->
+  <div class="announcement" data-tile="announcement">
+    Fresh sourdough out at 8am daily — order ahead for pickup.
+    <button class="x" aria-label="Dismiss announcement">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="height:16px;width:16px"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <!-- ===================== MOBILE HEADER ===================== -->
+  <header class="m-header" data-tile="mobile-header">
+    <span class="logo" aria-hidden="true">F</span>
+    <div style="min-width:0">
+      <div class="name">Fig &amp; Flour</div>
+      <div class="meta">Artisan bakery · Fitzroy · Open till 4pm</div>
+    </div>
+  </header>
+
+  <!-- ===================== DESKTOP APP BAR ===================== -->
+  <div class="d-appbar" data-tile="appbar">
+    <span class="side">Fitzroy, Melbourne</span>
+    <div class="brandwrap">
+      <span class="logo" aria-hidden="true">F</span>
+      <span class="name">Fig &amp; Flour</span>
+    </div>
+    <span class="side">Open · till 4pm</span>
+  </div>
+
+  <!-- ===================== STICKY CATEGORY STRIP ===================== -->
+  <div class="catstrip" data-tile="category-strip">
+    <div class="row">
+      <div class="topline">
+        <!-- Category nav: pills (mobile) / underline tabs (desktop) -->
+        <nav class="catnav" data-tile="category-nav" aria-label="Menu categories">
+          <button class="cnav active" aria-current="true">Bread</button>
+          <button class="cnav">Pastries</button>
+          <button class="cnav">Sandwiches</button>
+        </nav>
+        <!-- Menu search (empty / placeholder state — Space Mono placeholder) -->
+        <div class="searchbox" role="search" data-tile="menu-search">
+          <span class="ic" aria-hidden="true">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+          </span>
+          <input type="search" aria-label="Search the menu" placeholder="Search the menu" />
+        </div>
+      </div>
+      <!-- Dietary filter + life-safety disclaimer -->
+      <div data-tile="dietary-filter" style="display:flex;flex-direction:column;gap:8px">
+        <div class="dietary" role="group" aria-label="Filter the menu by dietary tags">
+          <button class="chip on" aria-pressed="true">Vegetarian</button>
+          <button class="chip on" aria-pressed="true">Vegan</button>
+          <button class="chip" aria-pressed="false">Gluten-free</button>
+          <button class="chip" aria-pressed="false">Dairy-free</button>
+          <button class="chip" aria-pressed="false">Nut-free</button>
+        </div>
+        <p class="disclaimer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd"/></svg>
+          <span>Dietary tags are a guide set by the venue, not a guarantee. Please tell staff about any allergies.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== BODY (menu · rail) ===================== -->
+  <div class="body">
+    <main>
+      <!-- ---------- BREAD ---------- -->
+      <section class="menusection" data-tile="menu-section-bread">
+        <h2 class="cat-h" id="bread">Bread</h2>
+        <ul class="itemgrid" data-tile="item-grid">
+          <!-- item WITH photo -->
+          <li><article class="item" data-tile="item-card-photo">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Country Sourdough</span>
+                <span class="ds">48-hour naturally-leavened loaf with a dark, blistered crust.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+                <span class="pr">$9.00</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></span>
+            </button>
+            <button class="addbtn" aria-label="Add Country Sourdough to cart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Country Sourdough</span><span class="prc">$9.00</span></div>
+                <span class="ds">48-hour naturally-leavened loaf, dark blistered crust.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Add Country Sourdough to cart">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+
+          <!-- item with MONOGRAM fallback (no photo) -->
+          <li><article class="item" data-tile="item-card-mono">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Seeded Rye</span>
+                <span class="ds">Dense, malty rye with pumpkin &amp; sunflower seeds.</span>
+                <span class="tags"><span class="tag plant">Vegan</span><span class="tag">Seeds</span></span>
+                <span class="pr">$8.50</span>
+              </span>
+              <span class="ph mono-ph">S</span>
+            </button>
+            <button class="addbtn" aria-label="Add Seeded Rye to cart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="mono-fallback" aria-hidden="true">S</span>
+              <div class="pad">
+                <div class="top"><span class="nm">Seeded Rye</span><span class="prc">$8.50</span></div>
+                <span class="ds">Dense malty rye, pumpkin &amp; sunflower seeds.</span>
+                <span class="tags"><span class="tag plant">Vegan</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Add Seeded Rye to cart">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+
+          <!-- item needing choices → "Choose" (opens sheet). Shows "from $" price -->
+          <li><article class="item" data-tile="item-card-choose">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Focaccia — by the slab</span>
+                <span class="ds">Rosemary &amp; sea salt, or olive &amp; confit garlic. Choose a size.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+                <span class="pr">from $6.00</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(75% 75% at 60% 30%,#e9cf94,transparent 60%),linear-gradient(140deg,#c49a5b,#8a6636)"></span>
+            </button>
+            <button class="addbtn" aria-label="Choose Focaccia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(75% 75% at 60% 30%,#e9cf94,transparent 60%),linear-gradient(140deg,#c49a5b,#8a6636)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Focaccia — slab</span><span class="prc">from $6</span></div>
+                <span class="ds">Rosemary &amp; sea salt, or olive &amp; garlic.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Choose Focaccia">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+
+          <!-- item in JUST-ADDED state (motion) — success tick -->
+          <li><article class="item is-added" data-tile="item-card-added">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Baguette Tradition</span>
+                <span class="ds">Crackling thin crust, open crumb. Baked twice daily.</span>
+                <span class="tags"><span class="tag plant">Vegan</span></span>
+                <span class="pr">$5.50</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></span>
+            </button>
+            <button class="addbtn" aria-label="Added Baguette" style="background:var(--color-success)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="height:16px;width:16px"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Baguette Tradition</span><span class="prc">$5.50</span></div>
+                <span class="ds">Crackling crust, open crumb. Baked twice daily.</span>
+                <span class="tags"><span class="tag plant">Vegan</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Added Baguette" style="background:var(--color-success)">Added
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="height:13px;width:13px"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+          </article></li>
+        </ul>
+      </section>
+
+      <!-- ---------- PASTRIES ---------- -->
+      <section class="menusection" data-tile="menu-section-pastries">
+        <h2 class="cat-h" id="pastries">Pastries</h2>
+        <ul class="itemgrid" data-tile="item-grid-pastries">
+          <li><article class="item" data-tile="item-card-pastry-1">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Almond Croissant</span>
+                <span class="ds">Twice-baked, frangipane-filled, toasted almond flakes.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+                <span class="pr">$6.50</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(70% 70% at 55% 35%,#ead39a,transparent 60%),linear-gradient(150deg,#c49a5b,#8a6636)"></span>
+            </button>
+            <button class="addbtn" aria-label="Add Almond Croissant to cart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(70% 70% at 55% 35%,#ead39a,transparent 60%),linear-gradient(150deg,#c49a5b,#8a6636)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Almond Croissant</span><span class="prc">$6.50</span></div>
+                <span class="ds">Twice-baked, frangipane-filled, toasted almonds.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Add Almond Croissant to cart">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+
+          <li><article class="item" data-tile="item-card-pastry-2">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Pain au Chocolat</span>
+                <span class="ds">Laminated butter dough wrapped around two dark batons.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+                <span class="pr">$5.00</span>
+              </span>
+              <span class="ph mono-ph">P</span>
+            </button>
+            <button class="addbtn" aria-label="Add Pain au Chocolat to cart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="mono-fallback" aria-hidden="true">P</span>
+              <div class="pad">
+                <div class="top"><span class="nm">Pain au Chocolat</span><span class="prc">$5.00</span></div>
+                <span class="ds">Butter dough wrapped around two dark batons.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Add Pain au Chocolat to cart">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+
+          <li><article class="item" data-tile="item-card-pastry-3">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Fig &amp; Walnut Danish</span>
+                <span class="ds">Seasonal fig, honey-soaked walnut, crème pâtissière.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span><span class="tag">Nuts</span></span>
+                <span class="pr">$6.00</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(70% 80% at 45% 30%,#d9a56e,transparent 55%),linear-gradient(150deg,#8a5a7a,#5f3a52)"></span>
+            </button>
+            <button class="addbtn" aria-label="Add Fig and Walnut Danish to cart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(70% 80% at 45% 30%,#d9a56e,transparent 55%),linear-gradient(150deg,#8a5a7a,#5f3a52)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Fig &amp; Walnut Danish</span><span class="prc">$6.00</span></div>
+                <span class="ds">Seasonal fig, honey walnut, crème pâtissière.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Add Fig and Walnut Danish to cart">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+        </ul>
+      </section>
+
+      <!-- ---------- SANDWICHES ---------- -->
+      <section class="menusection" data-tile="menu-section-sandwiches">
+        <h2 class="cat-h" id="sandwiches">Sandwiches</h2>
+        <ul class="itemgrid" data-tile="item-grid-sandwiches">
+          <li><article class="item" data-tile="item-card-sandwich-1">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Focaccia Sandwich</span>
+                <span class="ds">House focaccia, your choice of fillings — pressed warm.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+                <span class="pr">from $8.50</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(70% 80% at 40% 30%,#e7c485,transparent 60%),linear-gradient(150deg,#c1904f,#7c5730)"></span>
+            </button>
+            <button class="addbtn" aria-label="Choose Focaccia Sandwich">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(70% 80% at 40% 30%,#e7c485,transparent 60%),linear-gradient(150deg,#c1904f,#7c5730)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Focaccia Sandwich</span><span class="prc">from $8.50</span></div>
+                <span class="ds">House focaccia, your choice of fillings — pressed.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Choose Focaccia Sandwich">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+
+          <li><article class="item" data-tile="item-card-sandwich-2">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Roast Veg &amp; Halloumi</span>
+                <span class="ds">Charred zucchini, capsicum, halloumi, basil pesto.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span><span class="tag">GF opt</span></span>
+                <span class="pr">$12.00</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(70% 80% at 50% 30%,#e0b06a,transparent 55%),linear-gradient(150deg,#a86f3c,#6f4a28)"></span>
+            </button>
+            <button class="addbtn" aria-label="Add Roast Veg and Halloumi to cart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(70% 80% at 50% 30%,#e0b06a,transparent 55%),linear-gradient(150deg,#a86f3c,#6f4a28)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Roast Veg &amp; Halloumi</span><span class="prc">$12.00</span></div>
+                <span class="ds">Charred zucchini, capsicum, halloumi, pesto.</span>
+                <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Add Roast Veg and Halloumi to cart">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+
+          <li><article class="item" data-tile="item-card-sandwich-3">
+            <button class="row">
+              <span class="txt">
+                <span class="nm">Prosciutto &amp; Fig</span>
+                <span class="ds">San Daniele prosciutto, fresh fig, ricotta on ciabatta.</span>
+                <span class="tags"><span class="tag">Pork</span></span>
+                <span class="pr">$13.50</span>
+              </span>
+              <span class="ph" style="background:radial-gradient(70% 80% at 45% 30%,#d98f7a,transparent 55%),linear-gradient(150deg,#9c4f52,#6a3436)"></span>
+            </button>
+            <button class="addbtn" aria-label="Add Prosciutto and Fig to cart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="card">
+              <span class="ph" style="background:radial-gradient(70% 80% at 45% 30%,#d98f7a,transparent 55%),linear-gradient(150deg,#9c4f52,#6a3436)"></span>
+              <div class="pad">
+                <div class="top"><span class="nm">Prosciutto &amp; Fig</span><span class="prc">$13.50</span></div>
+                <span class="ds">San Daniele prosciutto, fresh fig, ricotta.</span>
+                <span class="tags"><span class="tag">Pork</span></span>
+              </div>
+            </div>
+            <button class="addbtn pill" aria-label="Add Prosciutto and Fig to cart">Add
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </article></li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- ===================== CART RAIL ===================== -->
+    <aside class="rail" aria-label="Your order" data-tile="cart-rail">
+      <div class="box">
+        <div class="hd"><h2>Your order</h2><span class="tbl">Table 6</span></div>
+        <ul><!-- lines enter with a staggered p2e-slidein as they're added -->
+          <li class="p2e-slidein" style="animation-delay:.04s"><span class="qty">2</span><span style="min-width:0;flex:1"><span class="li-nm">Country Sourdough</span><span class="li-sub" style="display:block">Sliced</span></span><span class="li-pr">$18.00</span></li>
+          <li class="p2e-slidein" style="animation-delay:.10s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Almond Croissant</span></span><span class="li-pr">$6.50</span></li>
+          <li class="p2e-slidein" style="animation-delay:.16s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Flat White</span><span class="li-sub" style="display:block">Oat milk · Large</span></span><span class="li-pr">$5.00</span></li>
+        </ul>
+        <div class="totals">
+          <div class="totrow"><span>Subtotal</span><span>$29.50</span></div>
+          <div class="grand"><span>Total</span><span>$29.50</span></div>
+          <button class="checkout"><span>Checkout</span><span class="amt">$29.50</span></button>
+          <p class="fineprint">Estimated — prices confirmed at checkout. Secured by Stripe.</p>
+        </div>
+      </div>
+      <button class="nudge"><span class="spark">✦</span>Not sure what to eat? Let Prompt2Eat build an order from a craving.</button>
+    </aside>
+  </div>
+
+  <!-- ===================== FOREGROUND STATES (search + loading) ===================== -->
+  <section class="states">
+    <!-- SEARCH — ACTIVE (query filled + result count + filtered grid) -->
+    <p class="lab">Search — active · query + result count + filtered grid</p>
+    <div class="panel" data-tile="search-active">
+      <div class="searchbox filled" role="search">
+        <span class="ic" aria-hidden="true">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>
+        </span>
+        <input type="search" aria-label="Search the menu" value="bread" />
+        <button class="clr" aria-label="Clear search">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="resultcount">12 results</p>
+      <ul class="searchactivegrid">
+        <li><article class="item">
+          <button class="row">
+            <span class="txt">
+              <span class="nm">Country Sourdough</span>
+              <span class="ds">48-hour naturally-leavened loaf, dark blistered crust.</span>
+              <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              <span class="pr">$9.00</span>
+            </span>
+            <span class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></span>
+          </button>
+          <button class="addbtn" aria-label="Add Country Sourdough to cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <div class="card">
+            <span class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></span>
+            <div class="pad">
+              <div class="top"><span class="nm">Country Sourdough</span><span class="prc">$9.00</span></div>
+              <span class="ds">48-hour naturally-leavened loaf.</span>
+              <span class="tags"><span class="tag plant">Vegetarian</span></span>
+            </div>
+          </div>
+          <button class="addbtn pill" aria-label="Add Country Sourdough to cart">Add
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </article></li>
+        <li><article class="item">
+          <button class="row">
+            <span class="txt">
+              <span class="nm">Seeded Rye Bread</span>
+              <span class="ds">Dense, malty rye with pumpkin &amp; sunflower seeds.</span>
+              <span class="tags"><span class="tag plant">Vegan</span></span>
+              <span class="pr">$8.50</span>
+            </span>
+            <span class="ph mono-ph">S</span>
+          </button>
+          <button class="addbtn" aria-label="Add Seeded Rye Bread to cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <div class="card">
+            <span class="mono-fallback" aria-hidden="true">S</span>
+            <div class="pad">
+              <div class="top"><span class="nm">Seeded Rye Bread</span><span class="prc">$8.50</span></div>
+              <span class="ds">Dense malty rye, pumpkin &amp; sunflower seeds.</span>
+              <span class="tags"><span class="tag plant">Vegan</span></span>
+            </div>
+          </div>
+          <button class="addbtn pill" aria-label="Add Seeded Rye Bread to cart">Add
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </article></li>
+        <li><article class="item">
+          <button class="row">
+            <span class="txt">
+              <span class="nm">Baguette Tradition</span>
+              <span class="ds">Crackling thin crust, open crumb. Baked twice daily.</span>
+              <span class="tags"><span class="tag plant">Vegan</span></span>
+              <span class="pr">$5.50</span>
+            </span>
+            <span class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></span>
+          </button>
+          <button class="addbtn" aria-label="Add Baguette Tradition to cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <div class="card">
+            <span class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></span>
+            <div class="pad">
+              <div class="top"><span class="nm">Baguette Tradition</span><span class="prc">$5.50</span></div>
+              <span class="ds">Crackling crust, open crumb.</span>
+              <span class="tags"><span class="tag plant">Vegan</span></span>
+            </div>
+          </div>
+          <button class="addbtn pill" aria-label="Add Baguette Tradition to cart">Add
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </article></li>
+      </ul>
+    </div>
+
+    <!-- SEARCH — EMPTY (mirrors search-empty-state.tsx: amber ✦ spark + concierge nudge) -->
+    <p class="lab">Search — no matches · AI ✦ spark + concierge nudge</p>
+    <div class="panel" data-tile="search-empty">
+      <div class="empty">
+        <div class="spark-badge" aria-hidden="true"><span class="p2e-spark">✦</span></div>
+        <h3>No dishes match “ramen”</h3>
+        <p>Fig &amp; Flour doesn’t serve that — but the concierge can find you something close.</p>
+        <div class="actions">
+          <button class="ask">
+            <span class="spark" aria-hidden="true">✦</span>
+            Ask the concierge instead
+          </button>
+          <button class="clear">Clear search</button>
+        </div>
+        <div class="maybe">
+          <p class="eyebrow">Maybe try</p>
+          <div class="chips">
+            <button type="button">Bread</button>
+            <button type="button">Pastries</button>
+            <button type="button">Sandwiches</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENU SKELETON — loading grid (first wiring of .p2e-shimmer) -->
+    <p class="lab">Loading — menu skeleton (.p2e-shimmer)</p>
+    <ul class="skelgrid" data-tile="menu-skeleton" aria-hidden="true">
+      <li class="skelcard"><div class="ph p2e-shimmer"></div><div class="pad"><div class="ln p2e-shimmer"></div><div class="ln w70 p2e-shimmer"></div><div class="ln w40 p2e-shimmer"></div></div></li>
+      <li class="skelcard"><div class="ph p2e-shimmer"></div><div class="pad"><div class="ln p2e-shimmer"></div><div class="ln w70 p2e-shimmer"></div><div class="ln w40 p2e-shimmer"></div></div></li>
+      <li class="skelcard"><div class="ph p2e-shimmer"></div><div class="pad"><div class="ln p2e-shimmer"></div><div class="ln w70 p2e-shimmer"></div><div class="ln w40 p2e-shimmer"></div></div></li>
+      <li class="skelcard"><div class="ph p2e-shimmer"></div><div class="pad"><div class="ln p2e-shimmer"></div><div class="ln w70 p2e-shimmer"></div><div class="ln w40 p2e-shimmer"></div></div></li>
+    </ul>
+  </section>
+</div>
+
+<!-- ===================== FLOATING FAB + CART BAR ===================== -->
+<div class="concierge-fab" data-tile="concierge-launcher">
+  <button class="p2e-float"><span class="spark p2e-glow">✦</span> Ask the menu</button>
+</div>
+<div class="cartbar" data-tile="cart-bar">
+  <button><span>View cart · 4 items</span><span class="amt">$29.50</span></button>
+</div>
+
+<script>
+  // Native shell toggle (?native=1 → Capacitor status bar + safe-area padding).
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+
+  // Live add-to-cart motion — a brand ghost flies from the "+" toward the cart
+  // on the p2e-fly arc while the button pulses (p2e-cartpulse), so the prototype
+  // is a working design, not a static mock. Reduced-motion → pulse only.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.item:not(.is-added) .addbtn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.classList.remove('p2e-cartpulse'); void btn.offsetWidth; btn.classList.add('p2e-cartpulse');
+      if (reduce) return; // honour reduced motion — pulse only, no flying ghost
+      const r = btn.getBoundingClientRect();
+      const ghost = document.createElement('span');
+      ghost.className = 'fly-ghost p2e-fly';
+      ghost.style.left = (r.left + r.width / 2 - 9) + 'px';
+      ghost.style.top = (r.top + r.height / 2 - 9) + 'px';
+      document.body.appendChild(ghost);
+      const done = () => ghost.remove();
+      ghost.addEventListener('animationend', done);
+      setTimeout(done, 900);
+    });
+  });
+
+  // Category nav — clicking a tab/pill sets the active state (scroll-spy stand-in).
+  document.querySelectorAll('[data-tile="category-nav"] .cnav').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('[data-tile="category-nav"] .cnav').forEach((t) => {
+        t.classList.remove('active'); t.removeAttribute('aria-current');
+      });
+      tab.classList.add('active'); tab.setAttribute('aria-current', 'true');
+    });
+  });
+
+  // Dietary chips — toggle the success-green "on" state.
+  document.querySelectorAll('[data-tile="dietary-filter"] .chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const on = chip.classList.toggle('on');
+      chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  });
+</script>
+</body>
+</html>

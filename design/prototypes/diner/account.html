@@ -1,0 +1,556 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner ACCOUNT suite · responsive design prototype.
+
+  Source of truth: app/[slug]/account/* (layout.tsx shell, account-nav.tsx,
+  points-panel.tsx, order-history.tsx incl. the "YOUR USUAL" hero,
+  details/details-form.tsx, notifications/notify-prefs-form.tsx, payment/page.tsx,
+  signin-form.tsx) + the shared primitives (selection-controls Toggle,
+  Button, Input/Field). Hand-authored to the exact token values so it reflows
+  for real across 390 / 768 / 1280 (side-nav) / 1536 + the native WebView.
+
+  FIREWALL honoured: data-domain="diner" maps --action -> the venue --brand, and
+  the light diner brand drives EVERY functional accent on account (nav active,
+  points progress, toggles, all CTAs). Amber (--color-accent) is confined to the
+  ONE sanctioned place: the forest-dark "YOUR USUAL" hero — a documented
+  dark-surface idiom (the other being the concierge panel). Loyalty ≠ AI, so the
+  points panel is BRAND, never amber. Amber-on-inputs is only the focus ring
+  affordance (per globals.css), never a fill.
+
+  Every capturable block carries data-tile="…". Query params: ?native=1
+  (Capacitor status bar + safe-area). Motion is REAL p2e-* keyframes only.
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner account — Fig &amp; Flour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================== TOKEN LAYER ==============================
+   :root copied 1:1 from diner-home.html so the prototype and the app share
+   values. Two --color-concierge-* tokens are appended verbatim from
+   app/globals.css — the forest-dark "YOUR USUAL" hero needs them and nothing
+   else on account may reference them. */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e;
+  --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8;
+  --color-sand:#efe7d6; --color-line:#e6ddcb; --color-line-strong:#d8cbb0;
+  --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px;
+  --radius-control-sm:9px; --radius-control-lg:13px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  /* Owner default; the diner root overrides --action below. */
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  /* Sample venue brand (a warm artisan-bakery terracotta) — distinct from the
+     product's forest/amber so the firewall is visibly doing its job. */
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+  /* Concierge dark-surface tokens (verbatim from app/globals.css). Used ONLY by
+     the forest-dark "YOUR USUAL" hero below. */
+  --color-concierge-glow:#1c4231; --color-concierge-sage:#a9c3b1;
+  /* Input focus glow (amber affordance only — never a fill), from globals.css. */
+  --focus-ring-input:0 0 0 4px color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--font-body); color:var(--color-ink);
+  background:var(--color-surface); min-height:100dvh; line-height:1.4;
+}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+.mono{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em}
+.display{font-family:var(--font-display);letter-spacing:-.02em}
+
+/* ============================ MOTION LIBRARY ============================
+   The p2e-* keyframes from diner-home.html, copied VERBATIM, reduced-motion
+   guarded. */
+@keyframes p2e-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes p2e-fly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(96px,-210px) scale(.28);opacity:0}}
+@keyframes p2e-cartpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-accent) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+@keyframes order-loading-dot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.p2e-float{animation:p2e-float 4s ease-in-out infinite}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-pop{animation:p2e-pop .32s ease-out both}
+.p2e-fly{animation:p2e-fly .7s ease-in both}
+.p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
+.p2e-rise{animation:p2e-rise .4s ease-out both}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+.p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
+.p2e-shimmer{
+  background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);
+  background-size:200% 100%; animation:p2e-shimmer 1.4s linear infinite;
+}
+/* Two additional REAL globals.css motion tokens the points panel needs — copied
+   verbatim from app/globals.css (not invented). p2e-count = the balance count-in;
+   p2e-progress = the reward bar filling to var(--p2e-progress). */
+@keyframes p2e-count{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-progress{from{width:0}to{width:var(--p2e-progress,60%)}}
+.p2e-count{animation:p2e-count .3s ease-out both}
+.p2e-progress{animation:p2e-progress 1s ease-out both}
+@media (prefers-reduced-motion:reduce){
+  .p2e-float,.p2e-glow,.p2e-think,.p2e-pop,.p2e-fly,.p2e-cartpulse,.p2e-rise,
+  .p2e-slidein,.p2e-ring,.p2e-shimmer,.p2e-count,.p2e-progress{animation:none!important}
+}
+
+/* ============================== CHROME ================================= */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{
+  display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b;
+}
+[data-native] body,[data-native] .app{padding-bottom:env(safe-area-inset-bottom,20px)}
+
+/* Account shell — mirrors layout.tsx: mx-auto max-w-2xl lg:max-w-[960px]. */
+.shell{max-width:672px;margin:0 auto;width:100%;background:var(--color-surface)}
+@media(min-width:1024px){.shell{max-width:960px}}
+@media(min-width:1536px){.shell{max-width:1120px}}
+
+.acct-header{border-bottom:1px solid var(--color-line);padding:20px}
+.acct-header .back{font-size:12px;color:var(--color-muted);transition:.15s}
+.acct-header .back:hover{color:var(--color-ink)}
+.acct-header h1{margin-top:8px;font-family:var(--font-display);font-weight:600;font-size:20px;letter-spacing:-.02em}
+.acct-header .sub{font-size:14px;color:var(--color-muted)}
+
+/* Signed-in shell: tabs stacked on mobile, [nav | content] grid on lg. */
+.shell-grid{display:block}
+@media(min-width:1024px){
+  .shell-grid{display:grid;grid-template-columns:210px 1fr;align-items:start;gap:24px;padding:24px}
+}
+@media(min-width:1536px){.shell-grid{grid-template-columns:240px 1fr;gap:32px;padding:28px 32px}}
+.shell-content{min-width:0}
+.shell-content > *{margin-bottom:14px}
+
+/* ---------- account-nav (tabs mobile → side-nav lg) ---------- */
+.acct-nav{padding:16px 20px 4px}
+@media(min-width:1024px){.acct-nav{padding:0;position:sticky;top:16px}}
+.acct-nav .who{font-size:12px;color:var(--color-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acct-nav .who b{color:var(--color-ink);font-weight:500}
+.acct-nav ul{list-style:none;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-top:8px}
+.acct-nav ul::-webkit-scrollbar{display:none}
+@media(min-width:1024px){.acct-nav ul{flex-direction:column;gap:2px;overflow:visible;margin-top:12px}}
+.acct-nav a{display:block;white-space:nowrap;border-radius:var(--radius-control);padding:8px 12px;
+  font-size:14px;font-weight:500;color:var(--color-muted);transition:.15s}
+.acct-nav a:hover{background:var(--color-hover-ghost);color:var(--color-ink)}
+/* active = warm peach (source bg-[#f7e7de]) — NOT amber, a neutral selected wash */
+.acct-nav a.active{background:#f7e7de;color:var(--color-ink)}
+.acct-nav .signout{display:inline-block;margin-top:14px;font-size:12px;font-weight:500;
+  color:var(--color-muted);text-decoration:underline;transition:.15s}
+.acct-nav .signout:hover{color:var(--color-ink)}
+
+/* shared panel + section eyebrow */
+.panel{border-radius:var(--radius-card);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card)}
+.eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;
+  font-size:10px;font-weight:700;color:var(--color-label);margin:6px 0 10px}
+.sec-h{font-family:var(--font-display);font-weight:600;font-size:18px;letter-spacing:-.01em;margin-bottom:12px}
+
+/* ---------- account-your-usual — the FOREST-DARK hero (amber sanctioned) ---------- */
+.usual{position:relative;overflow:hidden;border-radius:var(--radius-card);padding:16px;
+  box-shadow:var(--shadow-card);
+  background:linear-gradient(135deg,var(--color-forest-deep),var(--color-concierge-glow))}
+.usual .glow{position:absolute;right:-24px;top:-36px;height:112px;width:112px;pointer-events:none;
+  background:radial-gradient(circle,color-mix(in srgb,var(--color-accent) 30%,transparent),transparent 65%)}
+.usual .eyebrow{position:relative;margin:0;color:var(--color-accent);letter-spacing:.14em}
+.usual .title{position:relative;margin-top:6px;font-size:15px;font-weight:700;color:#fff;line-height:1.35}
+.usual .foot{position:relative;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.usual .count{font-size:12px;font-weight:500;color:var(--color-concierge-sage)}
+.usual .reorder{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:44px;
+  border-radius:var(--radius-control);background:var(--action);color:var(--action-contrast);
+  padding:0 16px;font-size:13px;font-weight:700;transition:.15s}
+.usual .reorder:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.usual .reorder:active{transform:scale(.98)}
+
+/* ---------- account-points — loyalty (BRAND, never amber) ---------- */
+.points{padding:16px}
+.points .top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.points .num{font-family:var(--font-display);font-weight:800;font-size:36px;line-height:.95;color:var(--color-ink);
+  display:flex;align-items:baseline;gap:8px}
+.points .num small{font-size:13px;font-weight:600;color:var(--color-muted)}
+.points .worth{text-align:right;font-size:12px;font-weight:600;color:var(--color-muted)}
+.points .prog{margin-top:16px}
+.points .prog .meta{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}
+.points .prog .meta .l{font-size:12px;font-weight:600;color:var(--color-ink)}
+.points .prog .meta .r{font-size:11px;color:var(--color-muted)}
+.points .track{height:8px;border-radius:var(--radius-pill);background:var(--color-sand);overflow:hidden}
+.points .fill{height:100%;border-radius:var(--radius-pill);background:var(--action)} /* width via --p2e-progress */
+.points .ledger{margin-top:14px;border-top:1px solid var(--color-line);list-style:none}
+.points .ledger li{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:7px 0;font-size:13px;border-bottom:1px solid color-mix(in srgb,var(--color-line) 65%,transparent)}
+.points .ledger li:last-child{border-bottom:none}
+.points .ledger .when{color:var(--color-muted)}
+.points .ledger .delta{font-family:var(--font-mono);font-weight:700}
+.points .ledger .delta.pos{color:var(--color-success-deep)}
+.points .ledger .delta.neg{color:var(--color-ink)}
+
+/* ---------- account-history ---------- */
+.hist h2{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;
+  font-size:9px;font-weight:700;color:var(--color-label);margin-bottom:8px}
+.hist ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+@media(min-width:1024px){.hist ul{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}}
+@media(min-width:1536px){.hist ul{grid-template-columns:repeat(3,1fr)}}
+.hist li{border-radius:var(--radius-card);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card)}
+.hist .r1{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hist .ref{font-family:var(--font-mono);font-size:12px;color:var(--color-muted)}
+.badge{border-radius:var(--radius-pill);padding:3px 9px;font-family:var(--font-mono);font-size:10px;
+  font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.badge.paid{background:color-mix(in srgb,var(--color-success) 12%,transparent);color:var(--color-success-deep)}
+.badge.muted{background:var(--color-sand);color:var(--color-muted)}
+.hist .items{margin-top:8px;font-size:14px;color:var(--color-ink);line-height:1.35}
+.hist .r2{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hist .when{font-family:var(--font-mono);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--color-label)}
+/* ≥44px brand Reorder — fires p2e-fly + p2e-cartpulse on tap (wired below) */
+.reorder-btn{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:44px;
+  border-radius:var(--radius-control);background:var(--action);color:var(--action-contrast);
+  padding:0 16px;font-size:13px;font-weight:600;transition:.15s}
+.reorder-btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.reorder-btn:active{transform:scale(.98)}
+
+/* ---------- forms (details) ---------- */
+.form-cap{}
+@media(min-width:640px){.form-cap{max-width:448px}}
+.field{margin-bottom:16px}
+.field:last-of-type{margin-bottom:0}
+.field label{display:block;font-size:14px;font-weight:500;color:var(--color-ink);margin-bottom:6px}
+.field label .opt{font-weight:400;color:var(--color-muted)}
+.input-wrap{position:relative}
+.input{width:100%;border-radius:var(--radius-input);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);padding:9px 12px;font:400 14px var(--font-body);
+  color:var(--color-ink);box-shadow:0 1px 2px rgb(20 30 25 / .04);transition:.15s}
+.input::placeholder{color:var(--color-muted)}
+.input:focus-visible{outline:none;border-color:var(--color-accent);box-shadow:var(--focus-ring-input)}
+.input[readonly]{background:color-mix(in srgb,var(--color-sand) 40%,var(--color-surface-elevated));
+  color:var(--color-muted);cursor:not-allowed;padding-right:38px}
+.input-wrap .lock{position:absolute;inset-block:0;right:12px;display:flex;align-items:center;color:var(--color-muted);pointer-events:none}
+.field .help{margin-top:6px;font-size:12px;color:var(--color-muted)}
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;
+  border-radius:var(--radius-control);background:var(--action);color:var(--action-contrast);
+  padding:0 18px;font-size:14px;font-weight:600;transition:.15s}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn-primary.full{width:100%}
+.saved-note{display:inline-block;margin-top:12px;font-size:13px;color:var(--color-success-deep)}
+
+/* ---------- account-notifications (Toggle: role=switch) ---------- */
+.notif-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+  border-radius:var(--radius-card);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card)}
+.notif-row + .notif-row{margin-top:12px}
+.notif-row .txt{min-width:0}
+.notif-row .txt .t{font-size:14px;font-weight:600;color:var(--color-ink)}
+.notif-row .txt .d{margin-top:3px;font-size:12px;color:var(--color-muted);line-height:1.4}
+.switch{position:relative;flex:none;height:24px;width:44px;border-radius:var(--radius-pill);
+  background:var(--color-sand);transition:background-color .15s;cursor:pointer}
+.switch[aria-checked="true"]{background:var(--action)}
+.switch .knob{position:absolute;top:2px;left:0;height:20px;width:20px;border-radius:var(--radius-pill);
+  background:var(--color-surface-elevated);box-shadow:0 1px 3px rgba(0,0,0,.28);
+  transform:translateX(2px);transition:transform .15s}
+.switch[aria-checked="true"] .knob{transform:translateX(20px)}
+@media(prefers-reduced-motion:reduce){.switch,.switch .knob{transition:none}}
+
+/* ---------- account-saved-mandate ---------- */
+.mandate{padding:16px}
+.mandate .row{display:flex;align-items:center;gap:12px}
+.mandate .ico{height:44px;width:44px;flex:none;border-radius:12px;
+  background:color-mix(in srgb,var(--action) 12%,var(--color-surface));color:var(--action);
+  display:flex;align-items:center;justify-content:center}
+.mandate .m-name{font-size:14px;font-weight:600;color:var(--color-ink)}
+.mandate .m-sub{margin-top:2px;font-size:12px;color:var(--color-muted);font-family:var(--font-mono);letter-spacing:.04em}
+.mandate .m-badge{margin-left:auto}
+.mandate .cta{margin-top:14px}
+.mandate .fineprint{margin-top:8px;text-align:center;font-size:11px;color:var(--color-label)}
+
+/* ---------- two-up (Details + Notifications side-by-side at 2xl) ---------- */
+.two-up{display:block}
+.two-up > *{margin-bottom:14px}
+@media(min-width:1536px){
+  .two-up{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  .two-up > *{margin-bottom:0}
+}
+
+/* ---------- account-signin (signed-out state) ---------- */
+.signin-wrap{padding:28px 20px 44px;display:flex;justify-content:center}
+.signin{width:100%;max-width:400px;border-radius:var(--radius-card);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);padding:28px 24px;box-shadow:var(--shadow-card);text-align:center}
+.signin .logo{height:52px;width:52px;margin:0 auto;border-radius:14px;background:var(--action);
+  color:var(--action-contrast);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700;font-size:24px}
+.signin h2{margin-top:16px;font-family:var(--font-display);font-weight:700;font-size:20px;letter-spacing:-.01em}
+.signin .lead{margin-top:6px;font-size:13px;color:var(--color-muted);line-height:1.45}
+.signin form{margin-top:20px;text-align:left}
+.signin .note{margin-top:14px;font-size:12px;color:var(--color-label);text-align:center;line-height:1.45}
+
+/* divider between the signed-in shell and the signed-out reference */
+.state-divider{border-top:1px dashed var(--color-line-strong);margin:8px 20px 0}
+.state-lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;
+  font-weight:700;color:var(--color-label);padding:20px 20px 0;text-align:center}
+
+/* add-to-cart fly ghost (p2e-fly) — a brand dot that arcs toward the cart */
+.fly-ghost{position:fixed;z-index:60;height:18px;width:18px;border-radius:50%;
+  background:var(--action);box-shadow:0 2px 8px rgba(0,0,0,.28);pointer-events:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="native-statusbar"></div>
+
+  <main class="shell">
+    <!-- ===================== SHELL HEADER ===================== -->
+    <header class="acct-header">
+      <a class="back" href="#">← Back to Fig &amp; Flour</a>
+      <h1>Your account</h1>
+      <p class="sub">Fig &amp; Flour</p>
+    </header>
+
+    <div class="shell-grid">
+      <!-- ===================== ACCOUNT NAV ===================== -->
+      <aside class="acct-nav" data-tile="account-nav" aria-label="Account sections">
+        <p class="who">Signed in as <b>alex@example.com</b></p>
+        <nav>
+          <ul>
+            <li><a href="#" class="active" aria-current="page">Overview</a></li>
+            <li><a href="#">Orders</a></li>
+            <li><a href="#">Details</a></li>
+            <li><a href="#">Notifications</a></li>
+            <li><a href="#">Payment</a></li>
+          </ul>
+        </nav>
+        <a href="#" class="signout">Sign out</a>
+      </aside>
+
+      <!-- ===================== CONTENT ===================== -->
+      <div class="shell-content">
+
+        <!-- YOUR USUAL — forest-dark hero (amber sanctioned: eyebrow + glow) -->
+        <section class="usual" data-tile="account-your-usual">
+          <span class="glow p2e-glow" aria-hidden="true"></span>
+          <p class="eyebrow">Your usual</p>
+          <p class="title">2× Country Sourdough · Almond Croissant · Flat White (oat)</p>
+          <div class="foot">
+            <span class="count">Ordered 6 times</span>
+            <button type="button" class="reorder js-reorder">↻ Reorder · $29.50</button>
+          </div>
+        </section>
+
+        <!-- POINTS — loyalty (brand, never amber) -->
+        <section class="points panel" data-tile="account-points">
+          <div class="top">
+            <div style="min-width:0">
+              <p class="eyebrow" style="margin:0 0 4px">Your points</p>
+              <p class="num"><span class="p2e-count">1,240</span><small>points</small></p>
+            </div>
+            <p class="worth">worth&nbsp;$12.40</p>
+          </div>
+          <div class="prog">
+            <div class="meta">
+              <span class="l">Next reward at 2,000</span>
+              <span class="r">760 to go</span>
+            </div>
+            <div class="track">
+              <div class="fill p2e-progress" style="--p2e-progress:62%;width:62%"></div>
+            </div>
+          </div>
+          <ul class="ledger">
+            <li><span class="when">Earned · 12 Jul</span><span class="delta pos">+120</span></li>
+            <li><span class="when">Earned · 28 Jun</span><span class="delta pos">+80</span></li>
+            <li><span class="when">Redeemed · 14 Jun</span><span class="delta neg">−500</span></li>
+          </ul>
+        </section>
+
+        <!-- ORDER HISTORY — staggered p2e-slidein, ≥44px brand Reorder -->
+        <section class="hist" data-tile="account-history">
+          <h2>Earlier orders</h2>
+          <ul>
+            <li class="p2e-slidein" style="animation-delay:.04s">
+              <div class="r1">
+                <span class="ref">Order #F3A2K</span>
+                <span class="badge paid">Paid</span>
+              </div>
+              <p class="items">2× Country Sourdough, Almond Croissant, Flat White</p>
+              <div class="r2">
+                <span class="when">12 Jul 2026 · $29.50</span>
+                <button type="button" class="reorder-btn js-reorder">↻ Reorder</button>
+              </div>
+            </li>
+            <li class="p2e-slidein" style="animation-delay:.10s">
+              <div class="r1">
+                <span class="ref">Order #K91MP</span>
+                <span class="badge paid">Paid</span>
+              </div>
+              <p class="items">Seeded Rye, 2× Baguette Tradition</p>
+              <div class="r2">
+                <span class="when">28 Jun 2026 · $19.50</span>
+                <button type="button" class="reorder-btn js-reorder">↻ Reorder</button>
+              </div>
+            </li>
+            <li class="p2e-slidein" style="animation-delay:.16s">
+              <div class="r1">
+                <span class="ref">Order #B44Q2</span>
+                <span class="badge muted">Cancelled</span>
+              </div>
+              <p class="items">Focaccia — slab, Almond Croissant</p>
+              <div class="r2">
+                <span class="when">03 Jun 2026 · $14.00</span>
+                <button type="button" class="reorder-btn js-reorder">↻ Reorder</button>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <!-- DETAILS + NOTIFICATIONS (side-by-side at 2xl) -->
+        <div class="two-up">
+          <!-- DETAILS -->
+          <section data-tile="account-details">
+            <h2 class="sec-h">Your details</h2>
+            <div class="panel" style="padding:20px">
+              <form class="form-cap" onsubmit="return false">
+                <div class="field">
+                  <label for="acc-email">Email</label>
+                  <div class="input-wrap">
+                    <input class="input" id="acc-email" type="email" value="alex@example.com" readonly aria-readonly="true" />
+                    <span class="lock" aria-hidden="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    </span>
+                  </div>
+                  <p class="help">Your sign-in address — used for receipts. It can’t be changed here.</p>
+                </div>
+                <div class="field">
+                  <label for="acc-name">Name</label>
+                  <input class="input" id="acc-name" name="name" value="Alex Rivera" maxlength="80" autocomplete="name" placeholder="e.g. Alex Rivera" />
+                </div>
+                <div class="field">
+                  <label for="acc-phone">Phone <span class="opt">(optional)</span></label>
+                  <input class="input" id="acc-phone" name="phone" type="tel" value="0400 000 000" maxlength="30" autocomplete="tel" placeholder="e.g. 0400 000 000" />
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top:18px">Save details</button>
+              </form>
+            </div>
+          </section>
+
+          <!-- NOTIFICATIONS -->
+          <section data-tile="account-notifications">
+            <h2 class="sec-h">Notifications</h2>
+            <div class="form-cap">
+              <div class="notif-row">
+                <span class="txt">
+                  <span class="t">Order updates</span>
+                  <span class="d">Confirmed &amp; ready alerts for your orders, sent to <b style="color:var(--color-ink)">alex@example.com</b>.</span>
+                </span>
+                <button type="button" class="switch js-switch" role="switch" aria-checked="true" aria-label="Order updates">
+                  <span class="knob"></span>
+                </button>
+              </div>
+              <div class="notif-row">
+                <span class="txt">
+                  <span class="t">Offers &amp; news</span>
+                  <span class="d">Occasional specials and what’s fresh from Fig &amp; Flour. Off by default.</span>
+                </span>
+                <button type="button" class="switch js-switch" role="switch" aria-checked="false" aria-label="Offers and news">
+                  <span class="knob"></span>
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- SAVED PAYMENT — a saved bank mandate + one-tap returning checkout -->
+        <section data-tile="account-saved-mandate">
+          <h2 class="sec-h">Saved payment</h2>
+          <div class="panel mandate form-cap">
+            <div class="row">
+              <span class="ico" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-5 9 5"/><path d="M4 10v8m5-8v8m6-8v8m5-8v8"/><path d="M2 21h20"/></svg>
+              </span>
+              <span style="min-width:0">
+                <span class="m-name">Pay by bank</span>
+                <span class="m-sub">Commonwealth ···· 1234</span>
+              </span>
+              <span class="badge paid m-badge">Active</span>
+            </div>
+            <button type="button" class="btn-primary full cta js-reorder">One-tap checkout · $29.50</button>
+            <p class="fineprint">Charged by bank transfer (PayTo) at checkout. Nothing stored until you order.</p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- ===================== SIGNED-OUT REFERENCE ===================== -->
+    <p class="state-lab">Signed out — magic-link sign-in</p>
+    <section class="signin-wrap">
+      <div class="signin p2e-rise" data-tile="account-signin">
+        <span class="logo" aria-hidden="true">F</span>
+        <h2>Sign in to Fig &amp; Flour</h2>
+        <p class="lead">Save your details, see past orders, and reorder in one tap. Ordering never requires an account — this is optional.</p>
+        <form onsubmit="return false">
+          <div class="field" style="margin-bottom:12px">
+            <label for="signin-email">Email</label>
+            <input class="input" id="signin-email" type="email" autocomplete="email" placeholder="you@example.com" />
+          </div>
+          <button type="submit" class="btn-primary full">Send magic link</button>
+        </form>
+        <p class="note">We’ll email you a one-time link — no password needed. It expires in 15 minutes and can be used once.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Native shell toggle (for capture).
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+
+  // Notification toggles — flip aria-checked (role=switch). Active track = --action.
+  document.querySelectorAll('.js-switch').forEach((sw) => {
+    sw.addEventListener('click', () => {
+      sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+    });
+  });
+
+  // 1-click Reorder — the named motion moment: a brand ghost flies from the
+  // button toward the cart on the p2e-fly arc while the button pulses
+  // (p2e-cartpulse). Wired on the hero, every history row, and the one-tap
+  // mandate CTA, so the prototype is a working design, not a static mock.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.js-reorder').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.classList.remove('p2e-cartpulse'); void btn.offsetWidth; btn.classList.add('p2e-cartpulse');
+      if (reduce) return; // honour reduced motion — pulse only, no flying ghost
+      const r = btn.getBoundingClientRect();
+      const ghost = document.createElement('span');
+      ghost.className = 'fly-ghost p2e-fly';
+      ghost.style.left = (r.left + r.width / 2 - 9) + 'px';
+      ghost.style.top = (r.top + r.height / 2 - 9) + 'px';
+      document.body.appendChild(ghost);
+      const done = () => ghost.remove();
+      ghost.addEventListener('animationend', done);
+      setTimeout(done, 900);
+    });
+  });
+</script>
+</body>
+</html>

@@ -52,10 +52,13 @@ with `P2E_CHROMIUM=/path/to/chrome`. Do **not** run `playwright install`.
 - [x] storefront landing (front door) — `diner/storefront-landing.html`
 - [x] storefront home (menu view) — `diner/diner-home.html`
 - [x] item modifier sheet — `diner/item-sheet.html`
-- [ ] menu page (category-nav / dietary filter / skeleton)
-- [ ] concierge (forest-dark AI panel)
-- [ ] checkout (card + PayTo states)
-- [ ] order status (placed → prep; bank-approval waiting)
-- [ ] account (overview / history / saved mandate)
+- [x] menu page (category-nav / dietary filter / search / skeleton) — `diner/menu.html`
+- [x] concierge (forest-dark AI panel) — `diner/concierge.html`
+- [x] checkout (card + PayTo states) — `diner/checkout.html`
+- [x] order status (placed → prep; bank-approval waiting) — `diner/order-status.html`
+- [x] account (overview / YOUR USUAL / history / saved mandate) — `diner/account.html`
+- [x] sign-in / check-inbox / not-found / empty-search — `diner/signin-empty.html`
+
+**Diner path complete.** Next: owner dashboard (gated behind O0 sidebar chrome), then onboarding / admin / marketplace / native, plus the cross-cutting sweeps.
 
 Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.

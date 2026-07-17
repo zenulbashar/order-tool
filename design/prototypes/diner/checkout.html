@@ -1,0 +1,625 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner CHECKOUT + PAYMENT · responsive design prototype.
+
+  Source of truth: app/[slug]/checkout/checkout-client.tsx (order summary,
+  fulfilment Segmented, name/email/phone Fields, mobile+desktop CTAs),
+  app/[slug]/schedule-picker.tsx (ASAP vs later → day chips + slot grid),
+  app/[slug]/checkout/payment-step.tsx (Stripe Payment Element, method
+  selection, Pay button + processing state, PayTo waiting flow) and the shared
+  primitives (segmented.tsx, input.tsx / field.tsx, button-variants.ts).
+
+  Layout matches source: mobile is a single column with a STICKY bottom "Pay"
+  bar; lg reflows to two columns — form/steps left, sticky order-summary rail
+  right (checkout-client's lg:grid-cols-[1fr_320px] + lg:sticky aside).
+
+  FIREWALL (data-domain="diner" → --action = venue --brand): the venue brand
+  fills every CTA, the active segment, and every selected state (time chip, bank
+  tile). Payment is NOT an AI surface, so amber (--color-accent) never paints a
+  visible element — it survives only as the global a11y focus ring token, exactly
+  as in the other diner prototypes. Success = success-green, destructive =
+  warm-deep. Every capturable block carries data-tile.
+
+  Motion: the p2e-* library is copied VERBATIM from diner-home.html; the three
+  extra real globals.css tokens this surface needs (p2e-progress, p2e-checkloop,
+  p2e-draw — home never rendered a progress bar or a success tick) are appended
+  from app/globals.css unchanged, and added to the reduced-motion guard.
+
+  Query params: ?native=1 (Capacitor status bar + safe-area).
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner checkout — Fig &amp; Flour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================== TOKEN LAYER ==============================
+   Copied 1:1 from app/globals.css so the prototype and the app share values. */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e;
+  --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8;
+  --color-sand:#efe7d6; --color-line:#e6ddcb; --color-line-strong:#d8cbb0;
+  --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px;
+  --radius-control-sm:9px; --radius-control-lg:13px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  /* Owner default; the diner root overrides --action below. */
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  /* Sample venue brand (a warm artisan-bakery terracotta) — distinct from the
+     product's forest/amber so the firewall is visibly doing its job. */
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--font-body); color:var(--color-ink);
+  background:var(--color-surface); min-height:100dvh; line-height:1.4;
+}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+.mono{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em}
+.display{font-family:var(--font-display);letter-spacing:-.02em}
+
+/* ============================ MOTION LIBRARY ============================
+   The p2e-* keyframes from app/globals.css, reduced-motion guarded.
+   (Copied VERBATIM from diner-home.html — do not alter values.) */
+@keyframes p2e-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes p2e-fly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(96px,-210px) scale(.28);opacity:0}}
+@keyframes p2e-cartpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-accent) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+@keyframes order-loading-dot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.p2e-float{animation:p2e-float 4s ease-in-out infinite}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-pop{animation:p2e-pop .32s ease-out both}
+.p2e-fly{animation:p2e-fly .7s ease-in both}
+.p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
+.p2e-rise{animation:p2e-rise .4s ease-out both}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+.p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
+.p2e-shimmer{
+  background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);
+  background-size:200% 100%; animation:p2e-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion:reduce){
+  .p2e-float,.p2e-glow,.p2e-think,.p2e-pop,.p2e-fly,.p2e-cartpulse,.p2e-rise,
+  .p2e-slidein,.p2e-ring,.p2e-shimmer{animation:none!important}
+}
+
+/* ---- Additional REAL globals.css motion tokens (app/globals.css) that the
+   Home view never needed but this pay surface does: an indeterminate progress
+   bar and the success-tick draw/loop. Copied 1:1, values unchanged. ---- */
+@keyframes p2e-progress{from{width:0}to{width:var(--p2e-progress,60%)}}
+@keyframes p2e-draw{to{stroke-dashoffset:0}}
+@keyframes p2e-checkloop{0%{stroke-dashoffset:60}60%,100%{stroke-dashoffset:0}}
+.p2e-progress{animation:p2e-progress 1s ease-out both}
+.p2e-draw{animation:p2e-draw .8s ease-out forwards}
+.p2e-checkloop{animation:p2e-checkloop 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .p2e-progress,.p2e-draw,.p2e-checkloop{animation:none!important}
+}
+
+/* ============================== CHROME ================================= */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{
+  display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b;
+}
+[data-native] body{padding-bottom:env(safe-area-inset-bottom,20px)}
+
+/* Page shell — mirrors checkout-client's max-w-2xl mobile / max-w-[900px] grid. */
+.page{max-width:640px;margin:0 auto;background:var(--color-surface);min-height:100dvh;
+  padding-bottom:112px} /* room for the sticky Pay bar on mobile */
+@media(min-width:1024px){.page{max-width:960px;padding-bottom:40px}}
+@media(min-width:1536px){.page{max-width:1080px}}
+
+.head{border-bottom:1px solid var(--color-line);padding:18px 20px}
+.head .back{font-size:12px;color:var(--color-muted);display:inline-flex;align-items:center;gap:4px;transition:.15s}
+.head .back:hover{color:var(--color-ink)}
+.head h1{margin-top:8px;font-family:var(--font-display);font-weight:600;font-size:22px;letter-spacing:-.02em;color:var(--color-ink)}
+.head .venue{font-size:14px;color:var(--color-muted)}
+@media(min-width:1024px){.head{padding:22px 24px}}
+
+/* Two-column grid at lg — form left, sticky summary rail right. */
+.grid{padding:20px}
+@media(min-width:1024px){
+  .grid{display:grid;grid-template-columns:1fr 320px;align-items:start;gap:24px;padding:24px}
+}
+@media(min-width:1536px){.grid{grid-template-columns:1fr 356px;gap:32px}}
+
+.col-form{display:flex;flex-direction:column;gap:22px;order:2}
+@media(min-width:1024px){.col-form{order:1;gap:24px}}
+
+/* ---------- section scaffolding ---------- */
+.eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;
+  font-size:11px;font-weight:700;color:var(--color-label)}
+.sublabel{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;
+  font-size:9px;font-weight:700;color:var(--color-label);display:block}
+.block{display:flex;flex-direction:column;gap:10px}
+
+/* ---------- segmented control (source: segmented.tsx) ---------- */
+.seg{display:inline-flex;border-radius:var(--radius-pill);border:1px solid var(--color-line);
+  background:var(--color-surface);padding:4px}
+.seg.full{display:flex;width:100%}
+.seg button{border-radius:var(--radius-pill);padding:7px 16px;font-size:14px;font-weight:500;
+  color:var(--color-muted);transition:.15s;white-space:nowrap}
+.seg.full button{flex:1}
+.seg button:hover{color:var(--color-ink)}
+.seg button[aria-checked="true"]{background:var(--action);color:var(--action-contrast)}
+
+/* ---------- schedule (source: schedule-picker.tsx) ---------- */
+.chiprow{display:flex;flex-wrap:wrap;gap:8px}
+.daychip{border:1px solid var(--color-line);border-radius:var(--radius-control);
+  background:var(--color-surface-elevated);padding:9px 16px;font-size:14px;font-weight:500;
+  color:var(--color-muted);transition:.15s}
+.daychip:hover{background:var(--color-sand);color:var(--color-ink)}
+.daychip[aria-pressed="true"]{background:var(--action);color:var(--action-contrast);border-color:transparent}
+.slotgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:640px){.slotgrid{grid-template-columns:repeat(3,1fr)}}
+.slot{border:1px solid var(--color-line);border-radius:var(--radius-control);
+  background:var(--color-surface-elevated);padding:11px 8px;font-size:14px;font-weight:500;
+  color:var(--color-ink);text-align:center;transition:.15s}
+.slot:hover{background:var(--color-sand)}
+.slot[aria-pressed="true"]{border-color:var(--action);background:color-mix(in srgb,var(--action) 8%,transparent)}
+
+/* ---------- inputs (source: input.tsx / field.tsx) ---------- */
+.flabel{display:block;font-size:14px;font-weight:500;color:var(--color-ink);margin-bottom:6px}
+.flabel .opt{font-weight:400;color:var(--color-muted)}
+.input{width:100%;border-radius:var(--radius-input);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);padding:10px 12px;font:500 14px var(--font-body);
+  color:var(--color-ink);box-shadow:0 1px 2px rgb(20 30 25 / .04);transition:border-color .15s}
+.input::placeholder{font-family:var(--font-mono);text-transform:none;letter-spacing:0;color:#b6ab92;font-size:12.5px}
+.fields{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:640px){.fields.two{grid-template-columns:1fr 1fr}}
+.fieldhint{margin-top:6px;font-size:12px;color:var(--color-muted)}
+
+/* ---------- payment method + card (source: payment-step.tsx) ---------- */
+.paycard{border:1px solid var(--color-line);border-radius:var(--radius-control);
+  background:var(--color-surface-elevated);padding:14px;display:flex;flex-direction:column;gap:12px}
+.paycard .frow{display:flex;flex-direction:column;gap:6px}
+.paycard .frow .k{font-size:11px;color:var(--color-muted)}
+/* faux Stripe fields — deliberately flat/greyed to read as an un-restyleable iframe */
+.fauxfield{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border:1px solid var(--color-line);border-radius:var(--radius-control-sm);
+  background:var(--color-surface);padding:11px 12px;font-size:14px;color:var(--color-muted);
+  font-variant-numeric:tabular-nums}
+.fauxfield .brandmark{display:inline-flex;gap:3px}
+.fauxfield .brandmark i{width:22px;height:14px;border-radius:3px;background:var(--color-line-strong);opacity:.7;display:block}
+.paycard .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.iframenote{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-label)}
+.iframenote svg{height:13px;width:13px;flex:none;color:var(--color-label)}
+
+/* card loading skeleton (p2e-shimmer) */
+.skcard{border:1px solid var(--color-line);border-radius:var(--radius-control);
+  background:var(--color-surface-elevated);padding:14px;display:flex;flex-direction:column;gap:12px}
+.skln{height:42px;border-radius:var(--radius-control-sm)}
+.skln.half{height:42px}
+.skrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.skbar{height:10px;width:48%;border-radius:5px}
+
+/* ---------- PayTo / pay-by-bank (source: selectedMethod === 'payto') ---------- */
+.payto-explain{display:flex;gap:12px;align-items:flex-start;border-radius:var(--radius-control);
+  border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:14px}
+.payto-explain .ic{height:38px;width:38px;flex:none;border-radius:var(--radius-pill);
+  display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--action) 12%,transparent);color:var(--action)}
+.payto-explain h4{font-size:14px;font-weight:600;color:var(--color-ink)}
+.payto-explain p{margin-top:3px;font-size:13px;color:var(--color-muted)}
+.bankgrid{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:640px){.bankgrid{grid-template-columns:1fr 1fr}}
+.bank{display:flex;align-items:center;gap:10px;border:1px solid var(--color-line);
+  border-radius:var(--radius-control);background:var(--color-surface-elevated);padding:11px 12px;
+  font-size:14px;font-weight:500;color:var(--color-ink);transition:.15s;text-align:left}
+.bank:hover{border-color:var(--color-line-strong)}
+.bank[aria-pressed="true"]{border-color:var(--action);background:color-mix(in srgb,var(--action) 8%,transparent)}
+.bank .logo{height:30px;width:30px;flex:none;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--font-display);font-weight:800;font-size:14px;
+  color:var(--action-contrast);background:var(--action)}
+.bank .radio{margin-left:auto;height:18px;width:18px;flex:none;border-radius:50%;
+  border:2px solid var(--color-line-strong);position:relative;transition:.15s}
+.bank[aria-pressed="true"] .radio{border-color:var(--action)}
+.bank[aria-pressed="true"] .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--action)}
+
+/* success saving callout (success-green — semantic, matches source) */
+.saving{display:flex;align-items:center;gap:8px;border-radius:var(--radius-input);
+  border:1px solid color-mix(in srgb,var(--color-success) 30%,transparent);
+  background:color-mix(in srgb,var(--color-success) 10%,transparent);padding:9px 12px}
+.saving .pill{border-radius:var(--radius-pill);background:color-mix(in srgb,var(--color-success) 20%,transparent);
+  color:var(--color-success-deep);font-family:var(--font-mono);font-size:10px;font-weight:700;
+  letter-spacing:.08em;padding:3px 9px}
+.saving span.t{font-size:12px;color:var(--color-ink)}
+
+/* ---------- order summary (reuses diner-home cart-rail line pattern) ---------- */
+.summary{order:1;border-radius:var(--radius-card);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card);padding:18px 18px 16px}
+@media(min-width:1024px){
+  .summary{order:2;position:sticky;top:24px}
+}
+.summary > .eyebrow{margin-bottom:10px;display:block}
+.summary ul{list-style:none;border-top:1px solid var(--color-sand)}
+.summary li{display:flex;gap:12px;align-items:flex-start;padding:11px 0;
+  border-bottom:1px solid color-mix(in srgb,var(--color-sand) 70%,transparent)}
+.summary li:last-child{border-bottom:none}
+.qty{margin-top:1px;height:26px;width:26px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-pill);font-family:var(--font-display);font-weight:700;font-size:12px;
+  background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--action)}
+.li-nm{font-size:13.5px;font-weight:600;color:var(--color-ink)}
+.li-sub{margin-top:2px;font-size:11px;color:var(--color-label)}
+.li-pr{flex:none;font-size:14px;color:var(--color-ink);font-variant-numeric:tabular-nums}
+.summary .tot{border-top:1px solid var(--color-line);margin-top:2px;padding-top:12px;
+  display:flex;flex-direction:column;gap:6px}
+.summary .totrow{display:flex;justify-content:space-between;font-size:14px;color:var(--color-muted)}
+.summary .grand{display:flex;justify-content:space-between;align-items:baseline}
+.summary .grand .l{font-size:14px;font-weight:500;color:var(--color-ink)}
+.summary .grand .v{font-family:var(--font-display);font-weight:600;font-size:18px;color:var(--color-ink)}
+.summary .tax{text-align:right;font-size:11px;color:var(--color-muted)}
+/* desktop-only pay affordance inside the rail (mobile uses the sticky bar) */
+.rail-pay{display:none}
+@media(min-width:1024px){.rail-pay{display:block;margin-top:14px}}
+
+/* ---------- brand Pay CTA (Button primary = var(--action)) ---------- */
+.pay-cta{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--radius-control-lg);background:var(--action);color:var(--action-contrast);
+  height:48px;padding:0 18px;font-size:15px;font-weight:600;transition:.15s}
+.pay-cta:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.pay-cta:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.pay-cta .amt{font-family:var(--font-display)}
+.pay-cta svg{height:15px;width:15px;flex:none}
+.securedby{margin-top:8px;text-align:center;font-size:11px;color:var(--color-muted)}
+
+/* processing state — spinner + p2e-progress track */
+.pay-cta.is-busy{opacity:1;cursor:progress}
+.spinner{height:16px;width:16px;flex:none;border-radius:50%;
+  border:2px solid color-mix(in srgb,var(--action-contrast) 45%,transparent);
+  border-top-color:var(--action-contrast)}
+.progress-track{margin-top:10px;height:4px;border-radius:999px;
+  background:color-mix(in srgb,var(--action) 16%,transparent);overflow:hidden}
+.progress-track .bar{height:100%;border-radius:999px;background:var(--action);--p2e-progress:72%}
+
+/* ---------- sticky bottom Pay bar (mobile) — safe-area aware ---------- */
+.paybar{position:fixed;inset-inline:0;bottom:0;z-index:40;max-width:640px;margin:0 auto;
+  background:color-mix(in srgb,var(--color-surface-elevated) 92%,transparent);
+  backdrop-filter:blur(10px);border-top:1px solid var(--color-line);
+  padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px))}
+@media(min-width:1024px){.paybar{display:none}}
+.paybar .securedby{margin-top:6px}
+
+/* ---------- states reference strip (always visible for capture) ---------- */
+.states{border-top:1px solid var(--color-line);padding:8px 20px 40px;max-width:640px;margin:0 auto}
+@media(min-width:1024px){.states{max-width:960px;padding:8px 24px 48px}}
+@media(min-width:1536px){.states{max-width:1080px}}
+.states .lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;font-size:10px;
+  font-weight:700;color:var(--color-label);margin:26px 0 10px}
+.states .demo{border:1px solid var(--color-sand);border-radius:var(--radius-card);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card);padding:16px;max-width:420px}
+.states .stategrid{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:1024px){.states .stategrid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
+
+/* success confirmation */
+.success{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:22px 16px}
+.success .tick{height:66px;width:66px}
+.success h3{margin-top:6px;font-family:var(--font-display);font-weight:700;font-size:20px;
+  letter-spacing:-.01em;color:var(--color-ink)}
+.success p{font-size:13px;color:var(--color-muted);max-width:280px}
+.success .ref{margin-top:2px;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--color-label)}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="page">
+  <!-- ===================== HEADER ===================== -->
+  <header class="head" data-tile="checkout-header">
+    <a class="back" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="height:13px;width:13px"><path d="M15 18l-6-6 6-6"/></svg>
+      Back to menu
+    </a>
+    <h1>Checkout</h1>
+    <p class="venue">Fig &amp; Flour</p>
+  </header>
+
+  <div class="grid">
+    <!-- ===================== FORM / STEPS (left @ lg) ===================== -->
+    <div class="col-form">
+
+      <!-- Fulfilment ------------------------------------------------------ -->
+      <section class="block" data-tile="checkout-fulfilment">
+        <span class="eyebrow">Order type</span>
+        <div class="seg" role="radiogroup" aria-label="Order type" id="fulfilment">
+          <button type="button" role="radio" aria-checked="true" data-mode="pickup">Pickup</button>
+          <button type="button" role="radio" aria-checked="false" data-mode="dine_in">Dine-in</button>
+          <button type="button" role="radio" aria-checked="false" data-mode="delivery">Delivery</button>
+        </div>
+      </section>
+
+      <!-- Schedule (pickup) ---------------------------------------------- -->
+      <section class="block" data-tile="checkout-schedule" id="schedule">
+        <span class="eyebrow">Pickup time</span>
+        <div class="seg" role="radiogroup" aria-label="Pickup time" id="when">
+          <button type="button" role="radio" aria-checked="true" data-when="asap">ASAP</button>
+          <button type="button" role="radio" aria-checked="false" data-when="later">Schedule for later</button>
+        </div>
+
+        <div id="laterwrap" style="display:none;flex-direction:column;gap:12px;margin-top:2px">
+          <div class="block" style="gap:8px">
+            <span class="sublabel">Day</span>
+            <div class="chiprow" role="group" aria-label="Day">
+              <button type="button" class="daychip" aria-pressed="true">Today</button>
+              <button type="button" class="daychip" aria-pressed="false">Fri 18</button>
+              <button type="button" class="daychip" aria-pressed="false">Sat 19</button>
+            </div>
+          </div>
+          <div class="block" style="gap:8px">
+            <span class="sublabel">Pickup time</span>
+            <div class="slotgrid" role="group" aria-label="Pickup time slot">
+              <button type="button" class="slot" aria-pressed="false">2:30 PM</button>
+              <button type="button" class="slot" aria-pressed="true">2:45 PM</button>
+              <button type="button" class="slot" aria-pressed="false">3:00 PM</button>
+              <button type="button" class="slot" aria-pressed="false">3:15 PM</button>
+              <button type="button" class="slot" aria-pressed="false">3:30 PM</button>
+              <button type="button" class="slot" aria-pressed="false">3:45 PM</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Table (dine-in) — hidden until Dine-in is chosen ---------------- -->
+      <section class="block" data-tile="checkout-table" id="tablewrap" style="display:none">
+        <label class="flabel" for="table">Table number <span style="color:var(--color-warm)" aria-hidden="true">*</span></label>
+        <input class="input" id="table" type="text" placeholder="e.g. 12" inputmode="numeric" />
+      </section>
+
+      <!-- Contact details ------------------------------------------------- -->
+      <section class="block" data-tile="checkout-details">
+        <span class="eyebrow">Your details</span>
+        <div class="fields two" style="margin-top:2px">
+          <div>
+            <label class="flabel" for="name">Name</label>
+            <input class="input" id="name" type="text" placeholder="Full name" autocomplete="name" value="Mara Elliott" />
+          </div>
+          <div>
+            <label class="flabel" for="phone">Phone <span class="opt">(optional)</span></label>
+            <input class="input" id="phone" type="tel" placeholder="04xx xxx xxx" autocomplete="tel" />
+          </div>
+        </div>
+        <div class="fields">
+          <div>
+            <label class="flabel" for="email">Email</label>
+            <input class="input" id="email" type="email" placeholder="you@email.com" autocomplete="email" value="mara@example.com" />
+            <p class="fieldhint">For your receipt and order updates.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Payment method ------------------------------------------------- -->
+      <section class="block" data-tile="checkout-method">
+        <span class="eyebrow">Payment method</span>
+        <div class="seg full" role="radiogroup" aria-label="Payment method" id="method">
+          <button type="button" role="radio" aria-checked="true" data-method="card">Card</button>
+          <button type="button" role="radio" aria-checked="false" data-method="payto">Pay by bank (PayTo)</button>
+        </div>
+        <!-- In source the method is chosen INSIDE the Stripe Payment Element; this
+             segmented is a prototype affordance mirroring the venue's two enabled
+             methods (card + PayTo) so both states are designable + capturable. -->
+      </section>
+
+      <!-- Card — active by default (Stripe Payment Element placeholder) --- -->
+      <section class="block" data-tile="checkout-card" id="card-state">
+        <div class="paycard">
+          <div class="frow">
+            <span class="k">Card number</span>
+            <div class="fauxfield">
+              <span>4242&nbsp; 4242&nbsp; 4242&nbsp; 4242</span>
+              <span class="brandmark" aria-hidden="true"><i></i><i></i></span>
+            </div>
+          </div>
+          <div class="split">
+            <div class="frow">
+              <span class="k">Expiry</span>
+              <div class="fauxfield"><span>MM&nbsp;·&nbsp;YY</span></div>
+            </div>
+            <div class="frow">
+              <span class="k">CVC</span>
+              <div class="fauxfield"><span>•••</span></div>
+            </div>
+          </div>
+          <p class="iframenote">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            Stripe Payment Element (iframe) — placeholder, not restyleable.
+          </p>
+        </div>
+      </section>
+
+      <!-- PayTo — pay-by-bank state (shown when method = Pay by bank) ----- -->
+      <section class="block" data-tile="checkout-payto" id="payto-state" style="display:none">
+        <div class="payto-explain">
+          <span class="ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="height:19px;width:19px"><path d="M3 21h18M4 10h16M5 10l7-6 7 6M6 10v11M18 10v11M10 10v11M14 10v11"/></svg>
+          </span>
+          <div>
+            <h4>Approve in your banking app</h4>
+            <p>Choose your bank, then confirm the PayTo agreement in your bank app. No card details needed.</p>
+          </div>
+        </div>
+        <div class="saving" role="note">
+          <span class="pill">SAVE $0.60</span>
+          <span class="t">Pay by bank to save on top of any promotion.</span>
+        </div>
+        <div class="bankgrid" role="group" aria-label="Choose your bank">
+          <button type="button" class="bank" aria-pressed="true"><span class="logo" aria-hidden="true">C</span>Commonwealth<span class="radio" aria-hidden="true"></span></button>
+          <button type="button" class="bank" aria-pressed="false"><span class="logo" aria-hidden="true">W</span>Westpac<span class="radio" aria-hidden="true"></span></button>
+          <button type="button" class="bank" aria-pressed="false"><span class="logo" aria-hidden="true">N</span>NAB<span class="radio" aria-hidden="true"></span></button>
+          <button type="button" class="bank" aria-pressed="false"><span class="logo" aria-hidden="true">A</span>ANZ<span class="radio" aria-hidden="true"></span></button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================== ORDER SUMMARY RAIL (right @ lg) ============ -->
+    <aside class="summary" aria-label="Your order" data-tile="checkout-summary">
+      <span class="eyebrow">Your order</span>
+      <ul>
+        <li class="p2e-slidein" style="animation-delay:.04s"><span class="qty">2</span><span style="min-width:0;flex:1"><span class="li-nm">Country Sourdough</span><span class="li-sub" style="display:block">Sliced</span></span><span class="li-pr">$18.00</span></li>
+        <li class="p2e-slidein" style="animation-delay:.10s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Almond Croissant</span></span><span class="li-pr">$6.50</span></li>
+        <li class="p2e-slidein" style="animation-delay:.16s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Flat White</span><span class="li-sub" style="display:block">Oat milk · Large</span></span><span class="li-pr">$6.50</span></li>
+      </ul>
+      <div class="tot">
+        <div class="totrow"><span>Subtotal</span><span>$31.00</span></div>
+        <div class="grand"><span class="l">Total</span><span class="v">$31.00</span></div>
+      </div>
+      <p class="tax">incl. GST $2.82</p>
+
+      <!-- desktop Pay CTA (mobile uses the sticky bar below) -->
+      <div class="rail-pay">
+        <button class="pay-cta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <span>Pay</span><span class="amt">$31.00</span>
+        </button>
+        <p class="securedby">Payments are securely processed by Stripe.</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ===================== STATES REFERENCE (capture) ===================== -->
+  <section class="states">
+    <div class="stategrid">
+      <div>
+        <p class="lab">Card area — mounting skeleton (p2e-shimmer)</p>
+        <div data-tile="checkout-card-loading">
+          <div class="skcard">
+            <div class="skbar p2e-shimmer"></div>
+            <div class="skln p2e-shimmer"></div>
+            <div class="skrow"><div class="skln p2e-shimmer"></div><div class="skln p2e-shimmer"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="lab">Pay — processing (spinner + p2e-progress)</p>
+        <div class="demo" data-tile="checkout-paying">
+          <button class="pay-cta is-busy" type="button" aria-busy="true" disabled>
+            <span class="spinner p2e-spin" aria-hidden="true"></span>
+            <span>Processing…</span>
+          </button>
+          <div class="progress-track" aria-hidden="true"><div class="bar p2e-progress"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="lab">Confirmed — success (p2e-checkloop ring + p2e-draw tick)</p>
+    <div class="demo" data-tile="checkout-success">
+      <div class="success">
+        <svg class="tick" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+          <circle cx="26" cy="26" r="24" stroke="color-mix(in srgb,var(--color-success) 30%,transparent)" stroke-width="3"/>
+          <circle class="p2e-checkloop" cx="26" cy="26" r="24" stroke="var(--color-success)" stroke-width="3"
+            stroke-linecap="round" stroke-dasharray="60 91" transform="rotate(-90 26 26)"/>
+          <path class="p2e-draw" d="M16 27.5l6.5 6.5L37 19" stroke="var(--color-success)" stroke-width="3.5"
+            stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="34" stroke-dashoffset="34"/>
+        </svg>
+        <h3>Order confirmed</h3>
+        <p>Thanks, Mara. Fig &amp; Flour is preparing your order — we&rsquo;ll text you when it&rsquo;s ready for pickup.</p>
+        <p class="ref">ORDER #FF-4821 · $31.00</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== STICKY PAY BAR (mobile) ===================== -->
+<div class="paybar" data-tile="checkout-pay">
+  <button class="pay-cta" type="button" id="paybtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    <span>Pay</span><span class="amt">$31.00</span>
+  </button>
+  <p class="securedby">Payments are securely processed by Stripe.</p>
+</div>
+
+<script>
+  // Native shell (Capacitor status bar + safe-area).
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+
+  // Small helper: single-select an aria-checked radiogroup / aria-pressed group.
+  function selectOne(group, btn, attr){
+    group.querySelectorAll('button').forEach((b)=>b.setAttribute(attr,'false'));
+    btn.setAttribute(attr,'true');
+  }
+
+  // Fulfilment: pickup -> schedule, dine_in -> table, delivery -> neither.
+  const fulfilment = document.getElementById('fulfilment');
+  const schedule = document.getElementById('schedule');
+  const tablewrap = document.getElementById('tablewrap');
+  fulfilment.addEventListener('click',(e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    selectOne(fulfilment, btn, 'aria-checked');
+    const mode = btn.dataset.mode;
+    schedule.style.display = mode === 'pickup' ? '' : 'none';
+    tablewrap.style.display = mode === 'dine_in' ? 'flex' : 'none';
+  });
+
+  // ASAP vs schedule-for-later.
+  const when = document.getElementById('when');
+  const laterwrap = document.getElementById('laterwrap');
+  when.addEventListener('click',(e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    selectOne(when, btn, 'aria-checked');
+    laterwrap.style.display = btn.dataset.when === 'later' ? 'flex' : 'none';
+  });
+
+  // Day / slot / bank single-select groups (aria-pressed).
+  document.querySelectorAll('.chiprow[role="group"], .slotgrid, .bankgrid').forEach((group)=>{
+    group.addEventListener('click',(e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      selectOne(group, btn, 'aria-pressed');
+    });
+  });
+
+  // Payment method: card <-> PayTo swaps the visible payment block.
+  const method = document.getElementById('method');
+  const cardState = document.getElementById('card-state');
+  const paytoState = document.getElementById('payto-state');
+  method.addEventListener('click',(e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    selectOne(method, btn, 'aria-checked');
+    const isCard = btn.dataset.method === 'card';
+    cardState.style.display = isCard ? 'flex' : 'none';
+    paytoState.style.display = isCard ? 'none' : 'flex';
+  });
+
+  // Pay button: a working idle -> processing moment (the success + processing
+  // states also live, always-visible, in the reference strip for capture).
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('#paybtn, .rail-pay .pay-cta').forEach((btn)=>{
+    btn.addEventListener('click',()=>{
+      if(btn.classList.contains('is-busy')) return;
+      const original = btn.innerHTML;
+      btn.classList.add('is-busy'); btn.disabled = true;
+      btn.innerHTML = '<span class="spinner'+(reduce?'':' p2e-spin')+'" aria-hidden="true"></span><span>Processing…</span>';
+      setTimeout(()=>{
+        btn.classList.remove('is-busy'); btn.disabled = false; btn.innerHTML = original;
+      }, 2000);
+    });
+  });
+</script>
+</body>
+</html>
