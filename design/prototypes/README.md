@@ -87,6 +87,7 @@ owner's one dark chrome surface where **amber is the sanctioned signature**
   - **O2 complete.**
 - [x] O4 stock & supplies — `owner/o4-stock.html` (ingredients KPIs + table · AI reorder-suggestions inbox + all-clear · invoice-scan reading w/ animated wordmark + p2e-scan · review gate)
 - [x] O6 payments & billing — `owner/o6-payments.html` (Stripe Connect status · balance/payouts w/ p2e-count · Pro/Scale plan comparison · discount codes · gift cards)
-- [ ] O5 storefront settings · O7 connections
+- [x] O7 connections — `owner/o7-connections.html` (integrations hub: connected/not-connected/connecting/error/coming-soon · Square detail drawer · Apps/Roster launcher; amber-never firewall)
+- [ ] O5 storefront settings (last owner cluster)
 
 Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
