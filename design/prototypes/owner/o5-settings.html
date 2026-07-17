@@ -1,0 +1,262 @@
+<!doctype html>
+<!--
+  Prompt2Eat — OWNER · Storefront settings (O5) · prototype.
+  Settings hub + brand/colours (live preview) + logo · announcement · hours ·
+  tax (GST) · social · notifications forms.
+
+  Source: app/dashboard/settings/{page,brand-theme-form,logo-control,
+  imagery-control,announcement-form,social-links-form,about-form,tax-form,
+  notify-toggle}.tsx.
+
+  OWNER root — --action = forest. Sanctioned: the brand-swatch SELECTION RING is
+  amber (ring-[--color-accent], owner selection accent, per brand-theme-form.tsx).
+  The live storefront PREVIEW is venue-branded (terracotta --brand) — it shows how
+  the owner's pick looks to diners. Save = forest primary; toggles = --action.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Owner — storefront settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  --brand:#a6572e; --brand-contrast:#fffdf8; /* venue brand for the live preview */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input,textarea):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea{font-family:inherit}
+svg{display:block}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+@media (prefers-reduced-motion:reduce){.p2e-rise{animation:none!important}}
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+.wrap{max-width:900px;margin:0 auto;padding:24px 20px 96px}
+@media(min-width:1024px){.wrap{padding:32px 24px 96px}}
+.page-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label)}
+.page-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:28px;margin-top:6px}
+.page-sub{font-size:14px;color:var(--color-muted);margin-top:4px}
+.sect-lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:34px 0 12px}
+
+/* hub grid */
+.hub{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:640px){.hub{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.hub{grid-template-columns:repeat(3,1fr)}}
+.hcard{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card);transition:.15s}
+.hcard:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.hcard .t{font-family:var(--font-display);font-weight:700;font-size:15px}
+.hcard .d{margin-top:2px;font-size:12px;color:var(--color-muted)}
+.hcard .arr{color:var(--color-muted);flex:none}
+
+/* form card */
+.card{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:20px;box-shadow:var(--shadow-card)}
+.card h2{font-family:var(--font-display);font-weight:700;font-size:16px}
+.card .cap{margin-top:4px;font-size:13px;color:var(--color-muted)}
+.field{margin-top:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+.input,.textarea{width:100%;border:1px solid var(--color-line);border-radius:var(--radius-input);background:var(--color-surface);padding:10px 12px;font:500 14px var(--font-body);color:var(--color-ink)}
+.textarea{min-height:64px;resize:vertical}
+.input::placeholder{font-family:var(--font-mono);font-size:12px;color:#b6ab92}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 16px;border-radius:var(--radius-control);font-size:13px;font-weight:600;transition:.15s}
+.btn.sm{min-height:34px;padding:0 12px;font-size:12px}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+.save{margin-top:16px;display:flex;justify-content:flex-end}
+
+/* brand form */
+.brandgrid{display:grid;gap:20px;grid-template-columns:1fr}
+@media(min-width:900px){.brandgrid{grid-template-columns:1fr 300px}}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.sw{height:40px;width:40px;border-radius:999px;position:relative;cursor:pointer}
+.sw.sel{outline:2px solid var(--color-accent);outline-offset:2px}
+.hexrow{margin-top:14px;display:flex;align-items:center;gap:10px}
+.hexrow .picker{height:40px;width:56px;border:1px solid var(--color-line);border-radius:var(--radius-control);background:var(--brand)}
+.hexrow .hex{font-family:var(--font-mono);font-size:13px;font-weight:700;border:1px solid var(--color-line);border-radius:var(--radius-input);padding:9px 12px;background:var(--color-surface)}
+/* live preview (venue-branded) */
+.preview{border:1px solid var(--color-line);border-radius:var(--radius-card);overflow:hidden;background:var(--color-surface-elevated);position:sticky;top:16px}
+.preview .lab{padding:8px 12px;border-bottom:1px solid var(--color-line);font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--color-label);background:var(--color-hover-secondary)}
+.preview .hero{min-height:96px;display:flex;align-items:flex-end;padding:12px;background:color-mix(in srgb,var(--brand) 12%,var(--color-surface))}
+.preview .hero .logo{height:30px;width:30px;border-radius:9px;background:var(--brand);color:var(--brand-contrast);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:15px}
+.preview .hero .vn{margin-left:8px;font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:-.02em}
+.preview .body{padding:12px}
+.preview .item{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--color-sand)}
+.preview .add{height:26px;width:26px;border-radius:999px;background:var(--brand);color:var(--brand-contrast);display:flex;align-items:center;justify-content:center;font-weight:700}
+.preview .cta{margin-top:10px;width:100%;border-radius:12px;background:var(--brand);color:var(--brand-contrast);padding:9px;font-size:13px;font-weight:600;text-align:center}
+
+/* announcement preview */
+.annc-prev{margin-top:12px;border-radius:8px;overflow:hidden}
+.annc-prev .bar{background:var(--color-ink);color:var(--color-surface);text-align:center;font-size:12px;font-weight:500;padding:7px 12px}
+
+/* hours */
+.day{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--color-sand);font-size:14px}
+.day .n{width:88px;font-weight:600}
+.day .times{display:flex;align-items:center;gap:6px;color:var(--color-muted);font-family:var(--font-mono);font-size:12px}
+.day .times input{width:74px;border:1px solid var(--color-line);border-radius:8px;padding:5px 8px;font:600 12px var(--font-mono);background:var(--color-surface)}
+.day .closed{color:var(--color-label);font-style:italic}
+.day .toggle,.tog-inline{margin-left:auto}
+.toggle{position:relative;display:inline-flex;height:22px;width:40px;align-items:center;border-radius:999px;background:var(--action)}
+.toggle .knob{height:18px;width:18px;border-radius:999px;background:var(--color-surface-elevated);box-shadow:0 1px 2px rgba(0,0,0,.2);transform:translateX(20px)}
+.toggle.off{background:var(--color-sand)}.toggle.off .knob{transform:translateX(2px)}
+
+/* tax + notif toggles */
+.togrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-sand)}
+.togrow:last-child{border-bottom:none}
+.togrow .l{font-size:14px;font-weight:600}.togrow .s{font-size:12px;color:var(--color-muted);margin-top:1px}
+
+/* social */
+.social-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.social-row .ic{height:34px;width:34px;flex:none;border-radius:9px;background:var(--color-sand);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--color-muted)}
+.social-row input{flex:1}
+
+/* logo/upload slot */
+.slot{margin-top:12px;display:flex;align-items:center;gap:14px}
+.slot .box{height:72px;width:120px;border-radius:12px;border:1px solid var(--color-line);background:var(--color-hover-secondary);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:24px;color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="wrap" data-tile="settings-page">
+  <p class="page-eyebrow">Storefront setup</p>
+  <h1 class="page-h">Storefront settings</h1>
+  <p class="page-sub">Fig &amp; Flour</p>
+
+  <!-- ===== HUB ===== -->
+  <div class="hub" data-tile="settings-hub" style="margin-top:18px">
+    <a class="hcard"><span><span class="t">Brand &amp; colours</span><span class="d">Your accent colour &amp; text</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">Logo</span><span class="d">Shown across your storefront</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">Photos &amp; hero</span><span class="d">Cover imagery</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">Announcement bar</span><span class="d">A promo line up top</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">Social links</span><span class="d">Instagram, Facebook…</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">About &amp; description</span><span class="d">Your story &amp; SEO</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">Opening hours &amp; location</span><span class="d">When &amp; where</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">Tax (GST)</span><span class="d">Rate &amp; inclusive pricing</span></span><span class="arr">→</span></a>
+    <a class="hcard"><span><span class="t">Order notifications</span><span class="d">New-order alerts</span></span><span class="arr">→</span></a>
+  </div>
+
+  <!-- ===== BRAND & COLOURS (live preview) ===== -->
+  <p class="sect-lab">Brand &amp; colours · live preview</p>
+  <div class="card" data-tile="brand-form">
+    <div class="brandgrid">
+      <div>
+        <h2>Storefront accent</h2>
+        <p class="cap">Pick a colour for buttons, links and highlights on your storefront. Text stays a readable dark by default.</p>
+        <div class="swatches">
+          <span class="sw sel" style="background:#a6572e"></span>
+          <span class="sw" style="background:#16241c"></span>
+          <span class="sw" style="background:#7b3f5e"></span>
+          <span class="sw" style="background:#1f6f5c"></span>
+          <span class="sw" style="background:#c99a2e"></span>
+          <span class="sw" style="background:#9c2f4a"></span>
+          <span class="sw" style="background:#334a6e"></span>
+        </div>
+        <div class="hexrow"><span class="picker"></span><span class="hex">#A6572E</span><span style="font-size:12px;color:var(--color-muted)">or pick a custom colour</span></div>
+        <div class="field"><label>Text colour <span style="font-weight:400;color:var(--color-muted)">— auto (readable dark)</span></label>
+          <div style="display:flex;gap:8px"><span class="btn secondary sm">Auto</span><span class="btn secondary sm">Custom</span></div>
+        </div>
+        <div class="save"><button class="btn primary">Save brand</button></div>
+      </div>
+      <div class="preview" data-tile="brand-preview">
+        <div class="lab">Live storefront preview</div>
+        <div class="hero"><span class="logo">F</span><span class="vn">Fig &amp; Flour</span></div>
+        <div class="body">
+          <div class="item"><span>Country Sourdough · $9.00</span><span class="add">+</span></div>
+          <div class="item" style="border-bottom:none"><span>Almond Croissant · $6.50</span><span class="add">+</span></div>
+          <div class="cta">Checkout · $15.50</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LOGO ===== -->
+  <p class="sect-lab">Logo</p>
+  <div class="card" data-tile="logo-form">
+    <h2>Logo</h2><p class="cap">Shown in your storefront header, footer, and browser tab.</p>
+    <div class="slot"><span class="box">F</span><div style="display:flex;gap:8px"><button class="btn secondary sm">Upload</button><button class="btn secondary sm" style="color:var(--color-warm-deep)">Remove</button></div></div>
+  </div>
+
+  <!-- ===== ANNOUNCEMENT (preview) ===== -->
+  <p class="sect-lab">Announcement bar</p>
+  <div class="card" data-tile="announcement-form">
+    <h2>Announcement bar</h2><p class="cap">A dismissible promo line across the top of your storefront.</p>
+    <div class="field"><label>Message</label><input class="input" value="Fresh sourdough out at 8am daily — order ahead for pickup." /></div>
+    <div class="annc-prev"><div class="bar">Fresh sourdough out at 8am daily — order ahead for pickup.</div></div>
+    <div class="save"><button class="btn primary">Save announcement</button></div>
+  </div>
+
+  <!-- ===== HOURS ===== -->
+  <p class="sect-lab">Opening hours &amp; location</p>
+  <div class="card" data-tile="hours-form">
+    <h2>Opening hours</h2>
+    <div style="margin-top:10px">
+      <div class="day"><span class="n">Mon–Fri</span><span class="times"><input value="07:00" /> – <input value="16:00" /></span><span class="toggle"><span class="knob"></span></span></div>
+      <div class="day"><span class="n">Saturday</span><span class="times"><input value="08:00" /> – <input value="15:00" /></span><span class="toggle"><span class="knob"></span></span></div>
+      <div class="day"><span class="n">Sunday</span><span class="closed">Closed</span><span class="toggle off"><span class="knob"></span></span></div>
+    </div>
+    <div class="field"><label>Address</label><input class="input" value="214 Brunswick St, Fitzroy VIC 3065" /></div>
+    <div class="save"><button class="btn primary">Save hours</button></div>
+  </div>
+
+  <!-- ===== TAX (GST) ===== -->
+  <p class="sect-lab">Tax (GST)</p>
+  <div class="card" data-tile="tax-form">
+    <h2>Tax (GST)</h2><p class="cap">Australian GST. Prices are shown inclusive of GST to diners.</p>
+    <div style="margin-top:8px">
+      <div class="togrow"><div><div class="l">Collect GST</div><div class="s">Adds a GST line to receipts</div></div><span class="toggle"><span class="knob"></span></span></div>
+      <div class="togrow"><div><div class="l">Prices include GST</div><div class="s">Menu prices are GST-inclusive</div></div><span class="toggle"><span class="knob"></span></span></div>
+    </div>
+    <div class="field"><label>GST rate</label><input class="input" value="10%" style="max-width:120px" /></div>
+    <div class="save"><button class="btn primary">Save tax</button></div>
+  </div>
+
+  <!-- ===== SOCIAL ===== -->
+  <p class="sect-lab">Social links</p>
+  <div class="card" data-tile="social-form">
+    <h2>Social links</h2><p class="cap">Shown in your storefront footer.</p>
+    <div class="social-row"><span class="ic">◎</span><input class="input" value="instagram.com/figandflour" /></div>
+    <div class="social-row"><span class="ic">f</span><input class="input" value="facebook.com/figandflour" /></div>
+    <div class="social-row"><span class="ic">✕</span><input class="input" placeholder="x.com/… (optional)" /></div>
+    <div class="save"><button class="btn primary">Save links</button></div>
+  </div>
+
+  <!-- ===== NOTIFICATIONS ===== -->
+  <p class="sect-lab">Order notifications</p>
+  <div class="card" data-tile="notifications-form">
+    <h2>Order notifications</h2><p class="cap">How you hear about new orders.</p>
+    <div style="margin-top:8px">
+      <div class="togrow"><div><div class="l">Kitchen sound</div><div class="s">Chime on the live-orders board</div></div><span class="toggle"><span class="knob"></span></span></div>
+      <div class="togrow"><div><div class="l">Email new orders</div><div class="s">To alex@example.com</div></div><span class="toggle"><span class="knob"></span></span></div>
+      <div class="togrow"><div><div class="l">Push (mobile app)</div><div class="s">New-order alerts on your phone</div></div><span class="toggle off"><span class="knob"></span></span></div>
+    </div>
+    <div class="save"><button class="btn primary">Save notifications</button></div>
+  </div>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>
