@@ -12,7 +12,8 @@ motion library, so they can be screenshotted per-tile.
 | Path | What |
 |---|---|
 | `diner/diner-home.html` | Diner storefront **home** (menu view) — announcement, app bar / mobile header, hero, sticky category strip, category tiles, item cards (photo · monogram · choose · added), cart rail, mobile cart bar, concierge launcher, plus skeleton + AI-thinking states. |
-| `capture.mjs` | Playwright harness — renders a prototype at each breakpoint and crops every `[data-tile]`. |
+| `diner/item-sheet.html` | Diner **item modifier sheet** — mobile bottom-sheet ↔ `sm` centered modal ↔ `lg` two-column modal. Hero image, size picker, life-safety note, required/optional modifier groups (radio + at-cap checkbox), "goes well with", 44px stepper + gated Add CTA. |
+| `capture.mjs` | Playwright harness — renders a prototype at each breakpoint and crops every `[data-tile]`. Usage: `node design/prototypes/capture.mjs <html> <board> <prefix>`. |
 
 ## Fidelity rules honoured
 
@@ -45,7 +46,13 @@ node design/prototypes/capture.mjs design/prototypes/diner/diner-home.html diner
 The harness points at the pre-installed Chromium (`/opt/pw-browsers/...`); override
 with `P2E_CHROMIUM=/path/to/chrome`. Do **not** run `playwright install`.
 
-## Next surfaces (per the brief, diner path)
+## Diner path progress
 
-menu → item modifier sheet → concierge (forest-dark) → checkout → order status →
-account. Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
+- [x] storefront home (menu view) — `diner/diner-home.html`
+- [x] item modifier sheet — `diner/item-sheet.html`
+- [ ] concierge (forest-dark AI panel)
+- [ ] checkout (card + PayTo states)
+- [ ] order status (placed → prep; bank-approval waiting)
+- [ ] account (overview / history / saved mandate)
+
+Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
