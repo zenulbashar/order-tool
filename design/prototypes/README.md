@@ -61,4 +61,14 @@ with `P2E_CHROMIUM=/path/to/chrome`. Do **not** run `playwright install`.
 
 **Diner path complete.** Next: owner dashboard (gated behind O0 sidebar chrome), then onboarding / admin / marketplace / native, plus the cross-cutting sweeps.
 
+## Owner path
+
+Owner root — `--action = forest` (no `data-domain="diner"`). The sidebar is the
+owner's one dark chrome surface where **amber is the sanctioned signature**
+(active nav, plan badge, order-count pills); the cream content uses forest
+`--action`, amber only for AI (support widget, import/descriptions).
+
+- [x] O0 sidebar chrome + support widget — `owner/o0-chrome.html` (rail · collapsed · mobile drawer · home hub · support)
+- [ ] O1 home overview · O2 menu & photos cluster · O3 orders & customers · O4 stock · O5 storefront settings · O6 payments & billing · O7 connections
+
 Each becomes a `<surface>/<name>.html` prototype here + a per-tile block set.
