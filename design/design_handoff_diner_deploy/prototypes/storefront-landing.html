@@ -1,0 +1,244 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner storefront LANDING view · responsive design prototype (D1).
+
+  Source of truth: app/[slug]/storefront.tsx (view="landing"), storefront-hero.tsx
+  (big desktop hero / brand-tint band + mobile banner), category-tiles.tsx,
+  announcement-bar.tsx, storefront-footer.tsx. This is the venue front door: hero
+  + big category tiles as primary nav — NO menu grid / cart rail (that's the menu
+  view, already built in diner-home.html).
+
+  Firewall: data-domain="diner" → --action = venue --brand. No amber (not AI).
+  Responsive: mobile brand-tint banner → lg full-bleed hero image; tiles 1→2→3.
+  Query: ?native=1 (Capacitor status bar + safe-area).
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner storefront — landing (Fig &amp; Flour)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ===== TOKEN LAYER (1:1 from app/globals.css) ===== */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-input:12px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button,a{font-family:inherit}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+
+/* motion (real tokens) + reduced-motion guard */
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+.p2e-float{animation:p2e-float 4s ease-in-out infinite}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.p2e-rise,.p2e-float,.p2e-glow{animation:none!important}}
+
+/* ===== CHROME ===== */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+.announcement{position:relative;background:var(--color-ink);color:var(--color-surface);text-align:center;font-size:13px;font-weight:500;padding:8px 40px}
+.announcement .x{position:absolute;inset-block:0;right:12px;display:flex;align-items:center;color:color-mix(in srgb,var(--color-surface) 70%,transparent)}
+
+/* mobile header (lg:hidden) */
+.m-header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--color-surface-elevated);border-bottom:1px solid var(--color-sand);position:sticky;top:0;z-index:25}
+.m-header .logo{height:38px;width:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:18px;background:var(--action);color:var(--action-contrast)}
+.m-header .name{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:-.02em}
+.m-header .meta{font-size:11px;color:var(--color-muted)}
+
+/* desktop app bar (lg+) */
+.d-appbar{display:none}
+@media(min-width:1024px){
+  .m-header{display:none}
+  .d-appbar{display:flex;align-items:center;justify-content:space-between;gap:16px;height:64px;padding:0 24px;background:var(--color-surface-elevated);border-bottom:1px solid var(--color-sand);position:sticky;top:0;z-index:25;max-width:1680px;margin:0 auto}
+  .d-appbar .brandwrap{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px}
+  .d-appbar .logo{height:34px;width:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:16px;background:var(--action);color:var(--action-contrast)}
+  .d-appbar .name{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.02em}
+  .d-appbar .cta{border:1px solid var(--color-line-strong);border-radius:var(--radius-control);padding:8px 14px;font-size:13px;font-weight:600;background:var(--color-surface-elevated);transition:.15s}
+  .d-appbar .cta:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+}
+
+/* ===== MOBILE HERO BANNER (brand-tint band; <lg) ===== */
+.hero-mobile{position:relative;display:flex;align-items:flex-end;min-height:220px;overflow:hidden;
+  background:color-mix(in srgb,var(--brand) 12%,var(--color-surface))}
+.hero-mobile::after{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+  background:radial-gradient(60% 80% at 82% 18%, color-mix(in srgb,var(--brand) 30%,transparent), transparent 60%)}
+.hero-mobile .inner{position:relative;padding:0 20px 22px;width:100%}
+.hero-mobile h1{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:34px;line-height:1.03;color:var(--color-ink)}
+.hero-mobile .vmeta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:13px;color:var(--color-muted)}
+@media(min-width:1024px){.hero-mobile{display:none}}
+
+/* ===== DESKTOP FULL-BLEED HERO (lg+) ===== */
+.hero{display:none}
+@media(min-width:1024px){
+  .hero{position:relative;display:block;height:calc(100dvh - 64px);min-height:480px;overflow:hidden}
+  .hero .photo{position:absolute;inset:0;background-size:cover;background-position:center}
+  .hero .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,31,24,.30),rgba(14,31,24,.42) 55%,rgba(14,31,24,.62))}
+  .hero .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 24px}
+  .hero h1{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:60px;line-height:1.03;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .hero .vmeta{margin-top:12px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 14px;font-size:15px;color:#f3ede1}
+  .hero .vmeta .dot{opacity:.5}
+  .hero .controls{position:absolute;inset-inline:0;bottom:24px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .hero .dots{display:flex;gap:8px}
+  .hero .dots b{height:8px;border-radius:999px;background:rgba(255,255,255,.5);width:8px;display:block}
+  .hero .dots b.on{width:24px;background:#fff}
+  .hero .cue{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:13px;font-weight:600;letter-spacing:.02em}
+}
+@media(min-width:1536px){.hero h1{font-size:72px}}
+
+/* ===== CATEGORY SECTION ===== */
+.cats{max-width:1680px;margin:0 auto;padding:32px 20px 8px}
+@media(min-width:1024px){.cats{padding:48px 24px 8px}}
+.eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.18em;font-size:10px;font-weight:700;color:var(--color-label);margin-bottom:14px}
+.cattiles{display:grid;grid-template-columns:1fr;gap:16px;list-style:none}
+@media(min-width:640px){.cattiles{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.cattiles{grid-template-columns:repeat(3,1fr)}}
+.cattile{position:relative;display:block;aspect-ratio:4/3;border-radius:var(--radius-card);overflow:hidden;border:1px solid var(--color-sand);box-shadow:var(--shadow-card);transition:.2s}
+.cattile:hover{box-shadow:var(--shadow-lift)}
+.cattile .ph{position:absolute;inset:0;background-size:cover;transition:transform .3s}
+.cattile:hover .ph{transform:scale(1.05)}
+.cattile .mono{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:60px;background:color-mix(in srgb,var(--brand) 12%,var(--color-surface));color:color-mix(in srgb,var(--brand) 45%,transparent)}
+.cattile .scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),rgba(0,0,0,.1) 40%,transparent)}
+.cattile .label{position:absolute;left:0;right:0;bottom:0;padding:16px;color:#fff;font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-.01em}
+
+/* ===== FOOTER ===== */
+.footer{margin-top:40px;border-top:1px solid var(--color-sand);background:var(--color-surface-elevated)}
+.footer .in{max-width:1680px;margin:0 auto;padding:28px 20px;display:flex;flex-direction:column;gap:18px}
+@media(min-width:1024px){.footer .in{flex-direction:row;justify-content:space-between;padding:32px 24px}}
+.footer .brand{display:flex;align-items:center;gap:12px}
+.footer .brand .logo{height:40px;width:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:18px;background:var(--action);color:var(--action-contrast)}
+.footer .brand .nm{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.02em}
+.footer .brand .mt{font-size:12px;color:var(--color-muted)}
+.footer .cols{display:flex;gap:40px;flex-wrap:wrap}
+.footer .col h4{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;font-size:9px;font-weight:700;color:var(--color-label);margin-bottom:8px}
+.footer .col p,.footer .col a{display:block;font-size:13px;color:var(--color-muted);margin-bottom:4px}
+.footer .col a:hover{color:var(--color-ink)}
+.footer .powered{max-width:1680px;margin:0 auto;padding:12px 20px 24px;border-top:1px solid color-mix(in srgb,var(--color-sand) 60%,transparent);font-size:11px;color:var(--color-label);text-align:center}
+[data-native] .footer .powered{padding-bottom:calc(24px + env(safe-area-inset-bottom,0))}
+
+/* ===== CONCIERGE LAUNCHER (AI — amber) ===== */
+.concierge-fab{position:fixed;right:20px;bottom:24px;z-index:29}
+.concierge-fab button{display:flex;align-items:center;gap:8px;border-radius:var(--radius-pill);padding:12px 18px;font-weight:600;font-size:14px;color:var(--color-forest-deepest);background:linear-gradient(180deg,#f6be4a,#efa82c);box-shadow:var(--shadow-cta)}
+.concierge-fab .spark{font-size:15px}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="announcement" data-tile="announcement">
+  Fresh sourdough out at 8am daily — order ahead for pickup.
+  <button class="x" aria-label="Dismiss announcement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="height:16px;width:16px"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+
+<!-- mobile header -->
+<header class="m-header" data-tile="mobile-header">
+  <span class="logo" aria-hidden="true">F</span>
+  <div style="min-width:0"><div class="name">Fig &amp; Flour</div><div class="meta">Artisan bakery · Fitzroy · Open till 4pm</div></div>
+</header>
+
+<!-- desktop app bar -->
+<div class="d-appbar" data-tile="appbar">
+  <span style="font-size:13px;font-weight:600;color:var(--color-muted)">Open · till 4pm</span>
+  <div class="brandwrap"><span class="logo" aria-hidden="true">F</span><span class="name">Fig &amp; Flour</span></div>
+  <a class="cta" href="#cats">View menu →</a>
+</div>
+
+<!-- mobile hero banner -->
+<section class="hero-mobile" data-tile="hero-mobile">
+  <div class="inner">
+    <h1>Fig &amp; Flour</h1>
+    <div class="vmeta"><span>Artisan bakery &amp; café</span><span>·</span><span>Fitzroy</span><span>·</span><span>Pickup &amp; dine-in</span></div>
+  </div>
+</section>
+
+<!-- desktop full-bleed hero -->
+<section class="hero" data-tile="hero">
+  <div class="photo" aria-hidden="true" style="background:
+    radial-gradient(60% 70% at 70% 20%, #d8a86a, transparent 60%),
+    radial-gradient(50% 60% at 20% 90%, #8a5a2f, transparent 55%),
+    linear-gradient(135deg,#b07a44,#6f4a28)"></div>
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="center">
+    <h1>Fig &amp; Flour</h1>
+    <div class="vmeta"><span>Artisan bakery &amp; café</span><span class="dot">•</span><span>Fitzroy, Melbourne</span><span class="dot">•</span><span>Pickup &amp; dine-in</span></div>
+  </div>
+  <div class="controls">
+    <div class="dots" aria-hidden="true"><b class="on"></b><b></b><b></b></div>
+    <span class="cue p2e-float">View menu
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+    </span>
+  </div>
+</section>
+
+<!-- category tiles (primary nav on the landing) -->
+<section class="cats" id="cats">
+  <p class="eyebrow">Browse the menu</p>
+  <ul class="cattiles" data-tile="category-tiles">
+    <li><a class="cattile p2e-rise" href="#" style="animation-delay:.02s">
+      <span class="ph" style="background:radial-gradient(70% 90% at 30% 20%,#d8a86a,transparent 60%),linear-gradient(135deg,#b07a44,#8a5a2f)"></span>
+      <span class="scrim"></span><span class="label">Bread</span></a></li>
+    <li><a class="cattile p2e-rise" href="#" style="animation-delay:.08s">
+      <span class="ph" style="background:radial-gradient(70% 90% at 70% 25%,#e8c98a,transparent 60%),linear-gradient(135deg,#c99a58,#9c6b34)"></span>
+      <span class="scrim"></span><span class="label">Pastries</span></a></li>
+    <li><a class="cattile p2e-rise" href="#" style="animation-delay:.14s">
+      <span class="mono" aria-hidden="true">S</span>
+      <span class="scrim"></span><span class="label">Sandwiches</span></a></li>
+    <li><a class="cattile p2e-rise" href="#" style="animation-delay:.20s">
+      <span class="ph" style="background:radial-gradient(70% 90% at 45% 30%,#ecd6a2,transparent 60%),linear-gradient(135deg,#cda765,#8f6c38)"></span>
+      <span class="scrim"></span><span class="label">Sweets</span></a></li>
+    <li><a class="cattile p2e-rise" href="#" style="animation-delay:.26s">
+      <span class="mono" aria-hidden="true">D</span>
+      <span class="scrim"></span><span class="label">Drinks</span></a></li>
+  </ul>
+</section>
+
+<!-- footer -->
+<footer class="footer" data-tile="footer">
+  <div class="in">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">F</span>
+      <div><div class="nm">Fig &amp; Flour</div><div class="mt">Artisan bakery &amp; café</div></div>
+    </div>
+    <div class="cols">
+      <div class="col"><h4>Hours</h4><p>Mon–Fri · 7am – 4pm</p><p>Sat–Sun · 8am – 3pm</p></div>
+      <div class="col"><h4>Find us</h4><p>214 Brunswick St</p><p>Fitzroy VIC 3065</p></div>
+      <div class="col"><h4>Follow</h4><a href="#">Instagram</a><a href="#">Facebook</a></div>
+    </div>
+  </div>
+  <p class="powered">Order powered by <strong>Prompt<span style="color:var(--color-accent)">2</span>Eat</strong></p>
+</footer>
+
+<div class="concierge-fab" data-tile="concierge-launcher">
+  <button><span class="spark p2e-glow">✦</span> Ask the menu</button>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

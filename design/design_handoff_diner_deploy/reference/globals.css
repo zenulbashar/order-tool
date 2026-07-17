@@ -1,0 +1,363 @@
+@import "tailwindcss";
+
+/*
+ * Prompt2Eat design tokens — FOUNDATION ONLY.
+ * Colours are named by intent (not raw hex) so surfaces reference meaning;
+ * pages adopt them incrementally in later per-surface PRs. Literal hex lives in
+ * a plain @theme block; the font tokens reference the next/font CSS variables
+ * (set on <html> in layout.tsx) so they go in @theme inline to inline the var().
+ */
+@theme {
+  /* Forest greens — neutral dark surfaces. Renamed from the old brand-prefixed
+     tokens so the unprefixed runtime --brand (per-tenant venue colour) is the
+     only thing called "brand". */
+  --color-forest: #16241c;
+  --color-forest-deep: #13301f;
+  --color-forest-deepest: #0e1f18;
+  /* Actions */
+  --color-accent: #f4b43c; /* amber — product signature (owner / marketing / AI) */
+  --color-accent-deep: #b07f1e; /* amber-as-text on cream */
+  --color-secondary: #e2553a; /* tomato */
+  --color-warm: #e2553a; /* terracotta — semantic warm alert / secondary */
+  --color-warm-deep: #cf4527; /* deep terracotta — destructive fill; white text = 4.63:1 (AA) */
+  /* Status */
+  --color-success: #3fa66a;
+  --color-success-deep: #2f8a55;
+  --color-error: #e2553a; /* named separately so it can diverge from tomato */
+  /* Surfaces */
+  --color-surface: #f7f3ea; /* page bg */
+  --color-surface-elevated: #fffdf8; /* cards / elevated */
+  --color-sand: #efe7d6; /* subtle bg / border (value unchanged) */
+  --color-line: #e6ddcb; /* hairline border — adopt in new work only */
+  /* Text */
+  --color-ink: #0e1f18; /* default text — forest near-black */
+  --color-muted: #6e756b; /* muted text — sage-grey */
+  --color-label: #a0987f; /* muted-tan mono eyebrow/label — new work only */
+  /* Owner sidebar (the owner's one dark chrome surface; sage-on-forest, like
+     the concierge-* tokens). Additive — used only by the dashboard sidebar. */
+  --color-sidebar: #0f241b; /* rail ground */
+  --color-sidebar-ink: #c3d3c8; /* nav label / primary text on the rail */
+  --color-sidebar-muted: #7fa890; /* group headers / secondary text */
+  /* Radius scale (export: pill 999 / card 16 / control 11 / small 6). Only
+     --radius-sm overrides a Tailwind default; rounded-sm is unused, so no diff. */
+  --radius-pill: 999px;
+  --radius-card: 16px;
+  --radius-control: 11px; /* button md */
+  --radius-control-sm: 9px; /* button sm (export) */
+  --radius-control-lg: 13px; /* button lg (export) */
+  --radius-input: 12px; /* text inputs (export) */
+  --radius-sm: 6px;
+  /* Design-export shadows — soft warm-grey drop, hover lift, amber CTA. Literal
+     rgb() lives here in the token layer; components reference shadow-* only. */
+  --shadow-card: 0 1px 3px rgb(20 30 25 / 0.05), 0 20px 40px -20px rgb(20 30 25 / 0.14);
+  --shadow-lift: 0 9px 18px -8px rgb(22 36 28 / 0.55);
+  --shadow-lift-danger: 0 9px 18px -8px rgb(226 85 58 / 0.6);
+  --shadow-cta: 0 12px 22px -10px rgb(239 168 44 / 0.55);
+  --shadow-toast: 0 8px 20px -10px rgb(20 30 25 / 0.18);
+  /* Warmer control borders + button hover fills (export). */
+  --color-line-strong: #d8cbb0; /* button border — warmer than the input hairline */
+  --color-hover-secondary: #fbf8f1; /* secondary button hover fill */
+  --color-hover-ghost: #f1ead9; /* ghost button hover fill */
+  /*
+   * Concierge (storefront-c) — the AI conversation panel is one of the TWO
+   * forest-dark diner surfaces (the account "YOUR USUAL" hero is the other;
+   * everything else stays cream). These scoped tokens hold the exact
+   * design-source values so the components reference tokens, never raw hex.
+   * Reuses --color-forest-deepest (#0e1f18), --color-forest (#16241c), and
+   * --color-accent (#f4b43c) where the source values already match a token.
+   */
+  --color-concierge-glow: #1c4231; /* lighter-forest glow at the panel top */
+  --color-concierge-mint: #7fd6a0; /* "found N matches" status */
+  --color-concierge-sage: #a9c3b1; /* proposed-card description / no-match */
+  --color-concierge-thinking: #7fa890; /* "reading the menu" affordance */
+  --color-concierge-input: #88a896; /* dark footer input + placeholder */
+  --color-concierge-ai-text: #eaf3ec; /* AI bubble + proposed-card name */
+  --color-concierge-amber-ink: #3a2a08; /* text on the amber diner bubble */
+  --color-concierge-amber-from: #f6be4a; /* diner bubble / button gradient */
+  --color-concierge-amber-to: #efa82c;
+  --color-concierge-ai-bg: color-mix(in srgb, #fff 7%, transparent);
+  --color-concierge-ai-border: color-mix(in srgb, #fff 8%, transparent);
+  --color-concierge-card-bg: color-mix(in srgb, #fff 6%, transparent);
+  --color-concierge-card-border: color-mix(in srgb, #f4b43c 25%, transparent);
+  --color-concierge-pill-bg: color-mix(in srgb, #fff 8%, transparent);
+  --color-concierge-pill-border: color-mix(in srgb, #fff 12%, transparent);
+}
+
+@theme inline {
+  --font-display: var(--font-bricolage); /* headlines / wordmark */
+  --font-body: var(--font-hanken); /* body / UI */
+  --font-mono: var(--font-space-mono); /* labels / AI-prompt / data */
+  --font-sans: var(--font-hanken); /* app default */
+}
+
+/*
+ * Functional-accent indirection — the owner↔diner firewall in one variable.
+ * Shared components reference var(--action) for every functional accent, paired
+ * with var(--action-contrast) for readable text/icons on top of it:
+ *   - owner / product surfaces resolve --action to the forest signature (matches
+ *     today's owner CTAs) on cream contrast;
+ *   - the diner storefront resolves --action to the per-tenant venue --brand,
+ *     set inline on the same element that carries data-domain="diner", on
+ *     --brand-contrast.
+ * AI affordances are the deliberate exception: they use bg-accent / text-accent
+ * (amber) explicitly and must never read --action.
+ */
+:root {
+  --action: var(--color-forest);
+  --action-contrast: var(--color-surface-elevated);
+  /*
+   * Focus glow (design export). A 4px soft ring: amber by default, red for
+   * destructive/error, subtle on inputs. Token-referenced via color-mix over
+   * accent/warm — this is a focus AFFORDANCE only and never a functional fill,
+   * so the amber-for-AI-fills-only rule and the --action firewall are untouched.
+   */
+  --focus-ring: 0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --focus-ring-danger: 0 0 0 4px color-mix(in srgb, var(--color-warm) 30%, transparent);
+  --focus-ring-input: 0 0 0 4px color-mix(in srgb, var(--color-accent) 16%, transparent);
+  /*
+   * Readable text/icon colour to pair with the venue --brand. Cream default
+   * suits dark venue brands (the brandColor default is near-black). Diner roots
+   * MAY override per-venue alongside --brand — deferred, NOT computed yet:
+   *   style={{ "--brand": c, "--brand-contrast": readableOn(c) }}
+   */
+  --brand-contrast: var(--color-surface-elevated);
+}
+
+[data-domain="diner"] {
+  --action: var(--brand);
+  --action-contrast: var(--brand-contrast);
+}
+
+/*
+ * Keyboard-focus ring — the amber glow from the design export. Zero-specificity
+ * (:where) so a component's own focus styles win, :focus-visible so it shows on
+ * keyboard focus only. Form controls (input/select/textarea) are handled in
+ * controlClass instead — they carry a base shadow-sm, which would override a
+ * box-shadow set here, so they apply their own (subtle) ring + amber border.
+ * Destructive buttons override this with the red ring in button-variants.
+ */
+:where(a, button, [role="button"]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/*
+ * Loading indicator — a subtle three-dot pulse. Defined here (not as a utility)
+ * because the staggered keyframe can't be expressed inline; the <Spinner>
+ * component references it by name and inherits colour via `bg-current`, so it
+ * sits cleanly on dark/brand buttons as well as light surfaces. Honour reduced
+ * motion by holding the dots at a steady opacity instead of pulsing.
+ */
+@keyframes order-loading-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-loading-dot {
+    animation: none !important;
+    opacity: 0.6;
+  }
+}
+
+/*
+ * Concierge "thinking" sparkle — a gentle amber twinkle on the AI side while the
+ * model is matching the menu. The component sets the colour (text-accent) and the
+ * class drives the keyframe; held steady under reduced motion.
+ */
+@keyframes p2e-spark {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.p2e-spark {
+  animation: p2e-spark 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p2e-spark {
+    animation: none !important;
+    opacity: 0.9;
+  }
+}
+
+/*
+ * Design-system motion library (export `p2e-*` keyframes), grouped by
+ * affordance: AI (float / drift / glow / think / aurora / scan / blink),
+ * loading (shimmer / spin / progress / slide), success (pop / checkloop /
+ * ring / fly / cartpulse), entrance (slidein / rise / count / toastin).
+ * Added here as foundation; nothing references them yet (inert — no diff).
+ * Each helper class is held steady under reduced motion at the bottom.
+ * (p2e-spark is defined above and is not redefined here.)
+ */
+@keyframes p2e-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes p2e-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(-10deg); }
+}
+@keyframes p2e-drift {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-60px); opacity: 0; }
+}
+@keyframes p2e-glow {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.95; }
+}
+@keyframes p2e-think {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+@keyframes p2e-shimmer {
+  0% { background-position: -180% 0; }
+  100% { background-position: 180% 0; }
+}
+@keyframes p2e-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+@keyframes p2e-fly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(96px, -210px) scale(0.28); opacity: 0; }
+}
+@keyframes p2e-cartpulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+}
+@keyframes p2e-aurora {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, -4%) scale(1.08); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes p2e-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes p2e-checkloop {
+  0% { stroke-dashoffset: 60; }
+  60%, 100% { stroke-dashoffset: 0; }
+}
+@keyframes p2e-slidein {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-rise {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-count {
+  from { transform: translateY(6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-toastin {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes p2e-progress {
+  from { width: 0; }
+  to { width: var(--p2e-progress, 60%); }
+}
+@keyframes p2e-scan {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(168px); }
+}
+@keyframes p2e-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 50%, transparent); }
+  100% { box-shadow: 0 0 0 18px transparent; }
+}
+@keyframes p2e-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+@keyframes p2e-spin {
+  to { transform: rotate(360deg); }
+}
+
+.p2e-float { animation: p2e-float 4s ease-in-out infinite; }
+.p2e-bob { animation: p2e-bob 3s ease-in-out infinite; }
+.p2e-drift { animation: p2e-drift 5s linear infinite; }
+.p2e-glow { animation: p2e-glow 2s ease-in-out infinite; }
+.p2e-think { animation: p2e-think 1.2s ease-in-out infinite; }
+.p2e-shimmer {
+  background-size: 200% 100%;
+  animation: p2e-shimmer 1.4s linear infinite;
+}
+.p2e-pop { animation: p2e-pop 0.32s ease-out both; }
+.p2e-fly { animation: p2e-fly 0.7s ease-in both; }
+.p2e-cartpulse { animation: p2e-cartpulse 0.4s ease-out; }
+.p2e-aurora { animation: p2e-aurora 18s ease-in-out infinite; }
+.p2e-draw { animation: p2e-draw 0.8s ease-out forwards; }
+.p2e-checkloop { animation: p2e-checkloop 1.6s ease-in-out infinite; }
+.p2e-slidein { animation: p2e-slidein 0.4s ease-out both; }
+.p2e-rise { animation: p2e-rise 0.3s ease-out both; }
+.p2e-count { animation: p2e-count 0.3s ease-out both; }
+.p2e-toastin { animation: p2e-toastin 0.3s ease-out both; }
+.p2e-progress { animation: p2e-progress 1s ease-out both; }
+.p2e-scan { animation: p2e-scan 2s ease-in-out infinite alternate; }
+.p2e-ring { animation: p2e-ring 1.2s ease-out infinite; }
+.p2e-blink { animation: p2e-blink 1s step-end infinite; }
+.p2e-spin { animation: p2e-spin 0.8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .p2e-float, .p2e-bob, .p2e-drift, .p2e-glow, .p2e-think, .p2e-shimmer,
+  .p2e-pop, .p2e-fly, .p2e-cartpulse, .p2e-aurora, .p2e-draw, .p2e-checkloop,
+  .p2e-slidein, .p2e-rise, .p2e-count, .p2e-toastin, .p2e-progress, .p2e-scan,
+  .p2e-ring, .p2e-blink, .p2e-spin {
+    animation: none !important;
+  }
+}
+
+/*
+ * Admin (platform-operator) console — a dark "ops" surface (P2E-Admin design).
+ * The admin pages use the same token-backed utilities as the rest of the app,
+ * so scoping a dark override of those tokens here recolours the entire console
+ * (surfaces, text, borders) without editing each page's markup. Only the
+ * operator console opts in via the .admin-dark wrapper (see app/admin/layout).
+ * The amber accent + status colours are intentionally left untouched.
+ */
+.admin-dark {
+  --color-surface: #0e1f18;
+  --color-surface-elevated: #16261e;
+  --color-sand: #1c2c24;
+  --color-line: #26362d;
+  --color-line-strong: #33473c;
+  --color-ink: #eaf3ec;
+  --color-muted: #a9c3b1;
+  --color-label: #7fa890;
+  --color-hover-secondary: #1c2c24;
+  --action: var(--color-accent);
+  --action-contrast: #16241c;
+}
+
+/*
+ * Print: page-level setup only. The dashboard/ticket show-hide is done with
+ * Tailwind `print:` utilities at the component (see PrintProvider); @page
+ * margins and the paper background can't be expressed as utilities.
+ */
+@media print {
+  @page {
+    margin: 6mm;
+  }
+
+  body {
+    background: #fff;
+  }
+}
