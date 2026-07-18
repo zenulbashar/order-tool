@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { cx } from "@/app/_components/cx";
+import { Wordmark } from "@/app/_components/wordmark";
 
 import { signOutOwner } from "./actions";
 import { setSidebarCollapsed, useSidebarCollapsed } from "./sidebar-preference";
@@ -586,9 +587,7 @@ function Brand() {
       >
         P
       </span>
-      <span className="font-display text-base font-semibold tracking-tight text-sidebar-ink">
-        Prompt2Eat
-      </span>
+      <Wordmark className="text-base text-sidebar-ink" />
     </span>
   );
 }

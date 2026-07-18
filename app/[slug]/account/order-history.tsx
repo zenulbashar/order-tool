@@ -133,12 +133,16 @@ export function OrderHistory({
             Earlier
           </h2>
           <ul className="mt-2 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
-            {orders.map((order) => {
+            {orders.map((order, i) => {
               const reordering = pendingToken === order.publicToken;
               return (
                 <li
                   key={order.publicToken}
-                  className="rounded-card border border-line bg-surface-elevated p-4 shadow-card"
+                  className="p2e-slidein rounded-card border border-line bg-surface-elevated p-4 shadow-card"
+                  // Staggered entrance (README: history = staggered p2e-slidein);
+                  // capped so a long list doesn't cascade too far. Reduced-motion
+                  // holds it steady (globals.css).
+                  style={{ animationDelay: `${Math.min(i, 8) * 0.05}s` }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-xs text-muted">

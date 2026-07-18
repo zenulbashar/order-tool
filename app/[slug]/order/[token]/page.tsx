@@ -58,7 +58,7 @@ function PayToWaiting({ amountCents }: { amountCents: number }) {
   ];
 
   return (
-    <div className="rounded-card bg-forest-deep p-6 text-concierge-sage shadow-card">
+    <div className="p2e-rise rounded-card bg-forest-deep p-6 text-concierge-sage shadow-card">
       <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-concierge-mint">
         Pay by bank
       </p>
@@ -71,8 +71,12 @@ function PayToWaiting({ amountCents }: { amountCents: number }) {
       </p>
 
       <ol className="mt-5 space-y-3">
-        {steps.map((step) => (
-          <li key={step.title} className="flex items-start gap-3">
+        {steps.map((step, i) => (
+          <li
+            key={step.title}
+            className="p2e-slidein flex items-start gap-3"
+            style={{ animationDelay: `${i * 0.08}s` }}
+          >
             <span
               aria-hidden
               className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
@@ -169,7 +173,7 @@ function OrderTracker({
   };
 
   return (
-    <div className="rounded-card border border-line bg-surface p-5 shadow-sm">
+    <div className="p2e-rise rounded-card border border-line bg-surface p-5 shadow-sm">
       <div className="mb-5 text-center">
         <p className="font-display text-3xl font-extrabold tracking-tight text-ink">
           {hero[f].title}
