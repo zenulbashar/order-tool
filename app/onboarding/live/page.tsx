@@ -35,7 +35,7 @@ export default async function LiveStepPage() {
 
   return (
     <div className="space-y-6">
-      <WizardProgress current={5} />
+      <WizardProgress current={6} />
       <div className="space-y-1">
         <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
           You are ready to go live

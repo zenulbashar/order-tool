@@ -1,0 +1,327 @@
+<!doctype html>
+<!--
+  Prompt2Eat — OWNER · Orders & customers → LIVE KITCHEN BOARD (O3) · prototype.
+
+  Source of truth: app/dashboard/orders/{orders-board,order-card,
+  order-status-controls,elapsed-time,ticket-drawer,order-ticket}.tsx +
+  app/_components/{segmented,status-badge,button}.tsx.
+
+  OWNER root — --action = forest. Kitchen board is the cream owner surface.
+  Sanctioned amber: NEW order cards get border-accent + bg-accent/10 + p2e-ring
+  (the arrival signature); the "new" StatusBadge is bg-accent/text-forest; the
+  loud Notes box is amber-bordered (alert). Forward action = forest primary;
+  back = ghost. Success=green (ready), muted=done, terracotta=late. Amber here is
+  status/alert signature, never an AI or generic functional accent.
+
+  Columns reflow md:2 → xl:4. Every block carries data-tile. ?native=1 for safe-area.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Owner — live kitchen board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --color-forest:#16241c; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-sm:6px; --radius-md:8px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+svg{display:block}
+
+@keyframes p2e-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-accent) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+@media (prefers-reduced-motion:reduce){.p2e-ring,.p2e-slidein{animation:none!important}}
+
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+/* ===== board chrome ===== */
+.board{background:var(--color-surface)}
+.chrome{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:24px 20px 0}
+.seg{display:inline-flex;border-radius:var(--radius-pill);border:1px solid var(--color-line);background:var(--color-surface);padding:4px}
+.seg button{border-radius:var(--radius-pill);padding:6px 16px;font-size:14px;font-weight:500;color:var(--color-muted);transition:.12s}
+.seg button.on{background:var(--action);color:var(--action-contrast)}
+.chrome .tools{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:var(--radius-control-sm);font-size:12px;font-weight:500;transition:.12s}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+.btn.secondary:hover{transform:translateY(-1px);background:var(--color-hover-secondary);box-shadow:var(--shadow-lift)}
+.btn.ghost{color:var(--color-ink)}
+.btn.ghost:hover{background:var(--color-hover-ghost)}
+.btn.sm{height:32px;padding:0 10px}
+
+/* scheduled band */
+.scheduled{margin-top:24px;border-top:1px solid var(--color-line);padding:20px}
+.scheduled h2{font-size:14px;font-weight:600}
+.scheduled .sub{margin-top:4px;font-size:12px;color:var(--color-muted)}
+.scheduled ul{margin-top:16px;display:grid;gap:12px;grid-template-columns:1fr;list-style:none}
+@media(min-width:640px){.scheduled ul{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1280px){.scheduled ul{grid-template-columns:repeat(3,1fr)}}
+
+/* columns */
+.cols{padding:24px 20px 40px;display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:768px){.cols{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1280px){.cols{grid-template-columns:repeat(4,1fr)}}
+.col-head{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--color-line);padding-bottom:8px}
+.col-head h2{font-family:var(--font-mono);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-ink)}
+.col-head .count{border-radius:var(--radius-pill);background:var(--color-sand);color:var(--color-muted);font-family:var(--font-mono);font-size:10px;font-weight:700;padding:2px 8px}
+.col ul{margin-top:12px;display:flex;flex-direction:column;gap:12px;list-style:none}
+.empty{margin-top:12px;border:1px dashed var(--color-line);border-radius:var(--radius-card);padding:24px;text-align:center;font-size:12px;color:var(--color-muted)}
+
+/* ===== order card ===== */
+.oc{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card)}
+.oc.new{border-color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 10%,var(--color-surface-elevated))}
+.oc .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.oc .num{border-radius:var(--radius-md);background:var(--color-ink);color:var(--color-surface);font-family:var(--font-display);font-weight:800;font-size:18px;line-height:1;padding:5px 8px}
+.oc .ref{font-family:var(--font-mono);font-size:13px;font-weight:600}
+.oc .open{height:24px;width:24px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-control);color:var(--color-muted)}
+.oc .open:hover{background:var(--color-sand);color:var(--color-ink)}
+.oc .time{margin-top:3px;font-family:var(--font-mono);font-size:12px;color:var(--color-muted)}
+.oc .right{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.badge{display:inline-flex;align-items:center;border-radius:var(--radius-sm);padding:2px 8px;font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.badge.new{background:var(--color-accent);color:var(--color-forest)}
+.badge.preparing{background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.badge.ready{background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-deep)}
+.badge.done{background:var(--color-sand);color:var(--color-muted)}
+.badge.late{background:var(--color-warm-deep);color:#fff}
+.elapsed{font-family:var(--font-mono);font-size:12px;color:var(--color-muted)}
+.oc .meta{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:14px}
+.typepill{border-radius:var(--radius-sm);background:var(--color-sand);color:var(--color-ink);font-size:12px;font-weight:500;padding:2px 8px}
+.oc .cust{font-weight:500}
+.oc .phone{color:var(--color-muted);text-decoration:underline}
+.notes{margin-top:12px;border:1px solid color-mix(in srgb,var(--color-accent) 40%,transparent);background:color-mix(in srgb,var(--color-accent) 10%,transparent);border-radius:var(--radius-control);padding:8px 12px}
+.notes .k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.notes p{margin-top:2px;font-size:14px}
+.docket{margin-top:12px;border-top:1px solid var(--color-line)}
+.docket .station{padding-top:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-muted)}
+.docket .tear{margin:4px 0;border-top:2px dotted var(--color-line)}
+.docket ul{list-style:none}
+.docket li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--color-line)}
+.docket li:last-child{border-bottom:none}
+.docket .q{color:var(--color-muted)}
+.docket .mods{margin-top:2px;font-size:12px;color:var(--color-muted)}
+.oc .total{margin-top:8px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--color-line);padding-top:8px}
+.oc .total .v{font-size:16px;font-weight:600}
+.oc .actions{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid var(--color-line);padding-top:12px}
+
+/* compact completed card */
+.occ{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:12px;box-shadow:var(--shadow-card)}
+.occ .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.occ .num{border-radius:var(--radius-sm);background:var(--color-ink);color:var(--color-surface);font-family:var(--font-display);font-weight:800;font-size:14px;line-height:1;padding:3px 6px}
+.occ .ref{font-family:var(--font-mono);font-size:13px;font-weight:600}
+.occ .line{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:var(--color-muted)}
+.occ .total{margin-top:8px;display:flex;justify-content:space-between;border-top:1px solid var(--color-line);padding-top:8px;font-size:13px}
+.occ .total b{font-weight:600;color:var(--color-ink)}
+
+/* ticket drawer */
+.drawer{width:380px;max-width:100%;border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);box-shadow:var(--shadow-card);overflow:hidden}
+.drawer .dh{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--color-sand)}
+.drawer .dh h3{font-family:var(--font-display);font-weight:700;font-size:15px}
+.ticket{padding:16px;font-family:var(--font-mono);font-size:12.5px;color:var(--color-ink)}
+.ticket .center{text-align:center}
+.ticket .big{font-family:var(--font-display);font-size:22px;font-weight:800}
+.ticket .rule{border-top:1px dashed var(--color-line-strong);margin:10px 0}
+.ticket .li{display:flex;justify-content:space-between;gap:12px;padding:3px 0}
+.drawer .df{padding:12px 16px;border-top:1px solid var(--color-sand);display:flex;gap:8px}
+
+.states{padding:8px 20px 120px;max-width:1200px;margin:0 auto}
+.states .lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:26px 0 10px}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="board" data-tile="kitchen-board">
+  <!-- chrome -->
+  <div class="chrome" data-tile="board-chrome">
+    <div class="seg" role="radiogroup" aria-label="Filter orders by type">
+      <button class="on" role="radio" aria-checked="true">All</button>
+      <button role="radio" aria-checked="false">Dine-in</button>
+      <button role="radio" aria-checked="false">Takeaway</button>
+    </div>
+    <div class="tools">
+      <button class="btn primary sm" aria-pressed="true">🔔 Sound on</button>
+      <button class="btn secondary sm" aria-pressed="false">Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- scheduled band -->
+  <section class="scheduled" data-tile="scheduled-band">
+    <h2>Scheduled (upcoming) (1)</h2>
+    <p class="sub">Pre-orders shown by pickup time. Each moves into the board when it is due.</p>
+    <ul>
+      <li><article class="oc">
+        <div class="top">
+          <div><div style="display:flex;align-items:center;gap:8px"><span class="num">#45</span><span class="ref">R-8XQ2</span></div>
+            <p class="time">10:12 AM</p>
+            <p style="margin-top:2px;font-size:12px;font-weight:600">Scheduled pickup · 12:30 PM</p></div>
+          <div class="right"><span class="badge new">New</span></div>
+        </div>
+        <div class="meta"><span class="typepill">Pickup</span><span class="cust">Jordan M.</span></div>
+        <div class="total"><span style="font-size:14px;font-weight:500">Total</span><span class="v">$22.00</span></div>
+      </article></li>
+    </ul>
+  </section>
+
+  <!-- columns -->
+  <section class="cols" data-tile="board-columns">
+    <!-- NEW -->
+    <div class="col" data-tile="column-new">
+      <div class="col-head"><h2>New</h2><span class="count">1</span></div>
+      <ul>
+        <li><article class="oc new p2e-ring" data-tile="order-card-new">
+          <div class="top">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="num">#42</span><span class="ref">R-3M7K</span>
+                <button class="open" aria-label="Open ticket"><svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+              </div>
+              <p class="time">10:41 AM</p>
+            </div>
+            <div class="right"><span class="badge new">New</span><span class="elapsed">1m</span></div>
+          </div>
+          <div class="meta"><span class="typepill">Dine-in · Table 6</span><span class="cust">Alex R.</span><a class="phone" href="#">0400 000 000</a></div>
+          <div class="notes"><p class="k">Notes</p><p>No nuts please — allergy.</p></div>
+          <div class="docket">
+            <p class="station">Kitchen</p>
+            <ul>
+              <li><div><p class="q" style="display:inline">2×</p> Country Sourdough <span style="color:var(--color-muted)">(Sliced)</span></div><span>$18.00</span></li>
+              <li><div>1× Almond Croissant</div><span>$6.50</span></li>
+            </ul>
+            <div class="tear"></div>
+            <p class="station">Front counter · Drinks</p>
+            <ul>
+              <li><div>1× Flat White<p class="mods">Oat milk · Large</p></div><span>$5.00</span></li>
+            </ul>
+          </div>
+          <div class="total"><span style="font-size:14px;font-weight:500">Total</span><span class="v">$29.50</span></div>
+          <div class="actions">
+            <button class="btn primary sm">Start preparing</button>
+            <button class="btn ghost sm"><svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v6H8z"/></svg> Print</button>
+          </div>
+        </article></li>
+      </ul>
+    </div>
+
+    <!-- PREPARING -->
+    <div class="col" data-tile="column-preparing">
+      <div class="col-head"><h2>Preparing</h2><span class="count">1</span></div>
+      <ul>
+        <li><article class="oc" data-tile="order-card-active">
+          <div class="top">
+            <div><div style="display:flex;align-items:center;gap:8px"><span class="num">#41</span><span class="ref">R-9PL4</span></div><p class="time">10:35 AM</p></div>
+            <div class="right"><span class="badge preparing">Preparing</span><span class="elapsed">6m</span></div>
+          </div>
+          <div class="meta"><span class="typepill">Pickup</span><span class="cust">Sam T.</span></div>
+          <div class="docket">
+            <ul>
+              <li><div>1× Seeded Rye</div><span>$8.50</span></li>
+              <li><div>2× Baguette Tradition</div><span>$11.00</span></li>
+            </ul>
+          </div>
+          <div class="total"><span style="font-size:14px;font-weight:500">Total</span><span class="v">$19.50</span></div>
+          <div class="actions">
+            <button class="btn primary sm">Mark ready</button>
+            <button class="btn ghost sm">↩ Back to new</button>
+            <button class="btn ghost sm"><svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v6H8z"/></svg></button>
+          </div>
+        </article></li>
+      </ul>
+    </div>
+
+    <!-- READY -->
+    <div class="col" data-tile="column-ready">
+      <div class="col-head"><h2>Ready</h2><span class="count">1</span></div>
+      <ul>
+        <li><article class="oc">
+          <div class="top">
+            <div><div style="display:flex;align-items:center;gap:8px"><span class="num">#40</span><span class="ref">R-2KD8</span></div><p class="time">10:24 AM</p></div>
+            <div class="right"><span class="badge ready">Ready</span><span class="badge late">17m</span></div>
+          </div>
+          <div class="meta"><span class="typepill">Dine-in · Table 3</span><span class="cust">Priya K.</span></div>
+          <div class="docket">
+            <ul>
+              <li><div>1× Focaccia — slab <span style="color:var(--color-muted)">(Full)</span></div><span>$14.00</span></li>
+            </ul>
+          </div>
+          <div class="total"><span style="font-size:14px;font-weight:500">Total</span><span class="v">$14.00</span></div>
+          <div class="actions">
+            <button class="btn primary sm">Hand off</button>
+            <button class="btn ghost sm">↩ Back to preparing</button>
+            <button class="btn ghost sm"><svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v6H8z"/></svg></button>
+          </div>
+        </article></li>
+      </ul>
+    </div>
+
+    <!-- COMPLETED -->
+    <div class="col" data-tile="column-completed">
+      <div class="col-head"><h2>Completed</h2><span class="count">2</span></div>
+      <ul>
+        <li><article class="occ" data-tile="order-card-completed">
+          <div class="top"><span style="display:flex;align-items:center;gap:8px"><span class="num">#39</span><span class="ref">R-7QW1</span></span><span class="badge done">Done</span></div>
+          <div class="line"><span class="typepill">Pickup</span><span>1× Country Sourdough, 1× Flat White</span></div>
+          <div class="total"><span>Total</span><b>$14.00</b></div>
+        </article></li>
+        <li><article class="occ">
+          <div class="top"><span style="display:flex;align-items:center;gap:8px"><span class="num">#38</span><span class="ref">R-5RB3</span></span><span class="badge done">Done</span></div>
+          <div class="line"><span class="typepill">Dine-in · T2</span><span>2× Almond Croissant</span></div>
+          <div class="total"><span>Total</span><b>$13.00</b></div>
+        </article></li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<!-- ===== states ===== -->
+<section class="states">
+  <p class="lab">Focused ticket drawer — printable docket</p>
+  <div class="drawer" data-tile="ticket-drawer">
+    <div class="dh"><h3>Ticket · R-3M7K</h3><button aria-label="Close" style="color:var(--color-muted)">✕</button></div>
+    <div class="ticket">
+      <div class="center"><div class="big">Fig &amp; Flour</div><div>ORDER #42 · R-3M7K</div><div style="color:var(--color-muted)">10:41 AM · Dine-in · Table 6</div></div>
+      <div class="rule"></div>
+      <div>ALEX R. · 0400 000 000</div>
+      <div style="margin-top:6px;font-weight:700">** NO NUTS — ALLERGY **</div>
+      <div class="rule"></div>
+      <div style="font-weight:700">KITCHEN</div>
+      <div class="li"><span>2× Country Sourdough (Sliced)</span><span>$18.00</span></div>
+      <div class="li"><span>1× Almond Croissant</span><span>$6.50</span></div>
+      <div class="rule"></div>
+      <div style="font-weight:700">FRONT COUNTER · DRINKS</div>
+      <div class="li"><span>1× Flat White (Oat · Large)</span><span>$5.00</span></div>
+      <div class="rule"></div>
+      <div class="li" style="font-weight:700"><span>TOTAL</span><span>$29.50</span></div>
+    </div>
+    <div class="df"><button class="btn primary sm" style="flex:1;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px"><path d="M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v6H8z"/></svg> Print ticket</button></div>
+  </div>
+</section>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

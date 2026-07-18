@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
  *  - onboarding complete     -> dashboard (nothing to resume)
  *  - otherwise               -> the saved step
  *
- * All five steps exist. A venue past the last step it has reached resumes there;
- * once onboarding_completed_at is set (Step 5), it short-circuits to the
+ * All six steps exist. A venue past the last step it has reached resumes there;
+ * once onboarding_completed_at is set (final step), it short-circuits to the
  * dashboard. We never route an EXISTING venue to /onboarding/details (that step
  * creates a venue), so the nudge can't spawn a duplicate location.
  */
@@ -25,7 +25,8 @@ export default async function OnboardingPage() {
   if (isOnboardingComplete(venue)) redirect("/dashboard");
   if (venue.onboardingStep <= 2) redirect("/onboarding/service");
   if (venue.onboardingStep === 3) redirect("/onboarding/menu");
-  if (venue.onboardingStep === 4) redirect("/onboarding/plan");
-  if (venue.onboardingStep === 5) redirect("/onboarding/live");
+  if (venue.onboardingStep === 4) redirect("/onboarding/stations");
+  if (venue.onboardingStep === 5) redirect("/onboarding/plan");
+  if (venue.onboardingStep === 6) redirect("/onboarding/live");
   redirect("/dashboard");
 }

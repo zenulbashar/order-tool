@@ -1,0 +1,628 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner storefront HOME (menu view) · responsive design prototype.
+
+  Source of truth: app/globals.css (token layer + p2e-* motion) and the live
+  diner components (app/[slug]/storefront.tsx, item-card, category-tiles,
+  cart-rail, cart-bar, storefront-hero). Hand-authored to the exact token values
+  so it reflows for real across 390 / 768 / 1280 / 1536 + the native WebView.
+
+  Firewall honoured: data-domain="diner" maps --action -> the venue --brand;
+  amber (--color-accent) appears ONLY on AI (concierge) affordances. The cart
+  rail Checkout CTA is deliberately INK, never the brand, exactly as in source.
+
+  Every capturable block carries data-tile="…"; capture.mjs crops each one.
+  Query params: ?native=1 (Capacitor status bar + safe-area) · ?state=added.
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner storefront — Fig &amp; Flour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================== TOKEN LAYER ==============================
+   Copied 1:1 from app/globals.css so the prototype and the app share values. */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e;
+  --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8;
+  --color-sand:#efe7d6; --color-line:#e6ddcb; --color-line-strong:#d8cbb0;
+  --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px;
+  --radius-control-sm:9px; --radius-control-lg:13px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  /* Owner default; the diner root overrides --action below. */
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  /* Sample venue brand (a warm artisan-bakery terracotta) — distinct from the
+     product's forest/amber so the firewall is visibly doing its job. */
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--font-body); color:var(--color-ink);
+  background:var(--color-surface); min-height:100dvh; line-height:1.4;
+}
+:where(a,button):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+.mono{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em}
+.display{font-family:var(--font-display);letter-spacing:-.02em}
+
+/* ============================ MOTION LIBRARY ============================
+   The p2e-* keyframes from app/globals.css, reduced-motion guarded. */
+@keyframes p2e-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes p2e-fly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(96px,-210px) scale(.28);opacity:0}}
+@keyframes p2e-cartpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-accent) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+@keyframes order-loading-dot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.p2e-float{animation:p2e-float 4s ease-in-out infinite}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-pop{animation:p2e-pop .32s ease-out both}
+.p2e-fly{animation:p2e-fly .7s ease-in both}
+.p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+.p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
+.p2e-shimmer{
+  background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);
+  background-size:200% 100%; animation:p2e-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion:reduce){
+  .p2e-float,.p2e-glow,.p2e-think,.p2e-pop,.p2e-fly,.p2e-cartpulse,.p2e-rise,
+  .p2e-slidein,.p2e-ring,.p2e-shimmer{animation:none!important}
+}
+
+/* ============================== CHROME ================================= */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{
+  display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b;
+}
+[data-native] body,[data-native] .app{padding-bottom:env(safe-area-inset-bottom,20px)}
+
+.announcement{ /* AnnouncementBar — ink strip + cream text, dismissible (source: bg-ink text-surface, NO amber) */
+  position:relative;background:var(--color-ink);color:var(--color-surface);text-align:center;
+  font-size:13px;font-weight:500;padding:8px 40px;
+}
+.announcement .x{position:absolute;inset-block:0;right:12px;display:flex;align-items:center;
+  color:color-mix(in srgb,var(--color-surface) 70%,transparent);transition:.15s}
+.announcement .x:hover{color:var(--color-surface)}
+
+/* Mobile header (lg:hidden) — logo + name row */
+.m-header{
+  display:flex;align-items:center;gap:12px;padding:12px 20px;
+  background:var(--color-surface-elevated);border-bottom:1px solid var(--color-sand);
+  position:sticky;top:0;z-index:25;
+}
+.m-header .logo{height:38px;width:38px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--font-display);font-weight:700;font-size:18px;
+  background:var(--action);color:var(--action-contrast)}
+.m-header .name{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:-.02em}
+.m-header .meta{font-size:11px;color:var(--color-muted)}
+
+/* Desktop app bar (lg+) — centered brand, search right (h-16 / 64px) */
+.d-appbar{display:none}
+@media(min-width:1024px){
+  .m-header{display:none}
+  .d-appbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    height:64px;padding:0 24px;background:var(--color-surface-elevated);
+    border-bottom:1px solid var(--color-sand);position:sticky;top:0;z-index:25;
+    max-width:1680px;margin:0 auto;
+  }
+  .d-appbar .brandwrap{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px}
+  .d-appbar .logo{height:34px;width:34px;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;font-family:var(--font-display);font-weight:700;font-size:16px;
+    background:var(--action);color:var(--action-contrast)}
+  .d-appbar .name{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.02em}
+}
+
+/* Search control */
+.search{
+  display:flex;align-items:center;gap:8px;background:var(--color-surface);
+  border:1px solid var(--color-line);border-radius:var(--radius-input);
+  padding:9px 12px;color:var(--color-muted);font-size:14px;min-width:0;
+}
+.search svg{flex:none}
+.search input{border:none;background:none;outline:none;font:500 14px var(--font-body);color:var(--color-ink);width:100%}
+.search input::placeholder{font-family:var(--font-mono);text-transform:none;letter-spacing:0;color:#b6ab92;font-size:12.5px}
+
+/* Hero band (photoless brand-tint fallback — real StorefrontHero state) */
+.hero{
+  position:relative;display:flex;align-items:flex-end;min-height:232px;
+  background:color-mix(in srgb,var(--brand) 12%,var(--color-surface));
+  overflow:hidden;
+}
+.hero::after{ /* soft stylised "photo" wash so the band reads richer */
+  content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+  background:
+    radial-gradient(60% 80% at 82% 18%, color-mix(in srgb,var(--brand) 30%,transparent), transparent 60%),
+    radial-gradient(50% 70% at 12% 90%, color-mix(in srgb,var(--color-accent) 16%,transparent), transparent 55%);
+}
+.hero .inner{position:relative;max-width:1680px;margin:0 auto;width:100%;padding:0 24px 28px}
+.hero h1{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;
+  font-size:34px;line-height:1.05;color:var(--color-ink)}
+.hero .vmeta{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;font-size:13px;color:var(--color-muted)}
+.hero .vmeta .dot{opacity:.5}
+@media(min-width:1024px){ .hero{min-height:300px} .hero h1{font-size:48px} }
+
+/* Sticky category strip */
+.catstrip{
+  position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--color-surface) 95%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--color-sand);
+}
+@media(min-width:1024px){ .catstrip{top:64px;background:color-mix(in srgb,var(--color-surface-elevated) 95%,transparent)} }
+/* Mobile: tabs scroll on their own line, dietary chips scroll below (real
+   mobile pattern). Desktop: one row, dietary pushed right. */
+.catstrip .row{max-width:1680px;margin:0 auto;padding:10px 20px;display:flex;flex-direction:column;gap:10px}
+@media(min-width:1024px){.catstrip .row{flex-direction:row;align-items:center;gap:12px}}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap;border-radius:var(--radius-pill);padding:7px 15px;font-size:13.5px;font-weight:600;
+  color:var(--color-muted);transition:.15s ease}
+.tab:hover{color:var(--color-ink)}
+.tab.active{background:var(--action);color:var(--action-contrast)}
+.dietary{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.dietary::-webkit-scrollbar{display:none}
+@media(min-width:1024px){.dietary{margin-left:auto;overflow:visible}}
+.chip{border:1px solid var(--color-line);border-radius:var(--radius-pill);
+  padding:5px 11px;font-size:12px;color:var(--color-muted);background:var(--color-surface-elevated);white-space:nowrap;transition:.15s}
+.chip:hover{border-color:var(--color-line-strong);color:var(--color-ink)}
+.chip.on{background:color-mix(in srgb,var(--color-success) 12%,transparent);
+  border-color:color-mix(in srgb,var(--color-success) 40%,transparent);color:var(--color-success-deep)}
+
+/* Body grid (menu · rail) */
+.body{max-width:1680px;margin:0 auto;padding:20px;}
+@media(min-width:1024px){
+  .body{display:grid;grid-template-columns:1fr 336px;gap:30px;align-items:start;padding:28px 24px}
+}
+.section-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.18em;
+  font-size:10px;font-weight:700;color:var(--color-label);margin:2px 0 12px}
+.cat-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:22px;margin:26px 0 12px}
+.cat-h:first-of-type{margin-top:0}
+
+/* Category tiles (landing pattern) */
+.cattiles{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:640px){.cattiles{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.cattiles{grid-template-columns:repeat(3,1fr)}}
+.cattile{position:relative;display:block;aspect-ratio:4/3;border-radius:var(--radius-card);
+  overflow:hidden;border:1px solid var(--color-sand);box-shadow:var(--shadow-card);transition:.2s}
+.cattile:hover{box-shadow:var(--shadow-lift)}
+.cattile .ph{position:absolute;inset:0;background-size:cover;transition:transform .3s}
+.cattile:hover .ph{transform:scale(1.05)}
+.cattile .mono-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:800;font-size:60px;
+  background:color-mix(in srgb,var(--brand) 12%,var(--color-surface));
+  color:color-mix(in srgb,var(--brand) 45%,transparent)}
+.cattile .scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),rgba(0,0,0,.1) 40%,transparent)}
+.cattile .label{position:absolute;left:0;right:0;bottom:0;padding:16px;color:#fff;
+  font-family:var(--font-display);font-weight:700;font-size:24px;letter-spacing:-.01em}
+
+/* Item grid + cards */
+.itemgrid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:1024px){.itemgrid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1536px){.itemgrid{grid-template-columns:repeat(4,1fr)}}
+
+.item{position:relative;overflow:hidden;border-radius:var(--radius-card);
+  border:1px solid var(--color-sand);background:var(--color-surface-elevated);
+  box-shadow:var(--shadow-card);transition:.2s}
+.item:hover{border-color:color-mix(in srgb,var(--color-muted) 40%,transparent);box-shadow:var(--shadow-lift)}
+
+/* Mobile item = horizontal row (lg:hidden) */
+.item .row{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;padding:12px;text-align:left;width:100%}
+.item .row .txt{min-width:0;flex:1}
+.item .row .nm{font-size:14px;font-weight:600;color:var(--color-ink)}
+.item .row .ds{margin-top:2px;font-size:14px;color:var(--color-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item .row .pr{margin-top:6px;font-family:var(--font-display);font-weight:600;font-size:16px}
+.item .row .ph{height:96px;width:96px;flex:none;border-radius:var(--radius-control);border:1px solid var(--color-sand);background-size:cover}
+.item .card{display:none}
+.addbtn{position:absolute;z-index:10;display:flex;align-items:center;justify-content:center;
+  height:44px;width:44px;border-radius:var(--radius-pill);color:var(--action-contrast); /* ≥44px touch target (a11y floor) */
+  background:var(--action);box-shadow:0 2px 6px rgba(0,0,0,.18);bottom:12px;right:12px;transition:transform .1s}
+.addbtn:active{transform:scale(.95)}
+.addbtn.pill{display:none} /* desktop-only control — hidden below lg (source lg:inline-flex) */
+
+@media(min-width:1024px){
+  .item .row{display:none}
+  .item .card{display:flex;flex-direction:column;text-align:left;width:100%}
+  .item .card .ph{height:96px;width:100%;background-size:cover}
+  .item .card .mono-fallback{height:96px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:800;font-size:32px;
+    background:color-mix(in srgb,var(--brand) 9%,var(--color-surface));
+    color:color-mix(in srgb,var(--brand) 42%,transparent)}
+  .item .card .pad{padding:10px 10px 40px;display:flex;flex-direction:column;gap:4px}
+  .item .card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .item .card .nm{font-size:13px;font-weight:600;line-height:1.25;color:var(--color-ink)}
+  .item .card .prc{flex:none;font-family:var(--font-display);font-weight:600;font-size:13px}
+  .item .card .ds{font-size:11.5px;line-height:1.3;color:var(--color-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .item .card .tags{padding-right:64px} /* clear the bottom-right Add pill (source pr-16) */
+  .addbtn:not(.pill){display:none} /* hide the round mobile control at lg (source lg:hidden) */
+  .addbtn.pill{display:inline-flex;height:auto;width:auto;border-radius:var(--radius-control-sm);padding:4px 10px;
+    font-size:11px;font-weight:600;gap:2px;bottom:10px;right:10px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tag{border-radius:5px;padding:2px 6px;font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;background:var(--color-sand);color:var(--color-muted)}
+.tag.plant{background:color-mix(in srgb,var(--color-success) 12%,transparent);color:var(--color-success-deep)}
+
+/* Desktop cart rail */
+.rail{display:none}
+@media(min-width:1024px){.rail{display:block}}
+.rail .box{border-radius:var(--radius-card);border:1px solid var(--color-sand);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card);position:sticky;top:136px}
+.rail .hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px}
+.rail .hd h2{font-family:var(--font-display);font-weight:600;font-size:18px;letter-spacing:-.01em}
+.rail .tbl{border-radius:var(--radius-pill);background:color-mix(in srgb,var(--color-success) 12%,transparent);
+  color:var(--color-success-deep);font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.08em;padding:4px 10px}
+.rail ul{list-style:none;border-top:1px solid var(--color-sand);padding:4px 20px}
+.rail li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--color-sand) 70%,transparent)}
+.rail li:last-child{border-bottom:none}
+.rail .qty{margin-top:2px;height:26px;width:26px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-pill);font-family:var(--font-display);font-weight:700;font-size:12px;
+  background:color-mix(in srgb,var(--brand) 16%,transparent);color:var(--action)}
+.rail .li-nm{font-size:13.5px;font-weight:600;color:var(--color-ink)}
+.rail .li-sub{margin-top:2px;font-size:11px;color:var(--color-label)}
+.rail .li-pr{flex:none;font-size:14px}
+.rail .totals{border-top:1px solid var(--color-sand);padding:16px 20px;display:flex;flex-direction:column;gap:8px}
+.rail .totrow{display:flex;justify-content:space-between;font-size:14px;color:var(--color-muted)}
+.rail .grand{display:flex;justify-content:space-between}
+.rail .grand span{font-family:var(--font-display);font-weight:600;font-size:17px;color:var(--color-ink)}
+/* INK CTA — deliberately NOT brand (source rule) */
+.rail .checkout{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  border-radius:14px;background:var(--color-ink);color:var(--color-surface);
+  padding:14px 16px;font-size:14px;font-weight:600;margin-top:4px;transition:.15s}
+.rail .checkout:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.rail .checkout .amt{font-family:var(--font-display)}
+.rail .fineprint{text-align:center;font-size:11px;color:var(--color-label)}
+/* Concierge nudge in rail — the AI (amber) exception */
+.rail .nudge{display:block;width:100%;text-align:left;margin-top:12px;border-radius:var(--radius-card);
+  border:1px solid #eccbb8;background:#f7e7de;padding:12px 16px;font-size:12px;color:var(--color-accent-deep);transition:.15s}
+.rail .nudge:hover{filter:brightness(.98)}
+.rail .nudge .spark{color:var(--color-accent);margin-right:4px}
+
+/* Mobile cart bar */
+.cartbar{position:fixed;inset-inline:0;bottom:0;z-index:30;max-width:768px;margin:0 auto;padding:0 20px 16px}
+@media(min-width:1024px){.cartbar{display:none}}
+.cartbar button{display:flex;width:100%;align-items:center;justify-content:space-between;
+  border-radius:var(--radius-pill);padding:14px 20px;font-size:14px;font-weight:600;
+  background:var(--action);color:var(--action-contrast);box-shadow:0 8px 24px -8px rgba(0,0,0,.4)}
+.cartbar .amt{font-family:var(--font-display)}
+
+/* Floating concierge launcher (AI — amber) */
+.concierge-fab{position:fixed;right:20px;bottom:88px;z-index:29}
+@media(min-width:1024px){.concierge-fab{bottom:24px}}
+.concierge-fab button{display:flex;align-items:center;gap:8px;border-radius:var(--radius-pill);
+  padding:12px 18px;font-weight:600;font-size:14px;color:var(--color-forest-deepest);
+  background:linear-gradient(180deg,#f6be4a,#efa82c);box-shadow:var(--shadow-cta)}
+.concierge-fab .spark{font-size:15px}
+
+/* ------- reference "states" strip (always visible for capture) ------- */
+.states{max-width:1680px;margin:0 auto;padding:8px 20px 120px}
+.states .lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;
+  font-weight:700;color:var(--color-label);margin:26px 0 10px}
+.states .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.sk{border-radius:var(--radius-card);border:1px solid var(--color-sand);background:var(--color-surface-elevated);
+  overflow:hidden;box-shadow:var(--shadow-card)}
+.sk .ph{height:96px}
+.sk .pad{padding:12px;display:flex;flex-direction:column;gap:8px}
+.sk .ln{height:10px;border-radius:5px}
+.sk .ln.short{width:55%}
+.think{display:inline-flex;align-items:center;gap:8px;background:var(--color-forest-deepest);color:#eaf3ec;
+  border-radius:var(--radius-card);padding:14px 18px;font-size:13px}
+.think .dots{display:inline-flex;gap:4px}
+.think .dots i{height:8px;width:8px;border-radius:50%;background:var(--color-accent)}
+/* Add-to-cart fly ghost (p2e-fly) — a brand dot that arcs toward the cart. */
+.fly-ghost{position:fixed;z-index:60;height:18px;width:18px;border-radius:50%;
+  background:var(--action);box-shadow:0 2px 8px rgba(0,0,0,.28);pointer-events:none}
+/* Static illustration of the add-to-cart motion moment for capture. */
+.addmotion{position:relative;display:flex;align-items:center;justify-content:space-between;
+  max-width:420px;height:120px;padding:0 8px}
+.addmotion .src{height:44px;width:44px;border-radius:var(--radius-pill);background:var(--action);
+  color:var(--action-contrast);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700}
+.addmotion .arc{position:absolute;left:52px;right:70px;top:16px;height:64px;
+  border-top:2px dashed color-mix(in srgb,var(--action) 45%,transparent);
+  border-right:2px dashed color-mix(in srgb,var(--action) 45%,transparent);
+  border-top-right-radius:60px}
+.addmotion .ghost{position:absolute;left:44%;top:18px;height:18px;width:18px;border-radius:50%;
+  background:var(--action);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.addmotion .dest{position:relative}
+.addmotion .cart{height:48px;width:48px;border-radius:14px;background:var(--color-surface);
+  border:1px solid var(--color-line);display:flex;align-items:center;justify-content:center;font-size:22px}
+.addmotion .badge{position:absolute;top:-8px;right:-8px;height:24px;min-width:24px;padding:0 6px;
+  border-radius:var(--radius-pill);background:var(--action);color:var(--action-contrast); /* functional accent = brand, not amber */
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="native-statusbar"></div>
+
+  <!-- ===================== ANNOUNCEMENT ===================== -->
+  <div class="announcement" data-tile="announcement">
+    Fresh sourdough out at 8am daily — order ahead for pickup.
+    <button class="x" aria-label="Dismiss announcement">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="height:16px;width:16px"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <!-- ===================== MOBILE HEADER ===================== -->
+  <header class="m-header" data-tile="mobile-header">
+    <span class="logo" aria-hidden="true">F</span>
+    <div style="min-width:0">
+      <div class="name">Fig &amp; Flour</div>
+      <div class="meta">Artisan bakery · Fitzroy · Open till 4pm</div>
+    </div>
+  </header>
+
+  <!-- ===================== DESKTOP APP BAR ===================== -->
+  <div class="d-appbar" data-tile="appbar">
+    <span style="font-size:13px;font-weight:600;color:var(--color-muted)">Open · till 4pm</span>
+    <div class="brandwrap">
+      <span class="logo" aria-hidden="true">F</span>
+      <span class="name">Fig &amp; Flour</span>
+    </div>
+    <div class="search" style="width:280px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg>
+      <input placeholder="Search the menu…" />
+    </div>
+  </div>
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero" data-tile="hero">
+    <div class="inner">
+      <h1>Fig &amp; Flour</h1>
+      <div class="vmeta">
+        <span>Artisan bakery &amp; café</span><span class="dot">•</span>
+        <span>Fitzroy, Melbourne</span><span class="dot">•</span>
+        <span>Pickup &amp; dine-in</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CATEGORY STRIP ===================== -->
+  <div class="catstrip" data-tile="category-strip">
+    <div class="row">
+      <nav class="tabs" aria-label="Menu categories">
+        <button class="tab active">Bread</button>
+        <button class="tab">Pastries</button>
+        <button class="tab">Sandwiches</button>
+        <button class="tab">Sweets</button>
+        <button class="tab">Drinks</button>
+      </nav>
+      <div class="dietary" data-tile="dietary-filter">
+        <button class="chip on">Vegetarian</button>
+        <button class="chip">Vegan</button>
+        <button class="chip">GF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== BODY (menu · rail) ===================== -->
+  <div class="body">
+    <main>
+      <p class="section-eyebrow">Browse by category</p>
+      <ul class="cattiles" data-tile="category-tiles" style="list-style:none">
+        <li><a class="cattile p2e-rise" href="#" style="animation-delay:.02s">
+          <span class="ph" style="background:
+            radial-gradient(70% 90% at 30% 20%, #d8a86a, transparent 60%),
+            linear-gradient(135deg,#b07a44,#8a5a2f)"></span>
+          <span class="scrim"></span><span class="label">Bread</span></a></li>
+        <li><a class="cattile p2e-rise" href="#" style="animation-delay:.08s">
+          <span class="ph" style="background:
+            radial-gradient(70% 90% at 70% 25%, #e8c98a, transparent 60%),
+            linear-gradient(135deg,#c99a58,#9c6b34)"></span>
+          <span class="scrim"></span><span class="label">Pastries</span></a></li>
+        <li><a class="cattile p2e-rise" href="#" style="animation-delay:.14s">
+          <span class="mono-fallback" aria-hidden="true">S</span>
+          <span class="scrim"></span><span class="label">Sandwiches</span></a></li>
+      </ul>
+
+      <h2 class="cat-h">Bread</h2>
+      <ul class="itemgrid" data-tile="item-grid" style="list-style:none">
+        <!-- item WITH photo -->
+        <li><article class="item" data-tile="item-card-photo">
+          <button class="row">
+            <span class="txt">
+              <span class="nm">Country Sourdough</span>
+              <span class="ds">48-hour naturally-leavened loaf with a dark, blistered crust.</span>
+              <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              <span class="pr">$9.00</span>
+            </span>
+            <span class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></span>
+          </button>
+          <button class="addbtn" aria-label="Add Country Sourdough to cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <div class="card">
+            <span class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></span>
+            <div class="pad">
+              <div class="top"><span class="nm">Country Sourdough</span><span class="prc">$9.00</span></div>
+              <span class="ds">48-hour naturally-leavened loaf, dark blistered crust.</span>
+              <span class="tags"><span class="tag plant">Vegetarian</span></span>
+            </div>
+          </div>
+          <button class="addbtn pill" aria-label="Add Country Sourdough to cart">Add
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </article></li>
+
+        <!-- item with MONOGRAM fallback -->
+        <li><article class="item" data-tile="item-card-mono">
+          <button class="row">
+            <span class="txt">
+              <span class="nm">Seeded Rye</span>
+              <span class="ds">Dense, malty rye with pumpkin &amp; sunflower seeds. Vegan.</span>
+              <span class="tags"><span class="tag plant">Vegan</span><span class="tag">Seeds</span></span>
+              <span class="pr">$8.50</span>
+            </span>
+            <span class="ph" style="background:color-mix(in srgb,var(--brand) 9%,var(--color-surface));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:26px;color:color-mix(in srgb,var(--brand) 42%,transparent)">S</span>
+          </button>
+          <button class="addbtn" aria-label="Add Seeded Rye to cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <div class="card">
+            <span class="mono-fallback" aria-hidden="true">S</span>
+            <div class="pad">
+              <div class="top"><span class="nm">Seeded Rye</span><span class="prc">$8.50</span></div>
+              <span class="ds">Dense malty rye, pumpkin &amp; sunflower seeds.</span>
+              <span class="tags"><span class="tag plant">Vegan</span></span>
+            </div>
+          </div>
+          <button class="addbtn pill" aria-label="Add Seeded Rye to cart">Add
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </article></li>
+
+        <!-- item needing choices → "Choose" (opens sheet). Shows "from $" price -->
+        <li><article class="item" data-tile="item-card-choose">
+          <button class="row">
+            <span class="txt">
+              <span class="nm">Focaccia — by the slab</span>
+              <span class="ds">Rosemary &amp; sea salt, or olive &amp; confit garlic. Choose a size.</span>
+              <span class="tags"><span class="tag plant">Vegetarian</span></span>
+              <span class="pr">from $6.00</span>
+            </span>
+            <span class="ph" style="background:radial-gradient(75% 75% at 60% 30%,#e9cf94,transparent 60%),linear-gradient(140deg,#c49a5b,#8a6636)"></span>
+          </button>
+          <button class="addbtn" aria-label="Choose Focaccia">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:16px;width:16px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <div class="card">
+            <span class="ph" style="background:radial-gradient(75% 75% at 60% 30%,#e9cf94,transparent 60%),linear-gradient(140deg,#c49a5b,#8a6636)"></span>
+            <div class="pad">
+              <div class="top"><span class="nm">Focaccia — slab</span><span class="prc">from $6</span></div>
+              <span class="ds">Rosemary &amp; sea salt, or olive &amp; garlic.</span>
+              <span class="tags"><span class="tag plant">Vegetarian</span></span>
+            </div>
+          </div>
+          <button class="addbtn pill" aria-label="Choose Focaccia">Add
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="height:13px;width:13px"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </article></li>
+
+        <!-- item in JUST-ADDED state (motion) — ?state=added forces this visible -->
+        <li><article class="item is-added" data-tile="item-card-added">
+          <button class="row">
+            <span class="txt">
+              <span class="nm">Baguette Tradition</span>
+              <span class="ds">Crackling thin crust, open crumb. Baked twice daily.</span>
+              <span class="tags"><span class="tag plant">Vegan</span></span>
+              <span class="pr">$5.50</span>
+            </span>
+            <span class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></span>
+          </button>
+          <button class="addbtn" aria-label="Added Baguette" style="background:var(--color-success)">
+            <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="height:16px;width:16px"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+          <div class="card">
+            <span class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></span>
+            <div class="pad">
+              <div class="top"><span class="nm">Baguette Tradition</span><span class="prc">$5.50</span></div>
+              <span class="ds">Crackling crust, open crumb. Baked twice daily.</span>
+              <span class="tags"><span class="tag plant">Vegan</span></span>
+            </div>
+          </div>
+          <button class="addbtn pill" aria-label="Added Baguette" style="background:var(--color-success)">Added
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="height:13px;width:13px"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+        </article></li>
+      </ul>
+    </main>
+
+    <!-- ===================== CART RAIL ===================== -->
+    <aside class="rail" aria-label="Your order" data-tile="cart-rail">
+      <div class="box">
+        <div class="hd"><h2>Your order</h2><span class="tbl">Table 6</span></div>
+        <ul><!-- lines enter with a staggered p2e-slidein as they're added -->
+          <li class="p2e-slidein" style="animation-delay:.04s"><span class="qty">2</span><span style="min-width:0;flex:1"><span class="li-nm">Country Sourdough</span><span class="li-sub" style="display:block">Sliced</span></span><span class="li-pr">$18.00</span></li>
+          <li class="p2e-slidein" style="animation-delay:.10s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Almond Croissant</span></span><span class="li-pr">$6.50</span></li>
+          <li class="p2e-slidein" style="animation-delay:.16s"><span class="qty">1</span><span style="min-width:0;flex:1"><span class="li-nm">Flat White</span><span class="li-sub" style="display:block">Oat milk · Large</span></span><span class="li-pr">$5.00</span></li>
+        </ul>
+        <div class="totals">
+          <div class="totrow"><span>Subtotal</span><span>$29.50</span></div>
+          <div class="grand"><span>Total</span><span>$29.50</span></div>
+          <button class="checkout"><span>Checkout</span><span class="amt">$29.50</span></button>
+          <p class="fineprint">Estimated — prices confirmed at checkout. Secured by Stripe.</p>
+        </div>
+      </div>
+      <button class="nudge"><span class="spark">✦</span>Not sure what to eat? Let Prompt2Eat build an order from a craving.</button>
+    </aside>
+  </div>
+
+  <!-- ===================== STATES STRIP (capture reference) ===================== -->
+  <section class="states">
+    <p class="lab">Loading — skeleton (p2e-shimmer)</p>
+    <div class="grid" data-tile="state-skeleton">
+      <div class="sk"><div class="ph p2e-shimmer"></div><div class="pad"><div class="ln p2e-shimmer"></div><div class="ln short p2e-shimmer"></div></div></div>
+      <div class="sk"><div class="ph p2e-shimmer"></div><div class="pad"><div class="ln p2e-shimmer"></div><div class="ln short p2e-shimmer"></div></div></div>
+    </div>
+    <p class="lab">AI concierge — thinking (p2e-think · amber)</p>
+    <div data-tile="state-thinking">
+      <span class="think"><span class="dots"><i class="p2e-think"></i><i class="p2e-think" style="animation-delay:.16s"></i><i class="p2e-think" style="animation-delay:.32s"></i></span>Reading the menu…</span>
+    </div>
+    <p class="lab">Add to cart — fly arc (p2e-fly) + cart pulse. Click any “+” to see it live.</p>
+    <div class="addmotion" data-tile="state-addmotion">
+      <span class="src" aria-hidden="true">+</span>
+      <span class="arc" aria-hidden="true"></span>
+      <span class="ghost p2e-glow" aria-hidden="true"></span>
+      <span class="dest"><span class="cart" aria-hidden="true">🛒</span><span class="badge">+1</span></span>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== FLOATING FAB + CART BAR ===================== -->
+<div class="concierge-fab" data-tile="concierge-launcher">
+  <button class="p2e-float"><span class="spark p2e-glow">✦</span> Ask the menu</button>
+</div>
+<div class="cartbar" data-tile="cart-bar">
+  <button><span>View cart · 4 items</span><span class="amt">$29.50</span></button>
+</div>
+
+<script>
+  // Native shell + forced-state toggles (for capture).
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+  // Live add-to-cart motion — the named priority moment: a brand ghost flies
+  // from the "+" toward the cart on the p2e-fly arc, the button pulses
+  // (p2e-cartpulse), so the prototype is a working design, not a static mock.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('.item:not(.is-added) .addbtn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.classList.remove('p2e-cartpulse'); void btn.offsetWidth; btn.classList.add('p2e-cartpulse');
+      if (reduce) return; // honour reduced motion — pulse only, no flying ghost
+      const r = btn.getBoundingClientRect();
+      const ghost = document.createElement('span');
+      ghost.className = 'fly-ghost p2e-fly';
+      ghost.style.left = (r.left + r.width / 2 - 9) + 'px';
+      ghost.style.top = (r.top + r.height / 2 - 9) + 'px';
+      document.body.appendChild(ghost);
+      const done = () => ghost.remove();
+      ghost.addEventListener('animationend', done);
+      setTimeout(done, 900);
+    });
+  });
+</script>
+</body>
+</html>

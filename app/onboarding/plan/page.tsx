@@ -21,7 +21,7 @@ export default async function PlanStepPage({ searchParams }: PlanParams) {
 
   return (
     <div className="space-y-6">
-      <WizardProgress current={4} />
+      <WizardProgress current={5} />
 
       {success ? (
         // Webhook-lag-safe: the subscription + trial are set up the moment

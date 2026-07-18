@@ -1,0 +1,221 @@
+<!doctype html>
+<!--
+  Prompt2Eat — OWNER · Payments & billing (O6) · prototype.
+  Payments (Stripe Connect + balance/payouts) · Billing (Pro/Scale plans) ·
+  Discount codes · Gift cards.
+
+  Source: app/dashboard/payments/{page,payto-toggle,loyalty-form}.tsx,
+  billing/{page,plan-comparison}.tsx, discounts/{page,discount-form}.tsx,
+  gift-cards/{page,gift-cards-client}.tsx.
+
+  OWNER root — --action = forest. NOT an AI surface → NO AI amber. Sanctioned:
+  the Stripe brand tile (#635bff, literal), the balance "$" tile (forest bg +
+  amber "$", per source), amber "Under review" status (payout/onboarding
+  lifecycle). Green = accepting/paid/current/included; forest = CTAs; warm =
+  destructive. p2e-count on payout + balance figures. INVARIANT: design only —
+  never touch Stripe/billing server logic.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Owner — payments &amp; billing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+svg{display:block}
+
+@keyframes p2e-count{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-count{animation:p2e-count .3s ease-out both}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+@media (prefers-reduced-motion:reduce){.p2e-count,.p2e-rise{animation:none!important}}
+
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+.wrap{max-width:800px;margin:0 auto;padding:24px 20px 96px}
+@media(min-width:1024px){.wrap{padding:32px 24px 96px}}
+.page-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label)}
+.page-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:28px;margin-top:6px}
+.page-sub{font-size:14px;color:var(--color-muted);margin-top:4px}
+.sect-lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:32px 0 12px}
+
+.card{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:20px;box-shadow:var(--shadow-card)}
+.card + .card{margin-top:16px}
+.card .hd{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--color-line);padding-bottom:14px;margin-bottom:14px}
+.card .hd .ic{height:36px;width:36px;flex:none;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.card .hd h2{font-family:var(--font-display);font-weight:600;font-size:16px}
+.stripe-ic{background:#635bff;color:#fff;font-size:14px}
+.balance-ic{background:var(--color-forest);color:var(--color-accent);font-size:16px}
+
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:var(--radius-sm);padding:3px 9px;font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.badge.green{background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-deep)}
+.badge.amber{background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.badge.gray{background:var(--color-sand);color:var(--color-muted)}
+.badge .dot{height:6px;width:6px;border-radius:999px;background:currentColor}
+.p{font-size:14px;color:var(--color-muted);line-height:1.5;margin-top:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:var(--radius-control);font-size:13px;font-weight:600;transition:.15s}
+.btn.sm{min-height:34px;padding:0 12px;font-size:12px;border-radius:var(--radius-control-sm)}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+.btn.ghost-danger{color:var(--color-warm-deep)}
+
+/* balance KPIs */
+.bal-kpis{display:grid;gap:12px;grid-template-columns:repeat(3,1fr)}
+.bal-kpi .l{font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-label)}
+.bal-kpi .v{margin-top:5px;font-family:var(--font-display);font-weight:800;font-size:22px}
+.bal-kpi .s{margin-top:2px;font-size:11px;color:var(--color-muted)}
+.payouts{margin-top:16px;border-top:1px solid var(--color-line);padding-top:8px}
+.payout{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid color-mix(in srgb,var(--color-line) 60%,transparent);font-size:14px}
+.payout:last-child{border-bottom:none}
+.payout .amt{font-weight:600}
+.payout .when{font-family:var(--font-mono);font-size:11px;color:var(--color-muted)}
+
+/* plan comparison */
+.interval{display:inline-flex;gap:4px;border-radius:10px;background:var(--color-sand);padding:4px;margin-bottom:12px}
+.interval button{border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--color-label)}
+.interval button.on{background:var(--color-surface-elevated);color:var(--color-ink);box-shadow:var(--shadow-card)}
+.plans{border:1px solid var(--color-line);border-radius:var(--radius-card);overflow:hidden}
+.prow{display:grid;grid-template-columns:1fr 7rem 7rem;align-items:center}
+.plans .head{background:var(--color-hover-secondary);border-bottom:1px solid var(--color-line)}
+.plans .head .col{border-left:1px solid var(--color-line);padding:12px 8px;text-align:center}
+.plans .head .col .nm{font-family:var(--font-display);font-weight:800;font-size:14px}
+.plans .head .col .cur{margin-top:6px;display:inline-block;border-radius:999px;background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-deep);font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 8px}
+.plans .frow{border-bottom:1px solid color-mix(in srgb,var(--color-line) 60%,transparent)}
+.plans .frow:last-child{border-bottom:none}
+.plans .frow .f{padding:9px 14px;font-size:13px}
+.plans .frow .m{border-left:1px solid var(--color-line);padding:9px 8px;text-align:center}
+.plans .frow .m .ck{color:var(--color-success);font-weight:800}
+.plans .frow .m .no{display:inline-block;height:1px;width:12px;background:var(--color-line-strong)}
+.pnote{margin-top:10px;font-size:12px;color:var(--color-muted)}
+
+/* discount / gift rows */
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--color-line);border-radius:var(--radius-control);padding:12px 14px;background:var(--color-surface-elevated)}
+.row + .row{margin-top:8px}
+.row .code{font-family:var(--font-mono);font-weight:700;font-size:14px;letter-spacing:.02em}
+.row .meta{font-size:12px;color:var(--color-muted);margin-top:2px}
+.addbar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.addbar input{border:1px solid var(--color-line);border-radius:var(--radius-input);background:var(--color-surface);padding:9px 12px;font:500 13px var(--font-body)}
+.gc{display:flex;align-items:center;gap:14px;border:1px solid var(--color-line);border-radius:var(--radius-card);padding:14px;background:var(--color-surface-elevated)}
+.gc .visual{width:96px;height:60px;flex:none;border-radius:10px;background:linear-gradient(135deg,var(--color-forest),var(--color-forest-deep));color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:18px}
+.gc .bar{height:6px;border-radius:999px;background:var(--color-sand);overflow:hidden;margin-top:6px}
+.gc .bar b{display:block;height:100%;background:var(--color-success);border-radius:999px}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="wrap" data-tile="payments-page">
+  <p class="page-eyebrow">Payments &amp; billing</p>
+  <h1 class="page-h">Payments</h1>
+  <p class="page-sub">Fig &amp; Flour</p>
+
+  <!-- ===== STRIPE CONNECT ===== -->
+  <p class="sect-lab">Payments · Stripe Connect</p>
+  <div class="card" data-tile="stripe-connect">
+    <div class="hd"><span class="ic stripe-ic" aria-hidden="true">S</span><h2>Stripe Connect</h2></div>
+    <span class="badge green"><span class="dot"></span>Accepting payments</span>
+    <p class="p">Your Stripe account is connected and able to accept payments. Customers pay your venue directly; payouts go to your Stripe account and the platform takes a small per-order fee.</p>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary">Refresh status</button><button class="btn secondary">Open Stripe dashboard ↗</button></div>
+  </div>
+
+  <!-- ===== BALANCE & PAYOUTS ===== -->
+  <div class="card" data-tile="balance-payouts">
+    <div class="hd"><span class="ic balance-ic" aria-hidden="true">$</span><h2>Balance &amp; payouts</h2></div>
+    <div class="bal-kpis">
+      <div class="bal-kpi"><div class="l">Available</div><div class="v p2e-count">$1,284.50</div><div class="s">ready to pay out</div></div>
+      <div class="bal-kpi"><div class="l">Pending</div><div class="v p2e-count">$320.00</div><div class="s">clearing</div></div>
+      <div class="bal-kpi"><div class="l">Sales · 30d</div><div class="v p2e-count">$4,120</div><div class="s">168 orders</div></div>
+    </div>
+    <div class="payouts" data-tile="payout-list">
+      <div class="payout"><span class="amt">$980.00</span><span style="display:flex;align-items:center;gap:10px"><span class="badge green">Paid</span><span class="when">2 Jul</span></span></div>
+      <div class="payout"><span class="amt">$1,120.00</span><span style="display:flex;align-items:center;gap:10px"><span class="badge amber">In transit</span><span class="when">28 Jun</span></span></div>
+      <div class="payout"><span class="amt">$760.00</span><span style="display:flex;align-items:center;gap:10px"><span class="badge green">Paid</span><span class="when">21 Jun</span></span></div>
+    </div>
+  </div>
+
+  <!-- ===== BILLING · PLANS ===== -->
+  <p class="sect-lab">Billing · your plan</p>
+  <div data-tile="plan-comparison">
+    <div class="interval"><button class="on">Monthly</button><button>Annual · save</button></div>
+    <div class="plans">
+      <div class="prow head">
+        <div style="padding:12px 14px"></div>
+        <div class="col"><div class="nm">Pro</div><span class="cur">Current</span></div>
+        <div class="col"><div class="nm">Scale</div><button class="btn primary sm" style="width:100%;margin-top:6px">Choose</button></div>
+      </div>
+      <div class="prow frow"><div class="f">Branded online storefront</div><div class="m"><span class="ck">✓</span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">Menu, cart &amp; online checkout</div><div class="m"><span class="ck">✓</span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">Kitchen board, tables &amp; QR codes</div><div class="m"><span class="ck">✓</span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">Stock, recipe costing &amp; suggestions</div><div class="m"><span class="ck">✓</span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">Design studio (menus &amp; banners)</div><div class="m"><span class="ck">✓</span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">AI ordering concierge</div><div class="m"><span class="ck">✓</span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">AI menu import &amp; descriptions</div><div class="m"><span class="ck">✓</span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">Multiple venues / locations</div><div class="m"><span class="no"></span></div><div class="m"><span class="ck">✓</span></div></div>
+      <div class="prow frow"><div class="f">Custom storefront domain</div><div class="m"><span class="no"></span></div><div class="m"><span class="ck">✓</span></div></div>
+    </div>
+    <p class="pnote">Choosing a plan opens secure Stripe Checkout to update your subscription. Annual billing is discounted; your card is never stored by us.</p>
+  </div>
+
+  <!-- ===== DISCOUNT CODES ===== -->
+  <p class="sect-lab">Discount codes</p>
+  <div data-tile="discounts">
+    <div class="row"><div><span class="code">WELCOME10</span><div class="meta">10% off · min $20 · 84 uses</div></div><span style="display:flex;align-items:center;gap:10px"><span class="badge green">Active</span><button class="btn ghost-danger sm">Delete</button></span></div>
+    <div class="row"><div><span class="code">LOYAL5</span><div class="meta">$5 off · returning customers · 31 uses</div></div><span style="display:flex;align-items:center;gap:10px"><span class="badge green">Active</span><button class="btn ghost-danger sm">Delete</button></span></div>
+    <div class="row"><div><span class="code">SPRING25</span><div class="meta">25% off · expired 1 Jun · 210 uses</div></div><span style="display:flex;align-items:center;gap:10px"><span class="badge gray">Expired</span><button class="btn ghost-danger sm">Delete</button></span></div>
+    <div class="addbar"><input placeholder="CODE" style="flex:1;min-width:120px" /><input placeholder="% or $ off" style="max-width:120px" /><button class="btn primary sm">Add code</button></div>
+  </div>
+
+  <!-- ===== GIFT CARDS ===== -->
+  <p class="sect-lab">Gift cards</p>
+  <div data-tile="gift-cards">
+    <div class="gc">
+      <div class="visual">✦ $50</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span class="code">GC-4K9M</span><span class="badge green">Active</span></div>
+        <div class="meta">$32.00 of $50.00 remaining · issued 12 Jun</div>
+        <div class="bar"><b style="width:64%"></b></div>
+      </div>
+    </div>
+    <div class="gc" style="margin-top:8px">
+      <div class="visual">✦ $25</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span class="code">GC-7QP2</span><span class="badge gray">Redeemed</span></div>
+        <div class="meta">$0.00 of $25.00 remaining · issued 2 May</div>
+        <div class="bar"><b style="width:0%"></b></div>
+      </div>
+    </div>
+    <div class="addbar"><input placeholder="Amount $" style="max-width:130px" /><input placeholder="Recipient email (optional)" style="flex:1;min-width:160px" /><button class="btn primary sm">Issue gift card</button></div>
+  </div>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

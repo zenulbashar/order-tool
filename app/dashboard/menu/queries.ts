@@ -10,6 +10,7 @@ import {
   modifierGroups,
   modifierOptions,
   recipeLines,
+  venueStations,
 } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 
@@ -33,6 +34,19 @@ export async function getItemsForVenue(venueId: string) {
     .from(menuItems)
     .where(scopedToVenue(menuItems.venueId, venueId))
     .orderBy(asc(menuItems.sortOrder), asc(menuItems.createdAt));
+}
+
+/**
+ * The venue's owner-defined prep stations as {id, name} options for the item
+ * form's "Label station" selector. Empty for a venue that never turned on
+ * multi-station printing — the item form then hides the selector entirely.
+ */
+export async function getStationOptionsForVenue(venueId: string) {
+  return db
+    .select({ id: venueStations.id, name: venueStations.name })
+    .from(venueStations)
+    .where(scopedToVenue(venueStations.venueId, venueId))
+    .orderBy(asc(venueStations.sortOrder), asc(venueStations.name));
 }
 
 export async function getGroupsForVenue(venueId: string) {

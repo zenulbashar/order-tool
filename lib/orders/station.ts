@@ -117,3 +117,92 @@ export function splitByStation<T extends { station: Station }>(
   }
   return { kitchen, counter };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Owner-defined stations — per-station sticky/label dockets                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A minimal reference to an owner-defined prep station (venue_stations row),
+ * carrying only what a label needs: the id items are routed by, the display
+ * name, and the short `code` used in the `<number>-<code>` heading (e.g. "K").
+ */
+export type StationRef = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+/**
+ * One printable per-station label. `items` are the order lines prepared at this
+ * station (full detail — name, qty, modifiers); `otherItemCount` is the summed
+ * QUANTITY of every other line in the order, collapsed to a single "+N more
+ * items" line so a small label surface stays legible. The kebab station's label
+ * for a 3-item order thus reads "1× Kebab … +2 more items" — the packer at that
+ * station sees exactly what to make, and how many pieces belong to the same
+ * order without reading foreign item names.
+ */
+export type StationLabel<T> = {
+  station: StationRef;
+  items: T[];
+  otherItemCount: number;
+};
+
+/**
+ * Total pieces in an order line. Defaults to 1 when a line carries no quantity,
+ * so the "+N more items" tally counts items, never silently drops an untyped
+ * line to zero.
+ */
+function lineQuantity(item: { quantity?: number | null }): number {
+  const q = item.quantity;
+  return typeof q === "number" && q > 0 ? q : 1;
+}
+
+/**
+ * Build the per-station labels for one order. For every station that has at
+ * least one line in this order (iterated in the caller-supplied `stations`
+ * order, which is the owner's sortOrder), returns that station's lines plus the
+ * count of pieces belonging to OTHER stations / no station — the "+N more items"
+ * collapse. Stations with nothing in the order are omitted (no blank label
+ * prints). Pure and dependency-free so both the server query and the client
+ * docket components can call it.
+ *
+ * Routing is by `item.stationId`; a line whose stationId is null (no owner
+ * station, or its station was deleted) belongs to no label and only ever shows
+ * up inside another station's "+N more items" tally — it still appears in full
+ * on the receipt and the packaging docket, which is where unrouted items are
+ * meant to be assembled.
+ */
+export function buildStationLabels<
+  T extends { stationId?: string | null; quantity?: number | null },
+>(items: T[], stations: StationRef[]): StationLabel<T>[] {
+  const totalPieces = items.reduce((sum, item) => sum + lineQuantity(item), 0);
+
+  const labels: StationLabel<T>[] = [];
+  for (const station of stations) {
+    const mine = items.filter((item) => item.stationId === station.id);
+    if (mine.length === 0) continue;
+    const minePieces = mine.reduce((sum, item) => sum + lineQuantity(item), 0);
+    labels.push({
+      station,
+      items: mine,
+      otherItemCount: totalPieces - minePieces,
+    });
+  }
+  return labels;
+}
+
+/**
+ * The label heading tag: the order's daily number joined to the station code by
+ * a hyphen, e.g. order 42 at the Kebab station → "42-K". Falls back to the label
+ * text "ORDER" prefix only at the call site; here we just format the pair. When
+ * the order has no daily number yet (null), the code stands alone so the tag is
+ * never a bare "-K".
+ */
+export function formatStationTag(
+  dailyNumber: number | null | undefined,
+  code: string,
+): string {
+  const c = code.trim().toUpperCase();
+  return dailyNumber != null ? `${dailyNumber}-${c}` : c;
+}

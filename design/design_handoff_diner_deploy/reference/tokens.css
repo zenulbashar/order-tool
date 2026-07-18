@@ -1,0 +1,96 @@
+/* ============================================================
+   Prompt2Eat — Design Tokens (framework-agnostic CSS variables)
+   Drop this into your global stylesheet. Every value below was
+   lifted verbatim from the HTML prototypes. Reference the vars
+   instead of hardcoding hex/px in components.
+   ============================================================ */
+
+/* Fonts — add this <link> to your document <head>:
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+*/
+
+:root {
+  /* ---- Type families ---- */
+  --p2e-font-display: 'Bricolage Grotesque', sans-serif; /* headings, logo, marketing CTAs */
+  --p2e-font-body:    'Hanken Grotesk', sans-serif;      /* body, UI labels, buttons (default) */
+  --p2e-font-mono:    'Space Mono', monospace;           /* eyebrows, micro-labels, placeholders */
+
+  /* ---- Color: ink (forest green) ---- */
+  --p2e-ink:          #16241C; /* primary text + primary button bg */
+  --p2e-ink-hover:    #21342A;
+  --p2e-on-ink:       #F7F3EA; /* text on dark */
+  --p2e-on-ink-dim:   #cdd6cf; /* disabled text on dark */
+
+  /* ---- Color: amber accent ---- */
+  --p2e-amber:        #F4B43C; /* the "2", focus, highlights */
+  --p2e-amber-grad:   linear-gradient(180deg, #F6BE4A, #EFA82C); /* marketing CTA */
+  --p2e-amber-ring:   rgba(244,180,60,0.40); /* focus ring color */
+
+  /* ---- Color: destructive ---- */
+  --p2e-danger:       #E2553A;
+  --p2e-danger-hover: #cf4527;
+
+  /* ---- Color: surfaces (warm cream) ---- */
+  --p2e-surface:      #FFFDF8; /* card / panel */
+  --p2e-surface-alt:  #FBF8F1; /* alt surface */
+  --p2e-surface-hover:#F1EAD9; /* ghost hover fill */
+
+  /* ---- Color: text scale ---- */
+  --p2e-text-muted:   #6E756B;
+  --p2e-text-muted-2: #86907f;
+  --p2e-text-tertiary:#a0987f;
+  --p2e-text-faint:   #b6ab92;
+
+  /* ---- Color: borders ---- */
+  --p2e-border-card:  #EFE7D6;
+  --p2e-border-input: #e6ddcb;
+  --p2e-border-input-strong: #d8cbb0;
+
+  /* ---- Color: disabled ---- */
+  --p2e-disabled-bg:  #e7dcc4;
+  --p2e-disabled-fg:  #b0a890;
+
+  /* ---- Radius ---- */
+  --p2e-radius-btn-sm: 9px;
+  --p2e-radius-btn-md: 11px;
+  --p2e-radius-btn-lg: 13px;
+  --p2e-radius-input:  12px;
+  --p2e-radius-card:   22px;
+  --p2e-radius-pill:   999px;
+
+  /* ---- Shadow ---- */
+  --p2e-shadow-card:  0 1px 3px rgba(20,30,25,.05), 0 20px 40px -20px rgba(20,30,25,.14);
+  --p2e-shadow-btn-hover: 0 9px 18px -8px rgba(22,36,28,.55);
+  --p2e-shadow-cta:   0 12px 22px -10px rgba(239,168,44,.55);
+  --p2e-focus-ring:   0 0 0 4px var(--p2e-amber-ring);
+
+  /* ---- Motion ---- */
+  --p2e-ease:         cubic-bezier(.4,0,.2,1);
+  --p2e-dur:          180ms;
+}
+
+/* ---- Base ---- */
+body {
+  margin: 0;
+  font-family: var(--p2e-font-body);
+  color: var(--p2e-ink);
+  background: var(--p2e-surface-alt);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================================
+   Keyframes (verbatim from the prototypes)
+   ============================================================ */
+@keyframes p2e-glow    { 0%,100% { opacity:.45; } 50% { opacity:.95; } }
+@keyframes p2e-spark   { 0%,100% { transform: scale(1) rotate(0deg); opacity:.85; } 50% { transform: scale(1.18) rotate(45deg); opacity:1; } }
+@keyframes p2e-think   { 0%,80%,100% { transform: translateY(0); opacity:.35; } 40% { transform: translateY(-6px); opacity:1; } }
+@keyframes p2e-shimmer { 0% { background-position: -180% 0; } 100% { background-position: 180% 0; } }
+@keyframes p2e-spin    { to { transform: rotate(360deg); } }
+@keyframes p2e-blink   { 0%,100% { opacity:1; } 50% { opacity:0; } }
+@keyframes p2e-toastin { 0% { transform: translateX(22px); opacity:0; } 100% { transform: translateX(0); opacity:1; } }
+@keyframes p2e-pop     { 0% { transform: scale(0); } 55% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@keyframes p2e-float   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes p2e-ring    { 0% { box-shadow: 0 0 0 0 rgba(244,180,60,.5); } 100% { box-shadow: 0 0 0 14px rgba(244,180,60,0); } }

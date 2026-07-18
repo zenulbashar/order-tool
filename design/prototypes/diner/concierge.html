@@ -1,0 +1,560 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner CONCIERGE panel · responsive design prototype.
+
+  Source of truth: app/globals.css (token layer + concierge-* tokens + p2e-*
+  motion) and the live components (app/[slug]/concierge/concierge-panel.tsx,
+  concierge/multi-item-picker.tsx, concierge-launcher.tsx). Hand-authored to the
+  exact token values so it reflows for real across 390 / 768 / 1280 / 1536 + the
+  native WebView.
+
+  This is one of the TWO forest-dark diner surfaces, so amber (--color-accent /
+  concierge-amber-*) IS the correct AI accent here and appears on AI moments:
+  the title spark, the thinking indicator, the diner bubble, the proposed-card
+  border, the "Add" + send buttons. NON-amber functional affordances still read
+  their concierge token (mint / sage). No cream surfaces inside the panel — the
+  only cream is the launcher context strip + the dimmed storefront hint behind.
+
+  Motion uses ONLY real p2e-* keyframes: the diner-home.html library copied
+  verbatim, plus p2e-spark copied verbatim from globals.css (it is real and the
+  live concierge-panel.tsx applies it). The caret blink (p2e-blink) and the
+  count-emphasis (p2e-count) are ALSO real globals.css tokens and are used
+  directly here (both reduced-motion guarded). No keyframes are invented.
+
+  Every capturable block carries data-tile="…". Query params: ?native=1
+  (Capacitor status bar + safe-area).
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner — Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================== TOKEN LAYER ==============================
+   Copied 1:1 from app/globals.css so the prototype and the app share values. */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e;
+  --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8;
+  --color-sand:#efe7d6; --color-line:#e6ddcb; --color-line-strong:#d8cbb0;
+  --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px;
+  --radius-control-sm:9px; --radius-control-lg:13px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  /* Owner default; the diner root overrides --action below. */
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  /* Sample venue brand (a warm artisan-bakery terracotta) — distinct from the
+     product's forest/amber so the firewall is visibly doing its job. */
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+
+/* Concierge (storefront-c) tokens — copied 1:1 from app/globals.css. The AI
+   conversation panel is one of the two forest-dark diner surfaces; these scoped
+   tokens hold the exact design-source values so we reference tokens, never hex. */
+:root{
+  --color-concierge-glow: #1c4231;      /* lighter-forest glow at the panel top */
+  --color-concierge-mint: #7fd6a0;      /* "found N matches" status */
+  --color-concierge-sage: #a9c3b1;      /* proposed-card description / no-match */
+  --color-concierge-thinking: #7fa890;  /* "reading the menu" affordance */
+  --color-concierge-input: #88a896;     /* dark footer input + placeholder */
+  --color-concierge-ai-text: #eaf3ec;   /* AI bubble + proposed-card name */
+  --color-concierge-amber-ink: #3a2a08; /* text on the amber diner bubble */
+  --color-concierge-amber-from: #f6be4a;/* diner bubble / button gradient */
+  --color-concierge-amber-to: #efa82c;
+  --color-concierge-ai-bg: color-mix(in srgb, #fff 7%, transparent);
+  --color-concierge-ai-border: color-mix(in srgb, #fff 8%, transparent);
+  --color-concierge-card-bg: color-mix(in srgb, #fff 6%, transparent);
+  --color-concierge-card-border: color-mix(in srgb, #f4b43c 25%, transparent);
+  --color-concierge-pill-bg: color-mix(in srgb, #fff 8%, transparent);
+  --color-concierge-pill-border: color-mix(in srgb, #fff 12%, transparent);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--font-body); color:var(--color-concierge-ai-text);
+  background:var(--color-forest-deepest); min-height:100dvh; line-height:1.4;
+}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+.mono{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em}
+.display{font-family:var(--font-display);letter-spacing:-.02em}
+
+/* ============================ MOTION LIBRARY ============================
+   The p2e-* keyframes from app/globals.css, reduced-motion guarded. Copied
+   VERBATIM from diner-home.html. */
+@keyframes p2e-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes p2e-fly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(96px,-210px) scale(.28);opacity:0}}
+@keyframes p2e-cartpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-accent) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+@keyframes order-loading-dot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.p2e-float{animation:p2e-float 4s ease-in-out infinite}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-pop{animation:p2e-pop .32s ease-out both}
+@keyframes p2e-blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes p2e-count{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-blink{animation:p2e-blink 1s step-end infinite}
+.p2e-count{animation:p2e-count .3s ease-out both}
+.p2e-fly{animation:p2e-fly .7s ease-in both}
+.p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+.p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
+.p2e-shimmer{
+  background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);
+  background-size:200% 100%; animation:p2e-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion:reduce){
+  .p2e-float,.p2e-glow,.p2e-think,.p2e-pop,.p2e-fly,.p2e-cartpulse,.p2e-rise,
+  .p2e-slidein,.p2e-ring,.p2e-shimmer,.p2e-blink,.p2e-count{animation:none!important}
+}
+
+/* p2e-spark — copied VERBATIM from app/globals.css. It is a real keyframe that
+   the live concierge-panel.tsx applies (the "thinking" sparkle); the amber title
+   spark uses it here too. Its own reduced-motion guard is copied as well. */
+@keyframes p2e-spark{
+  0%,100%{opacity:.55;transform:scale(.85)}
+  50%{opacity:1;transform:scale(1.15)}
+}
+.p2e-spark{animation:p2e-spark 1.1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  .p2e-spark{animation:none!important;opacity:.9}
+}
+
+/* ============================== NATIVE CHROME ============================== */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{
+  display:block;position:fixed;inset-inline:0;top:0;z-index:60;
+  height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b;
+}
+
+/* ============================== STAGE + SCRIM + STOREFRONT HINT ============
+   The panel overlays a dimmed cream storefront. Mobile = heavy scrim + bottom
+   sheet; lg = lighter scrim (the storefront reads through) + docked right. */
+.stage{position:relative;min-height:100dvh;display:flex;align-items:flex-end;
+  justify-content:center;overflow:hidden;padding-top:env(safe-area-inset-top,0)}
+@media(min-width:640px){.stage{align-items:center;padding:24px}}
+@media(min-width:1024px){.stage{align-items:flex-end;justify-content:flex-end;padding:24px}}
+@media(min-width:1536px){.stage{padding:36px}}
+
+.hint{position:absolute;inset:0;background:var(--color-surface);padding:20px;overflow:hidden}
+.hint .hbar{display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;margin-bottom:16px;
+  border-radius:14px;background:var(--color-surface-elevated);border:1px solid var(--color-sand);
+  box-shadow:var(--shadow-card)}
+.hint .hbar .logo{height:34px;width:34px;border-radius:10px;flex:none;background:var(--brand);
+  color:var(--brand-contrast);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700}
+.hint .hbar .nm{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--color-ink)}
+.hint .hgrid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:640px){.hint .hgrid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1536px){.hint .hgrid{grid-template-columns:repeat(3,1fr)}}
+.hint .hcard{border-radius:14px;overflow:hidden;border:1px solid var(--color-sand);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card)}
+.hint .hcard .ph{height:96px}
+.hint .hcard .pad{padding:12px;display:flex;flex-direction:column;gap:8px}
+.hint .hcard .ln{height:10px;border-radius:5px;background:var(--color-sand)}
+.hint .hcard .ln.s{width:52%}
+
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+@media(min-width:1024px){.scrim{background:rgba(0,0,0,.15)}}
+
+/* ============================== PANEL ============================== */
+.panel{position:relative;z-index:2;display:flex;flex-direction:column;width:100%;max-width:512px;
+  height:92dvh;overflow:hidden;color:var(--color-concierge-ai-text);
+  border-radius:var(--radius-card) var(--radius-card) 0 0;
+  background:linear-gradient(180deg,var(--color-forest-deepest),var(--color-forest));
+  box-shadow:0 -12px 48px rgba(0,0,0,.5)}
+[data-native] .panel{padding-bottom:0}
+@media(min-width:640px){.panel{height:auto;max-height:88dvh;border-radius:var(--radius-card);
+  box-shadow:var(--shadow-card),0 30px 70px -20px rgba(0,0,0,.7)}}
+@media(min-width:1024px){.panel{width:420px;max-width:420px;height:min(660px,85dvh);
+  border-radius:20px;box-shadow:0 24px 60px -12px rgba(0,0,0,.6)}}
+@media(min-width:1536px){.panel{width:440px;max-width:440px;height:min(700px,86dvh)}}
+/* Animated --color-concierge-glow radial at the panel top (p2e-glow). */
+.panel .glow{position:absolute;inset:0 0 auto 0;height:42%;pointer-events:none;z-index:0;
+  background:radial-gradient(120% 100% at 50% 0%, var(--color-concierge-glow), transparent 70%)}
+.panel > *{position:relative;z-index:1}
+
+/* header */
+.p-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  padding:16px 20px;border-bottom:1px solid var(--color-concierge-ai-border)}
+.p-title{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:600;
+  font-size:18px;letter-spacing:-.01em;color:#fff}
+.p-title .spark{color:var(--color-accent);font-size:17px;line-height:1;
+  filter:drop-shadow(0 0 6px color-mix(in srgb,var(--color-accent) 60%,transparent))}
+.p-title .ai{border-radius:6px;background:var(--color-accent);color:var(--color-forest);
+  padding:2px 6px;font-family:var(--font-mono);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em}
+.p-sub{margin-top:5px;font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;
+  color:var(--color-concierge-thinking)}
+.p-actions{display:flex;align-items:center;gap:8px;flex:none}
+.p-order{border:1px solid var(--color-concierge-pill-border);background:var(--color-concierge-pill-bg);
+  border-radius:var(--radius-pill);padding:5px 12px;font-size:12px;font-weight:500;
+  color:var(--color-concierge-ai-text);transition:.15s}
+.p-order:hover{background:var(--color-concierge-ai-bg)}
+.p-close{height:32px;width:32px;border-radius:var(--radius-pill);color:var(--color-concierge-sage);
+  font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.p-close:hover{background:var(--color-concierge-ai-bg);color:#fff}
+
+/* conversation (scroll) */
+.convo{flex:1;min-height:0;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px;
+  scrollbar-width:thin;scrollbar-color:color-mix(in srgb,#fff 16%,transparent) transparent}
+.convo::-webkit-scrollbar{width:6px}
+.convo::-webkit-scrollbar-thumb{background:color-mix(in srgb,#fff 16%,transparent);border-radius:3px}
+
+/* diner bubble (right, amber gradient) */
+.b-diner{align-self:flex-end;max-width:85%;padding:10px 14px;font-size:14px;font-weight:500;
+  color:var(--color-concierge-amber-ink);border-radius:16px 16px 5px 16px;
+  background:linear-gradient(var(--color-concierge-amber-from),var(--color-concierge-amber-to));
+  box-shadow:0 6px 16px -8px color-mix(in srgb,var(--color-accent) 60%,transparent)}
+
+/* AI bubble (left) */
+.b-ai{display:flex;align-items:flex-start;gap:8px;max-width:92%;align-self:flex-start}
+.b-ai .icon{margin-top:3px;flex:none;color:var(--color-accent);font-size:14px;line-height:1}
+.b-ai .bubble{border-radius:16px 16px 16px 5px;border:1px solid var(--color-concierge-ai-border);
+  background:var(--color-concierge-ai-bg);padding:10px 14px;font-size:14px;line-height:1.5;
+  color:var(--color-concierge-ai-text)}
+/* Trailing caret — the real p2e-blink token (step-end blink) from globals.css. */
+.caret{display:inline-block;width:2px;height:1.05em;margin-left:3px;vertical-align:-2px;
+  border-radius:1px;background:var(--color-accent)}
+
+/* "Found N matches" status (mint) — the real p2e-count entrance token from globals.css. */
+.status{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--font-mono);font-size:12px;letter-spacing:.03em;color:var(--color-concierge-mint)}
+.status .dot{height:7px;width:7px;border-radius:50%;background:var(--color-concierge-mint);
+  box-shadow:0 0 8px color-mix(in srgb,var(--color-concierge-mint) 70%,transparent)}
+
+/* thinking indicator */
+.thinking{align-self:flex-start;display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--font-mono);font-size:12px;letter-spacing:.03em;color:var(--color-concierge-thinking)}
+.thinking .spark{color:var(--color-accent);font-size:13px;line-height:1}
+.thinking .dots{display:inline-flex;gap:5px;align-items:center}
+.thinking .dots i{height:6px;width:6px;border-radius:50%;background:var(--color-accent)}
+
+/* proposed dish cards */
+.proposed{display:flex;flex-direction:column;gap:10px}
+.dish{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:14px;
+  border:1px solid var(--color-concierge-card-border);background:var(--color-concierge-card-bg)}
+.dish .thumb{height:54px;width:54px;flex:none;border-radius:11px;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 8%,transparent)}
+.dish .info{flex:1;min-width:0}
+.dish .nm{font-size:14px;font-weight:600;color:var(--color-concierge-ai-text);letter-spacing:-.01em}
+.dish .ds{margin-top:3px;font-size:12px;line-height:1.45;color:var(--color-concierge-sage)}
+.dish .foot{margin-top:9px;display:flex;align-items:center;gap:8px}
+.dish .pr{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--color-concierge-ai-text)}
+.dish .foot .sp{flex:1}
+.pill-add{border-radius:var(--radius-pill);padding:5px 14px;font-size:12px;font-weight:600;
+  color:var(--color-forest-deepest);
+  background:linear-gradient(180deg,var(--color-concierge-amber-from),var(--color-concierge-amber-to));
+  box-shadow:0 4px 12px -6px color-mix(in srgb,var(--color-accent) 70%,transparent)}
+.pill-adjust{border-radius:var(--radius-pill);padding:5px 12px;font-size:12px;font-weight:500;
+  color:var(--color-concierge-ai-text);border:1px solid var(--color-concierge-pill-border);
+  background:var(--color-concierge-pill-bg);transition:.15s}
+.pill-adjust:hover{background:var(--color-concierge-ai-bg)}
+
+/* multi-item picker */
+.multi{border-radius:14px;overflow:hidden;border:1px solid var(--color-concierge-ai-border);
+  background:var(--color-concierge-ai-bg)}
+.multi .mh{padding:11px 14px;border-bottom:1px solid var(--color-concierge-ai-border);
+  font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--color-concierge-thinking)}
+.multi ul{list-style:none}
+.multi li{display:flex;align-items:center;gap:11px;padding:10px 14px;
+  border-bottom:1px solid color-mix(in srgb,#fff 6%,transparent)}
+.multi li:last-child{border-bottom:none}
+.multi input[type=checkbox]{height:18px;width:18px;flex:none;cursor:pointer;accent-color:var(--color-accent)}
+.multi .m-nm{flex:1;min-width:0;font-size:13.5px;color:var(--color-concierge-ai-text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.multi .m-pr{flex:none;font-size:13px;font-variant-numeric:tabular-nums;color:var(--color-concierge-sage)}
+.qty{display:inline-flex;align-items:center;gap:2px;flex:none}
+.qty button{height:26px;width:26px;display:flex;align-items:center;justify-content:center;
+  border-radius:8px;border:1px solid var(--color-concierge-ai-border);
+  color:var(--color-concierge-ai-text);font-size:15px;line-height:1;transition:.15s}
+.qty button:hover{background:var(--color-concierge-ai-bg)}
+.qty .v{min-width:20px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums}
+.multi .mf{padding:12px 14px;border-top:1px solid var(--color-concierge-ai-border)}
+.add-all{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--radius-pill);padding:11px 16px;font-size:14px;font-weight:600;
+  color:var(--color-forest-deepest);
+  background:linear-gradient(180deg,var(--color-concierge-amber-from),var(--color-concierge-amber-to));
+  box-shadow:var(--shadow-cta);transition:.15s}
+.add-all:hover{transform:translateY(-1px)}
+
+/* dietary life-safety line (sage) — non-amber, semantic concierge token */
+.safety{font-size:11px;line-height:1.45;color:var(--color-concierge-sage)}
+
+/* quick suggestion pills */
+.pills-wrap{padding:12px 20px 4px}
+.pills-lab{margin-bottom:8px;font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--color-concierge-thinking)}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{border:1px solid var(--color-concierge-pill-border);background:var(--color-concierge-pill-bg);
+  border-radius:var(--radius-pill);padding:6px 13px;font-size:12.5px;font-weight:500;
+  color:var(--color-concierge-ai-text);transition:.15s}
+.pill:hover{background:var(--color-concierge-ai-bg)}
+
+/* composer */
+.composer{padding:14px 20px;border-top:1px solid var(--color-concierge-ai-border);
+  background:rgba(0,0,0,.18)}
+[data-native] .composer{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.composer .cwrap{display:flex;align-items:center;gap:8px}
+.composer input{min-width:0;flex:1;border-radius:var(--radius-pill);
+  border:1px solid var(--color-concierge-ai-border);background:var(--color-concierge-ai-bg);
+  padding:10px 16px;font-family:var(--font-mono);font-size:13.5px;color:var(--color-concierge-ai-text)}
+.composer input::placeholder{color:var(--color-concierge-input)}
+.composer input:focus{outline:none;border-color:var(--color-accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--color-accent) 26%,transparent)}
+.send{height:38px;width:38px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-pill);font-size:16px;font-weight:700;color:var(--color-forest-deepest);
+  background:linear-gradient(180deg,var(--color-concierge-amber-from),var(--color-concierge-amber-to));
+  transition:.12s}
+.send:active{transform:scale(.94)}
+
+/* ============================== LAUNCHER CONTEXT STRIP ============================
+   The floating amber FAB shown over a light storefront hint — the one cream tile
+   in this dark surface, so the launcher reads in its real storefront context. */
+.launcher-strip{position:relative;min-height:300px;padding:18px 20px 24px;overflow:hidden;
+  background:var(--color-surface);border-top:1px solid rgba(0,0,0,.25)}
+.launcher-strip .cap{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;
+  font-size:10px;font-weight:700;color:var(--color-label);margin-bottom:14px}
+.launcher-strip .sbar{display:flex;align-items:center;gap:12px;height:54px;padding:0 16px;margin-bottom:16px;
+  border-radius:14px;background:var(--color-surface-elevated);border:1px solid var(--color-sand);
+  box-shadow:var(--shadow-card)}
+.launcher-strip .sbar .logo{height:32px;width:32px;border-radius:10px;flex:none;background:var(--brand);
+  color:var(--brand-contrast);display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700}
+.launcher-strip .sbar .nm{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--color-ink)}
+.launcher-strip .sgrid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:640px){.launcher-strip .sgrid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.launcher-strip .sgrid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1536px){.launcher-strip .sgrid{grid-template-columns:repeat(4,1fr)}}
+.launcher-strip .scard{border-radius:14px;overflow:hidden;border:1px solid var(--color-sand);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card)}
+.launcher-strip .scard .ph{height:88px}
+.launcher-strip .scard .pad{padding:11px;display:flex;flex-direction:column;gap:7px}
+.launcher-strip .scard .ln{height:10px;border-radius:5px;background:var(--color-sand)}
+.launcher-strip .scard .ln.s{width:50%}
+.fab{position:absolute;right:24px;bottom:24px;z-index:5}
+.fab button{display:flex;align-items:center;gap:8px;border-radius:var(--radius-pill);
+  padding:12px 18px;font-weight:600;font-size:14px;color:var(--color-forest-deepest);
+  background:linear-gradient(180deg,#f6be4a,#efa82c);box-shadow:var(--shadow-cta)}
+.fab .spark{font-size:15px;line-height:1}
+/* Animated Prompt2Eat wordmark — amber "2" with a p2e-glow halo (identity handoff).
+   Deployed on the concierge title (forest-dark → amber-2 reads + glows). */
+.p2e-mark{display:inline-flex;align-items:baseline}
+.p2e-mark .two{color:var(--color-accent);position:relative;display:inline-block}
+.p2e-mark .two::before{content:"";position:absolute;inset:-6px -3px;z-index:-1;border-radius:999px;
+  background:radial-gradient(circle,color-mix(in srgb,var(--color-accent) 60%,transparent),transparent 68%);filter:blur(2px)}
+.p2e-mark.glow .two::before{animation:p2e-glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.p2e-mark.glow .two::before{animation:none!important;opacity:.7}}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<!-- ===================== THE PANEL (over a dimmed storefront) ===================== -->
+<div class="stage">
+  <!-- dimmed cream storefront hint behind the panel -->
+  <div class="hint" aria-hidden="true">
+    <div class="hbar"><span class="logo">F</span><span class="nm">Fig &amp; Flour</span></div>
+    <div class="hgrid">
+      <div class="hcard"><div class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+      <div class="hcard"><div class="ph" style="background:radial-gradient(75% 75% at 60% 30%,#e9cf94,transparent 60%),linear-gradient(140deg,#c49a5b,#8a6636)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+      <div class="hcard"><div class="ph" style="background:radial-gradient(70% 70% at 45% 30%,#d8b98a,transparent 60%),linear-gradient(150deg,#a97c48,#6f4f2c)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+      <div class="hcard"><div class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+    </div>
+  </div>
+  <div class="scrim" aria-hidden="true"></div>
+
+  <!-- the concierge conversation panel -->
+  <section class="panel" role="dialog" aria-modal="true" aria-label="Concierge" data-tile="concierge-panel">
+    <div class="glow p2e-glow" aria-hidden="true"></div>
+
+    <!-- header -->
+    <header class="p-header" data-tile="concierge-header">
+      <div style="min-width:0">
+        <h2 class="p-title">
+          <span class="spark p2e-spark" aria-hidden="true">✦</span>
+          <span class="p2e-mark glow">Prompt<span class="two">2</span>Eat</span>
+          <span class="ai">AI</span>
+        </h2>
+        <p class="p-sub">Tell me what you feel like</p>
+      </div>
+      <div class="p-actions">
+        <button class="p-order" type="button">View order · 0</button>
+        <button class="p-close" type="button" aria-label="Close">✕</button>
+      </div>
+    </header>
+
+    <!-- conversation -->
+    <div class="convo" data-tile="concierge-conversation">
+      <!-- diner bubble -->
+      <p class="b-diner">Something warm and vegetarian, not too heavy</p>
+
+      <!-- AI bubble (reveal + trailing caret) -->
+      <div class="b-ai p2e-slidein">
+        <span class="icon p2e-spark" aria-hidden="true">✦</span>
+        <p class="bubble">Three warm, veg-forward plates that stay light — the roasted squash soup is my pick to start.<span class="caret p2e-blink" aria-hidden="true"></span></p>
+      </div>
+
+      <!-- found N matches status -->
+      <p class="status p2e-count"><span class="dot" aria-hidden="true"></span>Found 3 matches</p>
+
+      <!-- proposed dish cards -->
+      <div class="proposed" data-tile="concierge-proposed">
+        <article class="dish p2e-rise" style="animation-delay:.04s">
+          <span class="thumb" aria-hidden="true" style="background:radial-gradient(75% 75% at 35% 25%,#f0c06a,transparent 62%),linear-gradient(145deg,#c8863a,#8a5322)"></span>
+          <div class="info">
+            <div class="nm">Roasted Squash &amp; Sage Soup</div>
+            <div class="ds">Velvety roasted squash, brown-butter sage, toasted pepitas.</div>
+            <div class="foot">
+              <span class="pr">$11.00</span>
+              <span class="sp"></span>
+              <button class="pill-adjust" type="button">Adjust</button>
+              <button class="pill-add" type="button">Add</button>
+            </div>
+          </div>
+        </article>
+        <article class="dish p2e-rise" style="animation-delay:.12s">
+          <span class="thumb" aria-hidden="true" style="background:radial-gradient(75% 75% at 60% 30%,#8fc06a,transparent 62%),linear-gradient(150deg,#5f9440,#356321)"></span>
+          <div class="info">
+            <div class="nm">Charred Broccolini Grain Bowl</div>
+            <div class="ds">Freekeh, charred broccolini, whipped feta, lemon-herb oil.</div>
+            <div class="foot">
+              <span class="pr">$14.50</span>
+              <span class="sp"></span>
+              <button class="pill-adjust" type="button">Adjust</button>
+              <button class="pill-add" type="button">Add</button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- compact multi-item picker (add several at once) -->
+      <div class="multi" data-tile="concierge-multi-item">
+        <div class="mh">Review &amp; add all</div>
+        <ul>
+          <li>
+            <input type="checkbox" checked aria-label="Include Roasted Squash & Sage Soup" />
+            <span class="m-nm">Roasted Squash Soup</span>
+            <span class="qty" role="group" aria-label="Quantity">
+              <button type="button" aria-label="Decrease">−</button><span class="v">1</span><button type="button" aria-label="Increase">+</button>
+            </span>
+            <span class="m-pr">$11.00</span>
+          </li>
+          <li>
+            <input type="checkbox" checked aria-label="Include Charred Broccolini Grain Bowl" />
+            <span class="m-nm">Charred Broccolini Bowl</span>
+            <span class="qty" role="group" aria-label="Quantity">
+              <button type="button" aria-label="Decrease">−</button><span class="v">1</span><button type="button" aria-label="Increase">+</button>
+            </span>
+            <span class="m-pr">$14.50</span>
+          </li>
+          <li>
+            <input type="checkbox" checked aria-label="Include Ginger Miso Greens" />
+            <span class="m-nm">Ginger Miso Greens</span>
+            <span class="qty" role="group" aria-label="Quantity">
+              <button type="button" aria-label="Decrease">−</button><span class="v">1</span><button type="button" aria-label="Increase">+</button>
+            </span>
+            <span class="m-pr">$12.00</span>
+          </li>
+        </ul>
+        <div class="mf">
+          <button class="add-all" type="button">Add 3 items · $37.50</button>
+        </div>
+      </div>
+
+      <!-- life-safety line — non-amber, sage semantic token -->
+      <p class="safety">Suggestions use the venue’s dietary tags as a guide, not a guarantee. Please tell staff about any allergies.</p>
+
+      <!-- refine turn: diner asks again → thinking -->
+      <p class="b-diner">Can you keep it under $15 each?</p>
+      <div class="thinking" data-tile="concierge-thinking">
+        <span class="spark p2e-spark" aria-hidden="true">✦</span>
+        reading the menu…
+        <span class="dots" aria-hidden="true">
+          <i class="p2e-think"></i><i class="p2e-think" style="animation-delay:.16s"></i><i class="p2e-think" style="animation-delay:.32s"></i>
+        </span>
+      </div>
+    </div>
+
+    <!-- quick suggestion pills -->
+    <div class="pills-wrap" data-tile="concierge-pills">
+      <p class="pills-lab">Not quite? Try —</p>
+      <div class="pills">
+        <button class="pill" type="button">Vegetarian</button>
+        <button class="pill" type="button">Under $15</button>
+        <button class="pill" type="button">Something sweet</button>
+        <button class="pill" type="button">A coffee too</button>
+      </div>
+    </div>
+
+    <!-- composer -->
+    <form class="composer" data-tile="concierge-composer" onsubmit="return false">
+      <div class="cwrap">
+        <input type="text" maxlength="500" placeholder="Make it cheaper…" aria-label="Describe what you feel like eating" />
+        <button class="send" type="submit" aria-label="Send">↑</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<!-- ===================== LAUNCHER CONTEXT STRIP ===================== -->
+<div class="launcher-strip">
+  <p class="cap">Launcher — floating FAB over the storefront</p>
+  <div class="sbar"><span class="logo">F</span><span class="nm">Fig &amp; Flour</span></div>
+  <div class="sgrid">
+    <div class="scard"><div class="ph" style="background:radial-gradient(80% 80% at 35% 25%,#e6be7f,transparent 60%),linear-gradient(140deg,#b98a4f,#7f5730)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+    <div class="scard"><div class="ph" style="background:radial-gradient(75% 75% at 60% 30%,#e9cf94,transparent 60%),linear-gradient(140deg,#c49a5b,#8a6636)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+    <div class="scard"><div class="ph" style="background:radial-gradient(70% 70% at 45% 30%,#d8b98a,transparent 60%),linear-gradient(150deg,#a97c48,#6f4f2c)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+    <div class="scard"><div class="ph" style="background:radial-gradient(80% 80% at 40% 30%,#eacd8f,transparent 60%),linear-gradient(140deg,#bf9556,#86602f)"></div><div class="pad"><div class="ln"></div><div class="ln s"></div></div></div>
+  </div>
+  <div class="fab" data-tile="concierge-launcher">
+    <button class="p2e-float" type="button"><span class="spark p2e-glow" aria-hidden="true">✦</span> Ask Prompt2Eat</button>
+  </div>
+</div>
+
+<script>
+  // Native shell toggle (Capacitor status bar + safe-area).
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+
+  // Lightweight prototype interactions — the panel is a working design, not a
+  // static mock. Suggestion pills prefill the composer (never auto-send, exactly
+  // like the source: the diner still taps send); the FAB scrolls to the panel.
+  const input = document.querySelector('.composer input');
+  document.querySelectorAll('.pill').forEach((pill) => {
+    pill.addEventListener('click', () => { input.value = pill.textContent.trim(); input.focus(); });
+  });
+  const send = document.querySelector('.send');
+  send.addEventListener('click', () => {
+    send.classList.remove('p2e-cartpulse'); void send.offsetWidth; send.classList.add('p2e-cartpulse');
+  });
+  document.querySelector('.fab button').addEventListener('click', () => {
+    document.querySelector('.panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+</script>
+</body>
+</html>

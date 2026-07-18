@@ -1,0 +1,293 @@
+<!doctype html>
+<!--
+  Prompt2Eat — OWNER · Stock & supplies (O4) · prototype.
+  Ingredients library · reorder suggestions (AI inbox) · scan invoice (AI vision).
+
+  Source: app/dashboard/stock/{page,ingredient-row,add-ingredient}.tsx,
+  overview/page.tsx, suggestions/page.tsx, scan/scan-client.tsx.
+
+  OWNER root — --action = forest. AMBER = AI only: "✦ Scan invoice", the invoice
+  reading state (animated Prompt2Eat wordmark + p2e-scan + p2e-think), and the
+  review-gate banner. Low-stock = warm (alert); severity dots warm/amber/muted
+  (semantic, like menu-health). KPIs + table + tabs = forest/neutral.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Owner — stock &amp; supplies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+svg{display:block}
+
+@keyframes p2e-scan{0%{transform:translateY(0)}100%{transform:translateY(150px)}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-spark{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-count{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-scan{animation:p2e-scan 2s ease-in-out infinite alternate}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-shimmer{background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);background-size:200% 100%;animation:p2e-shimmer 1.4s linear infinite}
+.p2e-spark{animation:p2e-spark 1.1s ease-in-out infinite;display:inline-block}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-count{animation:p2e-count .3s ease-out both}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+@media (prefers-reduced-motion:reduce){
+  .p2e-scan,.p2e-think,.p2e-shimmer,.p2e-spark,.p2e-glow,.p2e-count,.p2e-rise{animation:none!important}
+  .scanwrap .scanline{top:70px} .scanwrap .scanglow{top:28px}
+}
+.p2e-mark{display:inline-flex;align-items:baseline;font-family:var(--font-display);font-weight:800;letter-spacing:-.02em}
+.p2e-mark .two{color:var(--color-accent);position:relative;display:inline-block}
+.p2e-mark .two::before{content:"";position:absolute;inset:-6px -3px;z-index:-1;border-radius:999px;background:radial-gradient(circle,color-mix(in srgb,var(--color-accent) 55%,transparent),transparent 68%);filter:blur(2px)}
+.p2e-mark.glow .two::before{animation:p2e-glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.p2e-mark.glow .two::before{animation:none!important;opacity:.7}}
+
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+.wrap{max-width:1000px;margin:0 auto;padding:24px 20px 96px}
+@media(min-width:1024px){.wrap{padding:32px 24px 96px}}
+.page-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label)}
+.page-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.page-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:28px;margin-top:6px}
+.page-sub{font-size:14px;color:var(--color-muted);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:var(--radius-control);font-size:13px;font-weight:600;transition:.15s}
+.btn.sm{min-height:34px;padding:0 12px;font-size:12px;border-radius:var(--radius-control-sm)}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+.btn.ai{background:var(--color-accent);color:var(--color-forest);font-weight:600}
+.btn.ai:hover{opacity:.9}
+.btn.ai-grad{background:linear-gradient(180deg,#f6be4a,#efa82c);color:var(--color-forest-deepest);box-shadow:var(--shadow-cta)}
+
+/* tabs */
+.tabs{display:inline-flex;gap:4px;border-radius:10px;background:var(--color-sand);padding:4px;margin-top:18px}
+.tabs a{border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--color-label)}
+.tabs a.on{background:var(--color-surface-elevated);color:var(--color-ink);box-shadow:var(--shadow-card)}
+
+.sect-lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:32px 0 12px}
+
+/* KPIs */
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:640px){.kpis{grid-template-columns:repeat(5,1fr)}}
+.kpi{border-radius:14px;border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:14px;box-shadow:var(--shadow-card)}
+.kpi .l{font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-label)}
+.kpi .v{margin-top:6px;font-family:var(--font-display);font-weight:800;font-size:24px}
+.kpi .v.warm{color:var(--color-warm-deep)}
+.kpi .s{margin-top:3px;font-size:10px;font-weight:600;color:var(--color-muted)}
+
+/* ingredient table */
+.tbl{margin-top:14px;border:1px solid var(--color-line);border-radius:var(--radius-card);overflow:hidden;background:var(--color-surface-elevated);box-shadow:var(--shadow-card)}
+.thead,.trow{display:grid;grid-template-columns:1.8fr .6fr 1.4fr 1.1fr .9fr .9fr auto;gap:10px;align-items:center;padding:11px 16px}
+.thead{background:var(--color-hover-secondary);border-bottom:1px solid var(--color-line);font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-label)}
+.trow{border-bottom:1px solid color-mix(in srgb,var(--color-line) 60%,transparent);font-size:14px}
+.trow:last-child{border-bottom:none}
+.trow.low{background:color-mix(in srgb,var(--color-warm) 6%,transparent);box-shadow:inset 3px 0 0 var(--color-warm)}
+.trow .nm{font-weight:700;display:flex;align-items:center;gap:8px}
+.pk-badge{border-radius:5px;background:var(--color-sand);padding:1px 5px;font-family:var(--font-mono);font-size:8px;font-weight:700;text-transform:uppercase;color:var(--color-muted)}
+.trow .unit{font-family:var(--font-mono);font-size:11px;color:var(--color-muted)}
+.trow .pack{font-size:12px;color:var(--color-muted)}
+.trow .cost b{font-family:var(--font-display);font-size:13px;font-weight:800}
+.trow .cost span{font-family:var(--font-mono);font-size:8px;font-weight:700;text-transform:uppercase;color:var(--color-label)}
+.trow .lowb{border-radius:5px;background:var(--color-warm-deep);color:#fff;padding:1px 6px;font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase}
+.trow .unc{border-radius:5px;background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep);padding:1px 6px;font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase}
+.trow .edit{color:var(--color-muted);font-size:12px;font-weight:600}
+.addrow{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--color-line);background:var(--color-hover-secondary)}
+.addrow input{flex:1;border:1px solid var(--color-line);border-radius:var(--radius-input);background:var(--color-surface);padding:8px 12px;font:500 13px var(--font-body)}
+
+/* suggestions inbox */
+.inbox{display:flex;flex-direction:column;gap:10px}
+.sug{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--color-line);border-radius:var(--radius-card);background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card)}
+.sug .dot{margin-top:6px;height:8px;width:8px;flex:none;border-radius:999px}
+.sug .dot.high{background:var(--color-warm-deep)} .sug .dot.med{background:var(--color-accent)} .sug .dot.low{background:var(--color-muted)}
+.sug .b{flex:1;min-width:0}
+.sug .t{font-size:14px;font-weight:700}
+.sug .d{margin-top:2px;font-size:14px;color:var(--color-muted)}
+.sug .acts{display:flex;align-items:center;gap:8px;flex:none}
+.sug .fix{border:1px solid var(--color-line-strong);border-radius:var(--radius-control);padding:7px 12px;font-size:12px;font-weight:700;color:var(--color-ink)}
+.sug .fix:hover{background:var(--color-hover-secondary)}
+.sug .dis{padding:7px 10px;font-size:12px;font-weight:700;color:var(--color-muted)}
+.sug .dis:hover{color:var(--color-ink)}
+.empty{border:1px solid var(--color-line);border-radius:var(--radius-card);background:var(--color-surface-elevated);padding:28px;text-align:center;box-shadow:var(--shadow-card)}
+.empty .ic{font-size:26px;color:var(--color-success)}
+.empty h3{margin-top:8px;font-family:var(--font-display);font-weight:700;font-size:16px}
+.empty p{margin-top:4px;font-size:13px;color:var(--color-muted)}
+
+/* scan invoice */
+.card{border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:18px;box-shadow:var(--shadow-card)}
+.card h2{font-size:15px;font-weight:600}.card .lead{margin-top:6px;font-size:14px;color:var(--color-muted)}
+.filebox{margin-top:14px;border:1px dashed var(--color-line-strong);border-radius:var(--radius-control);padding:16px;text-align:center;background:var(--color-hover-secondary)}
+.filebox .ic{height:34px;width:34px;margin:0 auto 8px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.filebox .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
+.note{margin-top:12px;font-size:12px;color:var(--color-muted)}
+.reading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px}
+.scanwrap{position:relative;width:220px;height:160px;border-radius:12px;overflow:hidden;border:1px solid var(--color-line);background:linear-gradient(180deg,#efe7d6,#fffdf8)}
+.scanwrap .doc{position:absolute;inset:0;padding:14px;display:flex;flex-direction:column;gap:7px}
+.scanwrap .doc .ln{height:6px;border-radius:3px;background:color-mix(in srgb,var(--color-ink) 20%,transparent)}
+.scanwrap .doc .ln.s{width:50%}.scanwrap .doc .ln.t{width:74%}
+.scanwrap .scanline{position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--color-accent),transparent);box-shadow:0 0 14px 2px color-mix(in srgb,var(--color-accent) 60%,transparent)}
+.scanwrap .scanglow{position:absolute;left:0;right:0;top:0;height:48px;background:linear-gradient(180deg,color-mix(in srgb,var(--color-accent) 22%,transparent),transparent)}
+.gate{border-radius:var(--radius-card);border:1px solid color-mix(in srgb,var(--color-accent) 30%,transparent);background:color-mix(in srgb,var(--color-accent) 10%,transparent);padding:14px 16px}
+.gate p{font-size:14px;color:var(--color-accent-deep)}
+.line{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--color-line);border-radius:var(--radius-control);padding:10px 12px;background:var(--color-surface-elevated)}
+.line + .line{margin-top:8px}
+.line .nm{font-weight:600;font-size:14px}
+.line .mt{margin-top:2px;font-size:12px;color:var(--color-muted)}
+.line .match{border-radius:5px;padding:1px 6px;font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase}
+.line .match.ok{background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-deep)}
+.line .match.new{background:color-mix(in srgb,var(--color-accent) 15%,transparent);color:var(--color-accent-deep)}
+.actions{margin-top:14px;display:flex;justify-content:flex-end;gap:8px}
+.recent{margin-top:12px}
+.recent .r{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--color-line)}
+.recent .r .d{color:var(--color-muted);font-family:var(--font-mono);font-size:11px}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="wrap" data-tile="stock-page">
+  <div class="page-head">
+    <div>
+      <p class="page-eyebrow">Stock &amp; supplies</p>
+      <h1 class="page-h">Stock</h1>
+      <p class="page-sub">Fig &amp; Flour</p>
+    </div>
+    <button class="btn ai"><span class="p2e-spark">✦</span> Scan invoice</button>
+  </div>
+
+  <div class="tabs" data-tile="stock-tabs">
+    <a class="on">Ingredients</a><a>Overview</a><a>Suggestions</a>
+  </div>
+
+  <!-- ===== INGREDIENTS ===== -->
+  <p class="sect-lab">Ingredients library</p>
+  <div class="kpis" data-tile="stock-kpis">
+    <div class="kpi"><div class="l">Ingredients</div><div class="v">34</div><div class="s">8 packaging</div></div>
+    <div class="kpi"><div class="l">Avg dish margin</div><div class="v">68%</div><div class="s">across 19 costed</div></div>
+    <div class="kpi"><div class="l">Low stock</div><div class="v warm">3</div><div class="s">below par</div></div>
+    <div class="kpi"><div class="l">Uncosted</div><div class="v">5</div><div class="s">add pack cost</div></div>
+    <div class="kpi"><div class="l">Tracked</div><div class="v">22</div><div class="s">on-hand counted</div></div>
+  </div>
+
+  <div class="tbl" data-tile="ingredients-table">
+    <div class="thead"><span>Ingredient</span><span>Unit</span><span>Pack</span><span>Cost / unit</span><span>On hand</span><span>Par</span><span></span></div>
+    <div class="trow low" data-tile="ingredient-row-low">
+      <span class="nm">Bread Flour</span><span class="unit">kg</span><span class="pack">12.5kg · $28.00</span>
+      <span class="cost"><b>$0.22</b> <span>/kg</span></span><span>8 kg</span><span>10 kg</span><span class="lowb">Low</span>
+    </div>
+    <div class="trow">
+      <span class="nm">Butter</span><span class="unit">kg</span><span class="pack">5kg · $32.00</span>
+      <span class="cost"><b>$0.68</b> <span>/kg</span></span><span>6 kg</span><span>3 kg</span><span class="edit">Edit</span>
+    </div>
+    <div class="trow">
+      <span class="nm">Sourdough Starter</span><span class="unit">each</span><span class="pack">—</span>
+      <span class="cost" style="color:var(--color-muted)">—</span><span>—</span><span>—</span><span class="unc">Uncosted</span>
+    </div>
+    <div class="trow">
+      <span class="nm">Paper Bags <span class="pk-badge">Packaging</span></span><span class="unit">each</span><span class="pack">500 · $45.00</span>
+      <span class="cost"><b>$0.09</b> <span>/each</span></span><span>320</span><span>200</span><span class="edit">Edit</span>
+    </div>
+    <div class="addrow" data-tile="add-ingredient">
+      <input placeholder="Add an ingredient — name" /><input placeholder="pack size" style="max-width:110px" /><input placeholder="pack $" style="max-width:90px" /><button class="btn primary sm">Add</button>
+    </div>
+  </div>
+
+  <!-- ===== SUGGESTIONS (AI inbox) ===== -->
+  <p class="sect-lab">Reorder suggestions · AI inbox</p>
+  <div class="inbox" data-tile="suggestions-inbox">
+    <div class="sug p2e-rise" data-tile="suggestion-row"><span class="dot high"></span>
+      <div class="b"><p class="t">Bread Flour is low</p><p class="d">8kg on hand — below your 10kg par. Reorder from your supplier soon.</p></div>
+      <div class="acts"><a class="fix">Reorder →</a><button class="dis">Dismiss</button></div>
+    </div>
+    <div class="sug p2e-rise" style="animation-delay:.05s"><span class="dot med"></span>
+      <div class="b"><p class="t">5 ingredients are uncosted</p><p class="d">Add a pack size + cost so dish margins are accurate.</p></div>
+      <div class="acts"><a class="fix">Add costs →</a><button class="dis">Dismiss</button></div>
+    </div>
+    <div class="sug p2e-rise" style="animation-delay:.1s"><span class="dot med"></span>
+      <div class="b"><p class="t">Butter cost is 45 days old</p><p class="d">Update the pack cost to keep your margins honest.</p></div>
+      <div class="acts"><a class="fix">Update →</a><button class="dis">Dismiss</button></div>
+    </div>
+    <div class="sug p2e-rise" style="animation-delay:.15s"><span class="dot low"></span>
+      <div class="b"><p class="t">Almond Croissant margin is thin (18%)</p><p class="d">Below your 30% target — review the recipe or price.</p></div>
+      <div class="acts"><a class="fix">Review →</a><button class="dis">Dismiss</button></div>
+    </div>
+  </div>
+
+  <p class="sect-lab">Suggestions · all-clear (empty state)</p>
+  <div class="empty" data-tile="suggestions-empty">
+    <div class="ic">✓</div><h3>Nothing needs you</h3>
+    <p>No low stock, uncosted ingredients, stale costs, or thin margins. Fix one and it clears itself.</p>
+  </div>
+
+  <!-- ===== SCAN INVOICE (AI vision) ===== -->
+  <p class="sect-lab">Scan invoice · upload</p>
+  <div class="card" data-tile="scan-upload">
+    <h2>Scan a supplier invoice</h2>
+    <p class="lead">Snap or upload an invoice and Prompt2Eat reads each line, then matches it to your ingredient library so pack costs stay current.</p>
+    <div class="filebox"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span><div style="font-size:14px;font-weight:600">Drop an invoice photo or PDF</div><div style="font-size:12px;color:var(--color-muted);margin-top:2px">JPG, PNG, WebP or PDF · up to 5MB</div></div>
+    <button class="btn ai-grad" style="margin-top:14px"><span class="p2e-spark">✦</span> Read invoice</button>
+    <p class="note">Reading uses AI and is a small one-time cost. The invoice is sent for reading only — it is not stored.</p>
+  </div>
+
+  <p class="sect-lab">Scan invoice · reading (p2e-scan · animated wordmark)</p>
+  <div class="card" data-tile="scan-reading">
+    <div class="reading">
+      <div class="scanwrap" data-tile="scan-motion">
+        <div class="doc" aria-hidden="true"><span class="ln t"></span><span class="ln s"></span><span class="ln"></span><span class="ln s"></span><span class="ln t"></span><span class="ln"></span><span class="ln s"></span></div>
+        <div class="scanglow p2e-scan"></div><div class="scanline p2e-scan"></div>
+      </div>
+      <div class="p2e-mark glow" style="font-size:20px" data-tile="scan-wordmark">Prompt<span class="two">2</span>Eat</div>
+      <div style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--color-muted)"><span style="display:inline-flex;gap:5px"><i class="p2e-think" style="height:8px;width:8px;border-radius:999px;background:var(--color-accent)"></i><i class="p2e-think" style="height:8px;width:8px;border-radius:999px;background:var(--color-accent);animation-delay:.16s"></i><i class="p2e-think" style="height:8px;width:8px;border-radius:999px;background:var(--color-accent);animation-delay:.32s"></i></span> Reading your invoice…</div>
+    </div>
+  </div>
+
+  <p class="sect-lab">Scan invoice · review gate</p>
+  <div data-tile="scan-review">
+    <div class="gate"><p><strong>Review each line before applying.</strong> Prompt2Eat matched these to your ingredients — confirm the pack sizes and costs, then apply. Nothing changes until you do.</p></div>
+    <p style="margin-top:10px;font-size:13px;color:var(--color-muted)">Supplier · <strong style="color:var(--color-ink)">Baker's Choice</strong> · Invoice 3 Jul</p>
+    <div style="margin-top:10px">
+      <div class="line"><div><p class="nm">Bread Flour · 12.5kg · $28.00</p><p class="mt">Updates pack cost $26.00 → $28.00</p></div><span class="match ok">Matched</span></div>
+      <div class="line"><div><p class="nm">Butter · 5kg · $32.00</p><p class="mt">Matches “Butter” — no change</p></div><span class="match ok">Matched</span></div>
+      <div class="line"><div><p class="nm">Fresh Yeast · 1kg · $12.00</p><p class="mt">Not in your library — add as new?</p></div><span class="match new">New</span></div>
+    </div>
+    <div class="actions"><button class="btn secondary">Discard</button><button class="btn primary">Apply 3 lines</button></div>
+    <div class="recent" data-tile="scan-recent">
+      <p class="sect-lab" style="margin:16px 0 4px">Recent scans</p>
+      <div class="r"><span>Baker's Choice · 6 lines</span><span class="d">3 Jul</span></div>
+      <div class="r"><span>Melbourne Dairy · 4 lines</span><span class="d">28 Jun</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

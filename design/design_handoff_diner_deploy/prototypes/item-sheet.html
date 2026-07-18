@@ -1,0 +1,278 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner ITEM MODIFIER SHEET · responsive design prototype.
+
+  Source of truth: app/[slug]/item-modifier-sheet.tsx + item-selection.tsx
+  (size picker, modifier groups, life-safety note, stepper, add CTA) and the
+  shared primitives (selection-controls Radio/Checkbox with accent-color =
+  --action, stepper.tsx 44px controls, Button).
+
+  Responsive behaviour matches source exactly:
+    mobile  → bottom sheet (items-end, rounded top only, slides up)
+    sm 640  → centered modal (rounded all, max-w-lg)
+    lg 1024 → two-column modal (flex-row, image left 44%, max-w-3xl)
+
+  Firewall: data-domain="diner" → --action = venue --brand. Selected option rows
+  and the Add CTA read --brand; the required-group hint is warm (semantic), the
+  life-safety note is warm, dietary tags green/neutral. No amber anywhere (this
+  is not an AI surface). Every capturable block carries data-tile.
+  Query params: ?native=1 (safe-area) · ?state=unchosen (gated CTA).
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner — item modifier sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================== TOKEN LAYER (1:1 from app/globals.css) ============================== */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+
+/* motion — REAL globals.css tokens only + reduced-motion guard.
+   NOTE: the shipped item-modifier-sheet.tsx does not animate the sheet. The
+   entrance here is prototype polish using the existing p2e-slidein token — no
+   invented keyframes. (A dedicated bottom-sheet slide-up, p2e-sheetup, is
+   proposed as an optional real motion-library addition; see the prototypes
+   README / handoff notes, not shipped here.) */
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+.sheet{animation:p2e-slidein .34s ease-out both}
+@media (prefers-reduced-motion:reduce){.p2e-slidein,.p2e-rise,.sheet{animation:none!important}}
+
+/* ============================== STAGE + SCRIM ============================== */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{position:fixed;inset-inline:0;top:0;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b;z-index:5}
+.stage{position:relative;min-height:100dvh;display:flex;justify-content:center;align-items:flex-end;overflow:hidden}
+@media(min-width:640px){.stage{align-items:center;padding:24px}}
+/* faint storefront hint behind the scrim so the sheet reads as an overlay */
+.stage .bg{position:absolute;inset:0;background:
+  radial-gradient(60% 40% at 80% 8%, color-mix(in srgb,var(--brand) 14%,transparent), transparent 60%),
+  var(--color-surface)}
+.stage .scrim{position:absolute;inset:0;background:rgba(0,0,0,.40)} /* = source bg-black/40 */
+
+/* ============================== SHEET ============================== */
+.sheet{position:relative;z-index:2;display:flex;flex-direction:column;width:100%;max-width:512px;
+  max-height:90dvh;background:var(--color-surface-elevated);overflow:hidden;
+  border-radius:var(--radius-card) var(--radius-card) 0 0;box-shadow:0 -10px 44px rgba(0,0,0,.32)}
+[data-native] .sheet{padding-bottom:env(safe-area-inset-bottom,0)}
+@media(min-width:640px){.sheet{border-radius:var(--radius-card);max-height:88dvh;box-shadow:var(--shadow-card),0 30px 60px -20px rgba(0,0,0,.4)}}
+@media(min-width:1024px){.sheet{flex-direction:row;max-width:768px;height:min(640px,85dvh)}}
+/* grab handle — prototype-only affordance (NOT in the current item-modifier-sheet
+   component); proposed as an optional add if the mobile sheet gains a drag gesture */
+.sheet .handle{position:absolute;top:8px;left:50%;transform:translateX(-50%);height:4px;width:40px;border-radius:999px;background:color-mix(in srgb,var(--color-ink) 16%,transparent);z-index:3}
+@media(min-width:640px){.sheet .handle{display:none}}
+
+.sheet-image{height:208px;width:100%;flex:none;background-size:cover;background-position:center}
+@media(min-width:640px){.sheet-image{height:240px}}
+@media(min-width:1024px){.sheet-image{height:auto;width:44%}}
+
+.sheet-main{display:flex;flex-direction:column;min-height:0;min-width:0;flex:1}
+
+.sheet-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  border-bottom:1px solid var(--color-sand);padding:16px 20px}
+.sheet-header h2{font-family:var(--font-display);font-weight:600;font-size:18px;letter-spacing:-.01em;color:var(--color-ink)}
+.sheet-header .desc{margin-top:2px;font-size:14px;color:var(--color-muted)}
+.sheet-header .tags{margin-top:8px;display:flex;flex-wrap:wrap;gap:4px}
+.tag{border-radius:5px;padding:2px 6px;font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--color-sand);color:var(--color-muted)}
+.tag.plant{background:color-mix(in srgb,var(--color-success) 12%,transparent);color:var(--color-success-deep)}
+.close{height:44px;width:44px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:var(--color-muted);font-size:15px;transition:.15s}
+.close:hover{background:var(--color-sand);color:var(--color-ink)}
+
+.sheet-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:20px}
+.legend{display:flex;width:100%;align-items:baseline;justify-content:space-between}
+.legend .t{font-size:14px;font-weight:600;color:var(--color-ink)}
+.hint{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.hint.req{color:var(--color-warm)} .hint.opt{color:var(--color-muted)}
+.rows{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+
+.orow{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:var(--radius-control);
+  border:1px solid var(--color-line);padding:10px 12px;font-size:14px;color:var(--color-ink);cursor:pointer;transition:.15s}
+.orow:hover{border-color:var(--color-line-strong)}
+.orow.sel{border-color:var(--action);background:color-mix(in srgb,var(--action) 8%,transparent)}
+.orow.sel:hover{border-color:var(--action)}
+.orow.dis{opacity:.5;cursor:not-allowed}
+.orow .l{display:flex;align-items:center;gap:8px}
+.orow .p{color:var(--color-muted)}
+.orow input{height:20px;width:20px;accent-color:var(--action);cursor:pointer}
+.orow.dis input{cursor:not-allowed}
+
+.safety{display:flex;align-items:flex-start;gap:8px;border-radius:var(--radius-control);
+  border:1px solid color-mix(in srgb,var(--color-warm) 40%,transparent);
+  background:color-mix(in srgb,var(--color-warm) 10%,transparent);padding:10px 12px;
+  font-size:14px;font-weight:500;color:var(--color-ink)}
+.safety svg{margin-top:1px;height:20px;width:20px;flex:none;color:var(--color-warm)}
+
+.goeswell .eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin-bottom:8px}
+.gw-row{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none}
+.gw-row::-webkit-scrollbar{display:none}
+.gw{flex:none;width:150px;border:1px solid var(--color-sand);border-radius:var(--radius-control);overflow:hidden;background:var(--color-surface-elevated);transition:.15s}
+.gw:hover{box-shadow:var(--shadow-lift);transform:translateY(-1px)}
+.gw .ph{height:70px;background-size:cover}
+.gw .b{padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.gw .nm{font-size:12.5px;font-weight:600}
+.gw .add{height:28px;width:28px;flex:none;border-radius:999px;background:var(--action);color:var(--action-contrast);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+
+.sheet-footer{border-top:1px solid var(--color-sand);padding:16px 20px;display:flex;flex-direction:column;gap:12px;background:var(--color-surface-elevated)}
+.qty-row{display:flex;align-items:center;justify-content:space-between}
+.qty-row .lab{font-size:14px;font-weight:500;color:var(--color-ink)}
+.stepper{display:inline-flex;align-items:center;gap:4px}
+.stepper button{height:44px;width:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-control);border:1px solid var(--color-line);font-size:18px;line-height:1;color:var(--action);transition:.15s}
+.stepper button:hover{background:var(--color-sand)}
+.stepper button:disabled{opacity:.4;cursor:not-allowed}
+.stepper .val{min-width:32px;text-align:center;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
+.addcart{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;
+  border-radius:var(--radius-control);font-size:14px;font-weight:500;background:var(--action);color:var(--action-contrast);transition:.15s}
+.addcart:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.addcart:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ---- states reference (below the stage; captured in fullPage) ---- */
+.states{padding:26px 20px 100px;max-width:720px;margin:0 auto}
+.states .lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:22px 0 10px}
+.states .lab:first-child{margin-top:0}
+.states .demo{background:var(--color-surface-elevated);border:1px solid var(--color-sand);border-radius:var(--radius-card);padding:16px;box-shadow:var(--shadow-card)}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<!-- ===================== THE SHEET (over dimmed storefront) ===================== -->
+<div class="stage">
+  <div class="bg" aria-hidden="true"></div>
+  <div class="scrim" aria-hidden="true"></div>
+
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Focaccia Sandwich" data-tile="sheet">
+    <span class="handle" aria-hidden="true"></span>
+
+    <div class="sheet-image" data-tile="sheet-image" aria-hidden="true"
+      style="background:radial-gradient(70% 80% at 40% 30%,#e7c485,transparent 60%),linear-gradient(150deg,#c1904f,#7c5730)"></div>
+
+    <div class="sheet-main">
+      <!-- header -->
+      <div class="sheet-header" data-tile="sheet-header">
+        <div style="min-width:0">
+          <h2>Focaccia Sandwich</h2>
+          <p class="desc">House focaccia, your choice of fillings — pressed warm.</p>
+          <div class="tags"><span class="tag plant">Vegetarian</span></div>
+        </div>
+        <button class="close" aria-label="Close">✕</button>
+      </div>
+
+      <!-- body -->
+      <div class="sheet-body">
+        <!-- size picker -->
+        <fieldset class="field" data-tile="size-picker">
+          <div class="legend"><span class="t">Size</span><span class="hint req">Required · choose 1</span></div>
+          <div class="rows">
+            <label class="orow sel"><span class="l"><input type="radio" name="size" checked /> Half</span><span class="p">$8.50</span></label>
+            <label class="orow"><span class="l"><input type="radio" name="size" /> Full</span><span class="p">$14.00</span></label>
+          </div>
+        </fieldset>
+
+        <!-- life-safety note -->
+        <p class="safety" data-tile="safety-note">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd"/></svg>
+          <span>Dietary tags are a guide set by the venue, not a guarantee. Please tell staff about any allergies.</span>
+        </p>
+
+        <!-- required radio group -->
+        <fieldset class="field" data-tile="modifier-radio">
+          <div class="legend"><span class="t">Bread</span><span class="hint req">Required · choose 1</span></div>
+          <div class="rows">
+            <label class="orow sel"><span class="l"><input type="radio" name="bread" checked /> Rosemary &amp; sea salt</span></label>
+            <label class="orow"><span class="l"><input type="radio" name="bread" /> Olive &amp; confit garlic</span></label>
+          </div>
+        </fieldset>
+
+        <!-- optional checkbox group at cap (disabled remaining) -->
+        <fieldset class="field" data-tile="modifier-checkbox">
+          <div class="legend"><span class="t">Add-ons</span><span class="hint opt">Choose up to 2</span></div>
+          <div class="rows">
+            <label class="orow sel"><span class="l"><input type="checkbox" checked /> Buffalo mozzarella</span><span class="p">+$3.00</span></label>
+            <label class="orow sel"><span class="l"><input type="checkbox" checked /> Prosciutto</span><span class="p">+$4.00</span></label>
+            <label class="orow dis"><span class="l"><input type="checkbox" disabled /> Rocket</span><span class="p">+$1.50</span></label>
+            <label class="orow dis"><span class="l"><input type="checkbox" disabled /> Roast capsicum</span><span class="p">+$2.00</span></label>
+          </div>
+        </fieldset>
+
+        <!-- goes well with -->
+        <div class="goeswell" data-tile="goes-well">
+          <p class="eyebrow">Goes well with</p>
+          <div class="gw-row">
+            <div class="gw"><span class="ph" style="background:radial-gradient(70% 70% at 40% 30%,#d8b98a,transparent 60%),linear-gradient(150deg,#a97c48,#6f4f2c)"></span><div class="b"><span class="nm">Flat White</span><span class="add" aria-hidden="true">+</span></div></div>
+            <div class="gw"><span class="ph" style="background:radial-gradient(70% 70% at 55% 35%,#ead39a,transparent 60%),linear-gradient(150deg,#c49a5b,#8a6636)"></span><div class="b"><span class="nm">Almond Croissant</span><span class="add" aria-hidden="true">+</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="sheet-footer" data-tile="sheet-footer">
+        <div class="qty-row">
+          <span class="lab">Quantity</span>
+          <span class="stepper" role="group" aria-label="Quantity">
+            <button aria-label="Decrease quantity">−</button>
+            <span class="val">2</span>
+            <button aria-label="Increase quantity">+</button>
+          </span>
+        </div>
+        <button class="addcart" id="cta">Add to cart · $31.00</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== STATE REFERENCE ===================== -->
+<section class="states">
+  <p class="lab">Add CTA — gated until a size is chosen (source: disabled → “Select a size”)</p>
+  <div class="demo" data-tile="state-cta-gated">
+    <button class="addcart" disabled>Select a size</button>
+  </div>
+
+  <p class="lab">Option row states — unselected · selected (brand) · at-cap disabled</p>
+  <div class="demo" data-tile="state-option-rows">
+    <div class="rows">
+      <label class="orow"><span class="l"><input type="radio" name="d" /> Regular</span><span class="p">$16.00</span></label>
+      <label class="orow sel"><span class="l"><input type="radio" name="d" checked /> Large</span><span class="p">+$4.00</span></label>
+      <label class="orow dis"><span class="l"><input type="checkbox" disabled /> Extra cheese</span><span class="p">+$2.00</span></label>
+    </div>
+  </div>
+</section>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+  // ?state=unchosen → gate the main CTA like the real "Select a size" state.
+  if (q.get('state') === 'unchosen') {
+    const cta = document.getElementById('cta');
+    cta.textContent = 'Select a size'; cta.disabled = true;
+    document.querySelectorAll('[data-tile="size-picker"] .orow').forEach((r) => r.classList.remove('sel'));
+    document.querySelectorAll('[data-tile="size-picker"] input').forEach((i) => (i.checked = false));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!doctype html>
+<!--
+  Prompt2Eat — Diner ORDER STATUS tracker · responsive design prototype.
+
+  Source of truth: app/[slug]/order/[token]/page.tsx (OrderTracker + PayToWaiting),
+  payment-status-poller.tsx (bank variant: ~6s poll over a ~10-min window) and
+  queries.ts (ConfirmedOrder snapshot). Hand-authored to the exact token values
+  so it reflows for real across 390 / 768 / 1280 / 1536 + the native WebView.
+
+  Diners keep this open on a phone → native-safe + mobile fidelity first (390 is
+  primary). The :root token block and the ENTIRE p2e-* motion library below are
+  copied VERBATIM from diner-home.html; the success-tick (p2e-checkloop/p2e-draw)
+  and slow bar (p2e-progress) keyframes are appended VERBATIM from app/globals.css
+  because THIS surface needs them — nothing is invented, all reduced-motion guarded.
+
+  Firewall honoured: data-domain="diner" maps --action -> the venue --brand.
+    • brand (var(--action))  → venue header, order-number pill accents, CTAs
+    • success-green          → completed timeline steps (check)
+    • muted                  → upcoming steps
+    • the ACTIVE step is a filled --action dot whose p2e-ring pulse is AMBER —
+      that ring is the SANCTIONED "active/processing" signature (= status-badge
+      processing); NO other amber appears on the light screens.
+    • the bank/PayTo waiting card is forest-dark, the one place status-amber may
+      show (the processing dots), exactly like the app's out-of-band wait screen.
+
+  Every capturable block carries data-tile="…". Query param: ?native=1 (Capacitor
+  status bar + safe-area insets).
+-->
+<html lang="en" data-domain="diner">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Diner — order status (Fig &amp; Flour)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================== TOKEN LAYER ==============================
+   Copied 1:1 from app/globals.css (via diner-home.html) so prototype and app
+   share values. Do not alter. */
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e;
+  --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8;
+  --color-sand:#efe7d6; --color-line:#e6ddcb; --color-line-strong:#d8cbb0;
+  --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px;
+  --radius-control-sm:9px; --radius-control-lg:13px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --shadow-cta:0 12px 22px -10px rgb(239 168 44 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  /* Owner default; the diner root overrides --action below. */
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+  /* Sample venue brand (a warm artisan-bakery terracotta) — distinct from the
+     product's forest/amber so the firewall is visibly doing its job. */
+  --brand:#a6572e; --brand-contrast:#fffdf8;
+  /* Concierge/forest-dark tokens (1:1 from app/globals.css) for the PayTo wait. */
+  --color-concierge-mint:#7fd6a0; --color-concierge-sage:#a9c3b1;
+}
+[data-domain="diner"]{ --action:var(--brand); --action-contrast:var(--brand-contrast); }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--font-body); color:var(--color-ink);
+  background:var(--color-surface); min-height:100dvh; line-height:1.4;
+}
+:where(a,button):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+.mono{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em}
+.display{font-family:var(--font-display);letter-spacing:-.02em}
+
+/* ============================ MOTION LIBRARY ============================
+   The p2e-* keyframes from app/globals.css, reduced-motion guarded.
+   (Copied VERBATIM from diner-home.html.) */
+@keyframes p2e-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-think{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+@keyframes p2e-shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes p2e-pop{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes p2e-fly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(96px,-210px) scale(.28);opacity:0}}
+@keyframes p2e-cartpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes p2e-slidein{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--color-accent) 50%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+@keyframes order-loading-dot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.p2e-float{animation:p2e-float 4s ease-in-out infinite}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-think{animation:p2e-think 1.2s ease-in-out infinite}
+.p2e-pop{animation:p2e-pop .32s ease-out both}
+.p2e-fly{animation:p2e-fly .7s ease-in both}
+.p2e-cartpulse{animation:p2e-cartpulse .4s ease-out}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+.p2e-slidein{animation:p2e-slidein .4s ease-out both}
+.p2e-ring{animation:p2e-ring 1.2s ease-out infinite}
+.p2e-shimmer{
+  background:linear-gradient(100deg,var(--color-sand) 30%,#f6efe0 50%,var(--color-sand) 70%);
+  background-size:200% 100%; animation:p2e-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion:reduce){
+  .p2e-float,.p2e-glow,.p2e-think,.p2e-pop,.p2e-fly,.p2e-cartpulse,.p2e-rise,
+  .p2e-slidein,.p2e-ring,.p2e-shimmer{animation:none!important}
+}
+
+/* --- Additional REAL p2e-* keyframes this surface needs (success tick + slow
+   bar), copied 1:1 from app/globals.css. order-loading-dot is already above. --- */
+@keyframes p2e-draw{to{stroke-dashoffset:0}}
+@keyframes p2e-checkloop{0%{stroke-dashoffset:60}60%,100%{stroke-dashoffset:0}}
+@keyframes p2e-progress{from{width:0}to{width:var(--p2e-progress,60%)}}
+.p2e-draw{animation:p2e-draw .8s ease-out forwards}
+.p2e-checkloop{animation:p2e-checkloop 1.6s ease-in-out infinite}
+.p2e-progress{animation:p2e-progress 1s ease-out both}
+.load-dot{animation:order-loading-dot 1.4s ease-in-out infinite}
+.bank-bar{animation:p2e-progress 9s ease-out both} /* same keyframe, slowed for a calm fill */
+@media (prefers-reduced-motion:reduce){
+  .p2e-draw,.p2e-checkloop,.p2e-progress,.bank-bar{animation:none!important}
+  .load-dot{animation:none!important;opacity:.6}
+}
+
+/* ============================== CHROME (native) ========================= */
+.native-statusbar{display:none}
+[data-native] .native-statusbar{
+  display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b;
+}
+[data-native] body,[data-native] .app{padding-bottom:env(safe-area-inset-bottom,20px)}
+
+/* ============================== PAGE SHELL ============================== */
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 60px}
+@media(min-width:640px){.wrap{padding:26px 22px 80px}}
+@media(min-width:1024px){.wrap{max-width:960px}}
+@media(min-width:1536px){.wrap{max-width:1200px}}
+
+.pagelead{margin:2px 2px 16px}
+.pagelead .eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.18em;
+  font-size:10px;font-weight:700;color:var(--color-label)}
+.pagelead h1{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:20px;margin-top:4px}
+
+.gallery{display:flex;flex-direction:column;gap:16px}
+@media(min-width:1024px){
+  .gallery{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  .span-2{grid-column:1/-1}
+}
+@media(min-width:1536px){.gallery{gap:26px}}
+
+/* shared card */
+.card{border-radius:var(--radius-card);border:1px solid var(--color-line);
+  background:var(--color-surface-elevated);box-shadow:var(--shadow-card);padding:20px}
+@media(min-width:640px){.card{padding:22px}}
+
+/* ============================== ORDER HEADER =========================== */
+.paybanner{text-align:center;font-size:12px;font-weight:500;padding:8px 14px;border-radius:11px}
+.paybanner.ok{background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-deep)}
+.hdr{display:flex;align-items:flex-start;gap:14px;margin-top:16px}
+.logo{height:46px;width:46px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700;font-size:21px;background:var(--action);color:var(--action-contrast)}
+.hdr-txt{min-width:0;flex:1}
+.hdr-txt .eyebrow{font-size:13px;font-weight:600;color:var(--action)}
+.hdr-txt h2{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:24px;color:var(--color-ink);margin-top:2px}
+@media(min-width:640px){.hdr-txt h2{font-size:27px}}
+.ordernum{display:inline-flex;align-items:baseline;gap:9px;margin-top:11px;border-radius:12px;
+  background:var(--color-ink);color:var(--color-surface);padding:7px 13px}
+.ordernum .n{font-family:var(--font-mono);font-weight:700;font-size:15px;letter-spacing:.04em}
+.ordernum small{font-family:var(--font-body);font-weight:500;font-size:11px;color:color-mix(in srgb,var(--color-surface) 70%,transparent)}
+.hdr-meta{margin-top:9px;font-size:13px;color:var(--color-muted)}
+.hdr-meta b{color:var(--color-ink);font-weight:600}
+.kbadge{align-self:flex-start;flex:none;border-radius:var(--radius-pill);padding:5px 11px;
+  font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  background:color-mix(in srgb,var(--action) 13%,transparent);color:var(--action)}
+
+/* ============================== TRACKER ================================ */
+.tracker-hero{text-align:center;margin-bottom:20px}
+.t-title{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:26px;color:var(--color-ink)}
+@media(min-width:640px){.t-title{font-size:29px}}
+.t-sub{margin-top:5px;font-size:14px;color:var(--color-muted)}
+
+/* the success burst on the ready card */
+.ready-mark{margin:0 auto 14px;height:66px;width:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--color-success) 14%,transparent);
+  border:2px solid color-mix(in srgb,var(--color-success) 42%,transparent)}
+.ready-mark svg{height:34px;width:34px;overflow:visible}
+.ready-mark path{fill:none;stroke:var(--color-success-deep);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60}
+
+/* vertical timeline */
+.stepper{list-style:none;position:relative}
+.step{position:relative;display:grid;grid-template-columns:32px 1fr;gap:14px;padding-bottom:20px}
+.step:last-child{padding-bottom:0}
+/* connector runs from this node down into the next */
+.step:not(:last-child)::before{content:"";position:absolute;left:15px;top:34px;bottom:-2px;width:2px;border-radius:2px;
+  background:var(--color-line-strong)}
+.step.done:not(:last-child)::before{background:var(--color-success)}
+.node{position:relative;z-index:1;height:32px;width:32px;flex:none;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;line-height:1}
+.step.done .node{background:var(--color-success);color:#fff}
+.step.active .node{background:var(--action);color:var(--action-contrast)} /* filled brand dot */
+.step.up .node{border:2px solid var(--color-line-strong);background:var(--color-surface);color:var(--color-label)}
+.node svg{height:15px;width:15px;overflow:visible}
+.node path{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;stroke-dashoffset:20}
+.s-body{padding-top:5px;min-width:0}
+.s-label{font-size:15px;font-weight:700;color:var(--color-ink)}
+.step.up .s-label{color:var(--color-muted)}
+.s-sub{margin-top:1px;font-size:12.5px;line-height:1.35;color:var(--color-muted)}
+.s-now{display:inline-block;margin-top:5px;font-family:var(--font-mono);font-size:9px;font-weight:700;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--action)}
+
+/* reassurance + ETA */
+.note{display:flex;align-items:flex-start;gap:10px;margin-top:16px;border-radius:var(--radius-control);
+  border:1px solid color-mix(in srgb,var(--action) 26%,transparent);
+  background:color-mix(in srgb,var(--action) 8%,transparent);padding:11px 13px}
+.note .d{margin-top:5px;height:9px;width:9px;flex:none;border-radius:50%;background:var(--action)}
+.note p{font-size:12px;line-height:1.5;color:var(--color-muted)}
+.note b{color:var(--color-ink)}
+.eta{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;
+  border-top:1px solid var(--color-sand);padding-top:14px;font-size:13px;color:var(--color-muted)}
+.eta svg{height:15px;width:15px;color:var(--color-label);flex:none}
+.eta b{color:var(--color-ink);font-weight:700}
+
+/* ============================== ORDER DETAILS ========================== */
+.d-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:700;color:var(--color-muted)}
+.d-list{list-style:none;margin-top:8px}
+.d-list li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:11px 0;
+  border-top:1px solid var(--color-line)}
+.d-list li:first-child{border-top:none}
+.d-list .txt{min-width:0}
+.d-list .nm{font-size:14px;color:var(--color-ink)}
+.d-list .nm .q{color:var(--color-muted)}
+.d-list .mod{margin-top:2px;font-size:12px;color:var(--color-muted)}
+.d-list .pr{flex:none;font-size:14px;color:var(--color-ink)}
+.d-totals{margin-top:12px;border-top:1px solid var(--color-line);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.d-row{display:flex;justify-content:space-between;font-size:13px;color:var(--color-muted)}
+.d-grand{display:flex;justify-content:space-between;align-items:baseline;margin-top:2px}
+.d-grand span:first-child{font-size:14px;font-weight:600;color:var(--color-ink)}
+.d-grand .amt{font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--color-ink)}
+.d-tax{margin-top:2px;text-align:right;font-size:11px;color:var(--color-muted)}
+.pickup{margin-top:16px;display:grid;gap:10px;border-top:1px solid var(--color-sand);padding-top:14px}
+@media(min-width:640px){.pickup{grid-template-columns:1fr 1fr}}
+.pickup .k{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.1em;font-size:9px;font-weight:700;color:var(--color-label)}
+.pickup .v{margin-top:3px;font-size:14px;font-weight:600;color:var(--color-ink)}
+.pickup .v small{display:block;margin-top:1px;font-size:12px;font-weight:400;color:var(--color-muted)}
+
+/* ============================== BANK / PAYTO WAIT (forest-dark) ========= */
+.bank{background:var(--color-forest-deep);border:1px solid color-mix(in srgb,#fff 8%,transparent);
+  border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:22px;color:var(--color-concierge-sage)}
+@media(min-width:640px){.bank{padding:26px}}
+.bank-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.14em;font-size:10px;font-weight:700;color:var(--color-concierge-mint)}
+.bank-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.01em;font-size:23px;color:#fff;margin-top:8px}
+@media(min-width:640px){.bank-h{font-size:26px}}
+.bank-sub{margin-top:7px;font-size:14px;line-height:1.55;color:var(--color-concierge-sage);max-width:52ch}
+.bank-wait{display:flex;align-items:center;gap:10px;margin-top:18px}
+.bank-dots{display:inline-flex;gap:5px}
+.bank-dots i{height:8px;width:8px;border-radius:50%;background:var(--color-accent)} /* amber processing — sanctioned on forest */
+.bank-wait span{font-size:12.5px;color:var(--color-concierge-mint)}
+.bank-track{margin-top:13px;height:5px;border-radius:999px;overflow:hidden;
+  background:color-mix(in srgb,var(--color-concierge-mint) 16%,transparent)}
+.bank-bar{display:block;height:100%;border-radius:999px;width:var(--p2e-progress,64%);
+  background:color-mix(in srgb,var(--color-concierge-mint) 82%,transparent)}
+.bank-steps{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:15px}
+.b-step{display:grid;grid-template-columns:24px 1fr;gap:12px;align-items:start}
+.b-node{height:24px;width:24px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;line-height:1}
+.b-step.done .b-node{background:var(--color-concierge-mint);color:var(--color-forest)}
+.b-step.active .b-node{background:color-mix(in srgb,var(--color-concierge-mint) 20%,transparent);color:var(--color-concierge-mint)}
+.b-step.up .b-node{border:1px solid color-mix(in srgb,var(--color-concierge-sage) 30%,transparent);
+  color:color-mix(in srgb,var(--color-concierge-sage) 62%,transparent)}
+.b-t{font-size:14px;font-weight:700;color:#fff}
+.b-step.up .b-t{color:color-mix(in srgb,var(--color-concierge-sage) 62%,transparent)}
+.b-s{font-size:12px;line-height:1.4;color:var(--color-concierge-sage);margin-top:1px}
+.bank-fine{margin-top:18px;border-top:1px solid color-mix(in srgb,#fff 10%,transparent);padding-top:13px;
+  font-size:11.5px;line-height:1.55;color:color-mix(in srgb,var(--color-concierge-sage) 82%,transparent)}
+.bank-pickup{margin-top:14px;border-radius:var(--radius-control);border:1px solid color-mix(in srgb,#fff 10%,transparent);padding:11px 13px}
+.bank-pickup .k{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.1em;font-size:9px;font-weight:700;color:var(--color-concierge-mint)}
+.bank-pickup .v{margin-top:3px;font-size:14px;font-weight:600;color:#fff}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="native-statusbar"></div>
+
+  <div class="wrap">
+    <div class="pagelead">
+      <p class="eyebrow">Prompt2Eat · Order status</p>
+      <h1>Fig &amp; Flour — live tracker</h1>
+    </div>
+
+    <div class="gallery">
+
+      <!-- ===================== ORDER HEADER ===================== -->
+      <section class="card span-2 p2e-rise" data-tile="order-header" style="animation-delay:.02s">
+        <div class="paybanner ok">Payment received — your order is confirmed.</div>
+        <div class="hdr">
+          <span class="logo" aria-hidden="true">F</span>
+          <div class="hdr-txt">
+            <p class="eyebrow">Order confirmed</p>
+            <h2>Thanks, Sam!</h2>
+            <span class="ordernum"><span class="n">Order&nbsp;#FIG-2F9</span><small>listen for this number</small></span>
+            <p class="hdr-meta"><b>Fig &amp; Flour</b> · Pickup · Call number <b>24</b></p>
+          </div>
+          <span class="kbadge">Preparing</span>
+        </div>
+      </section>
+
+      <!-- ===================== STATE · JUST PLACED ===================== -->
+      <article class="card p2e-rise" data-tile="order-placed" style="animation-delay:.06s">
+        <div class="tracker-hero">
+          <p class="t-title">Order received</p>
+          <p class="t-sub">The kitchen has your order and will start it shortly.</p>
+        </div>
+        <ol class="stepper">
+          <li class="step active p2e-slidein" style="animation-delay:.04s">
+            <span class="node p2e-ring" aria-hidden="true"></span>
+            <div class="s-body">
+              <div class="s-label">Placed</div>
+              <div class="s-sub">Order placed &amp; payment confirmed.</div>
+              <span class="s-now">Now</span>
+            </div>
+          </li>
+          <li class="step up p2e-slidein" style="animation-delay:.10s">
+            <span class="node" aria-hidden="true"></span>
+            <div class="s-body"><div class="s-label">Confirmed</div><div class="s-sub">The kitchen accepts your order.</div></div>
+          </li>
+          <li class="step up p2e-slidein" style="animation-delay:.16s">
+            <span class="node" aria-hidden="true"></span>
+            <div class="s-body"><div class="s-label">Preparing</div><div class="s-sub">Your order is made fresh.</div></div>
+          </li>
+          <li class="step up p2e-slidein" style="animation-delay:.22s">
+            <span class="node" aria-hidden="true"></span>
+            <div class="s-body"><div class="s-label">Ready for pickup</div><div class="s-sub">Collect at the counter.</div></div>
+          </li>
+        </ol>
+        <p class="sr-only" aria-live="polite">Order status: Order received.</p>
+      </article>
+
+      <!-- ===================== STATE · PREPARING ===================== -->
+      <article class="card p2e-rise" data-tile="order-prep" style="animation-delay:.10s">
+        <div class="tracker-hero">
+          <p class="t-title">In the kitchen</p>
+          <p class="t-sub">Your order is being prepared right now.</p>
+        </div>
+        <ol class="stepper">
+          <li class="step done p2e-slidein" style="animation-delay:.04s">
+            <span class="node" aria-hidden="true">✓</span>
+            <div class="s-body"><div class="s-label">Placed</div><div class="s-sub">Order placed &amp; paid.</div></div>
+          </li>
+          <li class="step done p2e-slidein" style="animation-delay:.10s">
+            <span class="node" aria-hidden="true">✓</span>
+            <div class="s-body"><div class="s-label">Confirmed</div><div class="s-sub">Kitchen accepted your order.</div></div>
+          </li>
+          <li class="step active p2e-slidein" style="animation-delay:.16s">
+            <span class="node p2e-ring" aria-hidden="true"></span>
+            <div class="s-body">
+              <div class="s-label">Preparing</div>
+              <div class="s-sub">Your order is being made now.</div>
+              <span class="s-now">Now</span>
+            </div>
+          </li>
+          <li class="step up p2e-slidein" style="animation-delay:.22s">
+            <span class="node" aria-hidden="true"></span>
+            <div class="s-body"><div class="s-label">Ready for pickup</div><div class="s-sub">We'll call your number.</div></div>
+          </li>
+        </ol>
+        <div class="note">
+          <span class="d" aria-hidden="true"></span>
+          <p><b>The kitchen's on it.</b> We'll call your number the moment it's ready — no need to watch this screen.</p>
+        </div>
+        <p class="eta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Est. ready <b>~2:45 PM</b> · roughly 10–15 min</span>
+        </p>
+      </article>
+
+      <!-- ===================== STATE · READY / COMPLETE ===================== -->
+      <article class="card p2e-rise" data-tile="order-ready" style="animation-delay:.14s">
+        <div class="tracker-hero">
+          <span class="ready-mark p2e-pop" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path class="p2e-checkloop" d="M6 12.5l3.8 3.8L18 7" /></svg>
+          </span>
+          <p class="t-title">Ready for pickup</p>
+          <p class="t-sub">Come grab it at the counter — listen for order #FIG-2F9.</p>
+        </div>
+        <ol class="stepper">
+          <li class="step done p2e-slidein" style="animation-delay:.04s">
+            <span class="node" aria-hidden="true">✓</span>
+            <div class="s-body"><div class="s-label">Placed</div><div class="s-sub">Order placed &amp; paid.</div></div>
+          </li>
+          <li class="step done p2e-slidein" style="animation-delay:.10s">
+            <span class="node" aria-hidden="true">✓</span>
+            <div class="s-body"><div class="s-label">Confirmed</div><div class="s-sub">Kitchen accepted your order.</div></div>
+          </li>
+          <li class="step done p2e-slidein" style="animation-delay:.16s">
+            <span class="node" aria-hidden="true">✓</span>
+            <div class="s-body"><div class="s-label">Preparing</div><div class="s-sub">Freshly made.</div></div>
+          </li>
+          <li class="step done p2e-slidein" style="animation-delay:.22s">
+            <span class="node" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="p2e-draw" d="M6 12.5l3.8 3.8L18 7" /></svg></span>
+            <div class="s-body"><div class="s-label">Ready for pickup</div><div class="s-sub">Collect at the counter now.</div></div>
+          </li>
+        </ol>
+        <p class="sr-only" aria-live="polite">Order status: Ready for pickup.</p>
+      </article>
+
+      <!-- ===================== ORDER DETAILS ===================== -->
+      <article class="card p2e-rise" data-tile="order-details" style="animation-delay:.18s">
+        <p class="d-eyebrow">Your order</p>
+        <ul class="d-list">
+          <li>
+            <span class="txt">
+              <span class="nm"><span class="q">2×</span> Country Sourdough (Sliced)</span>
+            </span>
+            <span class="pr">$18.00</span>
+          </li>
+          <li>
+            <span class="txt">
+              <span class="nm"><span class="q">1×</span> Almond Croissant</span>
+            </span>
+            <span class="pr">$6.50</span>
+          </li>
+          <li>
+            <span class="txt">
+              <span class="nm"><span class="q">1×</span> Flat White (Large)</span>
+              <span class="mod">Oat milk</span>
+            </span>
+            <span class="pr">$5.00</span>
+          </li>
+        </ul>
+        <div class="d-totals">
+          <div class="d-row"><span>Subtotal</span><span>$29.50</span></div>
+          <div class="d-grand"><span>Total</span><span class="amt">$29.50</span></div>
+          <p class="d-tax">incl. GST $2.68</p>
+        </div>
+        <div class="pickup">
+          <div>
+            <p class="k">Pickup</p>
+            <p class="v">Collect at the counter<small>Fig &amp; Flour · Fitzroy</small></p>
+          </div>
+          <div>
+            <p class="k">Ready by</p>
+            <p class="v">~2:45 PM<small>Est. — we'll call #24</small></p>
+          </div>
+        </div>
+      </article>
+
+      <!-- ===================== STATE · BANK / PAYTO WAITING (forest-dark) ===================== -->
+      <article class="bank span-2 p2e-rise" data-tile="order-bank-waiting" style="animation-delay:.22s">
+        <p class="bank-eyebrow">Pay by bank</p>
+        <p class="bank-h">Approve $29.50 in your banking app</p>
+        <p class="bank-sub">Your bank sends you a request to approve — it can take a minute or two. Keep this page open; it updates on its own.</p>
+
+        <div class="bank-wait">
+          <span class="bank-dots" aria-hidden="true">
+            <i class="load-dot"></i><i class="load-dot" style="animation-delay:.18s"></i><i class="load-dot" style="animation-delay:.36s"></i>
+          </span>
+          <span aria-live="polite">Waiting for your bank to confirm…</span>
+        </div>
+        <div class="bank-track" aria-hidden="true"><span class="bank-bar p2e-progress" style="--p2e-progress:64%"></span></div>
+
+        <ol class="bank-steps">
+          <li class="b-step done">
+            <span class="b-node" aria-hidden="true">✓</span>
+            <div><p class="b-t">Request sent</p><p class="b-s">We've sent a payment request to your bank.</p></div>
+          </li>
+          <li class="b-step active">
+            <span class="b-node p2e-ring" aria-hidden="true"></span>
+            <div><p class="b-t">Approve in your banking app</p><p class="b-s">Open your banking app and approve the request to pay.</p></div>
+          </li>
+          <li class="b-step up">
+            <span class="b-node" aria-hidden="true"></span>
+            <div><p class="b-t">We start your order</p><p class="b-s">The kitchen begins the moment your bank confirms.</p></div>
+          </li>
+        </ol>
+
+        <div class="bank-pickup">
+          <p class="k">Pickup</p>
+          <p class="v">Collect at the counter</p>
+        </div>
+
+        <p class="bank-fine">This page keeps checking for about 10 minutes. If you're unsure whether it went through, please check with the venue before paying again — you won't be charged twice.</p>
+      </article>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Native shell toggle (Capacitor status bar + safe-area insets), matching the
+  // diner-home / item-sheet prototypes. No motion is added here — all animation
+  // is CSS-driven via the real p2e-* keyframes and is reduced-motion guarded.
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

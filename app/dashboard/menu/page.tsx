@@ -15,6 +15,7 @@ import {
   getItemsForVenue,
   getOptionsForVenue,
   getRecipeLinesForVenue,
+  getStationOptionsForVenue,
   getTagsForVenue,
   getVariantsForVenue,
 } from "./queries";
@@ -32,6 +33,7 @@ export default async function MenuPage() {
     tags,
     recipeLines,
     ingredientRows,
+    stationOptions,
   ] = await Promise.all([
     getCategoriesForVenue(venue.id),
     getItemsForVenue(venue.id),
@@ -41,6 +43,7 @@ export default async function MenuPage() {
     getTagsForVenue(venue.id),
     getRecipeLinesForVenue(venue.id),
     getIngredientsForVenue(venue.id),
+    getStationOptionsForVenue(venue.id),
   ]);
 
   const ingredientOptions = ingredientRows.map((row) => ({
@@ -105,6 +108,7 @@ export default async function MenuPage() {
             recipeLines={recipeLines}
             ingredientOptions={ingredientOptions}
             categoryOptions={categoryOptions}
+            stationOptions={stationOptions}
           />
         </Suspense>
       </div>

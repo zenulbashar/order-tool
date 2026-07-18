@@ -1,0 +1,217 @@
+<!doctype html>
+<!--
+  Prompt2Eat — PLATFORM ADMIN console (.admin-dark) · prototype.
+  Operator ops surface: Directory · Stats · Promotions · Venue detail · Support.
+
+  Source: app/admin/{layout,admin-nav,page,stats,promotions,venues/[id]}.tsx +
+  the .admin-dark token override in app/globals.css.
+
+  ADMIN FIREWALL MODE (distinct from owner/diner): the .admin-dark wrapper
+  recolours everything to the dark ops theme AND remaps --action to AMBER
+  (#f4b43c) — this is the ONE place amber is the functional accent (active nav,
+  primary CTAs, selected states). success/warm status tones stay semantic. Token
+  values are copied verbatim from globals.css `.admin-dark`.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Platform admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  /* base tokens */
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55; --color-forest:#16241c;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(0 0 0 / .2), 0 20px 40px -20px rgb(0 0 0 / .45);
+  --shadow-lift:0 9px 18px -8px rgb(0 0 0 / .6);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  /* .admin-dark override (verbatim from globals.css) — --action = AMBER */
+  --color-surface:#0e1f18; --color-surface-elevated:#16261e; --color-sand:#1c2c24;
+  --color-line:#26362d; --color-line-strong:#33473c; --color-ink:#eaf3ec;
+  --color-muted:#a9c3b1; --color-label:#7fa890; --color-hover-secondary:#1c2c24;
+  --action:var(--color-accent); --action-contrast:#16241c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button,input):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+svg{display:block}
+@keyframes p2e-count{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+.p2e-count{animation:p2e-count .3s ease-out both}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+@media (prefers-reduced-motion:reduce){.p2e-count,.p2e-rise{animation:none!important}}
+/* animated Prompt2Eat wordmark (amber "2") */
+.p2e-mark{display:inline-flex;align-items:baseline;font-family:var(--font-display);font-weight:800;letter-spacing:-.02em}
+.p2e-mark .two{color:var(--color-accent);position:relative}
+.p2e-mark .two::before{content:"";position:absolute;inset:-5px -3px;z-index:-1;border-radius:999px;background:radial-gradient(circle,color-mix(in srgb,var(--color-accent) 55%,transparent),transparent 68%);filter:blur(2px);animation:p2e-glow 2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.p2e-mark .two::before{animation:none!important;opacity:.7}}
+
+/* ===== admin top-bar (P2EAdminBar) ===== */
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--color-surface-elevated);border-bottom:1px solid var(--color-line)}
+.bar .brand{display:flex;align-items:center;gap:8px}
+.bar .wm{font-size:18px}
+.bar .tag{border-radius:var(--radius-sm);background:var(--color-sand);color:var(--color-label);font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:2px 6px}
+.bar nav{display:flex;gap:2px;margin-left:8px;overflow-x:auto;scrollbar-width:none}
+.bar nav::-webkit-scrollbar{display:none}
+.bar nav a{white-space:nowrap;border-radius:var(--radius-control);padding:7px 13px;font-size:13px;font-weight:600;color:var(--color-muted)}
+.bar nav a:hover{color:var(--color-ink);background:var(--color-hover-secondary)}
+.bar nav a.on{background:var(--action);color:var(--action-contrast)}
+.bar .who{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--color-muted)}
+.bar .who .out{color:var(--color-label)}
+
+.wrap{max-width:1080px;margin:0 auto;padding:24px 20px 96px}
+.page-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:24px}
+.page-sub{font-size:13px;color:var(--color-muted);margin-top:3px}
+.sect-lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:30px 0 12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 14px;border-radius:var(--radius-control);font-size:13px;font-weight:600;transition:.15s}
+.btn.sm{min-height:32px;padding:0 10px;font-size:12px}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+.badge{display:inline-flex;align-items:center;gap:5px;border-radius:var(--radius-sm);padding:2px 8px;font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.badge.green{background:color-mix(in srgb,var(--color-success) 18%,transparent);color:#7fd6a0}
+.badge.amber{background:color-mix(in srgb,var(--color-accent) 18%,transparent);color:var(--color-accent)}
+.badge.warm{background:color-mix(in srgb,var(--color-warm) 20%,transparent);color:#f0a08c}
+.badge.plan{background:var(--color-sand);color:var(--color-muted)}
+
+/* stats KPIs */
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:768px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{border-radius:14px;border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card)}
+.kpi .l{font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-label)}
+.kpi .v{margin-top:6px;font-family:var(--font-display);font-weight:800;font-size:26px}
+.kpi .s{margin-top:3px;font-size:11px;font-weight:600;color:#7fd6a0}
+/* chart */
+.chart{margin-top:14px;border:1px solid var(--color-line);border-radius:var(--radius-card);background:var(--color-surface-elevated);padding:18px;box-shadow:var(--shadow-card)}
+.chart .ct{display:flex;align-items:center;justify-content:space-between}
+.chart .ct h3{font-family:var(--font-display);font-weight:700;font-size:14px}
+.bars{margin-top:16px;display:flex;align-items:flex-end;gap:10px;height:120px}
+.bars .b{flex:1;background:var(--action);border-radius:4px 4px 0 0;opacity:.85}
+.bars .b.last{opacity:1}
+.bars-x{margin-top:8px;display:flex;gap:10px;font-family:var(--font-mono);font-size:9px;color:var(--color-label)}
+.bars-x span{flex:1;text-align:center}
+
+/* directory table */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.search{display:flex;align-items:center;gap:8px;border:1px solid var(--color-line);border-radius:var(--radius-input);background:var(--color-surface-elevated);padding:8px 12px;color:var(--color-muted);min-width:220px}
+.search input{border:none;background:none;outline:none;color:var(--color-ink);font:500 13px var(--font-body);width:100%}
+.tbl{border:1px solid var(--color-line);border-radius:var(--radius-card);overflow:hidden;background:var(--color-surface-elevated);box-shadow:var(--shadow-card)}
+.thead,.trow{display:grid;grid-template-columns:1.7fr .8fr 1fr .8fr 1fr .9fr auto;gap:10px;align-items:center;padding:11px 16px}
+.thead{background:var(--color-hover-secondary);border-bottom:1px solid var(--color-line);font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-label)}
+.trow{border-bottom:1px solid color-mix(in srgb,var(--color-line) 70%,transparent);font-size:13px}
+.trow:last-child{border-bottom:none}
+.trow:hover{background:var(--color-hover-secondary)}
+.trow .nm{font-weight:700;display:flex;align-items:center;gap:8px}
+.trow .nm .dot{height:8px;width:8px;border-radius:999px;background:var(--action)}
+.trow .num{font-family:var(--font-mono);font-size:12px}
+.trow .view{color:var(--action);font-size:12px;font-weight:700}
+
+/* venue detail drawer */
+.drawer{width:400px;max-width:100%;border:1px solid var(--color-line);border-radius:var(--radius-card);background:var(--color-surface-elevated);box-shadow:var(--shadow-card);overflow:hidden}
+.drawer .dh{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--color-line)}
+.drawer .dh h3{font-family:var(--font-display);font-weight:800;font-size:17px}
+.drawer .info{padding:14px 16px;display:flex;flex-direction:column;gap:7px;font-size:13px;border-bottom:1px solid var(--color-line)}
+.drawer .info .kv{display:flex;justify-content:space-between}.drawer .info .kv .k{color:var(--color-muted)}
+.drawer .form{padding:14px 16px}
+.drawer .form label{display:block;font-size:12px;font-weight:600;margin:10px 0 5px}
+.drawer .form label:first-child{margin-top:0}
+.seg{display:inline-flex;border-radius:var(--radius-pill);border:1px solid var(--color-line);background:var(--color-surface);padding:3px}
+.seg button{border-radius:var(--radius-pill);padding:5px 12px;font-size:12px;font-weight:600;color:var(--color-muted)}
+.seg button.on{background:var(--action);color:var(--action-contrast)}
+.drawer .form input{width:100%;border:1px solid var(--color-line);border-radius:var(--radius-input);background:var(--color-surface);padding:9px 12px;font:500 13px var(--font-body);color:var(--color-ink)}
+.drawer .form .acts{margin-top:14px;display:flex;gap:8px}
+
+/* promotions */
+.promo{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--color-line);border-radius:var(--radius-control);background:var(--color-surface-elevated);padding:12px 14px}
+.promo + .promo{margin-top:8px}
+.promo .code{font-family:var(--font-mono);font-weight:700}
+.promo .meta{font-size:12px;color:var(--color-muted);margin-top:2px}
+</style>
+</head>
+<body>
+
+<!-- ===== ADMIN BAR ===== -->
+<header class="bar" data-tile="admin-bar">
+  <div class="brand"><span class="p2e-mark wm">Prompt<span class="two">2</span>Eat</span><span class="tag">Admin</span></div>
+  <nav>
+    <a class="on">Directory</a><a>Stats</a><a>Promotions</a><a>Marketplace</a><a>Support</a>
+  </nav>
+  <div class="who"><span>ops@prompt2eat.com</span><a class="out">Sign out</a></div>
+</header>
+
+<div class="wrap" data-tile="admin-page">
+  <!-- ===== STATS ===== -->
+  <p class="sect-lab">Platform stats</p>
+  <div class="kpis" data-tile="admin-stats">
+    <div class="kpi"><div class="l">Venues</div><div class="v p2e-count">142</div><div class="s">+9 this month</div></div>
+    <div class="kpi"><div class="l">GMV · 30d</div><div class="v p2e-count">$284k</div><div class="s">+12% MoM</div></div>
+    <div class="kpi"><div class="l">Orders · 30d</div><div class="v p2e-count">8,420</div><div class="s">+6% MoM</div></div>
+    <div class="kpi"><div class="l">Active venues</div><div class="v p2e-count">118</div><div class="s">83% of total</div></div>
+  </div>
+  <div class="chart" data-tile="gmv-chart">
+    <div class="ct"><h3>GMV by week</h3><span class="badge amber">Last 8 weeks</span></div>
+    <div class="bars"><span class="b" style="height:42%"></span><span class="b" style="height:55%"></span><span class="b" style="height:48%"></span><span class="b" style="height:64%"></span><span class="b" style="height:60%"></span><span class="b" style="height:76%"></span><span class="b" style="height:72%"></span><span class="b last" style="height:92%"></span></div>
+    <div class="bars-x"><span>W1</span><span>W2</span><span>W3</span><span>W4</span><span>W5</span><span>W6</span><span>W7</span><span>W8</span></div>
+  </div>
+
+  <!-- ===== DIRECTORY ===== -->
+  <p class="sect-lab">Venue directory</p>
+  <div data-tile="admin-directory">
+    <div class="toolbar">
+      <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3" stroke-linecap="round"/></svg><input placeholder="Search venues…" /></div>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--color-label)">142 venues</span>
+    </div>
+    <div class="tbl">
+      <div class="thead"><span>Venue</span><span>Plan</span><span>Status</span><span>Orders 30d</span><span>GMV 30d</span><span>Joined</span><span></span></div>
+      <div class="trow" data-tile="venue-row"><span class="nm"><span class="dot"></span>Fig &amp; Flour</span><span class="badge plan">Pro</span><span><span class="badge green">Active</span></span><span class="num">168</span><span class="num">$4,120</span><span class="num">12 Jun</span><span class="view">View →</span></div>
+      <div class="trow"><span class="nm"><span class="dot"></span>Nonna's Kitchen</span><span class="badge plan">Scale</span><span><span class="badge green">Active</span></span><span class="num">512</span><span class="num">$18,400</span><span class="num">3 Mar</span><span class="view">View →</span></div>
+      <div class="trow"><span class="nm"><span class="dot" style="background:var(--color-muted)"></span>The Daily Grind</span><span class="badge plan">Trial</span><span><span class="badge amber">Trial</span></span><span class="num">42</span><span class="num">$980</span><span class="num">2 Jul</span><span class="view">View →</span></div>
+      <div class="trow"><span class="nm"><span class="dot" style="background:var(--color-warm-deep)"></span>Bean There</span><span class="badge plan">Pro</span><span><span class="badge warm">Suspended</span></span><span class="num">0</span><span class="num">$0</span><span class="num">8 May</span><span class="view">View →</span></div>
+    </div>
+  </div>
+
+  <!-- ===== VENUE DETAIL ===== -->
+  <p class="sect-lab">Venue detail · plan &amp; discount</p>
+  <div class="drawer" data-tile="venue-detail">
+    <div class="dh"><h3>Fig &amp; Flour</h3><span class="badge green">Active</span></div>
+    <div class="info">
+      <div class="kv"><span class="k">Owner</span><span>Alex Rivera · alex@example.com</span></div>
+      <div class="kv"><span class="k">Slug</span><span>figandflour</span></div>
+      <div class="kv"><span class="k">Stripe</span><span style="color:#7fd6a0">Charges enabled</span></div>
+      <div class="kv"><span class="k">Joined</span><span>12 Jun 2026</span></div>
+    </div>
+    <div class="form">
+      <label>Plan</label>
+      <div class="seg"><button>Trial</button><button class="on">Pro</button><button>Scale</button></div>
+      <label>Platform-fee discount</label>
+      <input value="0%" />
+      <div class="acts"><button class="btn primary">Save changes</button><button class="btn secondary">Impersonate ↗</button></div>
+    </div>
+  </div>
+
+  <!-- ===== PROMOTIONS ===== -->
+  <p class="sect-lab">Platform promotions</p>
+  <div data-tile="admin-promotions">
+    <div class="promo"><div><span class="code">LAUNCH50</span><div class="meta">50% off platform fee · first 3 months · 28 venues</div></div><span style="display:flex;align-items:center;gap:10px"><span class="badge green">Active</span><button class="btn secondary sm">Edit</button></span></div>
+    <div class="promo"><div><span class="code">SUMMER25</span><div class="meta">25% off · ended 1 Jun · 64 venues</div></div><span style="display:flex;align-items:center;gap:10px"><span class="badge plan">Ended</span><button class="btn secondary sm">Edit</button></span></div>
+    <div style="margin-top:10px"><button class="btn primary sm">+ New promotion</button></div>
+  </div>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

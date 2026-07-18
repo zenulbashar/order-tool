@@ -1,0 +1,218 @@
+<!doctype html>
+<!--
+  Prompt2Eat — OWNER · Connections (O7) · prototype.
+  Integrations hub (connector cards · one anatomy, four states) · Square detail
+  drawer · Apps (Zale suite / Roster SSO launcher).
+
+  Source: app/dashboard/integrations/{page,integration-card,square-card,
+  detail-drawer}.tsx, app/dashboard/apps/{page,launch-roster}.tsx.
+
+  OWNER root — --action = forest. CONNECTOR RULE (from integration-card.tsx):
+  primaries use --action (forest); statuses use SEMANTIC success/warm tones;
+  **amber NEVER** on connectors. Connected = green dot with p2e-glow; error =
+  warm; connecting = spinner; coming-soon = muted. Apps = forest.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Prompt2Eat · Owner — connections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --color-forest:#16241c; --color-forest-deep:#13301f; --color-forest-deepest:#0e1f18;
+  --color-accent:#f4b43c; --color-accent-deep:#b07f1e; --color-warm:#e2553a; --color-warm-deep:#cf4527;
+  --color-success:#3fa66a; --color-success-deep:#2f8a55;
+  --color-surface:#f7f3ea; --color-surface-elevated:#fffdf8; --color-sand:#efe7d6;
+  --color-line:#e6ddcb; --color-line-strong:#d8cbb0; --color-ink:#0e1f18; --color-muted:#6e756b; --color-label:#a0987f;
+  --color-hover-secondary:#fbf8f1; --color-hover-ghost:#f1ead9;
+  --radius-pill:999px; --radius-card:16px; --radius-control:11px; --radius-control-sm:9px; --radius-input:12px; --radius-sm:6px;
+  --shadow-card:0 1px 3px rgb(20 30 25 / .05), 0 20px 40px -20px rgb(20 30 25 / .14);
+  --shadow-lift:0 9px 18px -8px rgb(22 36 28 / .55);
+  --focus-ring:0 0 0 4px color-mix(in srgb, var(--color-accent) 38%, transparent);
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,sans-serif;
+  --font-mono:"Space Mono",ui-monospace,monospace;
+  --action:var(--color-forest); --action-contrast:var(--color-surface-elevated);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);color:var(--color-ink);background:var(--color-surface);min-height:100dvh}
+:where(a,button):focus-visible{outline:none;box-shadow:var(--focus-ring)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+svg{display:block}
+
+@keyframes p2e-glow{0%,100%{opacity:.45}50%{opacity:.95}}
+@keyframes p2e-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes p2e-spin{to{transform:rotate(360deg)}}
+.p2e-glow{animation:p2e-glow 2s ease-in-out infinite}
+.p2e-rise{animation:p2e-rise .3s ease-out both}
+.p2e-spin{animation:p2e-spin .7s linear infinite}
+@media (prefers-reduced-motion:reduce){.p2e-glow,.p2e-rise,.p2e-spin{animation:none!important}}
+
+.native-statusbar{display:none}
+[data-native] .native-statusbar{display:block;height:env(safe-area-inset-top,44px);min-height:44px;background:#0f241b}
+
+.wrap{max-width:1000px;margin:0 auto;padding:24px 20px 96px}
+@media(min-width:1024px){.wrap{padding:32px 24px 96px}}
+.page-eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label)}
+.page-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;font-size:28px;margin-top:6px}
+.page-sub{font-size:14px;color:var(--color-muted);margin-top:4px}
+.sect-lab{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:700;color:var(--color-label);margin:32px 0 12px}
+
+/* connector grid */
+.grid{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.grid{grid-template-columns:repeat(3,1fr)}}
+.conn{display:flex;flex-direction:column;gap:10px;border:1px solid var(--color-line);border-radius:var(--radius-card);padding:16px;background:var(--color-surface-elevated);box-shadow:var(--shadow-card)}
+.conn.soon{background:var(--color-hover-secondary);box-shadow:none}
+.conn .top{display:flex;align-items:flex-start;gap:10px}
+.conn .logo{height:40px;width:40px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--color-forest);color:var(--color-surface-elevated);font-family:var(--font-display);font-weight:800;font-size:16px}
+.conn.soon .logo{background:var(--color-sand);color:var(--color-label)}
+.conn .nm{font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+.chip{border-radius:5px;background:var(--color-sand);padding:1px 5px;font-family:var(--font-mono);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--color-muted)}
+.conn .desc{font-size:12px;line-height:1.5;color:var(--color-muted)}
+.conn .foot{margin-top:auto;padding-top:2px}
+/* status line */
+.status{display:inline-flex;align-items:center;gap:6px;border-radius:var(--radius-sm);padding:3px 9px;font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.status.green{background:color-mix(in srgb,var(--color-success) 12%,transparent);color:var(--color-success-deep)}
+.status.warm{background:color-mix(in srgb,var(--color-warm) 12%,transparent);color:var(--color-warm-deep)}
+.status.gray{background:var(--color-sand);color:var(--color-muted)}
+.status .dot{height:7px;width:7px;border-radius:999px;background:currentColor}
+.status .dot.glow{background:var(--color-success)}
+.spinner{height:13px;width:13px;border-radius:999px;border:2px solid color-mix(in srgb,var(--color-muted) 30%,transparent);border-top-color:var(--color-ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 14px;border-radius:10px;font-size:12px;font-weight:700;transition:.15s;width:100%}
+.btn.primary{background:var(--action);color:var(--action-contrast)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:var(--shadow-lift)}
+.btn.secondary{border:1px solid var(--color-line-strong);background:var(--color-surface-elevated);color:var(--color-ink)}
+.btn.disabled{border:1px solid var(--color-line);background:color-mix(in srgb,var(--color-sand) 60%,transparent);color:var(--color-label);cursor:default}
+.warm-note{border:1px solid color-mix(in srgb,var(--color-warm) 40%,transparent);background:color-mix(in srgb,var(--color-warm) 10%,transparent);border-radius:var(--radius-control);padding:7px 10px;font-size:11px;font-weight:600;color:var(--color-ink)}
+.foot-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.overflow{color:var(--color-muted);font-size:18px;line-height:1;padding:0 6px}
+
+/* money-honesty note (forest) */
+.money-note{margin-top:16px;display:flex;align-items:flex-start;gap:10px;border-radius:var(--radius-card);background:var(--color-forest-deep);padding:14px 18px}
+.money-note span{color:var(--color-success);font-size:14px}
+.money-note p{font-size:12px;line-height:1.5;color:rgba(255,255,255,.82)}
+
+/* detail drawer */
+.drawer{width:380px;max-width:100%;border-radius:var(--radius-card);border:1px solid var(--color-line);background:var(--color-surface-elevated);box-shadow:var(--shadow-card);overflow:hidden}
+.drawer .dh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px;border-bottom:1px solid var(--color-sand)}
+.drawer .dh .l{display:flex;align-items:center;gap:10px}
+.drawer .dh .logo{height:34px;width:34px;border-radius:10px;background:var(--color-forest);color:var(--color-surface-elevated);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800}
+.drawer .dh h3{font-family:var(--font-display);font-weight:700;font-size:15px}
+.drawer .info{padding:14px 16px;border-bottom:1px solid var(--color-sand);display:flex;flex-direction:column;gap:6px;font-size:13px}
+.drawer .info .kv{display:flex;justify-content:space-between}.drawer .info .kv .k{color:var(--color-muted)}
+.drawer .act-lab{padding:12px 16px 4px;font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--color-label)}
+.drawer .act{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid color-mix(in srgb,var(--color-line) 60%,transparent);font-size:13px}
+.drawer .act .d{margin-top:5px;height:7px;width:7px;flex:none;border-radius:999px}
+.drawer .act .d.ok{background:var(--color-success)}.drawer .act .d.err{background:var(--color-warm-deep)}
+.drawer .act .b{flex:1}.drawer .act .t{font-weight:600}.drawer .act .s{color:var(--color-muted);font-size:12px}
+.drawer .act .when{font-family:var(--font-mono);font-size:11px;color:var(--color-label)}
+.drawer .df{padding:12px 16px;display:flex;gap:8px}
+.btn.danger{color:var(--color-warm-deep);border:1px solid color-mix(in srgb,var(--color-warm) 30%,transparent);background:none}
+
+/* apps */
+.value-cards{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:640px){.value-cards{grid-template-columns:repeat(3,1fr)}}
+.vc{border-radius:14px;border:1px solid var(--color-line);background:var(--color-surface-elevated);padding:14px;box-shadow:var(--shadow-card)}
+.vc .e{font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--color-label)}
+.vc p{margin-top:6px;font-size:13px;color:var(--color-ink)}
+.roster{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;border:1px solid var(--color-line);border-radius:var(--radius-card);background:var(--color-surface-elevated);padding:16px;box-shadow:var(--shadow-card)}
+.roster .logo{height:48px;width:48px;flex:none;border-radius:13px;background:linear-gradient(135deg,#2f6f5c,#16241c);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:20px}
+.roster .b{flex:1;min-width:180px}
+.roster .nm{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:800;font-size:16px}
+.roster .inc{border-radius:999px;background:color-mix(in srgb,var(--color-success) 15%,transparent);color:var(--color-success-deep);font-family:var(--font-mono);font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 8px}
+.roster .desc{margin-top:3px;font-size:13px;color:var(--color-muted)}
+.roster .btn{width:auto;min-width:150px}
+</style>
+</head>
+<body>
+<div class="native-statusbar"></div>
+
+<div class="wrap" data-tile="connections-page">
+  <p class="page-eyebrow">Connections</p>
+  <h1 class="page-h">Integrations</h1>
+  <p class="page-sub">Connect Fig &amp; Flour to the tools you already use.</p>
+
+  <!-- ===== INTEGRATIONS HUB — one anatomy, four states ===== -->
+  <div class="grid" data-tile="integrations-hub">
+    <!-- CONNECTED -->
+    <div class="conn p2e-rise" data-tile="connector-connected">
+      <div class="top"><span class="logo">◧</span><div class="nm">Square <span class="chip">POS</span></div></div>
+      <p class="desc">Mirror confirmed orders to your Square POS — menu &amp; order sync, kept in step automatically.</p>
+      <div class="foot"><div class="foot-row"><span class="status green"><span class="dot glow p2e-glow"></span>Connected</span><button class="overflow" aria-label="Manage">⋯</button></div>
+        <button class="btn secondary" style="margin-top:10px">Manage</button></div>
+    </div>
+    <!-- NOT CONNECTED -->
+    <div class="conn p2e-rise" style="animation-delay:.05s" data-tile="connector-not-connected">
+      <div class="top"><span class="logo" style="background:#00ccbc;color:#fff">D</span><div class="nm">Deliveroo <span class="chip">Delivery</span></div></div>
+      <p class="desc">Sync your menu and receive Deliveroo orders straight onto your kitchen board.</p>
+      <div class="foot"><button class="btn primary">Connect Deliveroo</button></div>
+    </div>
+    <!-- CONNECTING -->
+    <div class="conn p2e-rise" style="animation-delay:.1s" data-tile="connector-connecting">
+      <div class="top"><span class="logo" style="background:#142328;color:#5fc9a3">U</span><div class="nm">Uber Eats <span class="chip">Delivery</span></div></div>
+      <p class="desc">Authorising your Uber Eats account — this only takes a moment.</p>
+      <div class="foot"><span class="status gray"><span class="spinner p2e-spin"></span>Connecting…</span></div>
+    </div>
+    <!-- ERROR / ACTION REQUIRED -->
+    <div class="conn p2e-rise" style="animation-delay:.15s" data-tile="connector-error">
+      <div class="top"><span class="logo" style="background:#13b5ea;color:#fff">X</span><div class="nm">Xero <span class="chip">Accounting</span></div></div>
+      <p class="desc">Push daily sales totals to Xero as invoices.</p>
+      <div class="foot"><div class="warm-note">⚠ Action required — your Xero connection expired.</div>
+        <button class="btn primary" style="margin-top:8px">Reconnect</button></div>
+    </div>
+    <!-- COMING SOON -->
+    <div class="conn soon p2e-rise" style="animation-delay:.2s" data-tile="connector-coming-soon">
+      <div class="top"><span class="logo">M</span><div class="nm">MYOB <span class="chip">Accounting</span></div></div>
+      <p class="desc">Push daily sales to MYOB. Coming soon.</p>
+      <div class="foot"><span class="btn disabled">Coming soon</span></div>
+    </div>
+  </div>
+
+  <!-- money-honesty note -->
+  <div class="money-note" data-tile="money-note"><span aria-hidden="true">ℹ</span>
+    <p>Integrations never touch how diners are charged. Payments always run through your own Stripe account; connectors only mirror or export order data.</p>
+  </div>
+
+  <!-- ===== SQUARE DETAIL DRAWER ===== -->
+  <p class="sect-lab">Connector detail drawer</p>
+  <div class="drawer" data-tile="detail-drawer">
+    <div class="dh"><div class="l"><span class="logo">◧</span><h3>Square</h3></div><span class="status green"><span class="dot glow p2e-glow"></span>Connected</span></div>
+    <div class="info">
+      <div class="kv"><span class="k">Location</span><span>Fitzroy</span></div>
+      <div class="kv"><span class="k">Connected</span><span>12 Jun 2026</span></div>
+      <div class="kv"><span class="k">Order mirroring</span><span style="color:var(--color-success-deep);font-weight:600">On</span></div>
+    </div>
+    <p class="act-lab">Recent activity</p>
+    <div class="act"><span class="d ok"></span><div class="b"><p class="t">R-3M7K</p><p class="s">Mirrored to Square</p></div><span class="when">2m ago</span></div>
+    <div class="act"><span class="d ok"></span><div class="b"><p class="t">R-2KD8</p><p class="s">Mirrored to Square</p></div><span class="when">34m ago</span></div>
+    <div class="act"><span class="d err"></span><div class="b"><p class="t">R-9PL4</p><p class="s">Mirroring failed — will retry</p></div><span class="when">1h ago</span></div>
+    <div class="df"><button class="btn secondary">Pause</button><button class="btn secondary">Re-map location</button><button class="btn danger">Disconnect</button></div>
+  </div>
+
+  <!-- ===== APPS · ZALE SUITE ===== -->
+  <p class="sect-lab">Apps · Zale suite</p>
+  <div data-tile="apps-launcher">
+    <div class="value-cards">
+      <div class="vc"><div class="e">One login</div><p>Every Zale app shares your team's logins — no new accounts.</p></div>
+      <div class="vc"><div class="e">One venue</div><p>Same menu &amp; data across the suite; set up once.</p></div>
+      <div class="vc"><div class="e">No re-entry</div><p>Staff, hours and settings flow between apps automatically.</p></div>
+    </div>
+    <div class="roster" data-tile="roster-tile">
+      <span class="logo">R</span>
+      <div class="b"><div class="nm">Roster <span class="inc">Included in your plan</span></div><p class="desc">Staff rostering &amp; timesheets that share Fig &amp; Flour — one signed handoff, no second login.</p></div>
+      <button class="btn primary">Open Roster ↗</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  if (q.get('native') === '1') document.documentElement.setAttribute('data-native','');
+</script>
+</body>
+</html>

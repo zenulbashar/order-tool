@@ -8,6 +8,7 @@ import { PrintProvider } from "./print-context";
 import {
   getRecentCompletedOrders,
   getVenueOrders,
+  getVenueStations,
   type KitchenOrder,
 } from "./queries";
 
@@ -23,6 +24,11 @@ export default async function OrdersPage() {
   // Always-visible COMPLETED column, bounded to a recent window so it stays
   // cheap on every 12s poll (see getRecentCompletedOrders).
   const completedOrders = await getRecentCompletedOrders(venue.id);
+  // Owner-defined prep stations for the per-station label prints. Only loaded
+  // when the venue turned multi-station printing on in onboarding/settings.
+  const stations = venue.stationPrintingEnabled
+    ? await getVenueStations(venue.id)
+    : [];
 
   // Surface scheduled orders by their pickup time, not the instant placed: a
   // scheduled order waits in "Upcoming" until it's within the lead window of its
@@ -41,7 +47,12 @@ export default async function OrdersPage() {
     .sort((a, b) => effectiveTime(a) - effectiveTime(b));
 
   return (
-    <PrintProvider venueName={venue.name} timezone={venue.timezone}>
+    <PrintProvider
+      venueName={venue.name}
+      timezone={venue.timezone}
+      stations={stations}
+      stationPrintingEnabled={venue.stationPrintingEnabled}
+    >
       {/* Full-width on this page only (not the shared max-w-3xl) so the 4-column
           board can breathe; scoped here, no shared layout/primitive change. */}
       <main className="min-h-full">
