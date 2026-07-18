@@ -1,3 +1,4 @@
+import { Wordmark } from "@/app/_components/wordmark";
 import { requireUser } from "@/lib/tenant";
 
 /**
@@ -18,13 +19,8 @@ export default async function OnboardingLayout({
   return (
     <div className="min-h-dvh bg-surface px-5 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-md">
-        <header className="mb-6 flex items-center justify-center gap-2">
-          <span aria-hidden="true" className="text-lg text-[var(--color-accent)]">
-            ✦
-          </span>
-          <span className="font-display text-xl font-extrabold tracking-tight text-forest">
-            Prompt2Eat
-          </span>
+        <header className="mb-6 flex items-center justify-center">
+          <Wordmark glow className="text-xl text-forest" />
         </header>
         <div className="rounded-card border border-line bg-surface-elevated p-5 shadow-card sm:p-6">
           {children}

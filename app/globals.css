@@ -326,6 +326,49 @@
 }
 
 /*
+ * The Prompt2Eat wordmark — the product logo lockup (identity handoff). Renders
+ * "Prompt2Eat" in the display face with the amber "2" carrying a soft glow halo.
+ * `isolation` keeps the halo's negative z-index scoped to the mark (never behind
+ * the page). `.glow` opts the halo into the pulsing p2e-glow; reduced motion
+ * holds it steady. Used by <Wordmark> (app/_components/wordmark.tsx).
+ */
+.p2e-wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: baseline;
+  isolation: isolate;
+}
+.p2e-wordmark .two {
+  position: relative;
+  display: inline-block;
+  color: var(--color-accent);
+}
+.p2e-wordmark .two::before {
+  content: "";
+  position: absolute;
+  inset: -0.34em -0.16em;
+  z-index: -1;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-accent) 55%, transparent),
+    transparent 68%
+  );
+  filter: blur(2px);
+}
+.p2e-wordmark.glow .two::before {
+  animation: p2e-glow 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .p2e-wordmark.glow .two::before {
+    animation: none !important;
+    opacity: 0.7;
+  }
+}
+
+/*
  * Admin (platform-operator) console — a dark "ops" surface (P2E-Admin design).
  * The admin pages use the same token-backed utilities as the rest of the app,
  * so scoping a dark override of those tokens here recolours the entire console

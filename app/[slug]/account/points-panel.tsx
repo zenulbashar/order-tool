@@ -41,7 +41,7 @@ export function PointsPanel({
             <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
               Your points
             </p>
-            <p className="mt-1 font-display text-3xl font-extrabold leading-none text-ink">
+            <p className="p2e-count mt-1 font-display text-3xl font-extrabold leading-none text-ink">
               {balance.toLocaleString("en-AU")}
             </p>
           </div>

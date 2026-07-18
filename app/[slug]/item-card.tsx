@@ -131,6 +131,9 @@ export function ItemCard({
         className={cx(
           "absolute z-10 flex h-11 w-11 items-center justify-center rounded-pill text-[var(--action-contrast)] shadow-md transition active:scale-95 lg:hidden",
           item.imageUrl ? "bottom-4 right-4" : "right-3 top-1/2 -translate-y-1/2",
+          // Brief pulse on quick-add (reduced-motion holds it steady). Driven by
+          // the existing justAdded state, so no new interaction/logic.
+          justAdded && "p2e-cartpulse",
         )}
         style={{ backgroundColor: "var(--action)" }}
       >
@@ -191,7 +194,10 @@ export function ItemCard({
         type="button"
         onClick={handleAdd}
         aria-label={addLabel}
-        className="absolute bottom-2.5 right-2.5 z-10 hidden items-center gap-0.5 rounded-control-sm px-2.5 py-1 text-[11px] font-semibold text-[var(--action-contrast)] shadow-sm transition active:scale-95 lg:inline-flex"
+        className={cx(
+          "absolute bottom-2.5 right-2.5 z-10 hidden items-center gap-0.5 rounded-control-sm px-2.5 py-1 text-[11px] font-semibold text-[var(--action-contrast)] shadow-sm transition active:scale-95 lg:inline-flex",
+          justAdded && "p2e-cartpulse",
+        )}
         style={{ backgroundColor: "var(--action)" }}
       >
         {justAdded ? (

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { Wordmark } from "@/app/_components/wordmark";
 import { auth } from "@/lib/auth";
 
 import { SignInForm } from "./signin-form";
@@ -24,9 +25,7 @@ export default async function SignInPage() {
             aria-hidden
             className="inline-block h-7 w-7 rounded-lg bg-accent"
           />
-          <span className="font-display text-lg font-semibold tracking-tight">
-            Prompt2Eat
-          </span>
+          <Wordmark className="text-lg" />
         </div>
 
         <div className="max-w-md space-y-5">
@@ -57,9 +56,7 @@ export default async function SignInPage() {
             aria-hidden
             className="inline-block h-6 w-6 rounded-md bg-accent"
           />
-          <span className="font-display text-base font-semibold tracking-tight">
-            Prompt2Eat
-          </span>
+          <Wordmark className="text-base" />
         </div>
 
         <div className="flex flex-1 flex-col justify-center px-6 py-12">
