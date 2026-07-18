@@ -52,6 +52,11 @@ const SECTIONS: { href: string; title: string; description: string }[] = [
     description: "Show the GST portion on receipts.",
   },
   {
+    href: "/dashboard/settings/stations",
+    title: "Prep stations",
+    description: "Per-station kitchen labels & the packaging docket.",
+  },
+  {
     href: "/dashboard/settings/notifications",
     title: "Order notifications",
     description: "New-order push alerts on your phone.",

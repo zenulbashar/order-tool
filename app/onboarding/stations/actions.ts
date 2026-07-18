@@ -5,24 +5,13 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { venues, venueStations } from "@/lib/db/schema";
+import { normaliseStationCode } from "@/lib/orders/station";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 import { MAX_STATIONS, type StationsState } from "./constants";
 
 /** A parsed station row from the wizard form (pre-validation). */
 type ParsedStation = { name: string; code: string };
-
-/**
- * Normalise a station code: uppercased, letters/digits only, 1-3 chars. Empty
- * after cleaning → derive from the name's first alphanumeric character so a
- * station always has a usable initial. Mirrors the DB CHECK (1..3 chars).
- */
-function normaliseCode(rawCode: string, name: string): string {
-  const cleaned = rawCode.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 3);
-  if (cleaned.length > 0) return cleaned;
-  const fromName = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 1);
-  return fromName;
-}
 
 /**
  * Onboarding "Stations" step — record the venue's prep stations (apart from the
@@ -72,7 +61,10 @@ export async function saveStations(
     if (name.length > 40) {
       return { error: "Station names must be 40 characters or fewer." };
     }
-    const code = normaliseCode(String(formData.get(`code_${i}`) ?? ""), name);
+    const code = normaliseStationCode(
+      String(formData.get(`code_${i}`) ?? ""),
+      name,
+    );
     if (code.length === 0) {
       return { error: `Give station ${i + 1} a one-to-three letter code.` };
     }
