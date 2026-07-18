@@ -13,12 +13,9 @@ import { requireUser, requireVenue } from "@/lib/tenant";
  * Reused for BOTH outcomes: the publish-success hook passed to ImportClient
  * (after the existing publishMenu has appended the menu) AND the "I'll add my
  * menu later" skip. Either way the menu step is done, so we advance the resume
- * pointer to 4 and route forward. The actual menu write stays entirely in the
- * reused publishMenu action; this only moves the wizard along.
- *
- * Step 4 (plan) is not built yet (3c), so this returns to the dashboard, where
- * the "finish setup" nudge persists. onboarding_completed_at is NOT touched here
- * (that is Step 5, in 3c).
+ * pointer to Step 4 (Stations) and route forward into it. The actual menu write
+ * stays entirely in the reused publishMenu action; this only moves the wizard
+ * along. onboarding_completed_at is NOT touched here (that is the final step).
  */
 export async function completeMenuStep(): Promise<void> {
   await requireUser();
@@ -29,5 +26,5 @@ export async function completeMenuStep(): Promise<void> {
     .set({ onboardingStep: 4 })
     .where(eq(venues.id, venue.id));
 
-  redirect("/dashboard");
+  redirect("/onboarding/stations");
 }

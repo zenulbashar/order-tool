@@ -7,8 +7,13 @@ import {
   orderItemModifiers,
   orderItems,
   orders,
+  venueStations,
 } from "@/lib/db/schema";
-import { resolveStation, type Station } from "@/lib/orders/station";
+import {
+  resolveStation,
+  type Station,
+  type StationRef,
+} from "@/lib/orders/station";
 import { scopedToVenue } from "@/lib/tenant";
 
 // How far back the always-visible COMPLETED column reaches — windowed on
@@ -39,7 +44,15 @@ export type KitchenOrderItem = {
   // override + its category name (never snapshotted — inert to money). Drinks
   // land on "counter" (front-counter fridge), everything else "kitchen".
   station: Station;
+  // Owner-defined prep station (venue_stations.id) this line routes to for the
+  // per-station label docket, resolved from the LIVE menu item (display-time,
+  // never snapshotted). null = no custom station: shows on the receipt +
+  // packaging docket and only as "+N more items" on other stations' labels.
+  stationId: string | null;
 };
+
+/** An owner-defined station plus whether its sticky label prints. */
+export type PrintStation = StationRef & { labelPrintEnabled: boolean };
 
 export type KitchenOrder = {
   id: string;
@@ -227,6 +240,7 @@ async function hydrateKitchenOrders(
       unitPriceCents: orderItems.unitPriceCentsSnapshot,
       lineTotalCents: orderItems.lineTotalCents,
       stationSetting: menuItems.station,
+      stationId: menuItems.stationId,
       categoryName: menuCategories.name,
     })
     .from(orderItems)
@@ -287,6 +301,7 @@ async function hydrateKitchenOrders(
       lineTotalCents: item.lineTotalCents,
       modifiers: modsByItem.get(item.id) ?? [],
       station: resolveStation(item.stationSetting, item.categoryName),
+      stationId: item.stationId,
     });
     itemsByOrder.set(item.orderId, list);
   }
@@ -307,4 +322,28 @@ async function hydrateKitchenOrders(
     scheduledFor: order.scheduledFor,
     items: itemsByOrder.get(order.id) ?? [],
   }));
+}
+
+/**
+ * The venue's owner-defined prep stations, in the owner's sort order — the
+ * routing targets for the per-station label dockets. Returns id/name/code (for
+ * the "42-K" tag) plus whether each station's label prints. Venue-scoped, no
+ * joins. The orders page hands this to the PrintProvider so a print action can
+ * fan an order out into one label per station that has items in it.
+ */
+export async function getVenueStations(
+  venueId: string,
+): Promise<PrintStation[]> {
+  const rows = await db
+    .select({
+      id: venueStations.id,
+      name: venueStations.name,
+      code: venueStations.code,
+      labelPrintEnabled: venueStations.labelPrintEnabled,
+    })
+    .from(venueStations)
+    .where(scopedToVenue(venueStations.venueId, venueId))
+    .orderBy(asc(venueStations.sortOrder), asc(venueStations.name));
+
+  return rows;
 }

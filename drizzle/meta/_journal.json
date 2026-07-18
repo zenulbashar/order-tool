@@ -393,6 +393,13 @@
       "when": 1784199376359,
       "tag": "0055_cool_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1784352824972,
+      "tag": "0056_absent_bug",
+      "breakpoints": true
     }
   ]
 }

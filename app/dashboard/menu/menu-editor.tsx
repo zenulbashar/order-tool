@@ -40,6 +40,7 @@ type ItemData = {
   imageUrl: string | null;
   isAvailable: boolean;
   station: "auto" | "kitchen" | "counter";
+  stationId: string | null;
 };
 
 type GroupData = {
@@ -98,6 +99,7 @@ export function MenuEditor({
   recipeLines,
   ingredientOptions,
   categoryOptions,
+  stationOptions,
 }: {
   categories: CategoryData[];
   items: ItemData[];
@@ -108,6 +110,7 @@ export function MenuEditor({
   recipeLines: RecipeLineData[];
   ingredientOptions: IngredientOption[];
   categoryOptions: { id: string; name: string }[];
+  stationOptions: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -249,7 +252,10 @@ export function MenuEditor({
         ) : null}
 
         {isCreatingItem && selectedCategoryId ? (
-          <ItemForm categoryId={selectedCategoryId} />
+          <ItemForm
+            categoryId={selectedCategoryId}
+            stationOptions={stationOptions}
+          />
         ) : selectedItem ? (
           <ItemDetail
             key={selectedItem.id}
@@ -260,6 +266,7 @@ export function MenuEditor({
             recipeLines={recipeByItem.get(selectedItem.id) ?? []}
             ingredientOptions={ingredientOptions}
             categories={categoryOptions}
+            stationOptions={stationOptions}
           />
         ) : (
           <p className="rounded-card border border-dashed border-line p-8 text-center text-sm text-muted">

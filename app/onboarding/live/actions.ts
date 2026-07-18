@@ -8,12 +8,12 @@ import { venues } from "@/lib/db/schema";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 /**
- * Onboarding Step 5 — finish onboarding and go live.
+ * Onboarding final step (go live) — finish onboarding.
  *
  * Flips onboarding_completed_at to now(): the SINGLE live-ready signal. After
  * this, isOnboardingComplete(venue) is true, so the placeOrder gate passes, the
  * storefront drops its "not taking orders yet" state, and the dashboard nudge
- * disappears. An explicit action (not a render-time write) so leaving Step 5
+ * disappears. An explicit action (not a render-time write) so leaving the step
  * without finishing safely resumes here. Idempotent in effect — re-running just
  * re-stamps a venue that is already live.
  */

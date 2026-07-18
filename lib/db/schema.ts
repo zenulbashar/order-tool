@@ -311,6 +311,15 @@ export const venues = pgTable(
     offersDineIn: boolean("offers_dine_in").notNull().default(true),
     offersTakeaway: boolean("offers_takeaway").notNull().default(true),
     offersDelivery: boolean("offers_delivery").notNull().default(false),
+    // Multi-station label printing (onboarding "Stations" step). When true the
+    // orders desk can print a separate sticky/label docket per prep station
+    // (kebab, grill, …) in addition to the customer receipt and the packaging
+    // docket. Stations themselves live in venue_stations; this is just the
+    // master on/off the owner sets while onboarding. Default false → existing
+    // venues keep today's single-ticket behaviour untouched.
+    stationPrintingEnabled: boolean("station_printing_enabled")
+      .notNull()
+      .default(false),
     createdAt: createdAt(),
   },
   (table) => [
@@ -468,6 +477,50 @@ export const menuItemStation = pgEnum("menu_item_station", [
   "counter",
 ]);
 
+/**
+ * Owner-defined prep stations for multi-station label printing (e.g. "Kebab",
+ * "Grill", "Fryer"), configured in the onboarding "Stations" step. Distinct from
+ * the built-in kitchen/counter split above: those route lines on the ONE thermal
+ * receipt; a venue_station drives a SEPARATE per-station sticky/label docket that
+ * shows only that station's items (plus a "+N more items" count) with no prices,
+ * headed by `<dailyNumber>-<code>` (e.g. "42-K").
+ *
+ * `code` is the station initial(s) used in that heading and must be unique within
+ * the venue so a tag like "42-K" is unambiguous. Display/routing only — never
+ * snapshotted onto an order, so renaming a station or changing its code is
+ * always safe and never rewrites financial history.
+ */
+export const venueStations = pgTable(
+  "venue_stations",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    // Short initial(s) for the label heading, e.g. "K" for Kebab. Uppercased in
+    // app code before write; kept short by a CHECK so labels stay legible.
+    code: text("code").notNull(),
+    // Per-station toggle for whether its sticky label actually prints. The venue
+    // master switch is venues.station_printing_enabled; this lets an owner keep a
+    // station defined but silence its label without deleting it.
+    labelPrintEnabled: boolean("label_print_enabled").notNull().default(true),
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("venue_stations_venue_idx").on(table.venueId),
+    // Codes must be distinct within a venue so "42-K" points at exactly one
+    // station. Case is normalised (uppercased) in app code before insert.
+    uniqueIndex("venue_stations_venue_code_idx").on(table.venueId, table.code),
+    check(
+      "venue_stations_code_len",
+      sql`char_length(${table.code}) between 1 and 3`,
+    ),
+  ],
+);
+
 export const menuItems = pgTable(
   "menu_items",
   {
@@ -491,6 +544,14 @@ export const menuItems = pgTable(
     // name detection; owner may pin an item to "kitchen" or "counter" (drinks
     // fridge / front counter). Display-only — order snapshots never read it.
     station: menuItemStation("station").notNull().default("auto"),
+    // Owner-defined station this item is prepared at, for the per-station label
+    // docket (venue_stations). NULL = not routed to any custom station: the item
+    // still appears on the receipt and packaging docket, and counts toward the
+    // "+N more items" tally on other stations' labels. Set NULL if its station
+    // is deleted (onDelete) — display-only, so it never touches order money.
+    stationId: text("station_id").references(() => venueStations.id, {
+      onDelete: "set null",
+    }),
     sortOrder: integer("sort_order").notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -643,6 +704,7 @@ export const menuItemTags = pgTable(
 
 export type MenuCategory = typeof menuCategories.$inferSelect;
 export type MenuItem = typeof menuItems.$inferSelect;
+export type VenueStation = typeof venueStations.$inferSelect;
 export type ModifierGroup = typeof modifierGroups.$inferSelect;
 export type ModifierOption = typeof modifierOptions.$inferSelect;
 export type MenuItemVariant = typeof menuItemVariants.$inferSelect;

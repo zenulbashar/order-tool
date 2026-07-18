@@ -36,6 +36,7 @@ type ItemDetailData = {
   imageUrl: string | null;
   isAvailable: boolean;
   station: "auto" | "kitchen" | "counter";
+  stationId: string | null;
 };
 
 type VariantRow = { id: string; name: string; priceCents: number };
@@ -71,6 +72,7 @@ export function ItemDetail({
   recipeLines,
   ingredientOptions,
   categories,
+  stationOptions,
 }: {
   item: ItemDetailData;
   variants: VariantRow[];
@@ -79,6 +81,7 @@ export function ItemDetail({
   recipeLines: RecipeLineData[];
   ingredientOptions: IngredientOption[];
   categories: { id: string; name: string }[];
+  stationOptions: { id: string; name: string }[];
 }) {
   return (
     <div className="space-y-4">
@@ -94,6 +97,7 @@ export function ItemDetail({
 
           <ItemForm
             categories={categories}
+            stationOptions={stationOptions}
             hasSizes={variants.length > 0}
             item={{
               id: item.id,
@@ -103,6 +107,7 @@ export function ItemDetail({
               priceCents: item.priceCents,
               isAvailable: item.isAvailable,
               station: item.station,
+              stationId: item.stationId,
               tags,
             }}
           />

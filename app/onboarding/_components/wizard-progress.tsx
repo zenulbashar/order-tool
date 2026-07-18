@@ -1,13 +1,15 @@
 /**
- * Presentational "Step N of 5" indicator for the onboarding wizard (Phase 3a).
- * The five steps are fixed by the design; only steps 1-2 are built this phase,
- * but the full set is shown so the owner sees the whole journey. Pure — the
- * caller passes the current step number.
+ * Presentational "Step N of 6" indicator for the onboarding wizard. The steps
+ * are fixed by the design; the full set is shown so the owner sees the whole
+ * journey. Pure — the caller passes the current step number. TOTAL_STEPS is
+ * derived from the list, so inserting a step (e.g. "Stations") updates the
+ * "N / total" and the bar count automatically.
  */
 const STEP_TITLES = [
   "Venue details",
   "Service style",
   "Import menu",
+  "Stations",
   "Choose a plan",
   "Go live",
 ] as const;

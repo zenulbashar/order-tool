@@ -14,6 +14,7 @@ import {
   modifierGroups,
   modifierOptions,
   venueImages,
+  venueStations,
 } from "@/lib/db/schema";
 import {
   deleteFromR2,
@@ -286,6 +287,33 @@ async function ownedCategoryId(
   return row?.id ?? null;
 }
 
+/**
+ * Resolve the submitted "Label station" to a station id that belongs to this
+ * venue, or null. Empty/"none"/absent → null (item routes to no station). A
+ * forged or stale station id (not this venue's) is silently dropped to null
+ * rather than rejected — the field is display-only routing, never money, so the
+ * safe default is "no station" and the item still prints on the receipt +
+ * packaging docket. Returns null (skip the FK write) unless the id is owned.
+ */
+async function ownedStationId(
+  venueId: string,
+  formData: FormData,
+): Promise<string | null> {
+  const raw = String(formData.get("stationId") ?? "").trim();
+  if (!raw) return null;
+  const [row] = await db
+    .select({ id: venueStations.id })
+    .from(venueStations)
+    .where(
+      and(
+        eq(venueStations.id, raw),
+        scopedToVenue(venueStations.venueId, venueId),
+      ),
+    )
+    .limit(1);
+  return row?.id ?? null;
+}
+
 /** Next sort_order = MAX(sort_order)+1 among items in the same category. */
 async function nextItemSort(
   venueId: string,
@@ -327,6 +355,7 @@ export async function createItem(
   if (!owned) return { error: "Category not found." };
 
   const tags = tagsInput(formData);
+  const stationId = await ownedStationId(venue.id, formData);
   const sortOrder = await nextItemSort(venue.id, owned);
 
   // Insert the item and its dietary tags atomically: the tags reference the
@@ -342,6 +371,7 @@ export async function createItem(
         description: parsed.data.description,
         priceCents: parsed.data.priceCents,
         station: stationInput(formData),
+        stationId,
         sortOrder,
       })
       .returning({ id: menuItems.id });
@@ -379,6 +409,7 @@ export async function updateItem(
   if (!owned) return { error: "Category not found." };
 
   const tags = tagsInput(formData);
+  const stationId = await ownedStationId(venue.id, formData);
 
   // Update the item and replace-set its dietary tags atomically. The tag write
   // only runs once the venue-scoped UPDATE confirms the row exists, so a forged
@@ -396,6 +427,7 @@ export async function updateItem(
         priceCents: parsed.data.priceCents,
         isAvailable,
         station: stationInput(formData),
+        stationId,
         categoryId: owned,
       })
       .where(

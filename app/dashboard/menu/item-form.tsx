@@ -41,6 +41,7 @@ type EditableItem = {
   priceCents: number;
   isAvailable: boolean;
   station: "auto" | "kitchen" | "counter";
+  stationId: string | null;
   tags: DietaryTag[];
 };
 
@@ -48,11 +49,16 @@ export function ItemForm({
   categoryId,
   item,
   categories,
+  stationOptions,
   hasSizes,
 }: {
   categoryId?: string;
   item?: EditableItem;
   categories?: { id: string; name: string }[];
+  // Owner-defined prep stations for the per-station label docket. Empty (or
+  // absent) for a venue that never turned on multi-station printing — the
+  // "Label station" selector then doesn't render at all.
+  stationOptions?: { id: string; name: string }[];
   // When the item is variant-priced (>= 1 size), the base price is ignored
   // downstream — surface that under the Price field. Additive + defaults off,
   // so flat items render exactly as before.
@@ -233,6 +239,28 @@ export function ItemForm({
           the kitchen. Leave on Auto unless an item lands in the wrong place.
         </p>
       </label>
+
+      {/* Label station — which owner-defined station's sticky label this item
+          prints on (kebab, grill, …). Only shown when the venue set stations up
+          in onboarding; "None" leaves the item off every station label (it still
+          appears on the receipt + packaging docket, and as "+N more items"). */}
+      {stationOptions && stationOptions.length > 0 ? (
+        <label className="block">
+          <span className={microLabel}>Label station</span>
+          <Select name="stationId" defaultValue={item?.stationId ?? ""}>
+            <option value="">None (front counter)</option>
+            {stationOptions.map((station) => (
+              <option key={station.id} value={station.id}>
+                {station.name}
+              </option>
+            ))}
+          </Select>
+          <p className="mt-1 text-xs text-muted">
+            Prints this item on that station&rsquo;s sticky label, headed by the
+            order number and station initial (e.g. 42-K).
+          </p>
+        </label>
+      ) : null}
 
       {/* Availability as the "LIVE" switch (edit only). --action track = a
           functional state, not amber. The hidden input carries the wire. */}
