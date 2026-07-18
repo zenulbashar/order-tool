@@ -7,10 +7,7 @@ import { db } from "@/lib/db";
 import { venues, venueStations } from "@/lib/db/schema";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
-export type StationsState = { error?: string };
-
-/** Hard cap on how many prep stations onboarding will take, to keep it sane. */
-export const MAX_STATIONS = 8;
+import { MAX_STATIONS, type StationsState } from "./constants";
 
 /** A parsed station row from the wizard form (pre-validation). */
 type ParsedStation = { name: string; code: string };

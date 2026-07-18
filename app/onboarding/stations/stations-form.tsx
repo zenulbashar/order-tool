@@ -5,7 +5,8 @@ import { useActionState, useState } from "react";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 
-import { MAX_STATIONS, saveStations, type StationsState } from "./actions";
+import { saveStations } from "./actions";
+import { MAX_STATIONS, type StationsState } from "./constants";
 
 const initialState: StationsState = {};
 
