@@ -206,3 +206,23 @@ export function formatStationTag(
   const c = code.trim().toUpperCase();
   return dailyNumber != null ? `${dailyNumber}-${c}` : c;
 }
+
+/**
+ * Normalise a station code: letters/digits only, uppercased, 1-3 characters
+ * (mirrors the DB CHECK). When the raw code cleans to empty, fall back to the
+ * name's first alphanumeric character so a station always has a usable initial.
+ * Returns "" only when neither the code nor the name has any alphanumeric — the
+ * caller treats that as a validation error. Shared by the onboarding step and
+ * the settings editor so both derive codes identically.
+ */
+export function normaliseStationCode(rawCode: string, name: string): string {
+  const cleaned = rawCode
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 3);
+  if (cleaned.length > 0) return cleaned;
+  return name
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 1);
+}
