@@ -95,7 +95,7 @@ owner's one dark chrome surface where **amber is the sanctioned signature**
 ## P2 — the rest
 
 - [x] Platform Admin console (.admin-dark) — `admin/admin-console.html` (operator bar · stats KPIs + GMV chart · venue directory · venue detail/plan · promotions; the one theme where --action = amber)
-- [ ] Onboarding wizard (details → service → menu import → plan → live)
+- [x] Onboarding wizard — `onboarding/onboarding.html` (6-step flow: details · service · **menu import** — the animated-wordmark + p2e-scan AI moment · **stations** — one-question-at-a-time count → name+code → sticky-label, with the 42-K tag + label preview · plan · go-live w/ storefront link + QR. Amber only on the progress bars, ✦, and AI import surfaces)
 - [ ] Marketplace / Shop (public teaser · owner catalog · Your Orders)
 - [ ] Native app (Capacitor splash/push/order-ready + safe-area audit)
 - [ ] Cross-cutting sweeps (wire foundation motion into the real app · a11y · universal states)
