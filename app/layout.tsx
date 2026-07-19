@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -29,10 +29,23 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Prompt2Eat",
   description: "Branded online ordering for hospitality venues.",
-  // Prompt2Eat favicon for the platform's own surfaces (owner dashboard,
-  // sign-in, marketing). Diner pages override this per-venue with the venue's
-  // logo (see app/[slug]/layout.tsx).
-  icons: { icon: "/p2e-icon.svg" },
+  // Prompt2Eat brand identity (from the logo kit) for the platform's own
+  // surfaces (owner dashboard, sign-in, marketing): the SVG favicon + an .ico
+  // fallback, the apple-touch icon, and the PWA manifest. Diner pages override
+  // the icon per-venue with the venue's own logo (see app/[slug]/layout.tsx).
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
+};
+
+// theme-color drives the mobile browser chrome + PWA splash (forest ink).
+export const viewport: Viewport = {
+  themeColor: "#16241C",
 };
 
 export default function RootLayout({
