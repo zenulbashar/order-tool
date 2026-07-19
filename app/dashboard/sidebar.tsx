@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { cx } from "@/app/_components/cx";
-import { Wordmark } from "@/app/_components/wordmark";
+import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 
 import { signOutOwner } from "./actions";
 import { setSidebarCollapsed, useSidebarCollapsed } from "./sidebar-preference";
@@ -581,12 +581,7 @@ export function Sidebar({
 function Brand() {
   return (
     <span className="flex items-center gap-2">
-      <span
-        aria-hidden="true"
-        className="flex h-7 w-7 items-center justify-center rounded-control bg-accent font-display text-sm font-bold text-forest"
-      >
-        P
-      </span>
+      <BrandMark className="h-7 w-7 shrink-0" />
       <Wordmark className="text-base text-sidebar-ink" />
     </span>
   );

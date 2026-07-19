@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { Wordmark } from "@/app/_components/wordmark";
+import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { auth } from "@/lib/auth";
 
 import { SignInForm } from "./signin-form";
@@ -21,10 +21,7 @@ export default async function SignInPage() {
       */}
       <aside className="relative hidden overflow-hidden bg-forest-deep px-12 py-14 lg:flex lg:flex-col lg:justify-between [background:radial-gradient(60%_50%_at_25%_30%,_color-mix(in_oklab,_var(--color-accent)_28%,_transparent),_transparent_70%),_var(--color-forest-deep)]">
         <div className="flex items-center gap-2 text-surface">
-          <span
-            aria-hidden
-            className="inline-block h-7 w-7 rounded-lg bg-accent"
-          />
+          <BrandMark className="h-7 w-7 shrink-0" />
           <Wordmark className="text-lg" />
         </div>
 
@@ -52,10 +49,7 @@ export default async function SignInPage() {
       <section className="flex min-h-dvh flex-col bg-surface">
         {/* Compact brand header — mobile only, since the brand panel is hidden. */}
         <div className="flex items-center gap-2 bg-forest-deep px-6 py-4 text-surface lg:hidden">
-          <span
-            aria-hidden
-            className="inline-block h-6 w-6 rounded-md bg-accent"
-          />
+          <BrandMark className="h-6 w-6 shrink-0" />
           <Wordmark className="text-base" />
         </div>
 

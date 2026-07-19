@@ -34,3 +34,32 @@ export function Wordmark({
     </span>
   );
 }
+
+/**
+ * The Prompt2Eat brand mark — the icon half of the identity: an amber crescent
+ * with a cream sparkle on a forest tile (same art as the favicon,
+ * public/p2e-icon.svg). Inline SVG so it inherits crispness at any size and
+ * needs no network fetch; self-contained (no <mask>/ids) so it's safe to render
+ * many times on a page. Size it via `className` (e.g. "h-7 w-7").
+ *
+ * The sparkle is the product identity mark, not a functional accent — like the
+ * wordmark's amber "2", it's a sanctioned brand touchpoint, not an AI signal.
+ */
+export function BrandMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      className={className}
+      role="img"
+      aria-label="Prompt2Eat"
+    >
+      <rect width="64" height="64" rx="15" fill="#16241C" />
+      <circle cx="29" cy="35" r="18" fill="#F4B43C" />
+      <circle cx="40" cy="27" r="16.5" fill="#16241C" />
+      <path
+        d="M45 13 Q45 23 55 23 Q45 23 45 33 Q45 23 35 23 Q45 23 45 13 Z"
+        fill="#FBF8F1"
+      />
+    </svg>
+  );
+}
