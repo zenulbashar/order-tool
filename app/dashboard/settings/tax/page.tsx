@@ -9,13 +9,13 @@ export default async function TaxSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Tax (GST)"
         backHref="/dashboard/settings"
         description="Australian prices include GST. Turn this on to show the GST portion on diner receipts and your order records — your menu prices and the amount charged stay exactly the same."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <TaxForm
             tax={{

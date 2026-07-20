@@ -9,13 +9,13 @@ export default async function BrandSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Brand & colours"
         backHref="/dashboard/settings"
         description="The accent colour and text colour used across your storefront."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <BrandThemeForm
             brandColor={venue.brandColor}

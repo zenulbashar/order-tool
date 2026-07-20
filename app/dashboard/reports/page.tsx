@@ -160,7 +160,7 @@ export default async function ReportsPage() {
   const empty = orderCount === 0;
 
   return (
-    <main className="mx-auto max-w-5xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Reports"
         description={`Last ${WINDOW_DAYS} days · confirmed orders`}

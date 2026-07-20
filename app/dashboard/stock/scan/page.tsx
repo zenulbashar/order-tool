@@ -43,14 +43,14 @@ export default async function ScanInvoicePage() {
   }));
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Scan invoice"
         description={venue.name}
         backHref="/dashboard/stock"
       />
 
-      <div className="px-5">
+      <div className="max-w-3xl px-5">
         <ScanClient recentScans={recentScans} />
       </div>
     </main>

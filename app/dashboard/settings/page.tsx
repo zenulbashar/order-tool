@@ -72,7 +72,7 @@ export default async function SettingsPage() {
       <PageHeader title="Storefront settings" description={venue.name} />
 
       <section className="px-5 py-8">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {SECTIONS.map((section) => (
             <Link key={section.href} href={section.href} className="group block">
               <Card className="h-full transition group-hover:border-muted/50 group-hover:shadow-lift">

@@ -34,7 +34,7 @@ export default async function MediaPage() {
     .orderBy(desc(venueImages.createdAt));
 
   return (
-    <main className="mx-auto max-w-4xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Media library"
         description="Upload images once, reuse them across your menu"

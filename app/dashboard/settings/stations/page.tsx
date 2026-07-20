@@ -27,13 +27,13 @@ export default async function StationsSettingsPage() {
     .orderBy(asc(venueStations.sortOrder), asc(venueStations.name));
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Prep stations"
         backHref="/dashboard/settings"
         description="Counters that plate their own items. Each can print a separate sticky label showing only its items (no prices), headed by the order number and station code — e.g. 42-K. Route menu items to a station from the item’s “Label station” field."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <StationsEditor
             stations={stations}

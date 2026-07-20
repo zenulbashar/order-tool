@@ -105,10 +105,10 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader title="Payments" description={venue.name} />
 
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <div className="mb-3 flex items-center gap-3 border-b border-line pb-3">
             <span

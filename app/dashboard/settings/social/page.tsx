@@ -9,13 +9,13 @@ export default async function SocialSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Social links"
         backHref="/dashboard/settings"
         description="Link your social profiles — they appear as “Follow us” links in your storefront footer."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <SocialLinksForm
             links={{

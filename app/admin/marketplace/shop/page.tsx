@@ -48,7 +48,7 @@ export default async function AdminShopPage({
   const feedDown = all.length === 0;
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-8">
+    <main className="mx-auto w-full max-w-[1600px] px-5 py-8">
       <header className="mb-6">
         <Link
           href="/admin/marketplace"

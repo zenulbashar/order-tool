@@ -9,13 +9,13 @@ export default async function HoursSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Opening hours & location"
         backHref="/dashboard/settings"
         description="Your address, phone, opening hours and pickup scheduling — these power your Google search listing. Everything is optional and only the fields you fill in are published."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <SettingsDetailsForm
             details={{

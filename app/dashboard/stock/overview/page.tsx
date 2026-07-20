@@ -163,7 +163,7 @@ export default async function StockOverviewPage() {
   const hasLedger = trackedCount > 0 || recent.length > 0;
 
   return (
-    <main className="mx-auto max-w-5xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Stock"
         description={venue.name}
