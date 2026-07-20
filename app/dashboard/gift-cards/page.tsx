@@ -21,7 +21,7 @@ export default async function GiftCardsPage() {
   const cards = await getVenueGiftCards(venue.id);
 
   return (
-    <main className="mx-auto max-w-4xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Gift cards"
         description="Issue a card and share its code — diners redeem it at checkout."

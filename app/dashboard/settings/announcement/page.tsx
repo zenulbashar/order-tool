@@ -9,13 +9,13 @@ export default async function AnnouncementSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Announcement bar"
         backHref="/dashboard/settings"
         description="A slim promo message across the very top of your storefront."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <AnnouncementForm announcement={venue.announcement} />
         </Card>

@@ -8,14 +8,14 @@ export default async function ImportMenuPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Import menu from photo"
         description={venue.name}
         backHref="/dashboard/menu"
       />
 
-      <div className="px-5">
+      <div className="max-w-3xl px-5">
         <ImportClient />
       </div>
     </main>

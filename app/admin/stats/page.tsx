@@ -152,7 +152,7 @@ export default async function PlatformStatsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8">
+    <main className="mx-auto w-full max-w-[1600px] px-5 py-8">
       <header className="mb-6">
         <Link href="/admin" className="text-xs font-medium text-[var(--action)] hover:opacity-80">
           ← Admin

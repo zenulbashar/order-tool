@@ -69,7 +69,7 @@ export default async function MarketplacePage({
   }));
 
   return (
-    <main className="mx-auto max-w-6xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader title="Shop" description="Hardware & supplies for your venue" />
 
       {params.checkout === "success" ? (

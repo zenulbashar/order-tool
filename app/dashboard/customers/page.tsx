@@ -72,7 +72,7 @@ export default async function CustomersPage() {
   const truncated = stats.customers.length - tableRows.length;
 
   return (
-    <main className="mx-auto max-w-5xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Customers"
         description={`${stats.totalCustomers} ${

@@ -107,7 +107,7 @@ export default async function StockPage() {
   const trackedCount = rows.filter((row) => row.onHandQty != null).length;
 
   return (
-    <main className="mx-auto max-w-5xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Stock"
         description={venue.name}

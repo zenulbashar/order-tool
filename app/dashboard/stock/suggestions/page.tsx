@@ -29,7 +29,7 @@ export default async function SuggestionsPage() {
   const suggestions = await buildSuggestions(venue.id);
 
   return (
-    <main className="mx-auto max-w-5xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Stock"
         description={venue.name}

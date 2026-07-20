@@ -222,7 +222,7 @@ export default async function IntegrationsPage({
   const connectedCount = state === "connected" ? 1 : 0;
 
   return (
-    <main className="mx-auto max-w-4xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Integrations"
         description={venue.name}

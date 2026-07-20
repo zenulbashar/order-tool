@@ -9,13 +9,13 @@ export default async function NotificationsSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Order notifications"
         backHref="/dashboard/settings"
         description="Get a push notification on your phone the moment a new order comes in (needs the Prompt2Eat app installed and signed in)."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <div className="flex items-center justify-between gap-4">
             <div>

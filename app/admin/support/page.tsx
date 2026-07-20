@@ -61,7 +61,7 @@ export default async function AdminSupportPage() {
   const open = tickets.filter((ticket) => ticket.status === "open").length;
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-8">
+    <main className="mx-auto w-full max-w-[1600px] px-5 py-8">
       <header className="mb-6">
         <p className={eyebrow}>Support</p>
         <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">

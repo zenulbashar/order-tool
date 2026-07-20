@@ -68,7 +68,7 @@ export default async function MenuPage() {
   return (
     // Wider than the standard max-w-3xl owner page so the master-detail board
     // (320px list + detail) has room; scoped to this page only.
-    <main className="mx-auto max-w-6xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Menu"
         description={venue.name}

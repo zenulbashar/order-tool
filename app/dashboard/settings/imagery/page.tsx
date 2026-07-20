@@ -9,13 +9,13 @@ export default async function ImagerySettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Photos & hero"
         backHref="/dashboard/settings"
         description="Up to three hero photos. On desktop they fill the top of your storefront and rotate; on mobile the first one is the banner. Wide, landscape shots work best. JPEG, PNG or WebP, up to 5MB each."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <div className="space-y-6">
             <ImageryControl

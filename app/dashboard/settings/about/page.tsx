@@ -9,13 +9,13 @@ export default async function AboutSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="About & description"
         backHref="/dashboard/settings"
         description="A short welcome line shown under your venue name on the storefront."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <AboutForm storefrontDescription={venue.storefrontDescription} />
         </Card>

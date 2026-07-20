@@ -33,7 +33,7 @@ export default async function TablesPage() {
   );
 
   return (
-    <main className="mx-auto max-w-5xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <TablesBoard
         tables={boardTables}
         venueName={venue.name}

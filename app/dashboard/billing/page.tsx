@@ -192,10 +192,10 @@ export default async function BillingPage({ searchParams }: BillingParams) {
       : null;
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader title="Billing & plan" description={venue.name} />
 
-      <section className="space-y-6 px-5 py-8">
+      <section className="max-w-3xl space-y-6 px-5 py-8">
         <Card>
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-ink">

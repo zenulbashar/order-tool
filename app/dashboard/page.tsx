@@ -300,7 +300,7 @@ export default async function DashboardPage() {
   const topSuggestion = suggestions[0] ?? null;
 
   return (
-    <main className="mx-auto max-w-6xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title={title}
         description={`${venue.name} · ${venueDate(now, venue.timezone)} · here's how today's shaping up.`}

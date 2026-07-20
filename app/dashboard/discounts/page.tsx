@@ -65,13 +65,13 @@ export default async function DiscountsPage() {
   );
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Discounts"
         description="Create codes diners enter at checkout"
       />
 
-      <div className="space-y-6 px-5 py-8">
+      <div className="max-w-3xl space-y-6 px-5 py-8">
         <Card>
           <DiscountForm />
         </Card>

@@ -33,7 +33,7 @@ export default async function StudioPage() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Studio"
         description={venue.name}

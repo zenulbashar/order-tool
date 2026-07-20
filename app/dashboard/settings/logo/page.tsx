@@ -9,13 +9,13 @@ export default async function LogoSettingsPage() {
   const venue = await requireVenue();
 
   return (
-    <main className="mx-auto max-w-3xl">
+    <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Logo"
         backHref="/dashboard/settings"
         description="Your brand logo — shown in the storefront header and footer. Uploading a logo also sets your brand colour automatically."
       />
-      <section className="px-5 py-8">
+      <section className="max-w-3xl px-5 py-8">
         <Card>
           <LogoControl logoUrl={venue.logoUrl} />
         </Card>
