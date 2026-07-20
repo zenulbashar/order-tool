@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
+import { ARTICLES } from "@/lib/marketing-content";
 import { SITE_URL } from "@/lib/seo";
 
 // Rendered per-request so newly-live venues appear without a redeploy (crawlers
@@ -32,6 +33,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.6,
     },
+    // The /learn content hub — static guide pages (lib/marketing-content.ts).
+    {
+      url: `${SITE_URL}/learn`,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    ...ARTICLES.map((article) => ({
+      url: `${SITE_URL}/learn/${article.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
   ];
 
   let venuePages: MetadataRoute.Sitemap = [];

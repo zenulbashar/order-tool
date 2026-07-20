@@ -28,6 +28,13 @@
 ## Key pages
 
 - Home: https://prompt2eat.com/
+- FAQ: https://prompt2eat.com/#faq
+- Guides: https://prompt2eat.com/learn
+  - What is AI ordering for restaurants: https://prompt2eat.com/learn/ai-ordering-for-restaurants
+  - QR code ordering: https://prompt2eat.com/learn/qr-code-ordering
+  - Import a menu from a photo: https://prompt2eat.com/learn/import-menu-from-photo
+  - PayTo pay-by-bank for venues: https://prompt2eat.com/learn/payto-pay-by-bank
+  - Kitchen dockets & station labels: https://prompt2eat.com/learn/kitchen-station-label-printing
 - Shop (venue equipment & supplies): https://prompt2eat.com/shop
 - Each venue has a public storefront at https://prompt2eat.com/{venue-slug}
   with its live menu.
