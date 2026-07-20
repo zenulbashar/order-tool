@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { Spinner } from "@/app/_components/spinner";
+import { Wordmark } from "@/app/_components/wordmark";
 import {
   DIETARY_DISCLAIMER,
   MAX_CONCIERGE_HISTORY,
@@ -230,7 +231,7 @@ export function ConciergePanel({
                   >
                     <SparkleIcon />
                   </span>
-                  Prompt2Eat
+                  <Wordmark glow />
                   <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest">
                     AI
                   </span>

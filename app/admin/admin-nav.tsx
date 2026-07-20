@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cx } from "@/app/_components/cx";
+import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 
 /**
  * Operator top-nav for the platform admin console (P2EAdminBar). Rendered inside
@@ -28,9 +29,8 @@ export function AdminNav({ email }: { email: string }) {
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface px-5 py-3">
       <div className="flex items-center gap-2">
-        <span className="font-display text-base font-extrabold tracking-tight text-ink">
-          Prompt2Eat
-        </span>
+        <BrandMark className="h-6 w-6 shrink-0" />
+        <Wordmark className="text-base text-ink" />
         <span className="rounded-[5px] bg-[var(--color-accent)] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-forest">
           Ops
         </span>

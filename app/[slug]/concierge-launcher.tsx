@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Wordmark } from "@/app/_components/wordmark";
+
 import { ConciergePanel } from "./concierge/concierge-panel";
 import type { PublicItem, PublicMenu } from "./types";
 
@@ -62,7 +64,7 @@ export function ConciergeLauncher({
           ✦
         </span>
         Not sure what to eat?
-        <span className="font-display font-semibold text-accent">Prompt2Eat</span>
+        <Wordmark className="text-accent" />
       </button>
     </>
   );

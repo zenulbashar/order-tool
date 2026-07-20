@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { getShopProducts } from "@/lib/shop/feed";
 
 import { ShopGrid } from "./shop-grid";
 
 export const metadata: Metadata = {
-  title: "Shop · Prompt2Eat",
+  title: "Shop venue equipment & supplies",
   description:
     "Screens, laptops, tablets, networking, security cameras, and everything else your venue needs to open its doors.",
+  alternates: { canonical: "/shop" },
 };
 
 // The feed is fetched with its own 1h cache; render dynamically so the page
@@ -26,12 +28,8 @@ export default async function ShopPage() {
       <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
         <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-[var(--color-accent)] font-display text-base font-extrabold text-[#0c1c15]">
-              P
-            </span>
-            <span className="font-display text-[21px] font-extrabold tracking-[-0.035em] text-[#F7F3EA]">
-              Prompt<span className="text-[var(--color-accent)]">2</span>Eat
-            </span>
+            <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
+            <Wordmark className="text-[21px] text-[#F7F3EA]" />
           </Link>
           <Link
             href="/"

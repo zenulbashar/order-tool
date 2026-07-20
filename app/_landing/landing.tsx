@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { BrandMark, Wordmark } from "@/app/_components/wordmark";
+
 import { ConciergeDemo } from "./concierge-demo";
 import { RevealScript } from "./reveal-script";
 import { ShopTeaser } from "./shop-teaser";
@@ -15,14 +17,6 @@ import { ShopTeaser } from "./shop-teaser";
 const CONTAINER = "mx-auto w-full max-w-[1240px] px-[clamp(18px,4vw,48px)]";
 const eyebrow =
   "font-mono text-[11px] font-bold uppercase tracking-[0.18em]";
-
-function Wordmark({ className = "" }: { className?: string }) {
-  return (
-    <span className={`font-display font-extrabold tracking-[-0.035em] ${className}`}>
-      Prompt<span className="text-[var(--color-accent)]">2</span>Eat
-    </span>
-  );
-}
 
 function BentoIcon({ d }: { d: string }) {
   return (
@@ -577,11 +571,11 @@ export function Landing() {
   );
 }
 
+// The real brand mark (amber leaf + AI spark, from the logo kit) with the amber
+// glow the old chip carried — sized for the nav/footer lockups.
 function Mark() {
   return (
-    <span className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-[var(--color-accent)] font-display text-base font-extrabold text-[#0c1c15] shadow-[0_0_16px_rgba(244,180,60,0.55)]">
-      P
-    </span>
+    <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg shadow-[0_0_16px_rgba(244,180,60,0.35)]" />
   );
 }
 
