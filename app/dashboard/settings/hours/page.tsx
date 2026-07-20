@@ -1,4 +1,5 @@
 import { Card } from "@/app/_components/card";
+import { SettingsPane, StorefrontHint } from "../settings-pane";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -15,7 +16,10 @@ export default async function HoursSettingsPage() {
         backHref="/dashboard/settings"
         description="Your address, phone, opening hours and pickup scheduling — these power your Google search listing. Everything is optional and only the fields you fill in are published."
       />
-      <section className="max-w-3xl px-5 py-8">
+      <section className="max-w-[1280px] px-5 py-8">
+        <SettingsPane
+          aside={<StorefrontHint slug={venue.slug} where="Your address, phone and opening hours show on your storefront; scheduling sets the pickup times diners choose at checkout." />}
+        >
         <Card>
           <SettingsDetailsForm
             details={{
@@ -34,6 +38,7 @@ export default async function HoursSettingsPage() {
             }}
           />
         </Card>
+        </SettingsPane>
       </section>
     </main>
   );

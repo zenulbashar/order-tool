@@ -1,4 +1,5 @@
 import { Card } from "@/app/_components/card";
+import { SettingsPane, StorefrontHint } from "../settings-pane";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -15,7 +16,10 @@ export default async function SocialSettingsPage() {
         backHref="/dashboard/settings"
         description="Link your social profiles — they appear as “Follow us” links in your storefront footer."
       />
-      <section className="max-w-3xl px-5 py-8">
+      <section className="max-w-[1280px] px-5 py-8">
+        <SettingsPane
+          aside={<StorefrontHint slug={venue.slug} where="Appear as “Follow us” links in your storefront footer." />}
+        >
         <Card>
           <SocialLinksForm
             links={{
@@ -29,6 +33,7 @@ export default async function SocialSettingsPage() {
             }}
           />
         </Card>
+        </SettingsPane>
       </section>
     </main>
   );

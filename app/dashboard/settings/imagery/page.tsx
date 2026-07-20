@@ -1,4 +1,5 @@
 import { Card } from "@/app/_components/card";
+import { SettingsPane, StorefrontHint } from "../settings-pane";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -15,7 +16,10 @@ export default async function ImagerySettingsPage() {
         backHref="/dashboard/settings"
         description="Up to three hero photos. On desktop they fill the top of your storefront and rotate; on mobile the first one is the banner. Wide, landscape shots work best. JPEG, PNG or WebP, up to 5MB each."
       />
-      <section className="max-w-3xl px-5 py-8">
+      <section className="max-w-[1280px] px-5 py-8">
+        <SettingsPane
+          aside={<StorefrontHint slug={venue.slug} where="Your hero photos fill the top of your storefront and rotate for diners on desktop." />}
+        >
         <Card>
           <div className="space-y-6">
             <ImageryControl
@@ -42,6 +46,7 @@ export default async function ImagerySettingsPage() {
             </div>
           </div>
         </Card>
+        </SettingsPane>
       </section>
     </main>
   );

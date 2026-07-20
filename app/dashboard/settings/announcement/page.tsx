@@ -1,4 +1,5 @@
 import { Card } from "@/app/_components/card";
+import { SettingsPane, StorefrontHint } from "../settings-pane";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -15,10 +16,14 @@ export default async function AnnouncementSettingsPage() {
         backHref="/dashboard/settings"
         description="A slim promo message across the very top of your storefront."
       />
-      <section className="max-w-3xl px-5 py-8">
+      <section className="max-w-[1280px] px-5 py-8">
+        <SettingsPane
+          aside={<StorefrontHint slug={venue.slug} where="A slim bar across the very top of your storefront, above everything else." />}
+        >
         <Card>
           <AnnouncementForm announcement={venue.announcement} />
         </Card>
+        </SettingsPane>
       </section>
     </main>
   );
