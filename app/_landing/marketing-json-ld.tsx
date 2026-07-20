@@ -1,3 +1,4 @@
+import { FAQ_ITEMS } from "@/lib/marketing-content";
 import {
   serializeJsonLd,
   SITE_DESCRIPTION,
@@ -75,6 +76,18 @@ export function MarketingJsonLd() {
           "@type": "Audience",
           audienceType: "Restaurants, cafés, and hospitality venues",
         },
+      },
+      {
+        // Mirrors the visible FAQ section (app/_landing/faq-section.tsx) —
+        // BOTH render from FAQ_ITEMS, so markup and page can never disagree
+        // (a Google requirement for FAQ rich results).
+        "@type": "FAQPage",
+        "@id": `${SITE_URL}/#faq`,
+        mainEntity: FAQ_ITEMS.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: { "@type": "Answer", text: item.answer },
+        })),
       },
     ],
   });

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 
 import { ConciergeDemo } from "./concierge-demo";
+import { FaqSection } from "./faq-section";
 import { RevealScript } from "./reveal-script";
 import { ShopTeaser } from "./shop-teaser";
 
@@ -55,6 +56,8 @@ const NAV_LINKS = [
   { label: "For Restaurants", href: "#restaurants" },
   { label: "Shop", href: "/shop" },
   { label: "Pricing", href: "#pricing" },
+  { label: "FAQ", href: "#faq" },
+  { label: "Guides", href: "/learn" },
 ];
 
 export function Landing() {
@@ -491,6 +494,9 @@ export function Landing() {
         </div>
       </section>
 
+      {/* FAQ — long-tail SEO section; answers mirror the FAQPage JSON-LD. */}
+      <FaqSection />
+
       {/* Final CTA */}
       <section id="cta" className="bg-[#FFFDF8] px-[clamp(18px,4vw,48px)] py-[clamp(48px,7vw,96px)]">
         <div className="relative mx-auto max-w-[1080px] overflow-hidden rounded-[32px] bg-[radial-gradient(120%_140%_at_85%_0%,#F6C258,#F4B43C_45%,#E79A24)] px-[clamp(28px,6vw,72px)] py-[clamp(48px,7vw,80px)] text-[#16241C]">
@@ -541,16 +547,36 @@ export function Landing() {
               </p>
             </div>
             {[
-              { h: "Product", links: ["Concierge", "For Restaurants", "Pricing", "Shop"] },
-              { h: "Company", links: ["About", "Careers", "Contact"] },
-              { h: "Legal", links: ["Privacy", "Terms"] },
+              {
+                h: "Product",
+                links: [
+                  { label: "Concierge", href: "#concierge" },
+                  { label: "For Restaurants", href: "#restaurants" },
+                  { label: "Pricing", href: "#pricing" },
+                  { label: "FAQ", href: "#faq" },
+                  { label: "Guides", href: "/learn" },
+                  { label: "Shop", href: "/shop" },
+                ],
+              },
+              // No pages exist for these yet — kept as inert labels, not fake links.
+              { h: "Company", links: [{ label: "About" }, { label: "Careers" }, { label: "Contact" }] },
+              { h: "Legal", links: [{ label: "Privacy" }, { label: "Terms" }] },
             ].map((col) => (
               <div key={col.h}>
                 <p className={`${eyebrow} text-[10px] text-[#5F7568]`}>{col.h}</p>
                 <ul className="mt-3 space-y-2 text-sm font-medium">
                   {col.links.map((l) => (
-                    <li key={l}>
-                      <span className="cursor-default text-[#C9D4CB]">{l}</span>
+                    <li key={l.label}>
+                      {"href" in l && l.href ? (
+                        <Link
+                          href={l.href}
+                          className="text-[#C9D4CB] transition hover:text-[#F7F3EA]"
+                        >
+                          {l.label}
+                        </Link>
+                      ) : (
+                        <span className="cursor-default text-[#C9D4CB]">{l.label}</span>
+                      )}
                     </li>
                   ))}
                 </ul>
