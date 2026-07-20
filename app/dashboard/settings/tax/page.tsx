@@ -1,4 +1,5 @@
 import { Card } from "@/app/_components/card";
+import { SettingsPane, StorefrontHint } from "../settings-pane";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
@@ -15,7 +16,10 @@ export default async function TaxSettingsPage() {
         backHref="/dashboard/settings"
         description="Australian prices include GST. Turn this on to show the GST portion on diner receipts and your order records — your menu prices and the amount charged stay exactly the same."
       />
-      <section className="max-w-3xl px-5 py-8">
+      <section className="max-w-[1280px] px-5 py-8">
+        <SettingsPane
+          aside={<StorefrontHint slug={venue.slug} where="The GST portion shows on diner receipts and in your order records — your menu prices and the amount charged never change." />}
+        >
         <Card>
           <TaxForm
             tax={{
@@ -27,6 +31,7 @@ export default async function TaxSettingsPage() {
             }}
           />
         </Card>
+        </SettingsPane>
       </section>
     </main>
   );
