@@ -3,9 +3,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { SITE_DESCRIPTION, SITE_TAGLINE } from "@/lib/seo";
 import { getCurrentVenue } from "@/lib/tenant";
 
 import { Landing } from "./_landing/landing";
+import { MarketingJsonLd } from "./_landing/marketing-json-ld";
 
 /**
  * Root of every domain this app serves. The MARKETING host (prompt2eat.com)
@@ -32,15 +34,26 @@ async function isMarketingHost(): Promise<boolean> {
   );
 }
 
-export async function generateMetadata(): Promise<Metadata> {
-  if (await isMarketingHost()) {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ preview?: string }>;
+}): Promise<Metadata> {
+  // Same gate as the page body (`?preview=landing` forces the landing on any
+  // host), so the metadata always describes what actually renders.
+  const { preview } = await searchParams;
+  if (preview === "landing" || (await isMarketingHost())) {
+    // The one page we most want ranked: absolute-default title (no template
+    // suffix doubling the brand), explicit canonical, and the root OG defaults
+    // (app/layout.tsx) already point here.
     return {
-      title: "Prompt2Eat · Just say what you're hungry for",
-      description:
-        "The AI-native way to order. Diners scan the table and talk to the concierge; restaurants sell more per table and run the whole venue in one place.",
+      title: { absolute: `Prompt2Eat — ${SITE_TAGLINE}` },
+      description: SITE_DESCRIPTION,
+      alternates: { canonical: "/" },
     };
   }
-  return {};
+  // Non-marketing hosts serve a signed-in redirect at "/" — nothing to index.
+  return { robots: { index: false, follow: false } };
 }
 
 export default async function Home({
@@ -53,7 +66,12 @@ export default async function Home({
     isMarketingHost(),
   ]);
   if (preview === "landing" || marketing) {
-    return <Landing />;
+    return (
+      <>
+        <MarketingJsonLd />
+        <Landing />
+      </>
+    );
   }
 
   const session = await auth();

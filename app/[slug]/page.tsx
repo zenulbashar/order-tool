@@ -40,10 +40,22 @@ export async function generateMetadata({
   const { slug } = await params;
   const venue = await resolveVenue(slug);
   if (!venue) return { title: "Venue not found" };
+  const description =
+    venue.storefrontDescription ?? `Order online from ${venue.name}.`;
   return {
-    title: venue.name,
-    description:
-      venue.storefrontDescription ?? `Order online from ${venue.name}.`,
+    // The venue's page is the venue's space: absolute title (no product
+    // suffix), canonical at its slug, and an OG card so a shared link shows
+    // the venue — its cover photo when one exists, else the brand default.
+    title: { absolute: venue.name },
+    description,
+    alternates: { canonical: `/${venue.slug}` },
+    openGraph: {
+      type: "website",
+      title: venue.name,
+      description,
+      url: `/${venue.slug}`,
+      ...(venue.coverUrl ? { images: [{ url: venue.coverUrl }] } : {}),
+    },
   };
 }
 

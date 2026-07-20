@@ -2,6 +2,8 @@
 
 import { useEffect, useReducer, useRef, useSyncExternalStore } from "react";
 
+import { BrandMark } from "@/app/_components/wordmark";
+
 /**
  * Hero centerpiece: an auto-playing, re-runnable AI-concierge chat inside a
  * phone frame. A diner asks in plain language, the concierge streams a reply,
@@ -401,10 +403,11 @@ function TypingDots() {
 
 function Mark() {
   return (
-    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-accent)]/15 [animation:p2e-float_5s_ease-in-out_infinite]">
-      <span className="font-display text-sm font-extrabold text-[var(--color-accent)]">
-        P
-      </span>
+    // The real brand mark (leaf + AI spark); keeps the gentle float the old chip
+    // had. p2e-float is reduced-motion guarded in globals.css, and this arbitrary
+    // animation matches the rest of this demo's [animation:...] usage.
+    <span className="[animation:p2e-float_5s_ease-in-out_infinite]">
+      <BrandMark className="h-8 w-8 shrink-0" />
     </span>
   );
 }
