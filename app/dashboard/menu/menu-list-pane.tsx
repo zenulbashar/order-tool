@@ -1,11 +1,11 @@
 "use client";
 
 import { Button } from "@/app/_components/button";
+import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { cx } from "@/app/_components/cx";
 
 import { deleteCategory, moveCategory } from "./actions";
 import { CategoryForm } from "./category-form";
-import { ConfirmSubmit } from "./confirm-submit";
 import { ItemRow } from "./item-row";
 import { MoveButtons } from "./move-buttons";
 

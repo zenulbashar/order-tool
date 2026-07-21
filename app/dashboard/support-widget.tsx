@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Spinner } from "@/app/_components/spinner";
+import { useDialog } from "@/app/_components/use-dialog";
 
 /**
  * Owner support chat (docs/ai-support-chat-plan.md §4 P2) — the Synergy-style
@@ -86,6 +87,9 @@ function SparkleIcon() {
 
 export function SupportWidget({ venueId }: { venueId: string }) {
   const [open, setOpen] = useState(false);
+  // Focus trap + initial focus + focus restoration + Escape + scroll lock while
+  // open (declares aria-modal, so it gets the modal contract).
+  const panelRef = useDialog<HTMLDivElement>(() => setOpen(false), open);
   const [department, setDepartment] = useState<Department | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -286,6 +290,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
           onClick={() => setOpen(false)}
         >
           <div
+            ref={panelRef}
             className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl text-concierge-ai-text sm:rounded-2xl lg:h-[min(660px,85dvh)] lg:w-[420px] lg:shadow-2xl"
             style={{
               background:

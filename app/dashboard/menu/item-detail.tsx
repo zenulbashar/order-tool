@@ -2,6 +2,7 @@
 
 import { Button } from "@/app/_components/button";
 import { Card } from "@/app/_components/card";
+import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import type { DietaryTag } from "@/lib/validation";
 
 import {
@@ -11,7 +12,6 @@ import {
   moveGroup,
   moveOption,
 } from "./actions";
-import { ConfirmSubmit } from "./confirm-submit";
 import { HasSizesEditor } from "./has-sizes-editor";
 import { ItemForm } from "./item-form";
 import { ModifierGroupForm } from "./modifier-group-form";

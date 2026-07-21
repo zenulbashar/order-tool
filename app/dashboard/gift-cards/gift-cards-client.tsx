@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 
 import { Button } from "@/app/_components/button";
+import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { StatusBadge } from "@/app/_components/status-badge";
 import type { GiftCardRow } from "@/lib/giftcards/queries";
 import { formatCents } from "@/lib/validation";
@@ -170,9 +171,9 @@ function GiftCardItem({ card }: { card: GiftCardRow }) {
               }
             >
               <input type="hidden" name="cardId" value={card.id} />
-              <Button type="submit" variant="ghost" size="sm">
+              <ConfirmSubmit message="Void this gift card? Its remaining balance can't be spent afterwards. This can't be undone.">
                 Void
-              </Button>
+              </ConfirmSubmit>
             </form>
           </div>
         ) : null}

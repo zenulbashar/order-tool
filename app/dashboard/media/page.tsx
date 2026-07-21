@@ -8,6 +8,7 @@ import { venueImages } from "@/lib/db/schema";
 import { requireUser, requireVenue } from "@/lib/tenant";
 
 import { deleteLibraryImage } from "./actions";
+import { DeleteImageButton } from "./delete-image-button";
 import { LibraryUpload } from "./library-upload";
 
 export const dynamic = "force-dynamic";
@@ -72,13 +73,7 @@ export default async function MediaPage() {
                     className="absolute right-1.5 top-1.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100"
                   >
                     <input type="hidden" name="id" value={image.id} />
-                    <button
-                      type="submit"
-                      aria-label="Delete image"
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-ink/70 text-sm text-white transition hover:bg-ink"
-                    >
-                      ✕
-                    </button>
+                    <DeleteImageButton />
                   </form>
                 </div>
               ))}

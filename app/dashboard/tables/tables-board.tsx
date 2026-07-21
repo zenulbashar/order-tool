@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 
 import { readableOn } from "@/app/_components/brand-contrast";
+import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { cx } from "@/app/_components/cx";
 import { formatCents } from "@/lib/validation";
 
@@ -213,7 +214,7 @@ export function TablesBoard({
             <button
               type="button"
               onClick={() => setAddOpen(true)}
-              className="rounded-control bg-forest px-3.5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+              className="rounded-control bg-[var(--action)] px-3.5 py-2 text-sm font-semibold text-[var(--action-contrast)] transition hover:opacity-90"
             >
               ＋ Add table
             </button>
@@ -376,12 +377,9 @@ export function TablesBoard({
                       </button>
                       <form action={deleteTable}>
                         <input type="hidden" name="id" value={selected.id} />
-                        <button
-                          type="submit"
-                          className="text-xs font-semibold text-[var(--color-warm)] hover:underline"
-                        >
+                        <ConfirmSubmit message="Delete this table? Its QR code will stop working. This can't be undone.">
                           Delete table
-                        </button>
+                        </ConfirmSubmit>
                       </form>
                     </div>
                   </div>

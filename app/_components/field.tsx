@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 
 import { cx } from "./cx";
 
@@ -65,6 +65,13 @@ export type FieldProps = {
  * Label + control slot + hint/error scaffolding. Error supersedes hint and is
  * announced via role="alert". Pure display → server-safe. Consolidates the
  * label/hint/error markup duplicated around the inline fieldClass call sites.
+ *
+ * Accessibility: when `htmlFor` is set, the hint/error `<p>` is given a matching
+ * id and the wrapped control is programmatically linked to it via
+ * `aria-describedby` (and `aria-invalid` when there's an error) — so a screen
+ * reader announces the message whenever focus returns to the field, not only the
+ * once role="alert" fires. Done by cloning the single child, so it stays
+ * hook-free and server-safe.
  */
 export function Field({
   label,
@@ -75,6 +82,26 @@ export function Field({
   children,
   className,
 }: FieldProps) {
+  // Deterministic id derived from htmlFor (no useId → keeps Field server-safe).
+  const messageId = htmlFor
+    ? error
+      ? `${htmlFor}-error`
+      : hint
+        ? `${htmlFor}-hint`
+        : undefined
+    : undefined;
+
+  let control = children;
+  if (isValidElement(children) && (messageId || error)) {
+    const child = children as ReactElement<Record<string, unknown>>;
+    const existingDescribedBy = child.props["aria-describedby"];
+    control = cloneElement(child, {
+      "aria-describedby":
+        [existingDescribedBy, messageId].filter(Boolean).join(" ") || undefined,
+      "aria-invalid": error ? true : child.props["aria-invalid"],
+    });
+  }
+
   return (
     <div className={cx("space-y-1.5", className)}>
       {label ? (
@@ -82,13 +109,19 @@ export function Field({
           {label}
         </Label>
       ) : null}
-      {children}
+      {control}
       {error ? (
-        <p className="text-xs text-[var(--color-warm)]" role="alert">
+        <p
+          id={messageId}
+          className="text-xs text-[var(--color-warm)]"
+          role="alert"
+        >
           {error}
         </p>
       ) : hint ? (
-        <p className="text-xs text-muted">{hint}</p>
+        <p id={messageId} className="text-xs text-muted">
+          {hint}
+        </p>
       ) : null}
     </div>
   );

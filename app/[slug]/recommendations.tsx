@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { buttonStyles } from "@/app/_components/button-variants";
+import { useDialog } from "@/app/_components/use-dialog";
 import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
@@ -245,6 +246,10 @@ export function PreCheckoutUpsell({
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  // Focus trap + initial focus + focus restoration + Escape + scroll lock.
+  // Escape dismisses (matches the backdrop), so re-taps go straight to checkout.
+  const panelRef = useDialog<HTMLDivElement>(() => dismiss(), open);
+
   const items = recommendForCart(lines.map((line) => line.itemId));
 
   function handleClick() {
@@ -279,6 +284,7 @@ export function PreCheckoutUpsell({
           onClick={dismiss}
         >
           <div
+            ref={panelRef}
             className="w-full max-w-lg rounded-t-card bg-surface-elevated sm:rounded-card"
             onClick={(event) => event.stopPropagation()}
           >

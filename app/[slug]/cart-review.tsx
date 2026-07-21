@@ -2,6 +2,7 @@
 
 import { buttonStyles } from "@/app/_components/button-variants";
 import { Stepper } from "@/app/_components/stepper";
+import { useDialog } from "@/app/_components/use-dialog";
 import { formatCents } from "@/lib/validation";
 
 import { useCart } from "./cart-provider";
@@ -39,6 +40,9 @@ export function CartReview({
     staleNotice,
   } = useCart();
 
+  // Focus trap + initial focus + focus restoration + Escape + scroll lock.
+  const panelRef = useDialog<HTMLDivElement>(onClose);
+
   // Tapping an upsell closes this drawer and opens the item's modifier sheet, so
   // any required size/variant/modifier choice + pricing still happens before it
   // enters the cart — the add itself goes through the existing item flow.
@@ -56,6 +60,7 @@ export function CartReview({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-card bg-surface-elevated sm:rounded-card"
         onClick={(event) => event.stopPropagation()}
       >
