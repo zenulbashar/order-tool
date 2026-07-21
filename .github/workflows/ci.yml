@@ -26,6 +26,31 @@ jobs:
       # The DB client connects lazily, so the build needs no DATABASE_URL.
       - run: npm run build
 
+  e2e:
+    name: E2E smoke (marketing/SEO)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      # Anonymous marketing/SEO routes only — no DB, only a dummy AUTH_SECRET.
+      # Playwright's webServer builds + starts the app.
+      - name: Run E2E smoke tests
+        run: npm run test:e2e
+        env:
+          AUTH_SECRET: e2e-smoke-secret-not-real
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
   migrate-prod:
     name: Migrate prod (additive only)
     needs: build
