@@ -3,23 +3,28 @@
 Honest inventory of debt observed during the audit. The codebase is clean
 overall; these are the real items.
 
-## 1. Test suite — started, needs breadth
-A **Vitest harness is now in place** (`vitest.config.ts`, `npm test`, wired into
-CI) with initial coverage of the money math where bugs were found:
-`bank-discount`, `order-discount` (`composeOrderDiscount` stacking/clamps), and
-`tax` (`inclusiveTaxCents`, incl. the fixed discounted-GST case) — 17 tests.
+## 1. Test suite — established, needs DB-backed breadth
+Two harnesses are now in place and wired into CI:
 
-Remaining coverage to add (still the biggest gap by breadth):
-- `lib/loyalty/*`, `lib/giftcards/*` (redemption clamps, availability)
-- `lib/stock/*` (depletion, cost), `lib/schedule.ts`, `lib/time.ts`
-- `computeApplicationFeeCents` (co-located with the Stripe SDK — needs a light
-  mock or extraction)
-- **Concurrency** tests for the gift-card lock + stocktake `FOR UPDATE` (needs a
-  DB-backed integration harness, not pure unit tests)
-- Playwright for the checkout + order flows
+- **Vitest** (`npm test`) — **75 unit tests** over the pure domain logic where
+  bugs were found: `bank-discount` / `order-discount` (stacking + clamps), `tax`
+  (incl. the fixed discounted-GST case), `orders/station` routing, `schedule`
+  (the pickup gate), `stock/cost` (COGS + margins), `validation`, `crypto`
+  (AES-GCM round-trip + tamper), `time`, and `menu-health` scoring. The config
+  aliases `@/*` and stubs `server-only`, so any pure function in a "server-only"
+  module is unit-testable — extend `lib/**/*.test.ts`.
+- **Playwright** (`npm run test:e2e`) — **E2E smoke** over the anonymous
+  marketing/SEO surface (landing, sign-in, `/learn`, robots), which renders
+  without a DB. Config auto-uses the pre-installed Chromium locally and
+  Playwright's own in CI.
 
-The config aliases `@/*` and stubs `server-only`, so any pure function in a
-"server-only" module can be unit-tested — extend `lib/**/*.test.ts`.
+Remaining (needs a **seeded database**, so integration- not unit-testable):
+- `lib/loyalty/*`, `lib/giftcards/*` end-to-end (availability under real rows)
+- **Concurrency** tests for the gift-card lock + stocktake `FOR UPDATE`
+- `computeApplicationFeeCents` (co-located with the Stripe SDK — light mock or
+  extraction)
+- E2E for the signed-in owner + diner flows (checkout, order board) — needs a
+  test `DATABASE_URL` + seed + auth/Stripe test env.
 
 ## 2. Convention-enforced tenant scoping
 Isolation is correct today but depends on every new query calling

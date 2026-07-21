@@ -7,9 +7,10 @@ runtime environment / human sign-off.
 - ✅ `npm run typecheck` passes
 - ✅ `npm run lint` passes
 - ✅ `npm run build` passes
-- ✅ `npm test` — Vitest money-math unit suite (17 tests), wired into CI
-- ⬜ Broaden test coverage (loyalty/giftcards/stock/schedule; concurrency;
-  Playwright E2E) — see TechnicalDebt.md
+- ✅ `npm test` — Vitest unit suite (75 tests), wired into CI
+- ✅ `npm run test:e2e` — Playwright E2E smoke (marketing/SEO), wired into CI
+- ⬜ Broaden coverage: DB-backed integration (loyalty/giftcards concurrency) +
+  signed-in E2E (checkout, order board) — needs a test DB/env. See TechnicalDebt.md
 
 ## Correctness (money path) — verify in staging
 - ⬜ Discounted order mirrors to a **Square sandbox** and the payment posts (C1)
