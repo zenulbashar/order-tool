@@ -119,6 +119,7 @@ export const mirrorOrderToSquare: JobProcessor = async (
       notes: orders.notes,
       scheduledFor: orders.scheduledFor,
       totalCents: orders.totalCents,
+      discountCents: orders.discountCents,
     })
     .from(orders)
     .where(eq(orders.id, job.orderId))
@@ -185,6 +186,25 @@ export const mirrorOrderToSquare: JobProcessor = async (
             (modifiersByItem.get(item.id) ?? []).join(", ").slice(0, 2000) ||
             undefined,
         })),
+        // Mirror any order-level discount (promo + pay-by-bank + points + gift
+        // card, already composed into orders.discount_cents) as ONE order-scoped
+        // fixed-amount discount. Line items carry full snapshot prices, so Square
+        // would otherwise compute total_money = the SUBTOTAL and the equality
+        // check below would reject every discounted order. totalCents ===
+        // subtotalCents − discountCents by construction, so this reconciles them.
+        ...(order.discountCents > 0
+          ? {
+              discounts: [
+                {
+                  uid: "p2e-order-discount",
+                  name: "Discount",
+                  type: "FIXED_AMOUNT",
+                  amount_money: aud(order.discountCents),
+                  scope: "ORDER",
+                },
+              ],
+            }
+          : {}),
         fulfillments: [
           {
             type: "PICKUP",
@@ -205,9 +225,9 @@ export const mirrorOrderToSquare: JobProcessor = async (
     },
   });
 
-  // Square computes total_money server-side (read-only). With plain ad-hoc
-  // lines it MUST equal our snapshot total; a mismatch is a mapping bug and
-  // must never be mirrored as money truth.
+  // Square computes total_money server-side (read-only): line-item subtotal
+  // minus the order-scoped discount above. It MUST equal our snapshot total; a
+  // mismatch is a mapping bug and must never be mirrored as money truth.
   const squareTotal = created.order.total_money?.amount;
   if (squareTotal !== order.totalCents) {
     throw new Error(

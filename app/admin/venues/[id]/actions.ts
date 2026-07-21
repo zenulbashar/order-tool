@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
@@ -109,15 +109,18 @@ export async function setVenueItemPrice(formData: FormData): Promise<void> {
   if (!Number.isFinite(dollars) || dollars < 0) return;
   const priceCents = Math.round(dollars * 100);
 
-  // Scope the write to the venue too, so a mismatched id touches nothing.
+  // Scope the write to the venue too, so a mismatched id touches nothing. The
+  // venueId is part of the WHERE (not just a post-write check), so an itemId that
+  // belongs to a different venue updates zero rows instead of silently editing
+  // the wrong tenant's price and skipping the audit entry.
   const res = await db
     .update(menuItems)
     .set({ priceCents })
-    .where(eq(menuItems.id, itemId))
-    .returning({ id: menuItems.id, name: menuItems.name, venueId: menuItems.venueId });
+    .where(and(eq(menuItems.id, itemId), eq(menuItems.venueId, venueId)))
+    .returning({ id: menuItems.id, name: menuItems.name });
 
   const row = res[0];
-  if (row && row.venueId === venueId) {
+  if (row) {
     await db.insert(platformAuditLog).values({
       actorEmail: admin.email,
       action: "venue_menu_item_price",

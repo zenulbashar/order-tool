@@ -1,9 +1,9 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { orders, venues } from "@/lib/db/schema";
+import { giftCards, orders, venues } from "@/lib/db/schema";
 import {
   getAvailableGiftCardCents,
   resolveGiftCardForRedemption,
@@ -15,6 +15,7 @@ import {
   bankDiscountCents,
 } from "@/lib/payments/bank-discount";
 import { composeOrderDiscount } from "@/lib/payments/order-discount";
+import { inclusiveTaxCents } from "@/lib/payments/tax";
 import { resolveActivePromo } from "@/lib/promotions";
 import { computeApplicationFeeCents, getStripe } from "@/lib/stripe";
 
@@ -90,6 +91,8 @@ export async function applyOrderDiscounts(
       loyaltyEnabled: venues.loyaltyEnabled,
       loyaltyRedeemValueCents: venues.loyaltyRedeemValueCents,
       loyaltyMinRedeemPoints: venues.loyaltyMinRedeemPoints,
+      taxEnabled: venues.taxEnabled,
+      taxRateBps: venues.taxRateBps,
     })
     .from(venues)
     .where(eq(venues.slug, slug))
@@ -191,10 +194,11 @@ export async function applyOrderDiscounts(
     }
   }
 
-  const discountCents =
-    baseDiscount + pointsDiscountCents + giftCardRedeemedCents;
-  const totalCents = baseTotal - pointsDiscountCents - giftCardRedeemedCents;
-  const giftCardApplied = giftCardRedeemedCents > 0;
+  // giftCardId / giftCardRedeemedCents above are the amount the customer
+  // REQUESTED, derived from an UNLOCKED availability read. The authoritative
+  // redemption — and therefore the final discount/total/tax — is recomputed under
+  // a gift-card row lock INSIDE the transaction below, so two orders can't both
+  // reserve the same balance (double-spend of a bearer instrument).
   const appliedPromoId = promoDiscountCents > 0 ? promo?.id ?? null : null;
   // The platform's co-funded share of the (post-clamp) promo discount — a
   // tracked liability, settled out of band. Does not change the charge or fee.
@@ -230,29 +234,88 @@ export async function applyOrderDiscounts(
         .limit(1);
       if (!locked || locked.status !== "pending_payment" || !locked.pi) return;
 
+      // Re-derive the gift-card redemption UNDER a row lock so two orders can't
+      // both reserve the same balance (a bearer instrument; the order-row lock
+      // above doesn't cover the card). The pre-tx availability read is unlocked
+      // and optimistic — clamp the requested amount to what's actually free now.
+      // Lock order is orders → giftCards here and giftCardLedger → giftCards on
+      // the confirm/debit path, so there is no cross-path lock cycle.
+      let finalGiftCardId = giftCardId;
+      let finalGiftCardCents = giftCardRedeemedCents;
+      if (giftCardId) {
+        const [card] = await tx
+          .select({
+            balanceCents: giftCards.balanceCents,
+            status: giftCards.status,
+          })
+          .from(giftCards)
+          .where(eq(giftCards.id, giftCardId))
+          .for("update")
+          .limit(1);
+        if (!card || card.status !== "active") {
+          finalGiftCardId = null;
+          finalGiftCardCents = 0;
+        } else {
+          const [reservedRow] = await tx
+            .select({
+              reserved: sql<number>`coalesce(sum(${orders.giftCardRedeemedCents}), 0)`,
+            })
+            .from(orders)
+            .where(
+              and(
+                eq(orders.giftCardId, giftCardId),
+                eq(orders.status, "pending_payment"),
+                ne(orders.id, locked.id),
+              ),
+            );
+          const available = Math.max(
+            0,
+            card.balanceCents - Number(reservedRow?.reserved ?? 0),
+          );
+          finalGiftCardCents = Math.min(giftCardRedeemedCents, available);
+          if (finalGiftCardCents <= 0) {
+            finalGiftCardId = null;
+            finalGiftCardCents = 0;
+          }
+        }
+      }
+
+      // Finals composed from the locked gift-card amount. promo + bank + points
+      // were clamped upstream and are unaffected by the card. Reducing the card
+      // redemption only ever RAISES the charge, so the total stays ≥ Stripe's
+      // minimum. taxCents (inclusive) re-snapshots off the final total.
+      const finalDiscountCents =
+        baseDiscount + pointsDiscountCents + finalGiftCardCents;
+      const finalTotalCents = baseTotal - pointsDiscountCents - finalGiftCardCents;
+      const finalTaxCents = venue.taxEnabled
+        ? inclusiveTaxCents(finalTotalCents, venue.taxRateBps)
+        : 0;
+
+      const successResult: ApplyDiscountResult = {
+        ok: true,
+        totalCents: finalTotalCents,
+        discountCents: finalDiscountCents,
+        promoDiscountCents,
+        pointsDiscountCents,
+        pointsRedeemed,
+        giftCardDiscountCents: finalGiftCardCents,
+        giftCardApplied: finalGiftCardCents > 0,
+        codeApplied,
+      };
+
       // No-op guard keyed off the FULL target (not a single scalar), so an equal
       // combined discount with a different composition still applies correctly.
       if (
-        locked.totalCents === totalCents &&
-        locked.discountCents === discountCents &&
+        locked.totalCents === finalTotalCents &&
+        locked.discountCents === finalDiscountCents &&
         locked.promoDiscountCents === promoDiscountCents &&
         locked.pointsDiscountCents === pointsDiscountCents &&
         locked.pointsRedeemed === pointsRedeemed &&
-        (locked.giftCardId ?? null) === giftCardId &&
-        locked.giftCardRedeemedCents === giftCardRedeemedCents &&
+        (locked.giftCardId ?? null) === finalGiftCardId &&
+        locked.giftCardRedeemedCents === finalGiftCardCents &&
         (locked.appliedPromoId ?? null) === appliedPromoId
       ) {
-        result = {
-          ok: true,
-          totalCents,
-          discountCents,
-          promoDiscountCents,
-          pointsDiscountCents,
-          pointsRedeemed,
-          giftCardDiscountCents: giftCardRedeemedCents,
-          giftCardApplied,
-          codeApplied,
-        };
+        result = successResult;
         return;
       }
 
@@ -261,13 +324,14 @@ export async function applyOrderDiscounts(
       await tx
         .update(orders)
         .set({
-          totalCents,
-          discountCents,
+          totalCents: finalTotalCents,
+          taxCents: finalTaxCents,
+          discountCents: finalDiscountCents,
           promoDiscountCents,
           pointsDiscountCents,
           pointsRedeemed,
-          giftCardId,
-          giftCardRedeemedCents,
+          giftCardId: finalGiftCardId,
+          giftCardRedeemedCents: finalGiftCardCents,
           appliedPromoId,
           platformFundedCents,
         })
@@ -276,26 +340,16 @@ export async function applyOrderDiscounts(
       await getStripe().paymentIntents.update(
         locked.pi,
         {
-          amount: totalCents,
-          application_fee_amount: computeApplicationFeeCents(totalCents),
+          amount: finalTotalCents,
+          application_fee_amount: computeApplicationFeeCents(finalTotalCents),
         },
         {
           stripeAccount: venue.stripeAccountId!,
-          idempotencyKey: `${locked.id}-disc-${totalCents}`,
+          idempotencyKey: `${locked.id}-disc-${finalTotalCents}`,
         },
       );
 
-      result = {
-        ok: true,
-        totalCents,
-        discountCents,
-        promoDiscountCents,
-        pointsDiscountCents,
-        pointsRedeemed,
-        giftCardDiscountCents: giftCardRedeemedCents,
-        giftCardApplied,
-        codeApplied,
-      };
+      result = successResult;
     });
   } catch {
     return { ok: false };

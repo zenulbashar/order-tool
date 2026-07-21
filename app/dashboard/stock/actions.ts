@@ -200,30 +200,46 @@ export async function adjustStock(formData: FormData): Promise<void> {
   if (!ingredient) redirect(`${STOCK_PATH}?error=stock`);
 
   const { mode, qty, note } = parsed.data;
-  let deltaQty: number;
-  let reason: "receiving" | "wastage" | "opening" | "stocktake";
-  if (mode === "receive") {
-    deltaQty = qty;
-    reason = "receiving";
-  } else if (mode === "remove") {
-    deltaQty = -qty;
-    reason = "wastage";
-  } else {
-    // set: reconcile to the counted absolute.
-    const current = ingredient.onHandQty ?? 0;
-    deltaQty = qty - current;
-    reason = ingredient.onHandQty == null ? "opening" : "stocktake";
-  }
 
-  await db.transaction((tx) =>
-    recordStockMovement(tx, {
+  await db.transaction(async (tx) => {
+    let deltaQty: number;
+    let reason: "receiving" | "wastage" | "opening" | "stocktake";
+    if (mode === "receive") {
+      deltaQty = qty;
+      reason = "receiving";
+    } else if (mode === "remove") {
+      deltaQty = -qty;
+      reason = "wastage";
+    } else {
+      // set: reconcile to the counted absolute. Re-read on-hand UNDER a row lock
+      // inside this tx (not the unlocked read above) so a concurrent depletion or
+      // adjustment can't land between the read and the movement and corrupt the
+      // count — e.g. count "set 12" reading 10 while a sale depletes 2 would
+      // otherwise settle at 10, not the counted 12.
+      const [locked] = await tx
+        .select({ onHandQty: ingredients.onHandQty })
+        .from(ingredients)
+        .where(
+          and(
+            eq(ingredients.id, ingredient.id),
+            eq(ingredients.venueId, venue.id),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      const current = locked?.onHandQty ?? 0;
+      deltaQty = qty - current;
+      reason = locked?.onHandQty == null ? "opening" : "stocktake";
+    }
+
+    await recordStockMovement(tx, {
       venueId: venue.id,
       ingredientId: ingredient.id,
       deltaQty,
       reason,
       note,
-    }),
-  );
+    });
+  });
 
   revalidatePath(STOCK_PATH);
   redirect(STOCK_PATH);
