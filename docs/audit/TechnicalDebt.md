@@ -3,18 +3,23 @@
 Honest inventory of debt observed during the audit. The codebase is clean
 overall; these are the real items.
 
-## 1. No automated test suite (biggest gap)
-CI runs `typecheck` + `build` only. There is no unit/integration/E2E harness.
-The highest-value place to start is the **pure `lib/` domain logic**, which is
-framework-free and trivially testable:
+## 1. Test suite — started, needs breadth
+A **Vitest harness is now in place** (`vitest.config.ts`, `npm test`, wired into
+CI) with initial coverage of the money math where bugs were found:
+`bank-discount`, `order-discount` (`composeOrderDiscount` stacking/clamps), and
+`tax` (`inclusiveTaxCents`, incl. the fixed discounted-GST case) — 17 tests.
 
-- `lib/payments/*` (tax, order-discount, bank-discount), `composeOrderDiscount`
+Remaining coverage to add (still the biggest gap by breadth):
 - `lib/loyalty/*`, `lib/giftcards/*` (redemption clamps, availability)
 - `lib/stock/*` (depletion, cost), `lib/schedule.ts`, `lib/time.ts`
+- `computeApplicationFeeCents` (co-located with the Stripe SDK — needs a light
+  mock or extraction)
+- **Concurrency** tests for the gift-card lock + stocktake `FOR UPDATE` (needs a
+  DB-backed integration harness, not pure unit tests)
+- Playwright for the checkout + order flows
 
-Several bugs this audit fixed (stale GST, gift-card double-spend, stocktake race)
-are exactly the kind a modest unit + concurrency test suite would have caught.
-Recommend Vitest for `lib/`, then Playwright for the checkout + order flows.
+The config aliases `@/*` and stubs `server-only`, so any pure function in a
+"server-only" module can be unit-tested — extend `lib/**/*.test.ts`.
 
 ## 2. Convention-enforced tenant scoping
 Isolation is correct today but depends on every new query calling

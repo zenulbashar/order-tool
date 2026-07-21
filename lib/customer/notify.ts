@@ -39,6 +39,8 @@ export async function notifyCustomerOrder(
       customerName: orders.customerName,
       orderEmail: orders.customerEmail,
       orderPhone: orders.customerPhone,
+      subtotalCents: orders.subtotalCents,
+      discountCents: orders.discountCents,
       totalCents: orders.totalCents,
       venueName: venues.name,
       venueSlug: venues.slug,
@@ -102,6 +104,8 @@ export async function notifyCustomerOrder(
         reference,
         orderType: row.orderType,
         items,
+        subtotalCents: row.subtotalCents,
+        discountCents: row.discountCents,
         totalCents: row.totalCents,
         url,
       });

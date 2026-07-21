@@ -7,7 +7,9 @@ runtime environment / human sign-off.
 - ✅ `npm run typecheck` passes
 - ✅ `npm run lint` passes
 - ✅ `npm run build` passes
-- ⬜ Automated test suite (none exists yet — see TechnicalDebt.md)
+- ✅ `npm test` — Vitest money-math unit suite (17 tests), wired into CI
+- ⬜ Broaden test coverage (loyalty/giftcards/stock/schedule; concurrency;
+  Playwright E2E) — see TechnicalDebt.md
 
 ## Correctness (money path) — verify in staging
 - ⬜ Discounted order mirrors to a **Square sandbox** and the payment posts (C1)
