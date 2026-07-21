@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-
 import { Button } from "@/app/_components/button";
+import { useDialog } from "@/app/_components/use-dialog";
 import { dietaryTagLabel, formatCents } from "@/lib/validation";
 
 import {
@@ -44,13 +43,8 @@ export function ItemModifierSheet({
   const { hasVariants, selectedVariant, allValid, totalCents, quantity } =
     selection;
 
-  // Lock background scroll while the sheet is open.
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
+  // Focus trap + initial focus + focus restoration + Escape + scroll lock.
+  const panelRef = useDialog<HTMLDivElement>(onClose);
 
   function handleAdd() {
     if (!allValid) return;
@@ -74,6 +68,7 @@ export function ItemModifierSheet({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className={`flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-card bg-surface-elevated sm:rounded-card ${
           item.imageUrl ? "lg:h-[min(640px,85dvh)] lg:max-w-3xl lg:flex-row" : ""
         }`}

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-
+import { useDialog } from "@/app/_components/use-dialog";
 import { splitByStation } from "@/lib/orders/station";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
@@ -27,17 +26,8 @@ export function TicketDrawer({
   timezone: string;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
+  // Focus trap + initial focus + focus restoration + Escape + scroll lock.
+  const panelRef = useDialog<HTMLDivElement>(onClose);
 
   const isDineIn = order.orderType === "dine_in";
 
@@ -50,6 +40,7 @@ export function TicketDrawer({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >

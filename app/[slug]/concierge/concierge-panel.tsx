@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { Spinner } from "@/app/_components/spinner";
+import { useDialog } from "@/app/_components/use-dialog";
 import { Wordmark } from "@/app/_components/wordmark";
 import {
   DIETARY_DISCLAIMER,
@@ -91,6 +92,10 @@ export function ConciergePanel({
   const [error, setError] = useState<string | null>(null);
   const [asked, setAsked] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  // Focus trap + initial focus + focus restoration + Escape + scroll lock while
+  // the panel is open (it declares aria-modal, so it gets the modal contract).
+  const panelRef = useDialog<HTMLDivElement>(() => setOpen(false), open);
 
   // Honour an external open request (search no-results → concierge handoff)
   // with the derive-state-during-render pattern (no effect): a nonce bump —
@@ -212,6 +217,7 @@ export function ConciergePanel({
           {/* Desktop: docked bottom-right (where the FAB lives) as a fixed-size
               assistant panel; mobile keeps the bottom sheet. */}
           <div
+            ref={panelRef}
             className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl text-concierge-ai-text sm:rounded-2xl lg:h-[min(660px,85dvh)] lg:w-[420px] lg:shadow-2xl"
             style={{
               background:

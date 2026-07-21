@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { useDialog } from "@/app/_components/use-dialog";
 import { DIETARY_DISCLAIMER, formatCents } from "@/lib/validation";
 
 import {
@@ -59,13 +60,8 @@ export function MultiItemPicker({
     });
   }, []);
 
-  // Lock background scroll while the sheet is open.
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
+  // Focus trap + initial focus + focus restoration + Escape + scroll lock.
+  const panelRef = useDialog<HTMLDivElement>(onClose);
 
   const remaining = picks.filter(
     (pick) => !reports.get(pick.item.id)?.valid,
@@ -89,6 +85,7 @@ export function MultiItemPicker({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl bg-surface-elevated sm:rounded-2xl"
         onClick={(event) => event.stopPropagation()}
       >
@@ -132,7 +129,7 @@ export function MultiItemPicker({
             type="button"
             onClick={handleAddAll}
             disabled={!allValid}
-            className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+            className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-[var(--brand-contrast)] transition disabled:cursor-not-allowed disabled:opacity-40"
             style={{ backgroundColor: "var(--brand)" }}
           >
             {allValid
