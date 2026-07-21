@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 
 import { Button } from "@/app/_components/button";
+import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { cx } from "@/app/_components/cx";
 import { Input } from "@/app/_components/input";
 import { normaliseStationCode } from "@/lib/orders/station";
@@ -170,12 +171,11 @@ function StationCard({ station }: { station: StationRow }) {
         </button>
         <form action={deleteStation}>
           <input type="hidden" name="id" value={station.id} />
-          <button
-            type="submit"
-            className="text-xs font-semibold text-[var(--color-warm)] hover:underline"
+          <ConfirmSubmit
+            message={`Delete the "${station.name}" station? This can't be undone.`}
           >
             Delete
-          </button>
+          </ConfirmSubmit>
         </form>
       </div>
     </div>
