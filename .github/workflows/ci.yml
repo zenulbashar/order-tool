@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   build:
-    name: Typecheck & build
+    name: Typecheck, test & build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      # Pure domain-logic unit tests (money math). No DB — the Neon client is lazy.
+      - run: npm test
       # The DB client connects lazily, so the build needs no DATABASE_URL.
       - run: npm run build
 
