@@ -33,11 +33,21 @@ export function renderOrderEmail(opts: {
   reference: string;
   orderType: "dine_in" | "pickup";
   items: OrderEmailItem[];
+  /** Pre-discount sum of line totals. Defaults to totalCents (no discount). */
+  subtotalCents?: number;
+  /** Combined order discount (promo + bank + points + gift card). */
+  discountCents?: number;
   totalCents: number;
   url: string;
 }): { subject: string; html: string; text: string } {
   const { event, venueName, firstName, reference, orderType, items, totalCents, url } =
     opts;
+  // Show a Subtotal + Discount breakdown when the order was discounted, so the
+  // itemised rows (full price) reconcile to the Total. Without it the lines
+  // visibly sum to more than the stated Total.
+  const discountCents = opts.discountCents ?? 0;
+  const subtotalCents = opts.subtotalCents ?? totalCents;
+  const hasDiscount = discountCents > 0;
   const collect = orderType === "dine_in" ? "" : " to collect";
   const eyebrow = event === "confirmed" ? "Order confirmed" : "Order ready";
   const subject =
@@ -90,6 +100,18 @@ export function renderOrderEmail(opts: {
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;border-top:1px solid #EFE7D6;">
                 ${itemRows}
+                ${
+                  hasDiscount
+                    ? `<tr>
+                  <td style="padding:8px 0 0;color:#6E756B;font-size:14px;">Subtotal</td>
+                  <td style="padding:8px 0 0;color:#6E756B;font-size:14px;text-align:right;">$${formatCents(subtotalCents)}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0 0;color:#6E756B;font-size:14px;">Discount</td>
+                  <td style="padding:4px 0 0;color:#6E756B;font-size:14px;text-align:right;">&minus;$${formatCents(discountCents)}</td>
+                </tr>`
+                    : ""
+                }
                 <tr>
                   <td style="padding:10px 0 0;border-top:1px solid #EFE7D6;color:#16241C;font-size:15px;font-weight:800;">Total</td>
                   <td style="padding:10px 0 0;border-top:1px solid #EFE7D6;color:#16241C;font-size:15px;font-weight:800;text-align:right;">$${formatCents(totalCents)}</td>
@@ -123,6 +145,12 @@ export function renderOrderEmail(opts: {
       (item) =>
         `${item.quantity}× ${item.name}${item.variantName ? ` (${item.variantName})` : ""} — $${formatCents(item.lineTotalCents)}`,
     ),
+    ...(hasDiscount
+      ? [
+          `Subtotal: $${formatCents(subtotalCents)}`,
+          `Discount: -$${formatCents(discountCents)}`,
+        ]
+      : []),
     `Total: $${formatCents(totalCents)}`,
     "",
     `${cta}: ${url}`,

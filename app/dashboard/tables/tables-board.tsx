@@ -224,6 +224,17 @@ export function TablesBoard({
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           {/* Card grid */}
           <div className="grid auto-rows-min grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+            {tables.length === 0 ? (
+              <div className="col-span-full rounded-card border border-dashed border-line-strong bg-surface-elevated p-8 text-center">
+                <p className="font-display text-base font-semibold text-ink">
+                  No tables yet
+                </p>
+                <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
+                  Add your first table to generate a QR code diners scan to order
+                  from their seat.
+                </p>
+              </div>
+            ) : null}
             {tables.map((table) => {
               const isSelected = selected?.id === table.id;
               return (

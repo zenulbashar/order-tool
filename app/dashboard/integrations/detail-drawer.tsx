@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
+import { useDialog } from "@/app/_components/use-dialog";
 
 import { disconnectSquare, retryAllSquareJobs, retrySquareJob } from "./actions";
 import { SquareLogo } from "./integration-card";
@@ -43,6 +45,11 @@ export function SquareDetailDrawer({
   closeHref: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  // Navigation-based drawer: closing = returning to the plain hub URL. Route that
+  // through useDialog so it gets the focus trap + Escape + focus restoration the
+  // other dialogs have (it declares aria-modal, so it earns the modal contract).
+  const panelRef = useDialog<HTMLElement>(() => router.push(closeHref));
 
   return (
     <div className="fixed inset-0 z-40">
@@ -52,7 +59,9 @@ export function SquareDetailDrawer({
         className="absolute inset-0 bg-forest-deepest/40"
       />
       <aside
+        ref={panelRef}
         role="dialog"
+        aria-modal="true"
         aria-label="Square activity"
         className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-line bg-surface-elevated shadow-[-26px_0_52px_-20px_rgb(20_30_25/0.4)]"
       >
