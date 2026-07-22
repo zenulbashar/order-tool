@@ -1,15 +1,22 @@
 import { formatCents } from "@/lib/validation";
 
+import {
+  brandTileHtml,
+  escHtml as esc,
+  readableHexOn,
+  safeBrandHex,
+} from "./email-brand";
 import type { OrderEvent } from "./notify";
 
 /**
- * Branded order-notification email (confirmed / ready), rendered as a
- * self-contained HTML document with INLINE styles + table layout (the only
- * reliable cross-client approach — no external CSS, no web fonts). Colours are
- * the Prompt2Eat design tokens: forest ink `#16241C`, cream `#F7F3EA` /
- * `#FFFDF8`, sand border `#EFE7D6`, amber `#F4B43C`. A plain-text alternative is
- * returned alongside for non-HTML clients. Content is escaped — venue/item names
- * are user data.
+ * VENUE-branded order-notification email (confirmed / ready), a self-contained
+ * HTML document with INLINE styles + table layout (the only reliable cross-client
+ * approach — no external CSS, no web fonts). It carries the VENUE's name + brand
+ * accent (a top rule, the logo/initial tile, the button) on the neutral cream/ink
+ * design shell — never Prompt2Eat's identity, per the owner↔diner firewall. The
+ * button label is the WCAG-readable cream/ink for the brand. A plain-text
+ * alternative is returned for non-HTML clients. Content is escaped — venue/item
+ * names are user data.
  */
 export type OrderEmailItem = {
   name: string;
@@ -18,14 +25,6 @@ export type OrderEmailItem = {
   lineTotalCents: number;
 };
 
-function esc(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 export function renderOrderEmail(opts: {
   event: OrderEvent;
   venueName: string;
@@ -33,6 +32,10 @@ export function renderOrderEmail(opts: {
   reference: string;
   orderType: "dine_in" | "pickup";
   items: OrderEmailItem[];
+  /** Venue accent — the brand colour (an accent, never the canvas). */
+  brandColor: string;
+  /** Venue logo, shown in the header tile when present. */
+  logoUrl: string | null;
   /** Pre-discount sum of line totals. Defaults to totalCents (no discount). */
   subtotalCents?: number;
   /** Combined order discount (promo + bank + points + gift card). */
@@ -42,6 +45,9 @@ export function renderOrderEmail(opts: {
 }): { subject: string; html: string; text: string } {
   const { event, venueName, firstName, reference, orderType, items, totalCents, url } =
     opts;
+  const brand = safeBrandHex(opts.brandColor);
+  const onBrand = readableHexOn(brand);
+  const tile = brandTileHtml(venueName, brand, onBrand, opts.logoUrl);
   // Show a Subtotal + Discount breakdown when the order was discounted, so the
   // itemised rows (full price) reconcile to the Total. Without it the lines
   // visibly sum to more than the stated Total.
@@ -86,10 +92,16 @@ export function renderOrderEmail(opts: {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F7F3EA;padding:24px 12px;">
       <tr><td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#FFFDF8;border:1px solid #EFE7D6;border-radius:16px;overflow:hidden;">
+          <tr><td style="height:4px;background:${brand};font-size:0;line-height:0;">&nbsp;</td></tr>
           <tr>
-            <td style="background:#16241C;padding:20px 24px;">
-              <div style="color:#F4B43C;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${eyebrow}</div>
-              <div style="color:#F7F3EA;font-size:20px;font-weight:800;margin-top:4px;">${esc(venueName)}</div>
+            <td style="padding:22px 24px 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+                <td style="vertical-align:middle;">${tile}</td>
+                <td style="vertical-align:middle;padding-left:12px;">
+                  <div style="color:#86907f;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${eyebrow}</div>
+                  <div style="color:#16241C;font-size:18px;font-weight:800;">${esc(venueName)}</div>
+                </td>
+              </tr></table>
             </td>
           </tr>
           <tr>
@@ -119,8 +131,8 @@ export function renderOrderEmail(opts: {
               </table>
 
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:22px;">
-                <tr><td style="border-radius:12px;background:#16241C;">
-                  <a href="${esc(url)}" style="display:inline-block;padding:13px 22px;color:#F7F3EA;font-size:14px;font-weight:700;text-decoration:none;border-radius:12px;">${cta}</a>
+                <tr><td style="border-radius:12px;background:${brand};border:1px solid rgba(20,30,25,0.10);">
+                  <a href="${esc(url)}" style="display:inline-block;padding:13px 22px;color:${onBrand};font-size:14px;font-weight:700;text-decoration:none;border-radius:12px;">${cta}</a>
                 </td></tr>
               </table>
             </td>
@@ -128,6 +140,7 @@ export function renderOrderEmail(opts: {
           <tr>
             <td style="padding:16px 24px;border-top:1px solid #EFE7D6;color:#b6ab92;font-size:11px;line-height:1.5;">
               You're receiving this because you placed an order with ${esc(venueName)}. This is a one-off order update, not marketing.
+              <div style="margin-top:8px;color:#a0987f;">${esc(venueName)} · ordering powered by Prompt2Eat</div>
             </td>
           </tr>
         </table>

@@ -11,53 +11,14 @@
  * vars that readableOn() returns. Pure: no I/O, no env.
  */
 
+import {
+  brandTileHtml,
+  escHtml as esc,
+  readableHexOn,
+  safeBrandHex,
+} from "./email-brand";
+
 const PLATFORM = "Prompt2Eat";
-
-function esc(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function parseHex(input: string): [number, number, number] | null {
-  let h = input.trim().replace(/^#/, "");
-  if (h.length === 3) {
-    h = h
-      .split("")
-      .map((c) => c + c)
-      .join("");
-  }
-  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
-  return [
-    parseInt(h.slice(0, 2), 16),
-    parseInt(h.slice(2, 4), 16),
-    parseInt(h.slice(4, 6), 16),
-  ];
-}
-
-function luminance([r, g, b]: [number, number, number]): number {
-  const [rl, gl, bl] = [r, g, b].map((channel) => {
-    const c = channel / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
-}
-
-const CREAM = "#FFFDF8";
-const INK = "#16241C";
-
-/** Readable cream/ink hex to pair with a venue brand fill (readableOn as hex). */
-function readableHexOn(brandHex: string): string {
-  const rgb = parseHex(brandHex);
-  if (!rgb) return CREAM;
-  const b = luminance(rgb);
-  const contrast = (a: number, x: number) =>
-    (Math.max(a, x) + 0.05) / (Math.min(a, x) + 0.05);
-  // Fixed luminances of cream (#fffdf8) and ink (#0e1f18).
-  return contrast(0.983, b) >= contrast(0.015, b) ? CREAM : INK;
-}
 
 export function renderCustomerSignInEmail(opts: {
   venueName: string;
@@ -70,13 +31,9 @@ export function renderCustomerSignInEmail(opts: {
   const name = esc(venueName);
   // Fall back to ink if the stored brand colour is unparseable, so the accent is
   // never a broken/empty value.
-  const brand = parseHex(opts.brandColor) ? opts.brandColor.trim() : INK;
+  const brand = safeBrandHex(opts.brandColor);
   const onBrand = readableHexOn(brand);
-  const initial = venueName.trim().charAt(0).toUpperCase() || "•";
-
-  const logoTile = opts.logoUrl
-    ? `<img src="${esc(opts.logoUrl)}" alt="${name}" width="48" height="48" style="width:48px;height:48px;border-radius:12px;background:#FFFFFF;object-fit:contain;border:1px solid #EFE7D6;" />`
-    : `<span style="display:inline-block;width:48px;height:48px;border-radius:12px;background:${brand};color:${onBrand};font-size:22px;font-weight:800;line-height:48px;text-align:center;">${esc(initial)}</span>`;
+  const logoTile = brandTileHtml(venueName, brand, onBrand, opts.logoUrl);
 
   const subject = `Sign in to ${venueName}`;
 
