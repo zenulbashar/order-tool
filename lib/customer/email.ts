@@ -1,3 +1,5 @@
+import { renderCustomerSignInEmail } from "./sign-in-email";
+
 /**
  * Customer magic-link email (#7), sent via the Resend REST API directly.
  *
@@ -7,10 +9,15 @@
  * so there is no new required env. Lazy: env is read at call time, so
  * build / typecheck / lint run with none present (same contract as lib/stripe.ts
  * and the Neon pool).
+ *
+ * Rendered VENUE-branded (name + brand accent + logo), never Prompt2Eat's own
+ * identity — the owner↔diner firewall (see lib/customer/sign-in-email.ts).
  */
 export async function sendCustomerMagicLinkEmail(opts: {
   to: string;
   venueName: string;
+  brandColor: string;
+  logoUrl: string | null;
   url: string;
 }): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -21,25 +28,20 @@ export async function sendCustomerMagicLinkEmail(opts: {
     );
   }
 
+  const { subject, html, text } = renderCustomerSignInEmail({
+    venueName: opts.venueName,
+    brandColor: opts.brandColor,
+    logoUrl: opts.logoUrl,
+    url: opts.url,
+  });
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from,
-      to: opts.to,
-      subject: `View your orders at ${opts.venueName}`,
-      text: [
-        `Tap the link below to view your orders at ${opts.venueName}:`,
-        "",
-        opts.url,
-        "",
-        "This link expires in 15 minutes and can be used once.",
-        "If you didn't request it, you can safely ignore this email.",
-      ].join("\n"),
-    }),
+    body: JSON.stringify({ from, to: opts.to, subject, html, text }),
   });
 
   if (!response.ok) {
