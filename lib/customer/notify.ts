@@ -44,6 +44,8 @@ export async function notifyCustomerOrder(
       totalCents: orders.totalCents,
       venueName: venues.name,
       venueSlug: venues.slug,
+      venueBrandColor: venues.brandColor,
+      venueLogoUrl: venues.logoUrl,
       // Linked-account fields (null for a guest order).
       acctEmail: customers.email,
       acctPhone: customers.phone,
@@ -104,6 +106,8 @@ export async function notifyCustomerOrder(
         reference,
         orderType: row.orderType,
         items,
+        brandColor: row.venueBrandColor,
+        logoUrl: row.venueLogoUrl,
         subtotalCents: row.subtotalCents,
         discountCents: row.discountCents,
         totalCents: row.totalCents,
