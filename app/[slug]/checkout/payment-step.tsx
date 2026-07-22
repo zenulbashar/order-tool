@@ -54,6 +54,35 @@ export function PaymentStep({
     "--brand-contrast": readableOn(venue.brandColor),
   } as React.CSSProperties;
 
+  // Match the diner dark theme (system preference) so the Stripe Element — a
+  // cross-origin iframe that can't read our CSS vars — isn't a bright light card
+  // on a dark page. Detected client-side; defaults to light on first paint and
+  // Elements re-styles (not remounts) when it flips.
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDark(mq.matches);
+    const onChange = (event: MediaQueryListEvent) => setDark(event.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  const palette = dark
+    ? {
+        bg: "#16281e",
+        text: "#f2ece0",
+        textSecondary: "#9fb0a4",
+        danger: "#e2553a",
+        inputBorder: "#24382d",
+      }
+    : {
+        bg: "#fffdf8",
+        text: "#0e1f18",
+        textSecondary: "#6e756b",
+        danger: "#cf4527",
+        inputBorder: "#e6ddcb",
+      };
+
   return (
     <main style={brandStyle} data-domain="diner" className="mx-auto min-h-dvh max-w-2xl bg-surface">
       <header className="border-b border-line px-5 py-5">
@@ -68,21 +97,22 @@ export function PaymentStep({
         options={{
           clientSecret,
           // Stripe Elements render in a cross-origin iframe that can't read our
-          // CSS vars, so the cream palette is mirrored here as literal hex (the
-          // one sanctioned place). colorPrimary stays the venue brand colour.
+          // CSS vars, so the palette is mirrored here as literal hex (the one
+          // sanctioned place) — light or dark per the system preference.
+          // colorPrimary stays the venue brand colour.
           appearance: {
             variables: {
               colorPrimary: venue.brandColor,
-              colorBackground: "#fffdf8",
-              colorText: "#0e1f18",
-              colorTextSecondary: "#6e756b",
-              colorDanger: "#cf4527",
+              colorBackground: palette.bg,
+              colorText: palette.text,
+              colorTextSecondary: palette.textSecondary,
+              colorDanger: palette.danger,
               borderRadius: "11px",
             },
             rules: {
-              ".Input": { borderColor: "#e6ddcb" },
+              ".Input": { borderColor: palette.inputBorder },
               ".Input:focus": { borderColor: venue.brandColor },
-              ".Label": { color: "#6e756b" },
+              ".Label": { color: palette.textSecondary },
             },
           },
         }}

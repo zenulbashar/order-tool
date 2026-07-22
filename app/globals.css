@@ -126,6 +126,53 @@
 [data-domain="diner"] {
   --action: var(--brand);
   --action-contrast: var(--brand-contrast);
+  /* Warm brand-tint chip (design "brand-tint" — qty badges, the concierge
+     nudge, the account nav's active item). Fixed peach in light; flips to a
+     brand-tinted dark in the dark-theme block below. Referenced via var() so the
+     handful of call sites recolour without per-component dark branches. */
+  --diner-tint: #f7e7de;
+  --diner-tint-border: #eccbb8;
+  --diner-tint-text: var(--color-accent-deep);
+}
+
+/*
+ * Diner storefront — DARK THEME (design panel 19). System-preference only: the
+ * diner's device drives it, so it's purely additive (no schema, no toggle) and
+ * mobile/desktop layouts are byte-identical — only the tokens flip. Scoped to the
+ * diner root so the owner console + Prompt2Eat marketing are untouched.
+ *
+ * The whole diner surface reads token utilities (bg-surface, text-ink,
+ * border-sand, …), so overriding those variables here recolours every diner
+ * screen at once — the same mechanism as .admin-dark. Two things fall out for
+ * free: the primary CTA is bg-ink/text-surface, so swapping ink↔surface INVERTS
+ * it to cream-on-ink exactly as the design shows; and the venue --brand is
+ * lightened for AA on the dark ground.
+ */
+@media (prefers-color-scheme: dark) {
+  [data-domain="diner"] {
+    --color-surface: #0e1f18; /* page */
+    --color-surface-elevated: #16281e; /* cards + bar */
+    --color-sand: #1c3025;
+    --color-line: #24382d;
+    --color-line-strong: #33473c;
+    --color-hover-secondary: #1c3025;
+    --color-hover-ghost: #24382d;
+    /* Body text flips light. !important so it also wins over a venue's inline
+       custom --color-ink (chosen for the LIGHT theme) — on dark that value would
+       be unreadable, so the shared readable light ink takes over. */
+    --color-ink: #f2ece0 !important;
+    --color-muted: #9fb0a4;
+    --color-label: #7f9488;
+    /* Lift the venue brand off the dark ground so Add/qty/underline accents stay
+       visible (the design lightens terracotta B0481D→D06A3E; this generalises to
+       any venue brand). Its paired contrast becomes ink, since the fill is now
+       light. Per-venue readableOn-on-dark is a later refinement. */
+    --action: color-mix(in oklab, var(--brand) 60%, #ffffff);
+    --action-contrast: #12271d;
+    --diner-tint: color-mix(in oklab, var(--brand) 16%, #16281e);
+    --diner-tint-border: color-mix(in oklab, var(--brand) 26%, #24382d);
+    --diner-tint-text: var(--color-accent);
+  }
 }
 
 /*
