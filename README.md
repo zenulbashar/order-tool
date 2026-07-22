@@ -148,7 +148,7 @@ verification). After this deploys:
 1. Stripe Dashboard (**test mode**) → **Developers → Webhooks** → **Add endpoint**,
    choosing **"Events on connected accounts"** (a **Connect** endpoint —
    direct-charge events originate on the connected accounts).
-2. Endpoint URL: `https://order.zaleit.com.au/api/stripe/webhook`.
+2. Endpoint URL: `https://prompt2eat.com/api/stripe/webhook`.
 3. Events: `payment_intent.succeeded` and `payment_intent.payment_failed`.
 4. Copy the **Signing secret** (`whsec_…`) → add it to Vercel (Production) as
    `STRIPE_WEBHOOK_SECRET` → **redeploy** so the variable is live.
@@ -171,13 +171,13 @@ domain must be registered **on each connected account** — registering it only 
 the platform is not enough.
 
 This is **Stripe configuration, not code.** There is a single storefront domain
-(`order.zaleit.com.au`; venues are path-based, `…/<slug>`), registered **once per
+(`prompt2eat.com`; venues are path-based, `…/<slug>`), registered **once per
 connected account**, most reliably via the API with that account's `Stripe-Account`
 header:
 
 ```ts
 await stripe.paymentMethodDomains.create(
-  { domain_name: "order.zaleit.com.au" },
+  { domain_name: "prompt2eat.com" },
   { stripeAccount: "<acct_id>" },
 );
 ```
@@ -377,7 +377,7 @@ Configure these in the Vercel project (Production):
 - `DATABASE_URL` — the **pooled** Neon URL
 - `AUTH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`
 - `AUTH_URL` — set to the production URL once a custom domain is live (e.g.
-  `https://order.zaleit.com.au`) so magic-link callbacks don't use the
+  `https://prompt2eat.com`) so magic-link callbacks don't use the
   `*.vercel.app` URL.
 - `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` — Stripe **test** keys.
 - `STRIPE_WEBHOOK_SECRET` — added after registering the webhook (see

@@ -11,10 +11,10 @@ import { MarketingJsonLd } from "./_landing/marketing-json-ld";
 
 /**
  * Root of every domain this app serves. The MARKETING host (prompt2eat.com)
- * shows the landing page; the ordering/app host (e.g. order.zaleit.com.au) keeps
- * the owner-app entry redirect. Marketing hosts are configurable via
- * MARKETING_HOSTS (comma-separated); `?preview=landing` forces the landing on any
- * host for testing.
+ * shows the landing page; any other host (a *.vercel.app preview, or a secondary
+ * domain) keeps the owner-app entry redirect. Marketing hosts are configurable
+ * via MARKETING_HOSTS (comma-separated); `?preview=landing` forces the landing on
+ * any host for testing.
  */
 const DEFAULT_MARKETING_HOSTS = ["prompt2eat.com"];
 

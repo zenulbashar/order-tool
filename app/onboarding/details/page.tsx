@@ -8,8 +8,8 @@ import { DetailsForm } from "./details-form";
 export const dynamic = "force-dynamic";
 
 export default async function DetailsStepPage() {
-  // Host for the storefront-link preview (order.zaleit.com.au in prod,
-  // localhost in dev) — reuses the canonical base-URL helper, never hardcoded.
+  // Host for the storefront-link preview (prompt2eat.com in prod, localhost in
+  // dev) — reuses the canonical base-URL helper, never hardcoded.
   const baseHost = new URL(await getBaseUrl()).host;
 
   return (
