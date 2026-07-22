@@ -141,7 +141,7 @@ export function CartRail({
           <button
             type="button"
             onClick={onAskConcierge}
-            className="block w-full rounded-card border border-[#eccbb8] bg-[#f7e7de] px-4 py-3 text-left text-xs text-[var(--color-accent-deep)] transition hover:brightness-[0.98]"
+            className="block w-full rounded-card border border-[var(--diner-tint-border)] bg-[var(--diner-tint)] px-4 py-3 text-left text-xs text-[var(--diner-tint-text)] transition hover:brightness-[0.98]"
           >
             <span className="mr-1 text-accent">✦</span>
             Not sure what to eat? Let Prompt2Eat build an order from a craving.

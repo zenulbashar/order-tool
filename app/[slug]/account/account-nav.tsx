@@ -40,7 +40,7 @@ export function AccountNav({ slug, email }: { slug: string; email: string }) {
                   aria-current={active ? "page" : undefined}
                   className={`block whitespace-nowrap rounded-control px-3 py-2 text-sm font-medium transition ${
                     active
-                      ? "bg-[#f7e7de] text-ink"
+                      ? "bg-[var(--diner-tint)] text-ink"
                       : "text-muted hover:bg-hover-ghost hover:text-ink"
                   }`}
                 >
