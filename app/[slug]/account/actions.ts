@@ -32,12 +32,22 @@ export type ReorderResult =
   | { ok: false; error: string };
 
 /** Resolve a public venue by slug. Reserved slugs never resolve (route backstop). */
-async function resolveVenue(
-  slug: string,
-): Promise<{ id: string; name: string; slug: string } | null> {
+async function resolveVenue(slug: string): Promise<{
+  id: string;
+  name: string;
+  slug: string;
+  brandColor: string;
+  logoUrl: string | null;
+} | null> {
   if (isReservedSlug(slug)) return null;
   const [venue] = await db
-    .select({ id: venues.id, name: venues.name, slug: venues.slug })
+    .select({
+      id: venues.id,
+      name: venues.name,
+      slug: venues.slug,
+      brandColor: venues.brandColor,
+      logoUrl: venues.logoUrl,
+    })
     .from(venues)
     .where(eq(venues.slug, slug.trim().toLowerCase()))
     .limit(1);
@@ -89,7 +99,13 @@ export async function requestCustomerMagicLink(
     const token = await createLoginToken(venue.id, email);
     const baseUrl = await getBaseUrl();
     const url = `${baseUrl}/${venue.slug}/account/verify?token=${encodeURIComponent(token)}`;
-    await sendCustomerMagicLinkEmail({ to: email, venueName: venue.name, url });
+    await sendCustomerMagicLinkEmail({
+      to: email,
+      venueName: venue.name,
+      brandColor: venue.brandColor,
+      logoUrl: venue.logoUrl,
+      url,
+    });
   } catch {
     // Swallow: never surface send/config failures to the caller. The customer
     // sees the same "check your email" either way. (Rate-limiting is deferred,
