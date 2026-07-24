@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { auth } from "@/lib/auth";
 
 import { SignInForm } from "./signin-form";
+
+// noindex belt-and-braces alongside robots.txt (see dashboard/layout.tsx).
+export const metadata: Metadata = {
+  title: "Sign in",
+  robots: { index: false, follow: false },
+};
 
 export default async function SignInPage() {
   const session = await auth();

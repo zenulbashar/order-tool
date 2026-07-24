@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import {
   getCurrentVenue,
   getImpersonatedVenue,
@@ -10,6 +12,12 @@ import { getActiveOrderCount } from "./orders/queries";
 import { PushRegistrar } from "./push-registrar";
 import { Sidebar } from "./sidebar";
 import { SupportWidget } from "./support-widget";
+
+// Belt-and-braces with robots.txt: Disallow blocks crawling but an externally
+// linked URL can still be indexed — noindex closes that gap for the dashboard.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * Shared dashboard chrome: a persistent forest-dark sidebar (nav + venue
