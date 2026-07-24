@@ -6,8 +6,9 @@ import { canUseConcierge } from "@/lib/concierge";
 import { getBaseUrl } from "@/lib/url";
 import { isReservedSlug } from "@/lib/validation";
 
-import { StorefrontJsonLd } from "./json-ld";
+import { StorefrontFaqJsonLd, StorefrontJsonLd } from "./json-ld";
 import {
+  getPublicFaqs,
   getPublicMenu,
   getPublicVenueBySlug,
   getRecommendations,
@@ -68,8 +69,9 @@ export default async function StorefrontPage({
   const venue = await resolveVenue(slug);
   if (!venue) notFound();
 
-  const [menu, sp, baseUrl] = await Promise.all([
+  const [menu, faqs, sp, baseUrl] = await Promise.all([
     getPublicMenu(venue.id),
+    getPublicFaqs(venue.id),
     searchParams,
     getBaseUrl(),
   ]);
@@ -101,6 +103,7 @@ export default async function StorefrontPage({
   return (
     <>
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
+      <StorefrontFaqJsonLd faqs={faqs} url={canonicalUrl} />
       {!venue.isLive ? (
         <div className="bg-accent/15 px-6 py-3 text-center text-sm text-ink">
           {venue.name}{" "}isn&apos;t taking orders yet. Please check back soon.
@@ -112,6 +115,7 @@ export default async function StorefrontPage({
         initialTable={initialTable}
         recommendations={recommendations}
         conciergeEnabled={conciergeEnabled}
+        faqs={faqs}
         view="landing"
       />
     </>

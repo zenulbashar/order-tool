@@ -2149,3 +2149,29 @@ export const seoSearchSummary = pgTable(
 );
 
 export type SeoSearchSummaryRow = typeof seoSearchSummary.$inferSelect;
+
+/**
+ * Owner-authored storefront FAQs. Rendered VISIBLY on the venue storefront AND
+ * emitted as FAQPage JSON-LD from the same data (Google requires FAQ markup to
+ * match visible content, so the two must never diverge — one source, both
+ * outputs). This is where the SEO/AEO studio's suggested FAQs land once the
+ * owner accepts them, closing the AEO loop: a stored FAQ is what actually lets
+ * an assistant answer a diner's question from the page. venue-scoped + cascade.
+ */
+export const venueFaqs = pgTable(
+  "venue_faqs",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    question: text("question").notNull(),
+    answer: text("answer").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [index("venue_faqs_venue_idx").on(table.venueId, table.sortOrder)],
+);
+
+export type VenueFaq = typeof venueFaqs.$inferSelect;

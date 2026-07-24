@@ -605,6 +605,39 @@ export const venueSettingsSchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
+/* Storefront FAQs (SEO/AEO)                                                   */
+/*                                                                            */
+/* Owner-authored Q&A shown on the storefront AND emitted as FAQPage JSON-LD   */
+/* from the same data. Bounded so the markup stays lean; empty rows are        */
+/* dropped before validation by the save action.                              */
+/* -------------------------------------------------------------------------- */
+
+/** Keep the list tasteful and the FAQPage markup lean. */
+export const MAX_VENUE_FAQS = 12;
+
+export const venueFaqSchema = z.object({
+  question: z
+    .string()
+    .trim()
+    .min(3, "Give the question a few more characters.")
+    .max(160, "Question is too long (160 characters max)."),
+  answer: z
+    .string()
+    .trim()
+    .min(3, "Give the answer a few more characters.")
+    .max(600, "Answer is too long (600 characters max)."),
+});
+
+export const venueFaqsSchema = z.object({
+  faqs: z
+    .array(venueFaqSchema)
+    .max(MAX_VENUE_FAQS, `You can add up to ${MAX_VENUE_FAQS} FAQs.`),
+});
+
+export type VenueFaqInput = z.infer<typeof venueFaqSchema>;
+export type SaveVenueFaqsInput = z.infer<typeof venueFaqsSchema>;
+
+/* -------------------------------------------------------------------------- */
 /* Venue business details — structured data / SEO (Phase 6)                   */
 /*                                                                            */
 /* All fields are OPTIONAL: a venue fills in whatever it has, and the public   */

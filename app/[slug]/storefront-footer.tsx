@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { OPENING_DAYS } from "@/lib/validation";
 
 import { BrandTile } from "./storefront-hero";
-import type { PublicVenue } from "./types";
+import type { PublicFaq, PublicVenue } from "./types";
 
 /**
  * Storefront footer (end of the page): the venue logo + name, an About blurb,
@@ -21,7 +21,13 @@ function formatTime(hhmm: string): string {
   return m ? `${h12}:${String(m).padStart(2, "0")}${period}` : `${h12}${period}`;
 }
 
-export function StorefrontFooter({ venue }: { venue: PublicVenue }) {
+export function StorefrontFooter({
+  venue,
+  faqs = [],
+}: {
+  venue: PublicVenue;
+  faqs?: PublicFaq[];
+}) {
   const hours = venue.openingHours ?? [];
   const byDay = new Map(hours.map((entry) => [entry.day, entry]));
   const hasHours = hours.length > 0;
@@ -46,6 +52,38 @@ export function StorefrontFooter({ venue }: { venue: PublicVenue }) {
       id="storefront-footer"
       className="scroll-mt-[124px] border-t border-line bg-surface-elevated"
     >
+      {/* FAQs — visible content that mirrors the FAQPage JSON-LD emitted on the
+          storefront (Google requires FAQ markup to match what's on the page). */}
+      {faqs.length > 0 ? (
+        <div className="border-b border-line">
+          <div className="mx-auto max-w-[1440px] 2xl:max-w-[1680px] px-6 py-12">
+            <h2 className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+              Frequently asked
+            </h2>
+            <div className="mt-4 grid gap-x-10 gap-y-1 md:grid-cols-2">
+              {faqs.map((faq) => (
+                <details
+                  key={faq.question}
+                  className="group border-b border-line/60 py-3"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                    {faq.question}
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 text-muted transition group-open:rotate-45"
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">
+                    {faq.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="mx-auto grid max-w-[1440px] 2xl:max-w-[1680px] gap-10 px-6 py-12 sm:grid-cols-2 lg:grid-cols-3">
         {/* Brand + about */}
         <div className="min-w-0">

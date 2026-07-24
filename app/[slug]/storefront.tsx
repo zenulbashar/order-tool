@@ -24,6 +24,7 @@ import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
 import { SearchEmptyState } from "./search-empty-state";
 import type {
+  PublicFaq,
   PublicItem,
   PublicMenu,
   PublicRecommendations,
@@ -41,6 +42,7 @@ export function Storefront({
   initialTable,
   recommendations,
   conciergeEnabled,
+  faqs = [],
   view = "menu",
 }: {
   venue: PublicVenue;
@@ -48,6 +50,8 @@ export function Storefront({
   initialTable: string;
   recommendations: PublicRecommendations;
   conciergeEnabled: boolean;
+  /** Owner-authored storefront FAQs, shown in the footer (visible + JSON-LD). */
+  faqs?: PublicFaq[];
   // "landing" = the categories page (hero + big category tiles, no menu/rail);
   // "menu" = the ordering page (tabs + item grid + cart rail). Split across two
   // routes so neither page is a long scroll.
@@ -61,6 +65,7 @@ export function Storefront({
           menu={menu}
           initialTable={initialTable}
           conciergeEnabled={conciergeEnabled}
+          faqs={faqs}
           view={view}
         />
       </RecommendationsProvider>
@@ -73,12 +78,14 @@ function StorefrontInner({
   menu,
   initialTable,
   conciergeEnabled,
+  faqs,
   view,
 }: {
   venue: PublicVenue;
   menu: PublicMenu;
   initialTable: string;
   conciergeEnabled: boolean;
+  faqs: PublicFaq[];
   view: "landing" | "menu";
 }) {
   const { addItem, count: cartCount } = useCart();
@@ -687,7 +694,7 @@ function StorefrontInner({
         ) : null}
 
         {/* Footer — opening hours, location, contact + the logo (end of page). */}
-        <StorefrontFooter venue={venue} />
+        <StorefrontFooter venue={venue} faqs={faqs} />
 
         {activeItem ? (
           <ItemModifierSheet
