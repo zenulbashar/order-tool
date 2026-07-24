@@ -4,6 +4,7 @@ import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
 import { ARTICLES } from "@/lib/marketing-content";
+import { SEGMENTS } from "@/lib/marketing-segments";
 import { SITE_URL } from "@/lib/seo";
 
 // Rendered per-request so newly-live venues appear without a redeploy (crawlers
@@ -41,6 +42,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     ...ARTICLES.map((article) => ({
       url: `${SITE_URL}/learn/${article.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    // Audience "service" pages (static).
+    ...SEGMENTS.map((segment) => ({
+      url: `${SITE_URL}/for/${segment.slug}`,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),

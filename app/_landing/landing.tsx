@@ -527,7 +527,7 @@ export function Landing() {
       {/* Footer */}
       <footer className="bg-[#0C1C15] py-14 text-[#C9D4CB]">
         <div className={CONTAINER}>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2">
                 <Mark />
@@ -540,10 +540,19 @@ export function Landing() {
             </div>
             {[
               {
+                h: "Solutions",
+                links: [
+                  { label: "Cafés", href: "/for/cafes" },
+                  { label: "Restaurants", href: "/for/restaurants" },
+                  { label: "Bars & pubs", href: "/for/bars" },
+                  { label: "Bakeries", href: "/for/bakeries" },
+                  { label: "Food trucks", href: "/for/food-trucks" },
+                ],
+              },
+              {
                 h: "Product",
                 links: [
                   { label: "Concierge", href: "#concierge" },
-                  { label: "For Restaurants", href: "#restaurants" },
                   { label: "Pricing", href: "#pricing" },
                   { label: "FAQ", href: "#faq" },
                   { label: "Guides", href: "/learn" },
