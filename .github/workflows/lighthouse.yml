@@ -1,0 +1,35 @@
+name: Lighthouse
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    name: Lighthouse (marketing/SEO)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The DB client connects lazily, so the build/start need no DATABASE_URL;
+      # a dummy AUTH_SECRET lets the app boot. Anonymous marketing/SEO routes
+      # only (the landing is forced via ?preview=landing).
+      - name: Build
+        run: npm run build
+        env:
+          AUTH_SECRET: lighthouse-smoke-secret-not-real
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.14.x
+          lhci autorun
+        env:
+          AUTH_SECRET: lighthouse-smoke-secret-not-real
