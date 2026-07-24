@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/app/_components/button";
@@ -191,7 +192,7 @@ export function CopyReviewCard({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
-                  Suggested FAQs (paste into About &amp; description)
+                  Suggested FAQs
                 </p>
                 <CopyTextButton
                   label="Copy all"
@@ -200,6 +201,18 @@ export function CopyReviewCard({
                     .join("\n\n")}
                 />
               </div>
+              <p className="mt-1 text-xs text-muted">
+                Add these to your storefront in{" "}
+                <Link
+                  href="/dashboard/settings/faqs"
+                  className="font-medium underline"
+                  style={{ color: "var(--action)" }}
+                >
+                  FAQs
+                </Link>{" "}
+                (use &ldquo;Import from AEO audit&rdquo;) so they show on your
+                page and answer diners in AI assistants.
+              </p>
               <ul className="mt-2 space-y-2">
                 {copy.suggestedFaqs.map((faq) => (
                   <li

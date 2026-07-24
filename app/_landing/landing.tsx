@@ -386,53 +386,45 @@ export function Landing() {
       {/* Shop teaser */}
       <ShopTeaser />
 
-      {/* Social proof */}
+      {/* Why Prompt2Eat — real product capabilities. Deliberately NOT
+          fabricated metrics or invented testimonials: those get added only
+          when there are real numbers and consenting customers to cite. */}
       <section className="relative bg-gradient-to-b from-[#0F281E] to-[#0C1C15] py-[clamp(72px,10vw,120px)]">
         <span className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(244,180,60,0.1),transparent)]" />
         <div className={`${CONTAINER} relative`}>
-          {/* TODO-METRIC: replace with real figures once you have them. */}
-          <div className="grid gap-8 text-center sm:grid-cols-4" data-reveal>
-            {[
-              { v: 2.4, suffix: "M", dec: 1, label: "Orders placed", amber: true },
-              { v: 12, suffix: "k+", dec: 0, label: "Venues onboard" },
-              { v: 38, suffix: "%", dec: 0, label: "Avg. check uplift" },
-              { v: 4.9, suffix: "", dec: 1, label: "Diner rating" },
-            ].map((m) => (
-              <div key={m.label}>
-                <span
-                  className={`block font-display text-[clamp(38px,5vw,60px)] font-extrabold tracking-[-0.03em] ${m.amber ? "text-[var(--color-accent)]" : "text-[#F7F3EA]"}`}
-                  data-count={m.v}
-                  data-suffix={m.suffix}
-                  data-decimals={m.dec}
-                >
-                  0
-                </span>
-                <span className="mt-1 block text-sm text-[#9FB0A2]">{m.label}</span>
-              </div>
-            ))}
+          <div className="text-center" data-reveal>
+            <span className={`${eyebrow} text-[var(--color-accent)]`}>Why Prompt2Eat</span>
+            <h2 className="mx-auto mt-3 max-w-[18ch] font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em] text-[#F7F3EA]">
+              One system, from craving to kitchen.
+            </h2>
           </div>
-          {/* TODO-TESTIMONIAL: replace quotes, names, venues. */}
           <div className="mt-14 grid gap-4 sm:grid-cols-3">
             {[
-              { q: "Guests order faster and add more. Our average table is up and the floor feels calmer.", who: "Sofia Marin", venue: "Maple & Thyme" },
-              { q: "Setting up the menu took an afternoon. The photo import did most of the work.", who: "Daniel O.", venue: "Otto & Sons" },
-              { q: "The concierge answers the questions my staff used to field all night.", who: "Priya N.", venue: "Blue Door Cafe" },
-            ].map((t, i) => (
+              {
+                t: "Order in one scan",
+                d: "Diners scan a QR code and just say what they feel like. The AI concierge finds the dish, sorts the sides, and sends it straight to the kitchen.",
+              },
+              {
+                t: "Live in an afternoon",
+                d: "Import your whole menu from a photo, set your brand, and go live. No POS migration and no new hardware to buy.",
+              },
+              {
+                t: "Every way to pay",
+                d: "Cards, Apple Pay, Google Pay, and PayTo pay-by-bank, taken on your storefront and settled to your own account.",
+              },
+            ].map((feature, i) => (
               <div
-                key={i}
+                key={feature.t}
                 data-reveal
                 data-delay={i * 80}
                 className="rounded-[22px] border border-[rgba(247,243,234,0.1)] bg-[rgba(247,243,234,0.05)] p-6"
               >
-                <span className="font-display text-3xl font-extrabold text-[var(--color-accent)]">&ldquo;</span>
-                <p className="mt-1 text-base leading-[1.55] text-[#E4EBE4]">{t.q}</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <span className="h-9 w-9 rounded-full bg-gradient-to-br from-[#7fa890] to-[#3f7a63]" />
-                  <span className="text-sm text-[#7FA890]">
-                    <span className="block font-bold text-[#C9D4CB]">{t.who}</span>
-                    {t.venue}
-                  </span>
-                </div>
+                <p className="font-display text-lg font-extrabold text-[#F7F3EA]">
+                  {feature.t}
+                </p>
+                <p className="mt-2 text-base leading-[1.55] text-[#C9D4CB]">
+                  {feature.d}
+                </p>
               </div>
             ))}
           </div>
@@ -535,7 +527,7 @@ export function Landing() {
       {/* Footer */}
       <footer className="bg-[#0C1C15] py-14 text-[#C9D4CB]">
         <div className={CONTAINER}>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2">
                 <Mark />
@@ -548,19 +540,41 @@ export function Landing() {
             </div>
             {[
               {
+                h: "Solutions",
+                links: [
+                  { label: "Cafés", href: "/for/cafes" },
+                  { label: "Restaurants", href: "/for/restaurants" },
+                  { label: "Bars & pubs", href: "/for/bars" },
+                  { label: "Bakeries", href: "/for/bakeries" },
+                  { label: "Food trucks", href: "/for/food-trucks" },
+                ],
+              },
+              {
                 h: "Product",
                 links: [
                   { label: "Concierge", href: "#concierge" },
-                  { label: "For Restaurants", href: "#restaurants" },
                   { label: "Pricing", href: "#pricing" },
                   { label: "FAQ", href: "#faq" },
                   { label: "Guides", href: "/learn" },
                   { label: "Shop", href: "/shop" },
                 ],
               },
-              // No pages exist for these yet — kept as inert labels, not fake links.
-              { h: "Company", links: [{ label: "About" }, { label: "Careers" }, { label: "Contact" }] },
-              { h: "Legal", links: [{ label: "Privacy" }, { label: "Terms" }] },
+              // Careers has no page yet — kept an inert label, not a fake link.
+              {
+                h: "Company",
+                links: [
+                  { label: "About", href: "/about" },
+                  { label: "Careers" },
+                  { label: "Contact", href: "/contact" },
+                ],
+              },
+              {
+                h: "Legal",
+                links: [
+                  { label: "Privacy", href: "/privacy" },
+                  { label: "Terms", href: "/terms" },
+                ],
+              },
             ].map((col) => (
               <div key={col.h}>
                 <p className={`${eyebrow} text-[10px] text-[#5F7568]`}>{col.h}</p>

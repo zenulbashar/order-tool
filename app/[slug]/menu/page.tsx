@@ -7,6 +7,7 @@ import { isReservedSlug } from "@/lib/validation";
 
 import { StorefrontJsonLd } from "../json-ld";
 import {
+  getPublicFaqs,
   getPublicMenu,
   getPublicVenueBySlug,
   getRecommendations,
@@ -62,8 +63,9 @@ export default async function MenuPage({ params, searchParams }: MenuParams) {
   const venue = await resolveVenue(slug);
   if (!venue) notFound();
 
-  const [menu, sp, baseUrl] = await Promise.all([
+  const [menu, faqs, sp, baseUrl] = await Promise.all([
     getPublicMenu(venue.id),
+    getPublicFaqs(venue.id),
     searchParams,
     getBaseUrl(),
   ]);
@@ -88,6 +90,7 @@ export default async function MenuPage({ params, searchParams }: MenuParams) {
         initialTable={initialTable}
         recommendations={recommendations}
         conciergeEnabled={conciergeEnabled}
+        faqs={faqs}
         view="menu"
       />
     </>

@@ -194,6 +194,47 @@ export const ARTICLES: Article[] = [
       },
     ],
   },
+  {
+    slug: "how-to-set-up-online-ordering",
+    title: "How to set up online ordering for a restaurant",
+    description:
+      "Set up online ordering for a restaurant in an afternoon: import your menu from a photo, brand your storefront, turn on payments, and go live.",
+    eyebrow: "Setup",
+    sections: [
+      {
+        heading: "Start with your menu",
+        paragraphs: [
+          "The slow part of setting up online ordering for a restaurant has always been the menu, and that is exactly what Prompt2Eat shortcuts. Photograph your printed menu during onboarding and the AI reads it into structured items with categories, sizes, and prices, which you review before anything saves.",
+          "From there the menu is yours to shape: add photos, dietary tags, modifier groups, and size variants in the editor. You can also have the AI draft item descriptions for you to approve, so the whole menu reads well without you writing every line.",
+        ],
+      },
+      {
+        heading: "Make the storefront yours",
+        paragraphs: [
+          "Your ordering page should look like your venue, not a marketplace. Set your brand colour and logo, add a cover photo and a short description, and enter your address and opening hours. Those details also feed the structured data that helps your page show up in search and in AI assistants.",
+        ],
+      },
+      {
+        heading: "Turn on payments",
+        paragraphs: [
+          "Connect your own payment account and start taking cards, Apple Pay, and Google Pay, plus PayTo pay-by-bank for Australian venues. Money settles to your account, and an order only reaches the kitchen once its payment is confirmed, so nothing is cooked on an unpaid ticket.",
+        ],
+      },
+      {
+        heading: "Choose how diners order",
+        paragraphs: [
+          "For dine-in, print a QR code for each table; a diner scans it, orders from their phone, and the table number rides along to the kitchen. For takeaway, diners order ahead for ASAP or a scheduled pickup time, within the lead time you set. Both run from the same storefront, and diners who prefer to talk can use the AI concierge on the same page.",
+        ],
+      },
+      {
+        heading: "Go live and get found",
+        paragraphs: [
+          "When you finish onboarding, your storefront goes live and is automatically added to the sitemap with Restaurant structured data, so Google and AI assistants can find and describe it. Keep your hours, address, and menu descriptions complete — that is what lets your page answer a diner's \"where, when, and what can I order\" without them ever calling.",
+          "From that point, running online ordering and running your venue are the same dashboard: orders, payments, stock, and staff in one place.",
+        ],
+      },
+    ],
+  },
 ];
 
 /** Look up one article by slug (used by generateStaticParams + the page). */

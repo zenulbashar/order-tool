@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import ReactDOM from "react-dom";
 
 import { canUseConcierge } from "@/lib/concierge";
 import { getBaseUrl } from "@/lib/url";
 import { isReservedSlug } from "@/lib/validation";
 
-import { StorefrontJsonLd } from "./json-ld";
+import { StorefrontFaqJsonLd, StorefrontJsonLd } from "./json-ld";
 import {
+  getPublicFaqs,
   getPublicMenu,
   getPublicVenueBySlug,
   getRecommendations,
@@ -67,13 +69,21 @@ export default async function StorefrontPage({
   const venue = await resolveVenue(slug);
   if (!venue) notFound();
 
-  const [menu, sp, baseUrl] = await Promise.all([
+  const [menu, faqs, sp, baseUrl] = await Promise.all([
     getPublicMenu(venue.id),
+    getPublicFaqs(venue.id),
     searchParams,
     getBaseUrl(),
   ]);
   const tableParam = sp.table;
   const initialTable = typeof tableParam === "string" ? tableParam : "";
+
+  // Preload the hero cover (the LCP element on this landing page) so the
+  // browser fetches it before hydrating the client storefront. Emitted into
+  // the SSR <head> as <link rel="preload" as="image" fetchpriority="high">.
+  if (venue.coverUrl) {
+    ReactDOM.preload(venue.coverUrl, { as: "image", fetchPriority: "high" });
+  }
 
   // Frequently-bought-together signal (#11): read-only, venue-scoped, cached.
   // Resolved against the menu just loaded so it adds no extra menu read and only
@@ -93,6 +103,7 @@ export default async function StorefrontPage({
   return (
     <>
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
+      <StorefrontFaqJsonLd faqs={faqs} url={canonicalUrl} />
       {!venue.isLive ? (
         <div className="bg-accent/15 px-6 py-3 text-center text-sm text-ink">
           {venue.name}{" "}isn&apos;t taking orders yet. Please check back soon.
@@ -104,6 +115,7 @@ export default async function StorefrontPage({
         initialTable={initialTable}
         recommendations={recommendations}
         conciergeEnabled={conciergeEnabled}
+        faqs={faqs}
         view="landing"
       />
     </>

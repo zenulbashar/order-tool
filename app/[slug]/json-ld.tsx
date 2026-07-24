@@ -1,6 +1,6 @@
 import { OPENING_DAYS } from "@/lib/validation";
 
-import type { PublicMenu, PublicVenue } from "./types";
+import type { PublicFaq, PublicMenu, PublicVenue } from "./types";
 
 // Stored day index (0=Monday … 6=Sunday) -> schema.org DayOfWeek name.
 const DAY_NAME = new Map<number, string>(
@@ -162,6 +162,39 @@ export function StorefrontJsonLd({
   url: string;
 }) {
   const json = serializeJsonLd(buildStorefrontJsonLd(venue, menu, url));
+  return (
+    <script
+      type="application/ld+json"
+      // Safe: serializeJsonLd escapes "<" so no value can break out of the tag.
+      dangerouslySetInnerHTML={{ __html: json }}
+    />
+  );
+}
+
+/**
+ * FAQPage structured data for the storefront, built from the owner's stored
+ * FAQs. Emitted ONLY when there are FAQs, and the SAME FAQs are rendered
+ * visibly in the storefront footer (Google requires FAQ markup to match visible
+ * content). Renders nothing when the venue has no FAQs, so no empty markup.
+ */
+export function StorefrontFaqJsonLd({
+  faqs,
+  url,
+}: {
+  faqs: PublicFaq[];
+  url: string;
+}) {
+  if (faqs.length === 0) return null;
+  const json = serializeJsonLd({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${url}#faq`,
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
+    })),
+  });
   return (
     <script
       type="application/ld+json"

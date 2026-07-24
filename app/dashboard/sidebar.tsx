@@ -96,6 +96,7 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
         { label: "Announcement bar", href: "/dashboard/settings/announcement" },
         { label: "Social links", href: "/dashboard/settings/social" },
         { label: "About & description", href: "/dashboard/settings/about" },
+        { label: "FAQs", href: "/dashboard/settings/faqs" },
         { label: "SEO & AEO", href: "/dashboard/seo" },
         { label: "Opening hours & location", href: "/dashboard/settings/hours" },
         { label: "Tax (GST)", href: "/dashboard/settings/tax" },

@@ -82,6 +82,9 @@ export type PublicVenue = {
   isLive: boolean;
 };
 
+/** One owner-authored storefront FAQ (visible + FAQPage JSON-LD). */
+export type PublicFaq = { question: string; answer: string };
+
 export type PublicOption = {
   id: string;
   name: string;

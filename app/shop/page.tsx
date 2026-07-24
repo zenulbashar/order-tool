@@ -5,6 +5,7 @@ import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { getShopProducts } from "@/lib/shop/feed";
 
 import { ShopGrid } from "./shop-grid";
+import { ShopJsonLd } from "./shop-json-ld";
 
 export const metadata: Metadata = {
   title: "Shop venue equipment & supplies",
@@ -24,6 +25,7 @@ export default async function ShopPage() {
 
   return (
     <div className="min-h-dvh bg-[#FFFDF8] text-[#16241C]">
+      <ShopJsonLd products={products} />
       {/* Slim nav */}
       <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
         <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>

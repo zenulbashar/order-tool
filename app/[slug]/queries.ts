@@ -13,12 +13,31 @@ import {
   modifierOptions,
   orderItems,
   orders,
+  venueFaqs,
   venues,
 } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 import { normalizeDietaryTags } from "@/lib/validation";
 
-import type { PublicMenu, PublicRecommendations, PublicVenue } from "./types";
+import type {
+  PublicFaq,
+  PublicMenu,
+  PublicRecommendations,
+  PublicVenue,
+} from "./types";
+
+/**
+ * Owner-authored storefront FAQs, venue-scoped and ordered. Customer-safe
+ * (question + answer only). Rendered visibly in the footer AND emitted as
+ * FAQPage JSON-LD from this same data, so the two can never diverge.
+ */
+export async function getPublicFaqs(venueId: string): Promise<PublicFaq[]> {
+  return db
+    .select({ question: venueFaqs.question, answer: venueFaqs.answer })
+    .from(venueFaqs)
+    .where(scopedToVenue(venueFaqs.venueId, venueId))
+    .orderBy(asc(venueFaqs.sortOrder), asc(venueFaqs.createdAt));
+}
 
 /**
  * Public venue resolver — NO session/user involved (cf. getCurrentVenue, which
