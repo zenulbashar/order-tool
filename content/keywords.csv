@@ -1,0 +1,33 @@
+keyword,cluster,intent,kd,volume,priority,status,url
+ai ordering for restaurants,ai-ordering,informational,,,high,published,/learn/ai-ordering-for-restaurants
+qr code ordering,qr-ordering,informational,,,high,published,/learn/qr-code-ordering
+import menu from photo,menu-setup,informational,,,high,published,/learn/import-menu-from-photo
+payto pay by bank,payments,informational,,,high,published,/learn/payto-pay-by-bank
+kitchen station label printing,operations,informational,,,medium,published,/learn/kitchen-station-label-printing
+qr code menu for restaurants,qr-ordering,commercial,,,high,unused,
+scan to order system,qr-ordering,commercial,,,high,unused,
+contactless ordering for cafes,qr-ordering,commercial,,,medium,unused,
+how does qr code ordering work,qr-ordering,informational,,,medium,unused,
+table ordering app,qr-ordering,commercial,,,medium,unused,
+restaurant online ordering system,online-ordering,commercial,,,high,unused,
+commission free online ordering,online-ordering,commercial,,,high,unused,
+online ordering for cafes,online-ordering,commercial,,,high,unused,
+order ahead for takeaway,online-ordering,informational,,,medium,unused,
+best online ordering system for small restaurants,online-ordering,commercial,,,high,unused,
+ai concierge for restaurants,ai-ordering,informational,,,medium,unused,
+ai menu recommendations,ai-ordering,informational,,,medium,unused,
+how to add ai to your restaurant,ai-ordering,informational,,,medium,unused,
+pay by bank for business,payments,commercial,,,high,unused,
+surcharge free card payments,payments,commercial,,,high,unused,
+apple pay for restaurants,payments,informational,,,medium,unused,
+how to reduce payment fees restaurant,payments,informational,,,medium,unused,
+restaurant pos alternative,operations,commercial,,,high,unused,
+kitchen display system,operations,commercial,,,medium,unused,
+how to digitise a restaurant menu,menu-setup,informational,,,high,unused,
+digital menu for cafe,menu-setup,commercial,,,medium,unused,
+how to set up online ordering for a restaurant,online-ordering,informational,,,high,published,/learn/how-to-set-up-online-ordering
+restaurant loyalty program ideas,growth,informational,,,medium,unused,
+how to increase average order value restaurant,growth,informational,,,high,unused,
+gift cards for restaurants,growth,commercial,,,medium,unused,
+dine in vs takeaway ordering,operations,informational,,,low,unused,
+how to reduce food waste in a cafe,operations,informational,,,low,unused,
