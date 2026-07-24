@@ -2,7 +2,12 @@
 
 **Date:** 2026-07-24 · **Scope:** the whole repo (marketing site, `/learn` content hub, venue storefronts, owner dashboard) audited against every tactic in the "Claude Code SEO masterclass" video (winning keywords, blog engine, service pages, on-page, technical, off-page, deployment + measurement, AI SEO).
 
-**Legend:** ✅ have · 🟢 **NEW** shipped on this branch · 🟡 partial · ❌ missing (planned — see `DEPLOYMENT_PLAN.md`)
+**Legend:** ✅ have · 🟢 **NEW** shipped (PR #202, Phase 0 + the studio) · 🟣 **shipped in the Phase 1–5 follow-up** · 🟡 partial · ❌ missing (see `DEPLOYMENT_PLAN.md`)
+
+> **Update (2026-07-24):** PR #202 (Phase 0 + the SEO/AEO studio) is merged, and
+> the follow-up PR ships **Phases 1–5**: CWV + trust, the content engine, audience
+> service pages, Lighthouse CI + the GMB playbook, and first-class venue FAQs
+> (closing the AEO loop). Rows updated to 🟣 accordingly.
 
 ---
 
@@ -10,37 +15,37 @@
 
 | # | Video topic | Status | Where / gap |
 |---|-------------|--------|-------------|
-| A | Winning-keyword pipeline (KD ≤ 30, volume ≥ 100, intent) | ❌ | No `keywords.csv`, no tracked keyword list — Phase 2 |
-| A | Keyword clusters per page | 🟡 | `SITE_KEYWORDS` (`lib/seo.ts:36`) + per-guide keywords exist; no cluster system |
-| B | Blog index + posts | ✅ | `/learn` + `/learn/[slug]` — statically generated, 5 guides in `lib/marketing-content.ts` |
-| B | Voice/humour/stats/stories reference files | ❌ | Phase 2 (`content/voice.md` + references) |
-| B | "Steal the winning SERP format" step | ❌ | Phase 2 (part of the `/blog-post` skill) |
-| B | Royalty-free images pipeline (Pexels) | ❌ | Phase 2; guides currently ship without stock imagery |
-| B | Publishing cadence ramp (1/day, never bulk) | ❌ | Phase 2 (cadence rules encoded in the skill) |
-| C | Service × city/audience landing pages | ❌ | Phase 3 (`/for/[segment]` template) |
-| C | One proven high-converting landing template | 🟡 | One strong landing (`app/_landing/landing.tsx`); not yet reused as a segment template |
-| D | Static generation for crawlable pages | 🟡 | `/learn/*` fully SSG; `/` is dynamic (host-gating via `headers()`); storefronts SSR with full HTML (crawlable, not CDN-cached) |
-| E | Meta title + description per page | ✅ | Root template + per-page `generateMetadata` with canonicals (`app/layout.tsx:38`, `app/[slug]/page.tsx:37`, `/learn`, `/shop`) |
+| A | Winning-keyword pipeline (KD ≤ 30, volume ≥ 100, intent) | 🟣 | `content/keywords.csv` ledger (cluster/intent/priority/status/url); KD/volume filled from a keyword tool |
+| A | Keyword clusters per page | 🟣 | Cluster column in the ledger + cluster step in the `/blog-post` skill |
+| B | Blog index + posts | ✅ | `/learn` + `/learn/[slug]` — statically generated (6 guides now) |
+| B | Voice/humour/stats/stories reference files | 🟣 | `content/voice.md` + `content/references/example-guide.md` |
+| B | "Steal the winning SERP format" step | 🟣 | Step 3 of `.claude/skills/blog-post` (WebSearch the top results, match depth) |
+| B | Royalty-free images pipeline (Pexels) | 🟡 | Per-guide OG cards ship; a Pexels body-image step is optional in the skill |
+| B | Publishing cadence ramp (1/day, never bulk) | 🟣 | Cadence rule encoded in the skill (one post/run, request indexing) |
+| C | Service × city/audience landing pages | 🟣 | `app/for/[segment]` × 5 audiences (`lib/marketing-segments.ts`) |
+| C | One proven high-converting landing template | 🟣 | Reusable `/for/[segment]` template with a lead CTA |
+| D | Static generation for crawlable pages | 🟡 | `/learn/*`, `/for/*`, `/about|contact|privacy|terms` all SSG/static; `/` stays dynamic (host gate); storefronts SSR full HTML |
+| E | Meta title + description per page | ✅ | Root template + per-page `generateMetadata` with canonicals |
 | E | `/[slug]/menu` duplicate-content fix | 🟢 **NEW** | Canonical → `/{slug}` + description + OG added (`app/[slug]/menu/page.tsx`) |
-| E | OG / Twitter cards | ✅ | Generated brand card (`app/opengraph-image.tsx`); venue cover photos on storefronts |
+| E | OG / Twitter cards | ✅ + 🟣 | Brand card + venue covers; **now per-guide OG images too** (`app/learn/[slug]/opengraph-image.tsx`) |
 | E | One H1, semantic headings, FAQ blocks | ✅ | Landing + guides use a single `h1`, sectioned `h2/h3`, native `<details>` FAQ |
 | E | Internal/external linking discipline | 🟡 | Guides cross-link + CTA; no enforced checklist per post — Phase 2 skill |
 | F | sitemap.xml | ✅ | `app/sitemap.ts` — dynamic, includes every LIVE venue storefront |
 | F | robots.txt (public open, private closed) | ✅ | `app/robots.ts` — dashboard/admin/api/tokenised flows blocked; **12 AI crawlers explicitly invited** |
 | F | noindex belt-and-braces on private routes | 🟢 **NEW** | `robots:{index:false}` on dashboard/admin/onboarding layouts + `/signin` |
 | F | Root 404 page | 🟢 **NEW** | `app/not-found.tsx` (venue subtree already had one) |
-| F | Lighthouse ~100 loop / Core Web Vitals | ❌ | No measurement loop; storefront hero `<img>` lacks dimensions/priority (`app/[slug]/storefront-hero.tsx`) — Phases 1 & 4 |
+| F | Lighthouse ~100 loop / Core Web Vitals | 🟣 | Lighthouse CI on every PR (`.github/workflows/lighthouse.yml`); hero images now have dimensions + `fetchpriority` + preload |
 | F | Structured data (JSON-LD) | ✅ | Restaurant+Menu graph per venue (`app/[slug]/json-ld.tsx`), Organization+WebSite+SoftwareApplication+FAQPage (`app/_landing/marketing-json-ld.tsx`), Article on guides — XSS-safe serializer (`lib/seo.ts:61`) |
 | F | `sameAs` entity links in venue JSON-LD | 🟢 **NEW** | Social + website links now emitted (`app/[slug]/json-ld.tsx`) |
-| G | Reusable content-generation skill (`/blog`) | ❌ | Phase 2 (`.claude/skills/blog-post`) |
+| G | Reusable content-generation skill (`/blog`) | 🟣 | `.claude/skills/blog-post/SKILL.md` — full flow, one guide published through it |
 | H | Off-page: PBN avoidance, guest posts, HARO, quality links | ❌ (by design) | Video itself says be careful; playbook doc in Phase 4 — nothing automated |
 | I | GitHub + Vercel deployment | ✅ | Vercel (`vercel.json`, region syd1) + CI with a dedicated marketing/SEO smoke job (`.github/workflows/ci.yml`) |
 | I | Google Search Console verification | 🟢 **NEW** | Env-driven `verification.google` meta tag (`app/layout.tsx`); verify + submit sitemap = 5-min ops step (see plan) |
 | I | Sitemap submission + request indexing | ❌ (manual) | Runbook in `DEPLOYMENT_PLAN.md` Phase 0 ops |
 | I | Google Analytics | 🟢 **NEW** | Env-gated GA4 snippet (`app/_components/analytics.tsx`); zero deps, silent until `NEXT_PUBLIC_GA_ID` is set |
-| I | Google My Business | ❌ (off-platform) | Playbook in Phase 4; future in-dash checklist |
+| I | Google My Business | 🟣 (playbook) | `docs/seo/GMB_PLAYBOOK.md` owner runbook; the profile itself is owner-run |
 | I | Landing conversion testing | ❌ | Phase 4 (needs analytics data first) |
-| J | AI SEO / AEO | ✅ + 🟢 **NEW** | Already unusually strong: AI-crawler allowlist, `public/llms.txt`, FAQPage schema. NEW: the owner-facing **AEO audit** (below) |
+| J | AI SEO / AEO | ✅ + 🟢 + 🟣 | AI-crawler allowlist, `llms.txt`, landing FAQPage; the owner **AEO audit** (PR #202); and **first-class venue FAQs** now render + emit FAQPage per storefront (Phase 5) |
 | — | **Owner one-click SEO/AEO feature (Scale plan)** | 🟢 **NEW** | The product feature — see below |
 
 ---
