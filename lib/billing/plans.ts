@@ -40,6 +40,13 @@ export const FEATURES = {
   MULTI_VENUE: "multi_venue",
   /** Serve the storefront on a custom domain. Defined, not yet enforced. */
   CUSTOM_DOMAIN: "custom_domain",
+  /**
+   * Owner SEO & AEO studio (/dashboard/seo): one-click storefront audits with
+   * AI-drafted fixes + Search Console stats. The BASELINE storefront SEO
+   * (JSON-LD, sitemap, metadata) stays free for every plan — only the audit
+   * studio is tier-gated. Wired at app/dashboard/seo.
+   */
+  SEO_AEO: "seo_aeo",
 } as const;
 
 export type Feature = (typeof FEATURES)[keyof typeof FEATURES];
@@ -64,6 +71,7 @@ const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
     FEATURES.AI_DESCRIPTIONS,
     FEATURES.MULTI_VENUE,
     FEATURES.CUSTOM_DOMAIN,
+    FEATURES.SEO_AEO,
   ]),
   pro: new Set([
     FEATURES.DINER_CONCIERGE,
@@ -76,6 +84,7 @@ const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
     FEATURES.AI_DESCRIPTIONS,
     FEATURES.MULTI_VENUE,
     FEATURES.CUSTOM_DOMAIN,
+    FEATURES.SEO_AEO,
   ]),
   free: new Set<Feature>(),
 };

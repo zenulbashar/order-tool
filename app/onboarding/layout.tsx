@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
+
 import { Wordmark } from "@/app/_components/wordmark";
 import { requireUser } from "@/lib/tenant";
+
+// noindex belt-and-braces alongside robots.txt (see dashboard/layout.tsx).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * Onboarding wizard shell (Phase 3a). The persistent chrome shared by every

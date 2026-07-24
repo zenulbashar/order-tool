@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Hanken_Grotesk, Space_Mono } from "next/font/google";
 
+import { Analytics } from "@/app/_components/analytics";
 import {
   SITE_DESCRIPTION,
   SITE_KEYWORDS,
@@ -73,6 +74,12 @@ export const metadata: Metadata = {
     apple: "/icons/apple-touch-icon.png",
   },
   manifest: "/site.webmanifest",
+  // Google Search Console ownership proof (the HTML-tag method). Env-driven so
+  // previews emit nothing; set GOOGLE_SITE_VERIFICATION to the content value
+  // from Search Console, then verify + submit /sitemap.xml there.
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 // theme-color drives the mobile browser chrome + PWA splash (forest ink).
@@ -90,7 +97,11 @@ export default function RootLayout({
       lang="en"
       className={`${bricolage.variable} ${hanken.variable} ${spaceMono.variable}`}
     >
-      <body className="min-h-dvh bg-surface text-ink antialiased">{children}</body>
+      <body className="min-h-dvh bg-surface text-ink antialiased">
+        {children}
+        {/* GA4 — renders only when NEXT_PUBLIC_GA_ID is set. */}
+        <Analytics />
+      </body>
     </html>
   );
 }

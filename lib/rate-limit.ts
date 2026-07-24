@@ -70,6 +70,9 @@ const CONFIG = {
   // AI (cost-protection — each call is real Anthropic spend). Keyed on venue.
   aiImport: { limit: 10, window: "1 h", prefix: "rl:ai:import" }, // vision (costliest)
   aiCopy: { limit: 30, window: "1 h", prefix: "rl:ai:copy" }, // descriptions (cheap)
+  // SEO/AEO audit (owner-initiated Haiku call with a chunkier input than
+  // aiCopy). Over-limit runs still persist a deterministic-only audit.
+  aiSeoAudit: { limit: 6, window: "1 h", prefix: "rl:ai:seo" },
   // CONCIERGE (diner-facing "prompt to eat" — real Anthropic spend + abusable
   // from the public storefront). Keyed per venue+IP so one diner can't spam a
   // venue's concierge. Independent of the future fair-use cap (canUseConcierge).

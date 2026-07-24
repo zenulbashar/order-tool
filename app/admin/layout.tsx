@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
+
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 
 import { AdminNav } from "./admin-nav";
+
+// noindex belt-and-braces alongside robots.txt (see dashboard/layout.tsx).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * Platform admin console shell (P2E-Admin). A dark "ops" surface distinct from

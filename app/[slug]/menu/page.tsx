@@ -33,7 +33,23 @@ export async function generateMetadata({
   const { slug } = await params;
   const venue = await resolveVenue(slug);
   if (!venue) return { title: "Venue not found" };
-  return { title: `Menu · ${venue.name}` };
+  const description =
+    venue.storefrontDescription ?? `Order online from ${venue.name}.`;
+  return {
+    title: `Menu · ${venue.name}`,
+    description,
+    // This page renders the same venue content as /{slug}; canonicalising to
+    // the storefront landing consolidates ranking signals on ONE URL instead
+    // of splitting them across near-duplicates.
+    alternates: { canonical: `/${venue.slug}` },
+    openGraph: {
+      type: "website",
+      title: `Menu · ${venue.name}`,
+      description,
+      url: `/${venue.slug}`,
+      ...(venue.coverUrl ? { images: [{ url: venue.coverUrl }] } : {}),
+    },
+  };
 }
 
 /**

@@ -40,6 +40,20 @@ function buildStorefrontJsonLd(
   }
   if (venue.phone) jsonLd.telephone = venue.phone;
 
+  // sameAs — the venue's other homes on the web (social profiles + website).
+  // Helps search/AI engines tie this storefront to the real-world entity.
+  // Same integrity rule as everything here: only real, owner-entered links.
+  const sameAs = [
+    venue.instagramUrl,
+    venue.facebookUrl,
+    venue.xUrl,
+    venue.youtubeUrl,
+    venue.tiktokUrl,
+    venue.linkedinUrl,
+    venue.websiteUrl,
+  ].filter((url): url is string => Boolean(url));
+  if (sameAs.length > 0) jsonLd.sameAs = sameAs;
+
   // PostalAddress — built from only the parts that are set, and attached only
   // when at least one street/suburb/state/postcode exists. A lone country
   // (e.g. the form's "AU" default) is never emitted on its own.

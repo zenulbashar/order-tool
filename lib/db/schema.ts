@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   doublePrecision,
   index,
   integer,
@@ -1977,3 +1978,174 @@ export const shopProductOverrides = pgTable(
 );
 
 export type ShopProductOverride = typeof shopProductOverrides.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* SEO & AEO studio (owner dashboard, Scale plan)                              */
+/*                                                                            */
+/* Audit runs are append-only history rows; the score is computed by the PURE  */
+/* scorer in lib/seo-audit.ts (deterministic, unit-tested) and the optional    */
+/* LLM layer only ever adds copy/recommendations — it never moves the number.  */
+/* Search rows mirror Google Search Console data for the venue's storefront    */
+/* path, ingested by the /api/jobs/seo-stats cron with the PLATFORM'S own      */
+/* property credential (venues never connect Google themselves).               */
+/* -------------------------------------------------------------------------- */
+
+/** Which audit a row is: classic search (seo) or AI-answerability (aeo). */
+export const seoAuditKind = pgEnum("seo_audit_kind", ["seo", "aeo"]);
+
+export type SeoAuditSeverity = "high" | "medium" | "low";
+export type SeoAuditCategoryKey =
+  | "profile"
+  | "menu"
+  | "discoverability"
+  | "answerability"
+  | "machine";
+
+/** One scored check, stored exactly as the scorer produced it. */
+export type SeoAuditCheck = {
+  id: string;
+  label: string;
+  category: SeoAuditCategoryKey;
+  weight: number;
+  severity: SeoAuditSeverity;
+  passed: boolean;
+  /** Inapplicable checks (e.g. menu coverage with no menu) leave the score. */
+  applicable: boolean;
+  detail: string;
+  /** Dashboard deep link that fixes the gap; null when not owner-editable. */
+  fixHref: string | null;
+};
+
+/** A failed check surfaced as a fix-it row (severity-ordered in the UI). */
+export type SeoAuditIssue = {
+  checkId: string;
+  severity: SeoAuditSeverity;
+  title: string;
+  detail: string;
+  fixHref: string | null;
+};
+
+export type SeoAuditRecommendation = { title: string; detail: string };
+export type SeoSuggestedFaq = { question: string; answer: string };
+
+/** AEO Q&A simulation: can an assistant answer this from the venue's data? */
+export type SeoQaSimulation = {
+  question: string;
+  answerable: boolean;
+  answer: string;
+  gap: string;
+};
+
+/**
+ * LLM-drafted output awaiting OWNER REVIEW — never auto-applied. The apply
+ * action re-reads this row server-side (never client text) and writes only
+ * storefront_description through the same validation as the manual form.
+ */
+export type SeoGeneratedCopy = {
+  assessment?: { verdict: "strong" | "adequate" | "weak"; summary: string };
+  optimizedDescription?: string;
+  metaDescription?: string;
+  qa?: SeoQaSimulation[];
+  suggestedFaqs?: SeoSuggestedFaq[];
+};
+
+export const seoAudits = pgTable(
+  "seo_audits",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    kind: seoAuditKind("kind").notNull(),
+    // 0–100 from the DETERMINISTIC scorer only. band is derivable but stored
+    // so history rows render without re-running the scorer.
+    score: integer("score").notNull(),
+    band: text("band").notNull(),
+    checks: jsonb("checks").$type<SeoAuditCheck[]>().notNull(),
+    issues: jsonb("issues").$type<SeoAuditIssue[]>().notNull(),
+    recommendations: jsonb("recommendations")
+      .$type<SeoAuditRecommendation[]>()
+      .notNull(),
+    generatedCopy: jsonb("generated_copy").$type<SeoGeneratedCopy | null>(),
+    // Model that produced the LLM layer; NULL = deterministic-only run (the
+    // AI was rate-limited/unavailable/refused — the audit still succeeded).
+    model: text("model"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    // Latest-per-kind + history reads: WHERE venue_id/kind ORDER BY created_at.
+    index("seo_audits_venue_kind_created_idx").on(
+      table.venueId,
+      table.kind,
+      table.createdAt,
+    ),
+    check(
+      "seo_audits_score_range",
+      sql`${table.score} >= 0 AND ${table.score} <= 100`,
+    ),
+  ],
+);
+
+export type SeoAuditRow = typeof seoAudits.$inferSelect;
+
+/**
+ * One Search Console day for one venue's storefront path (clicks/impressions/
+ * ctr/position). Upserted by the cron (unique venue+day), so re-ingesting a
+ * window is idempotent and GSC's late-settling data self-corrects.
+ */
+export const seoSearchDaily = pgTable(
+  "seo_search_daily",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    clicks: integer("clicks").notNull().default(0),
+    impressions: integer("impressions").notNull().default(0),
+    // Fractions exactly as Search Console reports them (ctr 0..1).
+    ctr: doublePrecision("ctr").notNull().default(0),
+    position: doublePrecision("position").notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("seo_search_daily_venue_day_idx").on(table.venueId, table.day),
+    check(
+      "seo_search_daily_nonneg",
+      sql`${table.clicks} >= 0 AND ${table.impressions} >= 0`,
+    ),
+  ],
+);
+
+export type SeoSearchDailyRow = typeof seoSearchDaily.$inferSelect;
+
+export type SeoTopQuery = {
+  query: string;
+  clicks: number;
+  impressions: number;
+  position: number;
+};
+
+/**
+ * Per-venue rolling summary: the top search queries over the trailing 28 days.
+ * One row per venue (upserted); fetched_at drives the cron's oldest-first
+ * refresh rotation so a large fleet spreads across daily ticks.
+ */
+export const seoSearchSummary = pgTable(
+  "seo_search_summary",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    topQueries: jsonb("top_queries").$type<SeoTopQuery[]>().notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: createdAt(),
+  },
+  (table) => [uniqueIndex("seo_search_summary_venue_idx").on(table.venueId)],
+);
+
+export type SeoSearchSummaryRow = typeof seoSearchSummary.$inferSelect;

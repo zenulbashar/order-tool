@@ -25,6 +25,7 @@ const ROWS: { label: string; pro: boolean; scale: boolean }[] = [
   { label: "AI menu import & descriptions", pro: true, scale: true },
   { label: "Multiple venues / locations", pro: false, scale: true },
   { label: "Custom storefront domain", pro: false, scale: true },
+  { label: "SEO & AEO studio (audits + search stats)", pro: false, scale: true },
 ];
 
 function Mark({ on }: { on: boolean }) {
