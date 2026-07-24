@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import ReactDOM from "react-dom";
 
 import { canUseConcierge } from "@/lib/concierge";
 import { getBaseUrl } from "@/lib/url";
@@ -74,6 +75,13 @@ export default async function StorefrontPage({
   ]);
   const tableParam = sp.table;
   const initialTable = typeof tableParam === "string" ? tableParam : "";
+
+  // Preload the hero cover (the LCP element on this landing page) so the
+  // browser fetches it before hydrating the client storefront. Emitted into
+  // the SSR <head> as <link rel="preload" as="image" fetchpriority="high">.
+  if (venue.coverUrl) {
+    ReactDOM.preload(venue.coverUrl, { as: "image", fetchPriority: "high" });
+  }
 
   // Frequently-bought-together signal (#11): read-only, venue-scoped, cached.
   // Resolved against the menu just loaded so it adds no extra menu read and only

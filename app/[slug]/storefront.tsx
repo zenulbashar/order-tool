@@ -393,6 +393,12 @@ function StorefrontInner({
               <img
                 src={venue.coverUrl}
                 alt=""
+                // Mobile LCP element: eager + high priority (preloaded from the
+                // server page). Dimensions reserve the band to avoid shift.
+                width={1200}
+                height={480}
+                fetchPriority="high"
+                decoding="async"
                 className="h-32 w-full object-cover sm:h-40"
               />
             ) : (

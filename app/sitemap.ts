@@ -44,6 +44,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
+    // Company + legal pages (static).
+    ...["about", "contact", "privacy", "terms"].map((path) => ({
+      url: `${SITE_URL}/${path}`,
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    })),
   ];
 
   let venuePages: MetadataRoute.Sitemap = [];

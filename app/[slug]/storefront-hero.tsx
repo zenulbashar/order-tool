@@ -118,6 +118,16 @@ export function StorefrontHero({
           key={src}
           src={src}
           alt=""
+          // The first slide is the LCP element: load it eagerly at high
+          // priority (and it is preloaded from the server page too). Later
+          // slides only appear after a 6s rotation, so they load lazily.
+          // Intrinsic 16:9 dimensions are declared so the box is reserved even
+          // though object-cover + absolute fill drive the actual layout.
+          width={1600}
+          height={900}
+          fetchPriority={i === 0 ? "high" : "low"}
+          loading={i === 0 ? "eager" : "lazy"}
+          decoding="async"
           className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
             i === index ? "opacity-100" : "opacity-0"
           }`}

@@ -747,6 +747,13 @@ export const RESERVED_SLUGS = new Set<string>([
   "dashboard",
   "onboarding",
   "signin",
+  // Marketing / content routes.
+  "about",
+  "contact",
+  "for",
+  "learn",
+  "privacy",
+  "terms",
   // Reserved for near-future routes and common conventions.
   "account",
   "admin",
