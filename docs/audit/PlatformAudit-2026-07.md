@@ -161,11 +161,26 @@ across 47 tables, with composites where they matter.
     `lib/stock/depletion.ts:34`, `lib/loyalty/earn.ts:25`, `lib/loyalty/redeem.ts:20`,
     `lib/giftcards/redeem.ts:22`.
 - **Root cause:** The engine was designed for a minute-cadence trigger — every constant in it
-  assumes one — but `vercel.json` schedules it daily. The most likely explanation is a
-  cron-frequency constraint on the deployment plan at the time (Vercel has historically limited
-  cron frequency on lower tiers); whatever the reason, the schedule changed and the constants
-  that depend on it were not revisited. The mismatch between the handler's own doc comment and
-  its configuration is the tell.
+  assumes one — but `vercel.json` schedules it daily. Vercel's cron documentation caps the Hobby
+  plan at **once per day**, which almost certainly forced the schedule down; the constants that
+  depend on it were then not revisited. The mismatch between the handler's own doc comment and
+  its configuration is the tell. *(Plan cap per Vercel docs — see §8.4; evidentiary status noted
+  there.)*
+- **The platform docs make this materially worse than the code alone suggests.** Per Vercel's
+  cron documentation (§8.4):
+  - **Vercel Cron does not retry a failed invocation.** A failed run is not re-invoked; the work
+    is simply dropped. The daily sweep is therefore not a backstop with a retry — it is a single
+    annual-odds coin flip per day.
+  - **Delivery is best-effort.** A transient network error can prevent the request reaching the
+    function at all, in which case the function never runs and **no runtime log is written** —
+    the miss is invisible in Vercel's own logs. Combined with F5 (no APM), nothing on this
+    platform can currently detect a missed sweep.
+  - **Hobby crons fire anywhere within the specified hour** (up to ~59 minutes of jitter). So the
+    real interval between consecutive sweeps ranges roughly 23–25 hours against a `SWEEP_WINDOW_MS`
+    of exactly 24h. **The window is already narrower than the worst-case gap** — orders confirmed
+    in that overhang are missed even when every run succeeds.
+  - Even on paid tiers cron cannot deliver sub-minute latency, so cron is structurally incapable
+    of meeting a kitchen-notification SLA regardless of plan.
 - **Consequences, precisely:**
   1. **Throughput ceiling of 10 jobs/day via cron.** Any venue with a Square integration and
      more than 10 orders/day accumulates permanent backlog on the cron path.
@@ -187,8 +202,14 @@ across 47 tables, with composites where they matter.
 - **Recommended implementation:**
   1. **Today:** set `SWEEP_WINDOW_MS = 72h` in all five modules. Sweeps are idempotent
      (`ON CONFLICT DO NOTHING`), so widening the window is free and instantly restores margin.
-  2. **This week:** raise cron to `* * * * *` (requires Vercel Pro) and correct the doc comment;
-     or move to a durable queue (QStash/Inngest) with the webhook as producer.
+  2. **This week:** raise cron to `* * * * *` (requires a paid Vercel tier) and correct the doc
+     comment. But treat this as a stopgap: per §8.4 cron has no retry and no delivery guarantee at
+     *any* tier, so it should not remain the mechanism of record for money-affecting side effects.
+     The durable fix is a queue (QStash, Inngest) with the Stripe webhook as producer.
+     **Caveat if adopting QStash:** its *default* retry backoff is `min(86400, e^(2.5n))` seconds
+     — 12s, 2m28s, 30m8s, 6h7m, 24h — so the defaults are themselves far outside a kitchen-
+     notification SLA. Configure `Upstash-Retries` and a tightened backoff explicitly; do not
+     inherit the defaults for order-path work.
   3. **This week:** loop `processDueJobs` until the batch returns empty or `maxDuration` nears,
      so a backlog drains within one invocation instead of over days.
 - **Migration strategy:** All three are constant/config changes. No schema migration. Fully
@@ -345,10 +366,36 @@ across 47 tables, with composites where they matter.
 `lib/tenant.ts:249` provides `scopedToVenue()` and the codebase applies it with real discipline.
 But enforcement is **by convention**: a single query that forgets `.where(scopedToVenue(...))`
 silently returns cross-tenant data, and nothing — not the type system, not a test, not the
-database — will catch it. With 47 tables and growing, the surface only expands. Postgres RLS
-would make isolation a property the database enforces rather than one each developer must
-remember. **Effort:** 2–3 weeks. **Priority:** P2, rising with team size. See §8 for the
-researched industry position.
+database — will catch it. With 47 tables and growing, the surface only expands.
+
+The industry position is unambiguous that convention is not isolation (§8.1): AWS's SaaS Lens
+states that authentication and authorization do **not** constitute tenant isolation and that
+enforcement must not be left to developers; OWASP ranks shared-table row-level tenancy as only
+*Medium* isolation and prescribes database-level enforcement **in addition to** application
+filtering.
+
+**But do not read that as "just turn on RLS."** The researched benchmarks (§8.1) show the naive
+implementation of *exactly this codebase's pattern* fails outright. Four constraints must hold
+together, or the rollout will be worse than the status quo:
+
+1. **Wrap the predicate in a SELECT.** Supabase's benchmark of a tenant-membership lookup — the
+   direct analogue of `venue_members` — shows `team_id = ANY(user_teams())` **timing out at over
+   two minutes, even with an index present**. Only `team_id = ANY(ARRAY(select user_teams()))`
+   reaches 2–3ms. The SELECT wrapper forces an initPlan so the function evaluates once per query
+   rather than once per row.
+2. **Index the predicate column.** Necessary but *not sufficient* — wrapping without an index
+   still costs 170ms–3,300ms. Both are required.
+3. **Use `FORCE ROW LEVEL SECURITY`, not just `ENABLE`.** Plain `ENABLE` leaves the table owner
+   exempt, and the app typically connects as the owner — an RLS rollout that omits `FORCE`
+   provides **no enforcement at all** while appearing to. This is directly testable and belongs
+   in the acceptance criteria.
+4. **Keep `scopedToVenue()` in every query.** RLS is the backstop, not the filter. Supabase
+   measures ~19× degradation when the application filter is dropped and RLS is left to do the
+   filtering.
+
+**Revised effort:** 4–6 weeks, not 2–3 — the benchmark work and the per-policy correctness review
+dominate. **Priority:** P2, rising with team size. Ship it table-by-table behind a verification
+harness that asserts cross-tenant reads return zero rows.
 
 ### F8 — Test coverage is thin on exactly the wrong paths
 
@@ -423,7 +470,11 @@ committed to.
 
 ## 7. Cost and scale (actual stack)
 
-*Populated with researched benchmarks in §8.*
+**Incomplete.** The cost and Core-Web-Vitals research (Vercel Active CPU pricing, Neon connection
+pooling limits, food-ordering conversion benchmarks) was located but not read before the API limit
+was hit — see §8.0 and §8.6. **No costed model is presented here rather than an invented one.**
+The reasoning below is architectural and follows from the code alone; the numbers it would need
+are the open queue.
 
 The dominant cost driver is F6: with `force-dynamic`, every diner pageview is a serverless
 invocation plus ~8 Neon queries. Fixing F6 converts the majority of storefront traffic into CDN
@@ -437,7 +488,164 @@ an uncacheable page — F6 and multi-region are the same fix from the diner's pe
 
 ## 8. Industry comparison
 
-*This section is populated from the cited research pass — see companion research output.*
+### 8.0 Evidentiary status — read this before citing anything below
+
+**These claims were extracted from the named primary sources but were NOT independently
+verified.** The research harness ran a three-vote adversarial verification stage over every
+claim; across two runs, **all 25 verifier panels failed on an API session limit** (82–97 agents
+errored per run). That is an infrastructure failure, not a research result.
+
+What this means concretely:
+
+- The claims below were read out of the cited pages by fetch agents. They are **not fabricated**.
+- They have **not been adversarially challenged**, which is the step that normally catches
+  misreading, stale pages, and over-generalisation.
+- Several sources **could not be fetched directly at all** and were recovered via search-index
+  retrieval of the exact URL. Those carry an explicit provenance note inline. Treat them as
+  weakest.
+- **Do not quote these figures in an external due-diligence pack without re-verification.** They
+  are sound enough to set engineering direction and to prioritise; they are not sound enough to
+  put in front of an acquirer unchecked.
+
+Re-running verification is cheap: the fetch phase is cached under run `wf_830f5f81-f2a`, so a
+resume only needs to re-run the ~75 verifier agents.
+
+Sub-questions **2 (competitor RBAC beyond Shopify), 5 (cost/CWV economics), 6 (competitor pricing
+and time-to-first-order), and 7 (accessibility and allergen law)** did not survive to claim
+extraction before the limit was hit. Their sources were located but not read — they are listed in
+§8.6 as an open queue. **§8 is therefore incomplete, and the sections most directly answering the
+brief's competitive-benchmarking questions are the missing ones.**
+
+### 8.1 Tenant isolation — the position against F7
+
+- **AWS Well-Architected SaaS Lens** states normatively that authentication and authorization do
+  not constitute tenant isolation; clearing a login screen or API entry point does not mean
+  isolation has been achieved. It further prescribes that isolation enforcement **must not be left
+  to service developers**, on the reasoning that it is unrealistic to expect developers never to
+  unintentionally cross a tenant boundary — scoping must be applied by a shared mechanism outside
+  the developers' view. *Provenance: `docs.aws.amazon.com` returned HTTP 403 to the fetcher;
+  wording recovered consistently across four independent search-index retrievals of the exact URL,
+  not a direct page read.*
+  → This is the direct architectural argument against Prompt2Eat's per-query `scopedToVenue()`
+  convention, and it is the strongest external support for F7.
+- **OWASP Multi-Tenant Security Cheat Sheet** ranks shared-table row-level isolation as **Medium**
+  — the weakest of its three database strategies (below separate schemas = High, separate
+  databases = Highest) — and scopes it to "cost-sensitive, high tenant count" deployments, which
+  is precisely the 100k+ target profile. It prescribes database-level isolation *in addition to*
+  application filtering, and forbids any query running without a tenant filter.
+- OWASP names the exact failure mode: **a lookup by resource id alone returns another tenant's
+  record** (IDOR / cross-tenant leakage). Prescribed mitigations — composite `(tenant_id,
+  resource_id)` lookups, enforcement at the data-access layer rather than the API layer,
+  non-guessable identifiers, and returning **404 rather than 403** so existence in another tenant
+  is not disclosed.
+  → Worth noting: Prompt2Eat already satisfies three of these four. Order lookup is
+  `(venue_id, public_token)` composite (`order/[token]/page.tsx:249`), tokens are 192-bit
+  non-guessable, and the storefront 404s rather than 403s. The gap is the *enforcement layer*.
+- **Supabase RLS benchmarks** (the implementation constraints, detailed in F7): naive membership
+  policy times out >2min even indexed; SELECT-wrapped + indexed reaches 2–3ms; SELECT-wrapping
+  yields 1,000×–15,000× improvements (e.g. 178,000ms → 12ms); `FORCE ROW LEVEL SECURITY` is
+  required or the owner role is exempt; RLS is a backstop and the app filter must remain (~19×
+  penalty if dropped).
+- **Counter-evidence located but unread:** PlanetScale, *"RLS sounds great until it isn't"*, and
+  Neon's own multi-tenancy guidance. A balanced recommendation requires reading these; the
+  current §8.1 is one-sided in favour of RLS because the dissenting sources were queued behind
+  the limit.
+
+### 8.2 Payments and PCI
+
+- **Stripe idempotency:** keys apply to every mutating endpoint via the `Idempotency-Key` header,
+  making retry of any state-changing call safe. Keys are **retained 24 hours**, then pruned — so
+  any retry interval must be shorter than 24h or a late retry silently creates a duplicate charge.
+  → Directly relevant to F3: the refund implementation must send an idempotency key, and its
+  retry schedule must stay inside the 24h window.
+- Stripe prescribes **exponential backoff with randomised jitter**, explicitly to defeat
+  thundering-herd retry storms. Prompt2Eat's `BACKOFF_SECONDS` is a fixed unjittered schedule —
+  at 100k venues, synchronised retries after a provider outage would self-inflict a second one.
+  **This is a new, small, concrete fix: add jitter to `lib/integrations/dispatch.ts:69`.**
+- Stripe's **"foreign state mutations"** guidance is the design standard F2 should be judged
+  against: external side effects (charge, email, DNS) should each be isolated into their own
+  atomic phase bounded by a persisted recovery point, so a retry resumes rather than re-executing
+  completed effects. Prompt2Eat's outbox already approximates this per-job; the gap is that
+  several side effects share one job boundary.
+- **PCI DSS SAQ A, January 2025 revision:** adds an eligibility criterion requiring the merchant
+  to confirm its own site is **not susceptible to script-based attacks**, and removes Requirements
+  6.4.3, 11.6.1 and 12.3.1 from SAQ A. SAQ A eligibility for an outsourced payment page is
+  therefore **conditional on payment-page script integrity, not automatic**.
+  → Prompt2Eat uses `@stripe/react-stripe-js` (Elements), so the checkout page hosts Stripe
+  scripts alongside its own. **Action: confirm SAQ A eligibility explicitly rather than assuming
+  it**; a CSP on the checkout route and script-integrity controls are the mitigations.
+  *Provenance: PCI SSC blog returned HTTP 403; recovered via search-index reads.*
+
+### 8.3 RBAC — partial (Shopify only)
+
+Only Shopify POS survived to extraction. Toast, Square, Lightspeed and Flipdish sources were
+located but not read (§8.6), so the "industry-standard minimum role set" the brief asked for is
+**not yet answerable**.
+
+- **Shopify POS** uses a strictly role-based model: individual permissions cannot be granted
+  directly to a person, and every staff member is assigned **exactly one role**.
+- It ships **no fixed role hierarchy** — no built-in Cashier/Server/Manager taxonomy. There is one
+  default role (`Associate`) whose name *and* permission set are merchant-editable, plus
+  merchant-created custom roles. A **template-plus-custom-roles** model, not a hardcoded enum.
+- Granularity is at the level of **individual staff actions** — processing returns, applying
+  discounts, cash tracking are separately controllable checkboxes.
+  *Provenance: `help.shopify.com` returned HTTP 403; recovered via search snippets.*
+
+→ **Implication for F4:** the target is not "add three more values to `memberRole`". The
+competitive pattern is a `roles` table + a `permissions` join, with merchant-editable roles seeded
+from templates. That changes F4's migration design and argues for building the permission table
+now rather than widening the enum twice.
+
+### 8.4 Background jobs — the position against F2
+
+Per Vercel's cron documentation:
+
+- **No retry on failure.** A failed invocation is not re-invoked; the work is lost.
+- **Best-effort delivery.** Transient network errors can prevent the request reaching the function
+  at all — the function never executes and **no runtime log is written**, so the miss is silent
+  and undetectable from Vercel's own logs.
+- **Neither at-most-once nor exactly-once.** The same run can be invoked more than once; Vercel's
+  own guidance is that handlers must be idempotent and reconciliation-based.
+  → Prompt2Eat's handler *is* idempotent and reconciliation-based (§3.5), which is the one part of
+  this it already gets right.
+- **Plan-bound jitter.** Hobby is capped at once per day and fires anywhere **within the specified
+  hour** (~59 min jitter); paid tiers fire within the minute (~59s jitter). Even the best tier
+  cannot deliver sub-minute latency.
+
+**QStash** by contrast offers at-least-once HTTP delivery with automatic retry on any non-2XX,
+default 3 retries, configurable per message via `Upstash-Retries`. Its default backoff
+(`min(86400, e^(2.5n))` → 12s, 2m28s, 30m8s, 6h7m, 24h; ~33 min to exhaust 3 retries) is itself
+too slow for kitchen dispatch and must be tightened explicitly.
+
+**Kitchen-notification latency:** vendors uniformly describe order transmission as
+"instant"/"real-time" without numeric SLAs, so the defensible framing is that the operational
+expectation is **single-digit seconds** — which a daily cron misses by roughly five orders of
+magnitude.
+
+### 8.5 What this changes in the findings
+
+| Finding | Change |
+|---|---|
+| **F2** | Upgraded. Cron has no retry, fails silently with no log, and Hobby jitter makes the real inter-run gap 23–25h against a 24h window — **so the window is already too narrow even when every run succeeds.** |
+| **F7** | Materially revised. Naive RLS on this exact membership pattern times out; four implementation constraints added; effort raised 2–3w → 4–6w. |
+| **F4** | Target model revised — competitors use editable roles + action-level permissions, not a wider enum. |
+| **F3** | Refunds must carry a Stripe idempotency key with retries inside the 24h retention window. |
+| **New** | Add jitter to `BACKOFF_SECONDS` (`dispatch.ts:69`) — currently unjittered, against Stripe's explicit guidance. |
+| **New** | Confirm PCI SAQ A eligibility explicitly under the Jan 2025 revision; add a checkout CSP. |
+
+### 8.6 Open verification queue
+
+Located but not read before the limit — these are what a completed §8 still needs:
+
+*RBAC:* Toast Access Permissions Reference · Square employee permissions · Lightspeed user groups
+*Isolation counter-evidence:* PlanetScale "RLS sounds great until it isn't" · Neon RLS guide ·
+AWS Prescriptive Guidance on RLS
+*Payments:* Stripe webhooks · Stripe Connect disputes · Stripe security guide
+*Cost/performance:* Vercel Active CPU pricing · Neon connection pooling · web.dev
+"Milliseconds Make Millions"
+*Competitive:* Flipdish pricing · Merchant Maverick Toast review
+*Accessibility/allergen:* W3C WCAG 2.2 · EU EAA (eur-lex, food.ec.europa.eu) ·
+humanrights.gov.au (DDA) · foodstandards.gov.au (FSANZ)
 
 ---
 
@@ -451,6 +659,8 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 - Correct the false "every minute" comment in the jobs route.
 - Add `needs: [build, e2e]` and a destructive-SQL guard to `migrate-prod` (F12 — the two
   cheapest parts; the approval gate and snapshot follow in M1).
+- Add randomised jitter to `BACKOFF_SECONDS` (`lib/integrations/dispatch.ts:69`) — currently a
+  fixed schedule, against Stripe's explicit thundering-herd guidance (§8.2). One-line change.
 - **Tests:** unit test asserting sweep window > cron period; CI test that a `DROP COLUMN`
   migration fails the guard. **Docs:** note the cron/window coupling in the jobs route.
 
@@ -486,6 +696,12 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 ### M8 — Merchant audit log (1 week)
 - Extend audit table with `venue_id`; log merchant mutations (F9).
 
+### M8b — PCI SAQ A confirmation (3 days)
+- Confirm SAQ A eligibility under the January 2025 revision, which is now conditional on
+  payment-page script integrity rather than automatic (§8.2).
+- Add a Content-Security-Policy to the checkout route; document the script inventory.
+- **Docs:** record the eligibility determination and its basis.
+
 ### M9+ — Delivery epic (6–10 weeks)
 - Full delivery domain (F1 step 2). Sequenced last because it is the largest, and because M0
   removes the active harm immediately.
@@ -494,7 +710,23 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 
 ## 10. Stop condition
 
-Reviewed to exhaustion at the architectural level: all 47 tables, 59 migrations, 14 routes, 67
-pages, the auth and tenancy model, the payment and pricing paths, the job engine, caching,
-testing, CI, accessibility, and the Zale portability question. Remaining work is depth within the
-epics above rather than undiscovered breadth.
+**The codebase review is complete.** Reviewed to exhaustion at the architectural level: all 47
+tables, 59 migrations, 14 routes, 67 pages, the auth and tenancy model, the payment and pricing
+paths, the job engine, caching, testing, CI, accessibility, and the Zale portability question.
+Every finding F1–F12 is evidenced against a file and line. Remaining work there is depth within
+the epics above rather than undiscovered breadth.
+
+**The external benchmarking is not complete, and this report should not be presented as though it
+were.** Two things are outstanding:
+
+1. **No claim in §8 has passed adversarial verification** — all 25 verifier panels failed on an
+   API session limit across two runs (§8.0). The claims are primary-source extractions, not
+   fabrications, but they are unchallenged.
+2. **Four of the brief's seven research questions were not reached** — competitor RBAC beyond
+   Shopify, cost and Core Web Vitals economics, competitor pricing and time-to-first-order, and
+   accessibility/allergen law. Their sources are queued in §8.6.
+
+Notably, the missing questions are the ones the brief leaned on hardest for competitive
+positioning. **The honest status is: a complete internal audit plus a partial, unverified external
+benchmark.** Closing §8.6 and re-running verification (cheap — the fetch phase is cached under run
+`wf_830f5f81-f2a`) is the remaining work before this is fit for an external due-diligence pack.
