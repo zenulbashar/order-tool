@@ -30,7 +30,7 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 | F2 | Async job engine drains ≤10 jobs/day; retry schedule is 24× mis-tuned | **Critical** |
 | F3 | No refund capability anywhere in the product | **Critical** |
 | F4 | Staff management and RBAC are entirely unbuilt; venues are single-user | **High** |
-| F5 | No observability — no APM, no tracing, 3 log statements in 62k LOC | **High** |
+| F5 | No observability — no APM, no tracing, zero logging on the money paths | **High** |
 | F6 | Storefront is `force-dynamic`: ~8 Postgres queries per diner pageview | **High** |
 | F12 | Production migrations auto-apply on merge, ungated, with no backup | **High** |
 
@@ -160,9 +160,12 @@ across 47 tables, with composites where they matter.
   - `lib/integrations/dispatch.ts:73` — `SWEEP_WINDOW_MS = 24h`. Identical constants in
     `lib/stock/depletion.ts:34`, `lib/loyalty/earn.ts:25`, `lib/loyalty/redeem.ts:20`,
     `lib/giftcards/redeem.ts:22`.
-- **Root cause:** The engine was designed for a minute-cadence trigger. The Vercel Hobby plan
-  permits only daily cron invocations. The schedule was reduced to fit the plan; the constants
-  that depend on it were not revisited.
+- **Root cause:** The engine was designed for a minute-cadence trigger — every constant in it
+  assumes one — but `vercel.json` schedules it daily. The most likely explanation is a
+  cron-frequency constraint on the deployment plan at the time (Vercel has historically limited
+  cron frequency on lower tiers); whatever the reason, the schedule changed and the constants
+  that depend on it were not revisited. The mismatch between the handler's own doc comment and
+  its configuration is the tell.
 - **Consequences, precisely:**
   1. **Throughput ceiling of 10 jobs/day via cron.** Any venue with a Square integration and
      more than 10 orders/day accumulates permanent backlog on the cron path.
@@ -274,9 +277,11 @@ across 47 tables, with composites where they matter.
 
 - **Severity:** High
 - **Category:** Operations
-- **Evidence:** No Sentry, OpenTelemetry, Datadog, or equivalent in `package.json`. **Three**
-  `console.error/warn/log` statements across 62,171 LOC. No `instrumentation.ts`. No alerting
-  configuration.
+- **Evidence:** No Sentry, OpenTelemetry, Datadog, or equivalent in `package.json`. No
+  `instrumentation.ts`. No alerting configuration. Across all 62,171 LOC of `app/` and `lib/`
+  there are **four** logging statements — `lib/shop/feed.ts:185,191,205,410` — and all four sit
+  in the marketing shop feed. The payment, order, job-dispatch, and authentication paths contain
+  **zero** log statements of any kind.
 - **Root cause:** Deferred; Vercel's built-in function logs were treated as sufficient.
 - **Business impact:** Every failure mode above — a dropped sweep, a dead integration job, a
   failed refund — is **invisible until a merchant complains**. Mean-time-to-detect is effectively
