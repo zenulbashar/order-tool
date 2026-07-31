@@ -368,11 +368,12 @@ But enforcement is **by convention**: a single query that forgets `.where(scoped
 silently returns cross-tenant data, and nothing — not the type system, not a test, not the
 database — will catch it. With 47 tables and growing, the surface only expands.
 
-The industry position is unambiguous that convention is not isolation (§8.1): AWS's SaaS Lens
-states that authentication and authorization do **not** constitute tenant isolation and that
-enforcement must not be left to developers; OWASP ranks shared-table row-level tenancy as only
-*Medium* isolation and prescribes database-level enforcement **in addition to** application
-filtering.
+The industry position is that convention is not isolation (§8.1). AWS's SaaS Lens states verbatim
+that *"getting beyond the entry points of a login screen or an API does not mean you have achieved
+isolation"* (**verified 3-0**), and OWASP prescribes database-level isolation as defence in depth
+**in addition to** application filtering, explicitly forbidding queries without a tenant filter
+(**verified 3-0**). OWASP ranks shared-table row-level tenancy as only *Medium* isolation
+(**verified 2-1**).
 
 **But do not read that as "just turn on RLS."** The researched benchmarks (§8.1) show the naive
 implementation of *exactly this codebase's pattern* fails outright. Four constraints must hold
@@ -383,15 +384,22 @@ together, or the rollout will be worse than the status quo:
    two minutes, even with an index present**. Only `team_id = ANY(ARRAY(select user_teams()))`
    reaches 2–3ms. The SELECT wrapper forces an initPlan so the function evaluates once per query
    rather than once per row.
-2. **Index the predicate column.** Necessary but *not sufficient* — wrapping without an index
-   still costs 170ms–3,300ms. Both are required.
-3. **Use `FORCE ROW LEVEL SECURITY`, not just `ENABLE`.** Plain `ENABLE` leaves the table owner
-   exempt, and the app typically connects as the owner — an RLS rollout that omits `FORCE`
-   provides **no enforcement at all** while appearing to. This is directly testable and belongs
-   in the acceptance criteria.
-4. **Keep `scopedToVenue()` in every query.** RLS is the backstop, not the filter. Supabase
-   measures ~19× degradation when the application filter is dropped and RLS is left to do the
-   filtering.
+2. **Index the predicate column — but only together with (1).** Supabase's own wording:
+   *"Adding an index to team_id is the big win, but only with the second case. Without, the index
+   case still times out."* Index and SELECT-wrap are jointly necessary; neither alone is
+   sufficient. **(verified 3-0)**
+   *An earlier draft of this report cited "171ms → under 0.1ms, over 100×" for indexing alone.
+   That claim was **refuted 0-3** in verification and has been removed — do not reinstate it.*
+3. **Consider `FORCE ROW LEVEL SECURITY`, not just `ENABLE`.** Plain `ENABLE` leaves the table
+   owner exempt, and an app connecting as the owner would get no enforcement while appearing to.
+   **Evidentiary status: this was drafted citing OWASP and that attribution was refuted 0-3 — the
+   cheat sheet does not say it.** The underlying Postgres behaviour is believed correct but is
+   **unverified here**; confirm against the PostgreSQL `CREATE POLICY` / `ALTER TABLE` docs before
+   putting it in acceptance criteria. Flagged rather than dropped because, if true, an RLS rollout
+   that omits it is silently inert — a high-cost failure worth five minutes of confirmation.
+4. **Keep `scopedToVenue()` in every query.** RLS is the backstop, not the filter — Supabase's
+   guidance is explicit: *"Do not rely on RLS for filtering but only for security."* **(verified
+   3-0)**
 
 **Revised effort:** 4–6 weeks, not 2–3 — the benchmark work and the per-policy correctness review
 dominate. **Priority:** P2, rising with team size. Ship it table-by-table behind a verification
@@ -490,68 +498,101 @@ an uncacheable page — F6 and multi-region are the same fix from the diner's pe
 
 ### 8.0 Evidentiary status — read this before citing anything below
 
-**These claims were extracted from the named primary sources but were NOT independently
-verified.** The research harness ran a three-vote adversarial verification stage over every
-claim; across two runs, **all 25 verifier panels failed on an API session limit** (82–97 agents
-errored per run). That is an infrastructure failure, not a research result.
+Verification ran across three attempts. It **partially completed**: the tenant-isolation block was
+adversarially verified; everything else was not. Status per claim:
 
-What this means concretely:
+| Status | Count | Which |
+|---|---|---|
+| **Verified** (2–3 refuters failed to refute) | **7** | Supabase RLS benchmarks; AWS SaaS Lens isolation; OWASP isolation guidance |
+| **Refuted** (majority refuted) | **3** | See below — all three had already been drafted into this report and are now removed |
+| **Unverified** (verifier panels never ran) | **15** | All Vercel Cron, Stripe, PCI SAQ A, Shopify POS and QStash claims |
 
-- The claims below were read out of the cited pages by fetch agents. They are **not fabricated**.
-- They have **not been adversarially challenged**, which is the step that normally catches
-  misreading, stale pages, and over-generalisation.
-- Several sources **could not be fetched directly at all** and were recovered via search-index
-  retrieval of the exact URL. Those carry an explicit provenance note inline. Treat them as
-  weakest.
-- **Do not quote these figures in an external due-diligence pack without re-verification.** They
-  are sound enough to set engineering direction and to prioritise; they are not sound enough to
-  put in front of an acquirer unchecked.
+**The three refutations are the most important output of this pass, because each had already been
+written into the report:**
 
-Re-running verification is cheap: the fetch phase is cached under run `wf_830f5f81-f2a`, so a
-resume only needs to re-run the ~75 verifier agents.
+1. *"A btree index alone takes an RLS select from 171ms to under 0.1ms, >100×"* — **refuted 0-3**.
+   Removed from F7. The surviving, verified form is narrower: indexing is decisive **only in
+   combination with SELECT-wrapping**.
+2. *"AWS prescribes that isolation enforcement must not be left to service developers"* —
+   **refuted 1-2**. Removed from §8.1, where it had been cited as the strongest external support
+   for F7. AWS's verified position is the narrower "authn/authz ≠ isolation" statement in §8.1.
+3. *"OWASP requires `FORCE ROW LEVEL SECURITY` because `ENABLE` leaves the owner exempt"* —
+   **refuted 0-3**. The OWASP attribution is wrong. The technical point is retained in F7 but
+   explicitly demoted to unverified pending a check against the PostgreSQL docs.
+
+Had verification not run, all three would have shipped — one of them inside F7's acceptance
+criteria. Treat the 15 unverified claims accordingly: they are primary-source extractions, not
+fabrications, but the step that catches exactly this class of error has not been applied to them.
+
+**Provenance caveats.** Some sources (AWS, PCI SSC, Shopify) returned HTTP 403 to the fetcher and
+were recovered via search-index retrieval of the exact URL rather than a direct page read. The AWS
+isolation claim carries this caveat *and* verified 3-0 on a verbatim quote, so it is well
+supported; the Shopify and PCI claims carry the caveat **and** are unverified, so they are the
+weakest material in this report.
+
+**Bottom line for external use:** §8.1 (tenant isolation) is citable. §8.2–8.4 are directionally
+sound but must be re-verified before going in front of an acquirer.
 
 Sub-questions **2 (competitor RBAC beyond Shopify), 5 (cost/CWV economics), 6 (competitor pricing
-and time-to-first-order), and 7 (accessibility and allergen law)** did not survive to claim
-extraction before the limit was hit. Their sources were located but not read — they are listed in
-§8.6 as an open queue. **§8 is therefore incomplete, and the sections most directly answering the
-brief's competitive-benchmarking questions are the missing ones.**
+and time-to-first-order), and 7 (accessibility and allergen law)** were never reached — sources
+located but not read (§8.6). **§8 is therefore incomplete, and the sections most directly
+answering the brief's competitive-benchmarking questions are the missing ones.**
 
 ### 8.1 Tenant isolation — the position against F7
 
-- **AWS Well-Architected SaaS Lens** states normatively that authentication and authorization do
-  not constitute tenant isolation; clearing a login screen or API entry point does not mean
-  isolation has been achieved. It further prescribes that isolation enforcement **must not be left
-  to service developers**, on the reasoning that it is unrealistic to expect developers never to
-  unintentionally cross a tenant boundary — scoping must be applied by a shared mechanism outside
-  the developers' view. *Provenance: `docs.aws.amazon.com` returned HTTP 403 to the fetcher;
-  wording recovered consistently across four independent search-index retrievals of the exact URL,
-  not a direct page read.*
-  → This is the direct architectural argument against Prompt2Eat's per-query `scopedToVenue()`
-  convention, and it is the strongest external support for F7.
-- **OWASP Multi-Tenant Security Cheat Sheet** ranks shared-table row-level isolation as **Medium**
-  — the weakest of its three database strategies (below separate schemas = High, separate
-  databases = Highest) — and scopes it to "cost-sensitive, high tenant count" deployments, which
-  is precisely the 100k+ target profile. It prescribes database-level isolation *in addition to*
-  application filtering, and forbids any query running without a tenant filter.
-- OWASP names the exact failure mode: **a lookup by resource id alone returns another tenant's
-  record** (IDOR / cross-tenant leakage). Prescribed mitigations — composite `(tenant_id,
-  resource_id)` lookups, enforcement at the data-access layer rather than the API layer,
-  non-guessable identifiers, and returning **404 rather than 403** so existence in another tenant
-  is not disclosed.
+- **AWS Well-Architected SaaS Lens — verified 3-0.** Verbatim: *"Authentication and authorization
+  are not equal to isolation — While it is expected that you will control access to your SaaS
+  environments through authentication and authorization, getting beyond the entry points of a
+  login screen or an API does not mean you have achieved isolation. This is just one piece of the
+  isolation puzzle."* *Provenance: `docs.aws.amazon.com` returned HTTP 403 to the fetcher; wording
+  recovered consistently across four independent search-index retrievals of the exact URL. The
+  quote nonetheless survived three independent refutation attempts.*
+  → This is the external support for F7: Prompt2Eat's isolation story is a NextAuth session plus
+  a `venue_id` predicate, which is precisely the "entry points" layer AWS says is not isolation.
+  **A stronger claim — that AWS prescribes isolation "must not be left to service developers" —
+  was drafted here and refuted 1-2. It has been removed. Do not reinstate it.**
+- **OWASP Multi-Tenant Security Cheat Sheet — verified 3-0** on the prescription: *"Do: … Use
+  database-level isolation (RLS, schemas) as defense in depth. Include tenant_id in all resource
+  queries, cache keys, and storage paths. … Don't: … Allow queries without tenant filters (even
+  for admins without explicit override)."*
+  → Note the admin clause. Prompt2Eat's impersonation path (`lib/tenant.ts:41`) resolves a venue
+  outside the caller's memberships; it is allowlist-gated and audited, which is the "explicit
+  override" OWASP contemplates — but it is exactly the path that must never lose that gate.
+- **OWASP isolation ranking — verified 2-1.** Shared-table row-level isolation is rated **Medium**,
+  the weakest of three database strategies (separate databases = Highest, separate schemas =
+  High), scoped to "cost-sensitive, high tenant count" — precisely the 100k+ target profile. The
+  split vote reflects that this is a general-guidance table, not a benchmark; weight accordingly.
+- **OWASP IDOR failure mode — verified 2-0.** A lookup by resource id alone returns another
+  tenant's record. Prescribed mitigations: composite `(tenant_id, resource_id)` lookups,
+  enforcement at the data-access layer rather than the API layer, non-guessable identifiers, and
+  **404 rather than 403** so existence in another tenant is not disclosed.
   → Worth noting: Prompt2Eat already satisfies three of these four. Order lookup is
   `(venue_id, public_token)` composite (`order/[token]/page.tsx:249`), tokens are 192-bit
   non-guessable, and the storefront 404s rather than 403s. The gap is the *enforcement layer*.
-- **Supabase RLS benchmarks** (the implementation constraints, detailed in F7): naive membership
-  policy times out >2min even indexed; SELECT-wrapped + indexed reaches 2–3ms; SELECT-wrapping
-  yields 1,000×–15,000× improvements (e.g. 178,000ms → 12ms); `FORCE ROW LEVEL SECURITY` is
-  required or the owner role is exempt; RLS is a backstop and the app filter must remain (~19×
-  penalty if dropped).
-- **Counter-evidence located but unread:** PlanetScale, *"RLS sounds great until it isn't"*, and
-  Neon's own multi-tenancy guidance. A balanced recommendation requires reading these; the
-  current §8.1 is one-sided in favour of RLS because the dissenting sources were queued behind
-  the limit.
+- **Supabase RLS benchmarks — verified 3-0** (three separate claims, all upheld; implementation
+  constraints detailed in F7). Verbatim on the membership pattern: *"This case times out with over
+  3 minutes as 1M rows must be searched and the function is run each time on 1000 rows. Changing
+  to wrap the function … is a big improvement but can still take seconds. Adding an index to
+  team_id is the big win, but only with the second case. Without, the index case still times
+  out."* And on layering: *"Do not rely on RLS for filtering but only for security."*
+  → The `team_id` membership pattern is the direct analogue of `venue_members`. This is the single
+  most operationally important result in §8: it means the obvious RLS implementation of
+  Prompt2Eat's exact schema does not merely slow down, it times out.
+  **A fourth Supabase claim — indexing alone as the highest-leverage fix — was refuted 0-3 and
+  removed.**
+- **Counter-evidence located but unread:** PlanetScale, *"RLS sounds great until it isn't"*, Neon's
+  multi-tenancy guidance, and AWS Prescriptive Guidance on RLS. **§8.1 remains one-sided in favour
+  of RLS** because the dissenting sources were queued behind the API limit and never read. The
+  verified claims above establish that *convention-only scoping is below the documented baseline*
+  and that *naive RLS is dangerous*; they do **not** establish that RLS is the right answer for
+  this platform. That conclusion needs the counter-evidence, and F7 should not be scheduled as
+  committed work until it is read.
 
-### 8.2 Payments and PCI
+### 8.2 Payments and PCI — ⚠️ ALL CLAIMS UNVERIFIED
+
+*Verifier panels for every claim in this section failed on the API session limit. Primary-source
+extractions, not adversarially challenged. The PCI items additionally came via search-index
+retrieval after HTTP 403.*
 
 - **Stripe idempotency:** keys apply to every mutating endpoint via the `Idempotency-Key` header,
   making retry of any state-changing call safe. Keys are **retained 24 hours**, then pruned — so
@@ -576,7 +617,11 @@ brief's competitive-benchmarking questions are the missing ones.**
   it**; a CSP on the checkout route and script-integrity controls are the mitigations.
   *Provenance: PCI SSC blog returned HTTP 403; recovered via search-index reads.*
 
-### 8.3 RBAC — partial (Shopify only)
+### 8.3 RBAC — partial (Shopify only) — ⚠️ ALL CLAIMS UNVERIFIED
+
+*Verifier panels failed on the API session limit; sources also came via search-index retrieval
+after HTTP 403. This is the weakest-evidenced section in the report — and F4's revised target
+model rests on it.*
 
 Only Shopify POS survived to extraction. Toast, Square, Lightspeed and Flipdish sources were
 located but not read (§8.6), so the "industry-standard minimum role set" the brief asked for is
@@ -596,7 +641,14 @@ competitive pattern is a `roles` table + a `permissions` join, with merchant-edi
 from templates. That changes F4's migration design and argues for building the permission table
 now rather than widening the enum twice.
 
-### 8.4 Background jobs — the position against F2
+### 8.4 Background jobs — the position against F2 — ⚠️ ALL CLAIMS UNVERIFIED
+
+*Verifier panels for every claim below failed on the API session limit. **This matters more here
+than anywhere else in §8: the F2 upgrade rests entirely on these claims.** F2's underlying defect
+— a daily cron against constants tuned for a minute cadence — is proven from the repository alone
+and does not depend on any of this. But the specific aggravating factors (no retry, silent
+failure, hourly jitter) are unverified vendor-doc readings. Re-verify before treating the "window
+is already too narrow" conclusion as established.*
 
 Per Vercel's cron documentation:
 
@@ -624,14 +676,15 @@ magnitude.
 
 ### 8.5 What this changes in the findings
 
-| Finding | Change |
-|---|---|
-| **F2** | Upgraded. Cron has no retry, fails silently with no log, and Hobby jitter makes the real inter-run gap 23–25h against a 24h window — **so the window is already too narrow even when every run succeeds.** |
-| **F7** | Materially revised. Naive RLS on this exact membership pattern times out; four implementation constraints added; effort raised 2–3w → 4–6w. |
-| **F4** | Target model revised — competitors use editable roles + action-level permissions, not a wider enum. |
-| **F3** | Refunds must carry a Stripe idempotency key with retries inside the 24h retention window. |
-| **New** | Add jitter to `BACKOFF_SECONDS` (`dispatch.ts:69`) — currently unjittered, against Stripe's explicit guidance. |
-| **New** | Confirm PCI SAQ A eligibility explicitly under the Jan 2025 revision; add a checkout CSP. |
+| Finding | Change | Evidence status |
+|---|---|---|
+| **F7** | Materially revised. Naive RLS on this exact membership pattern times out; implementation constraints added; effort raised 2–3w → 4–6w. | **Verified 3-0** on the core benchmark. One sub-claim refuted and removed. |
+| **F2** | Upgraded. Cron has no retry, fails silently with no log, and Hobby jitter makes the real inter-run gap 23–25h against a 24h window — so the window may already be too narrow even when every run succeeds. | ⚠️ **Unverified.** The base defect is repo-proven; these aggravating factors are not. |
+| **F4** | Target model revised — competitors use editable roles + action-level permissions, not a wider enum. | ⚠️ **Unverified**, single source (Shopify), 403-recovered. |
+| **F3** | Refunds must carry a Stripe idempotency key, with retries inside the 24h retention window. | ⚠️ **Unverified.** |
+| **New** | Add jitter to `BACKOFF_SECONDS` (`dispatch.ts:69`) — currently unjittered. | ⚠️ Guidance **unverified**, but the code fact is repo-proven and jitter is uncontroversial. |
+| **New** | Confirm PCI SAQ A eligibility under the Jan 2025 revision; add a checkout CSP. | ⚠️ **Unverified**, 403-recovered. Treat as "go check", not as a finding. |
+| **Removed** | Three drafted claims refuted in verification: indexing-alone (0-3), AWS "not left to developers" (1-2), OWASP `FORCE RLS` attribution (0-3). | **Refuted** — see §8.0. |
 
 ### 8.6 Open verification queue
 
@@ -716,17 +769,30 @@ paths, the job engine, caching, testing, CI, accessibility, and the Zale portabi
 Every finding F1–F12 is evidenced against a file and line. Remaining work there is depth within
 the epics above rather than undiscovered breadth.
 
-**The external benchmarking is not complete, and this report should not be presented as though it
-were.** Two things are outstanding:
+**The external benchmarking is partially complete, and this report should not be presented as
+though it were finished.** Three things are outstanding:
 
-1. **No claim in §8 has passed adversarial verification** — all 25 verifier panels failed on an
-   API session limit across two runs (§8.0). The claims are primary-source extractions, not
-   fabrications, but they are unchallenged.
-2. **Four of the brief's seven research questions were not reached** — competitor RBAC beyond
+1. **Only 7 of 25 claims passed adversarial verification** (§8.0). The tenant-isolation block
+   (§8.1) is verified and citable. Every claim in §8.2 (payments/PCI), §8.3 (RBAC) and §8.4
+   (background jobs) is **unverified** — the verifier panels never ran.
+2. **3 claims were refuted, and all three had already been drafted into this report.** They have
+   been removed and are documented in §8.0 so they are not reinstated. This is the strongest
+   available argument for finishing verification rather than shipping the remaining 15 as-is: the
+   refutation rate among verified claims was 3 in 10.
+3. **Four of the brief's seven research questions were never reached** — competitor RBAC beyond
    Shopify, cost and Core Web Vitals economics, competitor pricing and time-to-first-order, and
-   accessibility/allergen law. Their sources are queued in §8.6.
+   accessibility/allergen law. Sources are queued in §8.6. These are the questions the brief
+   leaned on hardest for competitive positioning.
 
-Notably, the missing questions are the ones the brief leaned on hardest for competitive
-positioning. **The honest status is: a complete internal audit plus a partial, unverified external
-benchmark.** Closing §8.6 and re-running verification (cheap — the fetch phase is cached under run
-`wf_830f5f81-f2a`) is the remaining work before this is fit for an external due-diligence pack.
+**The honest status: a complete, file-evidenced internal audit; a verified tenant-isolation
+benchmark; and a partial, unverified benchmark everywhere else.**
+
+Note the asymmetry that matters for planning: **F1, F3, F4, F5, F6, F8, F9, F10, F11 and F12 rest
+entirely on repository evidence and are unaffected by any of this.** Only F2's *aggravating
+factors* and F7's *industry framing* depend on external claims — and F7's core is now verified.
+The roadmap can therefore proceed as written; the outstanding research changes emphasis, not
+direction.
+
+Remaining work before this is fit for an external due-diligence pack: close §8.6 and re-run
+verification. Both are cheap — the fetch phase is cached under run `wf_830f5f81-f2a`, so a resume
+re-runs only the outstanding verifier agents.
