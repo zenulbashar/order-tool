@@ -36,9 +36,9 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 
 ### Remediation status (updated 2026-08-01)
 
-The first remediation pass shipped alongside this report; a second pass
-(M1 — observability) and a third (M2 — job engine) followed the same day.
-What changed, per finding:
+The first remediation pass shipped alongside this report; a second (M1 —
+observability), third (M2 — job engine), and fourth (M3 — checkout safety net)
+followed the same day. What changed, per finding:
 
 | Finding | Status | What shipped |
 |---|---|---|
@@ -50,7 +50,8 @@ What changed, per finding:
 | F6 | Open | Tag-based ISR (M6). |
 | F10 | **Mitigated** | Global `SkipLink` (first Tab stop on every page; anchors on the shared shells, JS fallback elsewhere); stale "7/8 dialogs" note in `Accessibility.md` corrected — all 8 use `useDialog`. Brand-contrast validation and screen-reader pass remain open (M7). |
 | F12 | **Mitigated** | `migrate-prod` now needs `[build, e2e]` and fails on destructive SQL (`DROP`/`TRUNCATE`/type-narrowing guard, verified against all 59 existing migrations). Environment approval + pre-migration Neon snapshot remain open. |
-| F7, F8, F9, F11 | Open | Roadmap items M3, M8, and the RLS decision pending §8.1's counter-evidence. |
+| F8 | **Mitigated** (M3 shipped) | The two money paths that had zero coverage now have it, running on every CI run: the checkout recompute (`lib/payments/line-plan.ts`, extracted pure and unchanged in behaviour) is tested against hostile input — cross-item/cross-venue option injection, stray/missing variants, duplicate options, per-group min/max, and price authority; and the Stripe webhook's **replay/idempotency contract** is tested by driving the real handler (`test/stripe-webhook-idempotency.test.ts`) — a redelivered event confirms nothing again and moves no value. Both suites were mutation-checked (the guard was broken, the tests failed by name, the code was restored). The full browser path (`e2e/checkout.spec.ts`) is written and **gated**: it needs a seeded DB + Stripe test credentials + a Connect account, which CI does not have — see `docs/ops/Testing.md`. |
+| F7, F9, F11 | Open | Roadmap item M8, and the RLS decision pending §8.1's counter-evidence. |
 
 ---
 
@@ -831,6 +832,17 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 ### M3 — Checkout safety net (1 week)
 - Playwright E2E: cart → checkout → test card → webhook → confirmed (F8).
 - Webhook replay test asserting idempotency.
+- **Shipped 2026-08-01** (fourth remediation pass): the webhook replay test
+  runs on every CI run (`test/stripe-webhook-idempotency.test.ts`), and the
+  checkout recompute gained exhaustive hostile-input coverage after being
+  extracted pure (`lib/payments/line-plan.ts` — behaviour unchanged). Both
+  were mutation-checked to prove they fail when the guard breaks. The browser
+  spec (`e2e/checkout.spec.ts`) is written and skips itself without a seeded
+  DB + Stripe test credentials + a `charges_enabled` Connect account — none of
+  which CI has, and wiring it in regardless would mean a permanently red job.
+  It signs a real `payment_intent.succeeded` rather than driving Stripe's card
+  iframe, because the webhook is the only confirmation path in production.
+  Enabling it against staging: `docs/ops/Testing.md`.
 
 ### M4 — Refunds (2 weeks)
 - `refunds` table, dashboard action, webhook handling, loyalty/stock compensation (F3).

@@ -21,6 +21,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["lib/**/*.test.ts"],
+    // lib/** — pure domain logic. test/** — route-level specs that drive a real
+    // handler with its I/O modules mocked (e.g. the Stripe webhook's
+    // idempotency contract); kept out of app/ so nothing test-shaped sits in
+    // the App Router's file tree.
+    include: ["lib/**/*.test.ts", "test/**/*.test.ts"],
   },
 });
