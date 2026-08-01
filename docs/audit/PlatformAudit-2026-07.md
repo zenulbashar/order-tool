@@ -34,7 +34,28 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 | F6 | Storefront is `force-dynamic`: ~8 Postgres queries per diner pageview | **High** |
 | F12 | Production migrations auto-apply on merge, ungated, with no backup | **High** |
 
-### Remediation status (updated 2026-08-01)
+### Where the audit stands (updated 2026-08-01)
+
+Ten remediation passes shipped. **Every finding F1–F12 is now closed or
+deliberately deferred with a written reason** — nothing is silently open.
+
+**Closed:** F1 (active harm removed), F2, F3, F4, F5, F6, F8, F9, F10, F11,
+F12 (code side).
+
+**Deliberately not done, each with the reason recorded:**
+
+| Item | Why not, and where it's written down |
+|---|---|
+| **RLS** (F7) | §8.1's own instruction: not to be scheduled until the dissenting sources are read, and the naive policy on this exact schema benchmarks as *timing out*. A static tenant-scoping harness shipped instead. → `docs/audit/TenantIsolation.md` |
+| **Delivery domain** (F1 step 2 / M9+) | A 6–10 week product epic, sequenced last by the roadmap itself. F1's *active harm* — selling a mode that could take zero orders — was removed in M0, so the finding is closed even though the epic is not. |
+| **Migration approval + snapshot** (F12) | Repository and Neon settings, not code. The workflow declares the environment; a human must add the reviewer and set retention. → `docs/ops/Migrations.md` |
+| **Sentry DSN + alert rules** (F5) | Console setup. The code ships dormant and correct without it. → `docs/ops/Observability.md` |
+| **Full-path checkout E2E** (F8) | Needs a seeded DB, Stripe test keys and a `charges_enabled` Connect account. The spec is written and skips itself rather than turning CI permanently red. → `docs/ops/Testing.md` |
+| **Nonce-based CSP** (M8b) | Would need `proxy.ts` and validation against live Stripe Elements. The current policy's `'unsafe-inline'` limitation is stated rather than hidden. → `docs/ops/PCI.md` |
+
+---
+
+### Remediation status, per finding
 
 The first remediation pass shipped alongside this report; a second (M1 —
 observability), third (M2 — job engine), fourth (M3 — checkout safety net), fifth
@@ -51,7 +72,7 @@ the same day. What changed, per finding:
 | F5 | **Mitigated** (M1 shipped) | Sentry error tracking behind `SENTRY_DSN`, initialised via `instrumentation.ts` (`register` + `onRequestError`, so every server error Next captures is visible). The webhook handler and all its swallowed side effects, `placeOrder`'s previously-silent PaymentIntent failure, and every job-engine failure now report; dead-lettered jobs and non-empty sweep backlogs emit tagged alert events (`alert:integration_job_dead_letter`, `alert:sweep_backlog`). Runbook: `docs/ops/Observability.md`. Open (console-side ops, not code): create the Sentry project/DSN and the two alert rules. Tracing/latency percentiles remain future work. |
 | F6 | **Mitigated** (M6 shipped) | The three storefront reads — menu tree, venue profile, FAQs — are cached per venue and invalidated by TAG, so database load now scales with menu *changes* rather than diner traffic. Instant 86-ing is preserved: invalidation uses `updateTag` (immediate expiry, next request waits for fresh data), NOT `revalidateTag(tag, "max")`, which serves the stale copy while refreshing and would show a diner an item just marked unavailable. Every mutation path goes through one `revalidateStorefront()` helper — including the platform-admin price override, a path outside the venue dashboard that would otherwise have served a stale price. A 1h TTL is a safety net only, bounding staleness if a future path forgets. Removing `force-dynamic` for true edge/ISR remains open, per the finding's own page-by-page rollout guidance. |
 | F10 | **Mitigated** (M7 shipped) | M0: global `SkipLink`, stale "7/8 dialogs" note corrected. M7: `@axe-core/playwright` now runs on every PR asserting zero WCAG 2.1 A/AA violations across the marketing surface — which **found and fixed four real contrast failures that had shipped** (worst 2.91:1, all now ≥4.75:1) and a landing page with **no `<main>` landmark**, meaning its no-JS skip link did nothing. A WCAG gate at brand-save time now refuses a custom text colour below 4.5:1 on the brand colour, so a venue cannot publish an unreadable storefront. Open: the manual screen-reader pass, and axe coverage of the DB-backed storefront/dashboard (CI has no database). |
-| F12 | **Mitigated** | `migrate-prod` now needs `[build, e2e]` and fails on destructive SQL (`DROP`/`TRUNCATE`/type-narrowing guard, verified against all 59 existing migrations). Environment approval + pre-migration Neon snapshot remain open. |
+| F12 | **Mitigated** | `migrate-prod` needs `[build, e2e]`, fails on destructive SQL (verified against every committed migration and against a synthetic `DROP COLUMN`), and is bound to the `production` GitHub Environment so an approval rule applies. The final two steps are **repository/provider settings, not code**: adding a required reviewer to that environment, and setting Neon history retention (or wiring a pre-migration branch, which needs a `NEON_API_KEY` — a credential decision for the account owner, not something to slip into a workflow). Both are written up with commands in `docs/ops/Migrations.md`. |
 | F8 | **Mitigated** (M3 shipped) | The two money paths that had zero coverage now have it, running on every CI run: the checkout recompute (`lib/payments/line-plan.ts`, extracted pure and unchanged in behaviour) is tested against hostile input — cross-item/cross-venue option injection, stray/missing variants, duplicate options, per-group min/max, and price authority; and the Stripe webhook's **replay/idempotency contract** is tested by driving the real handler (`test/stripe-webhook-idempotency.test.ts`) — a redelivered event confirms nothing again and moves no value. Both suites were mutation-checked (the guard was broken, the tests failed by name, the code was restored). The full browser path (`e2e/checkout.spec.ts`) is written and **gated**: it needs a seeded DB + Stripe test credentials + a Connect account, which CI does not have — see `docs/ops/Testing.md`. |
 | F9 | **Mitigated** (M8 shipped) | `platform_audit_log` gains a nullable `venue_id` + `actor_user_id` (additive; NULL = a platform-wide admin action, exactly as the finding prescribes) and merchant-side mutations now write to it: menu item create/edit/delete with the price in the detail, opening hours, order status transitions, refunds, gift-card issuance, and staff invite/role-change/removal. A venue-facing **Activity** page (gated on `settings:manage`) shows who changed what. Auditing never fails the action it describes, details are scrubbed and truncated, and no FK is used on `venue_id` so an entry outlives the venue it describes. |
 | F11 | **Mitigated** | `docs/api/openapi.yaml` documents the whole HTTP surface — webhooks, cron ticks and same-origin browser routes — with the real auth mechanism and status codes for each. `test/openapi.test.ts` fails CI if a route exists without a documented path (or vice versa), so the spec cannot silently rot. It states plainly that there is **no public third-party API yet**: F11's actual gap is a versioned public contract, and this documents what exists so the first public endpoint joins a described surface rather than an undocumented one. |
