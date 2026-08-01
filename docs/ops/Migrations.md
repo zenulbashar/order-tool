@@ -76,6 +76,37 @@ The guard exists so this is a conscious act:
 Splitting it this way means the irreversible step is never running
 unattended, which is the whole point of F12.
 
+## Adding a column the new code immediately reads
+
+The mirror of the case above, and easier to get wrong because nothing warns you.
+An `ADD COLUMN` is additive, so the guard stays green and the migration looks
+free — but **the deploy and the migration are not sequenced with each other**:
+
+- Production ships through Vercel's Git integration, which fires on push to
+  `main`. No workflow deploys, so nothing makes Vercel wait.
+- `migrate-prod` runs in GitHub Actions behind `needs: [build, e2e]` **and** the
+  `production` environment gate, which the section above tells you to arm with a
+  required reviewer.
+
+So the code goes live first, and stays live — for as long as the approval takes —
+against a database that does not have the column yet. Every query naming it fails
+with `42703 undefined_column`. If the caller swallows errors, that is invisible:
+this is exactly how `applyOrderDiscounts` would have silently stopped applying
+every promo, bank saving, loyalty redemption and gift card on every checkout page
+load (it now reports before swallowing, so at least the window is loud).
+
+Order it deliberately, one of:
+
+1. **Migrate in an earlier deploy.** Land the migration on its own, let it apply,
+   then merge the code that reads the column. Two PRs, no window. Preferred.
+2. **Apply it manually first**, against the direct (non-pooled) URL, before
+   merging the code — same shape as the destructive flow above.
+3. **Make the read tolerant for one release** if neither is practical, then drop
+   the fallback once the column exists everywhere.
+
+Choosing none of these is also a choice: it means accepting a silent-degradation
+window whose length is however long the approval sits unclicked.
+
 ## If a migration goes wrong
 
 1. **Stop further merges to `main`** — the environment approval makes this

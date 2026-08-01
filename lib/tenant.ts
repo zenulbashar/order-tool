@@ -306,8 +306,11 @@ export async function requireOnboardedVenue(): Promise<Venue> {
  * /onboarding already sends completed venues to the dashboard — this closes the
  * same door on the step routes, which nothing links to but which stay directly
  * addressable. Deliberately NOT used by /onboarding/details: that step CREATES a
- * venue and is how the sidebar's "Add location" opens a second one, so a
- * completed CURRENT venue is the normal case there.
+ * venue and the sidebar's "Add location" points straight at it, so a completed
+ * CURRENT venue is the normal case there and guarding it would break adding a
+ * second location. createVenueFromOnboarding sets the selected-venue cookie to
+ * the NEW venue before redirecting into step 2, so the guard below then resolves
+ * the new (incomplete) venue rather than the completed one it came from.
  */
 export async function requireWizardVenue(): Promise<Venue> {
   const venue = await requireVenuePermission("settings:manage");

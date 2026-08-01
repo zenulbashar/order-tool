@@ -127,9 +127,19 @@ second half restores an invariant the code already claimed: the replace-set's
 safety comment says item→station assignments "are made later in the menu editor,
 not during onboarding", which is only true while the wizard is unfinished.
 
-`/onboarding/details` is deliberately **not** guarded — it creates a venue and is
-how the sidebar's "Add location" opens a second one, so a completed current venue
-is the normal case there.
+`/onboarding/details` is deliberately **not** guarded — it creates a venue, and
+the sidebar's "Add location" link points straight at it, so a completed current
+venue is the normal case there and guarding it would break adding a second
+location. `createVenueFromOnboarding` calls `setSelectedVenueCookie(newVenueId)`
+*before* redirecting into step 2, so the guard on the next step resolves the new
+(incomplete) venue rather than the completed one it came from.
+
+Note for whoever picks this up next: that sidebar link only renders for
+single-venue owners (`hasMultiple ? null : …`). Owners with two or more venues get
+the switcher's "Add another location" instead, which points at `/onboarding` — and
+that bounces to the dashboard whenever the selected venue is complete, so those
+owners have no working path to a third venue. Pre-existing and untouched by this
+PR (`main` behaves identically); recorded in RemainingRecommendations.md.
 
 ### S6 — Gift-card codes readable by any venue member — **Fixed**
 
