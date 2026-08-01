@@ -60,6 +60,16 @@ jobs:
     # back by redeploying.
     needs: [build, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Binds the job to the `production` GitHub Environment (F12). This is the
+    # code half of the approval gate: once that environment is given a
+    # required reviewer in repo Settings → Environments, every production
+    # migration waits for a human. Declaring it here is safe and inert until
+    # then — GitHub creates the environment implicitly with no protection
+    # rules, so behaviour is unchanged until someone configures it.
+    #
+    # See docs/ops/Migrations.md for the two repo-settings steps this cannot
+    # do from code: adding the reviewer, and the pre-migration Neon snapshot.
+    environment: production
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
