@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { FEATURES, hasFeature } from "@/lib/billing/plans";
 import { getVenuePlan } from "@/lib/billing/queries";
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import {
   seoAudits,
   venues,
@@ -260,6 +261,6 @@ export async function applyGeneratedCopy(input: {
 
   revalidatePath(SEO_PATH);
   revalidatePath("/dashboard/settings/about");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return { ok: true };
 }

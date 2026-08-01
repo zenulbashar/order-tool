@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import {
   menuCategories,
   menuItems,
@@ -142,6 +143,7 @@ export async function createCategory(
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -182,6 +184,7 @@ export async function updateCategory(
   if (updated.length === 0) return { error: "Category not found." };
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -202,6 +205,7 @@ export async function deleteCategory(formData: FormData): Promise<void> {
     );
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 export async function moveCategory(formData: FormData): Promise<void> {
@@ -265,6 +269,7 @@ export async function moveCategory(formData: FormData): Promise<void> {
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 /* ---------------------------------- Items --------------------------------- */
@@ -379,6 +384,7 @@ export async function createItem(
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -444,6 +450,7 @@ export async function updateItem(
   if (!hit) return { error: "Item not found." };
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -459,6 +466,7 @@ export async function deleteItem(formData: FormData): Promise<void> {
     );
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 export async function moveItem(formData: FormData): Promise<void> {
@@ -526,6 +534,7 @@ export async function moveItem(formData: FormData): Promise<void> {
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 /* -------------------------------- Item photo ------------------------------ */
@@ -639,6 +648,7 @@ export async function uploadItemPhoto(
   await bestEffortDeletePhoto(previousUrl);
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -682,6 +692,7 @@ export async function setItemPhotoFromLibrary(
   await bestEffortDeletePhoto(previousUrl);
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -703,6 +714,7 @@ export async function removeItemPhoto(formData: FormData): Promise<void> {
   await bestEffortDeletePhoto(previousUrl);
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 /* ------------------------------ Modifier groups --------------------------- */
@@ -772,6 +784,7 @@ export async function createGroup(
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -811,6 +824,7 @@ export async function updateGroup(
   if (updated.length === 0) return { error: "Group not found." };
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -830,6 +844,7 @@ export async function deleteGroup(formData: FormData): Promise<void> {
     );
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 export async function moveGroup(formData: FormData): Promise<void> {
@@ -896,6 +911,7 @@ export async function moveGroup(formData: FormData): Promise<void> {
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 /* ----------------------------- Modifier options --------------------------- */
@@ -966,6 +982,7 @@ export async function createOption(
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -1005,6 +1022,7 @@ export async function updateOption(
   if (updated.length === 0) return { error: "Option not found." };
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -1023,6 +1041,7 @@ export async function deleteOption(formData: FormData): Promise<void> {
     );
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 export async function moveOption(formData: FormData): Promise<void> {
@@ -1089,6 +1108,7 @@ export async function moveOption(formData: FormData): Promise<void> {
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 /* ----------------------------- Item size variants ------------------------- */
@@ -1144,6 +1164,7 @@ export async function createVariant(
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -1181,6 +1202,7 @@ export async function updateVariant(
   if (updated.length === 0) return { error: "Size not found." };
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -1199,6 +1221,7 @@ export async function deleteVariant(formData: FormData): Promise<void> {
     );
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 export async function moveVariant(formData: FormData): Promise<void> {
@@ -1268,4 +1291,5 @@ export async function moveVariant(formData: FormData): Promise<void> {
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { venues } from "@/lib/db/schema";
 import {
   deleteFromR2,
@@ -67,7 +68,7 @@ export async function updateBrandTheme(
 
   revalidatePath("/dashboard/settings/brand");
   // The storefront is force-dynamic, but clear its router cache entry too.
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return { success: true };
 }
 
@@ -97,7 +98,7 @@ export async function updateStorefrontAbout(
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/settings/about");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return { success: true };
 }
 
@@ -125,7 +126,7 @@ export async function updateAnnouncement(
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/settings/announcement");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return { success: true };
 }
 
@@ -177,7 +178,7 @@ export async function updateSocialLinks(
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/settings/social");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return { success: true };
 }
 
@@ -218,7 +219,7 @@ export async function saveTaxSettings(
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/settings/tax");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return { success: true };
 }
 
@@ -354,7 +355,7 @@ export async function uploadVenueLogo(
   await bestEffortDeleteLogo(previousUrl);
 
   revalidatePath("/dashboard/settings/logo");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -385,7 +386,7 @@ export async function setVenueLogoUrl(
   }
 
   revalidatePath("/dashboard/settings/logo");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -405,7 +406,7 @@ export async function removeVenueLogo(): Promise<void> {
   await bestEffortDeleteLogo(previousUrl);
 
   revalidatePath("/dashboard/settings/logo");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
 }
 
 /* ----------------------- Storefront brand imagery ------------------------- */
@@ -493,7 +494,7 @@ async function uploadVenueImage(
   await bestEffortDeleteLogo(previousUrl);
 
   revalidatePath("/dashboard/settings/imagery");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -521,7 +522,7 @@ async function setVenueImageUrl(
   }
 
   revalidatePath("/dashboard/settings/imagery");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -539,7 +540,7 @@ async function removeVenueImage(slot: ImagerySlot): Promise<void> {
   await bestEffortDeleteLogo(previousUrl);
 
   revalidatePath("/dashboard/settings/imagery");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
 }
 
 // Thin per-slot server actions the imagery control binds directly. Each keeps
@@ -697,6 +698,6 @@ export async function updateVenueDetails(
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/settings/hours");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   return { success: true };
 }
