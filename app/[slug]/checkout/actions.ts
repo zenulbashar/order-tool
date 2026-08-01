@@ -18,6 +18,7 @@ import {
 } from "@/lib/db/schema";
 import { reportError } from "@/lib/observability";
 import { assignDailyNumber } from "@/lib/orders/daily-number";
+import { planOrderLines } from "@/lib/payments/line-plan";
 import { getVenueTaxConfig, inclusiveTaxCents } from "@/lib/payments/tax";
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
 import {
@@ -81,22 +82,9 @@ async function getSchedulingConfig(venueId: string) {
   return row ?? null;
 }
 
-type ItemRow = { id: string; name: string; priceCents: number };
-type VariantRow = {
-  id: string;
-  itemId: string;
-  name: string;
-  priceCents: number;
-};
-type LinePlan = {
-  item: ItemRow;
-  // The chosen size variant for a variant-priced line; null for a flat line.
-  variant: VariantRow | null;
-  quantity: number;
-  unitCents: number;
-  lineTotalCents: number;
-  options: { id: string; name: string; priceDeltaCents: number }[];
-};
+// The line-planning rules + price recompute live in lib/payments/line-plan.ts
+// so they can be unit-tested without a database (audit F8). The fetches and
+// the transaction below are unchanged; only the pure decision moved.
 
 /**
  * Public, unauthenticated order placement. Treats every field as hostile:
@@ -263,88 +251,19 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const optionById = new Map(optionRows.map((option) => [option.id, option]));
 
   // (c–e) Validate each line against live data, enforce modifier rules, and
-  // recompute totals from DB values only.
-  const plan: LinePlan[] = [];
-  let subtotalCents = 0;
-
-  for (const line of data.lines) {
-    const item = itemById.get(line.itemId);
-    if (!item) return reject("An item in your cart is no longer available.");
-
-    // VARIANT: derive this line's base price. A variant-priced item REQUIRES a
-    // chosen size that belongs to THIS item (the venue is already scoped by the
-    // fetch); a flat-priced item must carry no variant. The base is read from the
-    // DB row — the client's price is never trusted, and an invalid/missing/stray
-    // variant id is rejected, not silently priced.
-    const hasVariants = itemsWithVariants.has(line.itemId);
-    let baseCents: number;
-    let chosenVariant: VariantRow | null = null;
-    if (hasVariants) {
-      if (!line.variantId) {
-        return reject("Please choose a size for an item in your cart.");
-      }
-      const variant = variantById.get(line.variantId);
-      if (!variant || variant.itemId !== line.itemId) {
-        return reject("A size in your cart is no longer available.");
-      }
-      baseCents = variant.priceCents;
-      chosenVariant = variant;
-    } else {
-      if (line.variantId) return reject("Invalid selection.");
-      baseCents = item.priceCents;
-    }
-
-    const optionIds = line.selectedOptionIds;
-    if (new Set(optionIds).size !== optionIds.length) {
-      return reject("Invalid selection.");
-    }
-
-    const chosen: { id: string; name: string; priceDeltaCents: number }[] = [];
-    const countByGroup = new Map<string, number>();
-    for (const optionId of optionIds) {
-      const option = optionById.get(optionId);
-      if (!option) return reject("A selected option is no longer available.");
-      const group = groupById.get(option.groupId);
-      // The option's group MUST belong to this line's item — blocks
-      // cross-item / cross-venue option injection.
-      if (!group || group.itemId !== line.itemId) {
-        return reject("Invalid selection.");
-      }
-      countByGroup.set(
-        option.groupId,
-        (countByGroup.get(option.groupId) ?? 0) + 1,
-      );
-      chosen.push({
-        id: option.id,
-        name: option.name,
-        priceDeltaCents: option.priceDeltaCents,
-      });
-    }
-
-    // Enforce min/max per group server-side; never trust client-side gating.
-    for (const group of groupsByItem.get(line.itemId) ?? []) {
-      const selected = countByGroup.get(group.id) ?? 0;
-      if (selected < group.minSelect || selected > group.maxSelect) {
-        return reject("Please review the required options for an item.");
-      }
-    }
-
-    // Modifiers layer ON TOP of the size: base is the variant (or item) price,
-    // plus the server-recomputed modifier deltas. Identical math to before — only
-    // the base differs for variant-priced lines.
-    const deltaCents = chosen.reduce((sum, o) => sum + o.priceDeltaCents, 0);
-    const unitCents = baseCents + deltaCents;
-    const lineTotalCents = unitCents * line.quantity;
-    subtotalCents += lineTotalCents;
-    plan.push({
-      item,
-      variant: chosenVariant,
-      quantity: line.quantity,
-      unitCents,
-      lineTotalCents,
-      options: chosen,
-    });
-  }
+  // recompute totals from DB values only. The rules themselves live in
+  // lib/payments/line-plan.ts (pure, exhaustively unit-tested — audit F8);
+  // the live rows they judge are the ones fetched above.
+  const planned = planOrderLines(data.lines, {
+    itemById,
+    variantById,
+    itemsWithVariants,
+    groupById,
+    groupsByItem,
+    optionById,
+  });
+  if (!planned.ok) return reject(planned.error);
+  const { plan, subtotalCents } = planned;
 
   const totalCents = subtotalCents; // no tax / fees / tips this phase
 
