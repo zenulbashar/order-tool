@@ -1,7 +1,8 @@
-import { and, count, eq, gt, sql } from "drizzle-orm";
+import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { orders, venues } from "@/lib/db/schema";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
+import { orders, refunds, venues } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
 
 export type StripeAccountStatus = {
@@ -89,15 +90,22 @@ export async function getPayoutSummary(
 }
 
 /**
- * Confirmed-order sales for the venue over the last 30 days (gross total +
- * count), from OUR orders table — the money actually taken through the
- * storefront, independent of Stripe's payout timing. Venue-scoped.
+ * Paid-order sales for the venue over the last 30 days, from OUR orders table
+ * — the money actually taken through the storefront, independent of Stripe's
+ * payout timing. Venue-scoped.
+ *
+ * NET OF REFUNDS (M4): every order that took money counts (including ones
+ * since refunded), and refunds issued in the window are subtracted. Counting
+ * a refunded order at face value would overstate takings; dropping it
+ * entirely would understate them by the part the venue kept. The refund
+ * subtraction is keyed on the ORDER's date so a sale and its refund land in
+ * the same window as the order they belong to.
  */
 export async function getConfirmedSalesSummary(
   venueId: string,
-): Promise<{ last30Cents: number; count30: number }> {
+): Promise<{ last30Cents: number; count30: number; refundedCents: number }> {
   const since = new Date(Date.now() - 30 * 86_400_000);
-  const [row] = await db
+  const [sales] = await db
     .select({
       total: sql<number>`coalesce(sum(${orders.totalCents}), 0)`,
       n: count(),
@@ -106,11 +114,34 @@ export async function getConfirmedSalesSummary(
     .where(
       and(
         eq(orders.venueId, venueId),
-        eq(orders.status, "confirmed"),
+        inArray(orders.status, PAID_ORDER_STATUSES),
         gt(orders.createdAt, since),
       ),
     );
-  return { last30Cents: Number(row?.total ?? 0), count30: Number(row?.n ?? 0) };
+
+  // Refunds against orders in the same window, joined so a refund is always
+  // attributed to its order's date rather than its own.
+  const [refunded] = await db
+    .select({
+      total: sql<number>`coalesce(sum(${refunds.amountCents}), 0)`,
+    })
+    .from(refunds)
+    .innerJoin(orders, eq(orders.id, refunds.orderId))
+    .where(
+      and(
+        eq(refunds.venueId, venueId),
+        eq(refunds.status, "succeeded"),
+        gt(orders.createdAt, since),
+      ),
+    );
+
+  const gross = Number(sales?.total ?? 0);
+  const refundedCents = Number(refunded?.total ?? 0);
+  return {
+    last30Cents: gross - refundedCents,
+    count30: Number(sales?.n ?? 0),
+    refundedCents,
+  };
 }
 
 export type PayToCapability = "active" | "pending" | "inactive" | "unavailable";

@@ -257,36 +257,51 @@ export default async function OrderConfirmationPage({
   const brandStyle = dinerBrandStyle(venue);
   const reference = orderReference(order.publicToken);
 
-  const isPaid = order.status === "confirmed";
+  // M4 — a partially refunded order is still a live, paid order (the kitchen
+  // may still be making it), so it keeps the paid layout and tracker; only the
+  // badge tells the diner money came back. A FULLY refunded order is finished.
+  const isRefunded = order.status === "refunded";
+  const isPartiallyRefunded = order.status === "partially_refunded";
+  const isPaid = order.status === "confirmed" || isPartiallyRefunded;
   const isPending = order.status === "pending_payment";
   const isFailed = order.status === "payment_failed";
   // Bank (PayTo) payments approve out-of-band — show the waiting screen + the
   // gentler, longer poll while pending. Hint only; the order status still rules.
   const isBankPending = isPending && pm != null && BANK_METHODS.has(pm);
 
-  const statusLabel = isPaid
-    ? "Paid"
-    : isPending
-      ? "Payment processing"
-      : isFailed
-        ? "Payment not completed"
-        : "Cancelled";
+  const statusLabel = isRefunded
+    ? "Refunded"
+    : isPartiallyRefunded
+      ? "Partly refunded"
+      : isPaid
+        ? "Paid"
+        : isPending
+          ? "Payment processing"
+          : isFailed
+            ? "Payment not completed"
+            : "Cancelled";
 
-  const statusTone: PaymentTone = isPaid
-    ? "paid"
-    : isPending
+  const statusTone: PaymentTone = isRefunded
+    ? "cancelled"
+    : isPartiallyRefunded
       ? "processing"
-      : isFailed
-        ? "failed"
-        : "cancelled";
+      : isPaid
+        ? "paid"
+        : isPending
+          ? "processing"
+          : isFailed
+            ? "failed"
+            : "cancelled";
 
-  const eyebrow = isPaid
-    ? "Order confirmed"
-    : isPending
-      ? "Almost there"
-      : isFailed
-        ? "Payment not completed"
-        : "Order cancelled";
+  const eyebrow = isRefunded
+    ? "Order refunded"
+    : isPaid
+      ? "Order confirmed"
+      : isPending
+        ? "Almost there"
+        : isFailed
+          ? "Payment not completed"
+          : "Order cancelled";
 
   // The order summary + notes are shared: on the paid screen they sit in the
   // sticky right column beside the tracker; on the other states they stack below

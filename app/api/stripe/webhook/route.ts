@@ -12,6 +12,7 @@ import { redeemGiftCardForOrder } from "@/lib/giftcards/redeem";
 import { earnPointsForOrder } from "@/lib/loyalty/earn";
 import { redeemPointsForOrder } from "@/lib/loyalty/redeem";
 import { reportError } from "@/lib/observability";
+import { reconcileRefundsForPaymentIntent } from "@/lib/payments/refund-service";
 import { notifyNewOrder } from "@/lib/push";
 import { depleteStockForOrder } from "@/lib/stock/depletion";
 import { getStripe } from "@/lib/stripe";
@@ -41,6 +42,23 @@ const KICK_DRAIN_BUDGET_MS = 8_000;
  * no-ops without a DSN. Async so the after()/catch chains it terminates keep
  * the invocation alive until the report is flushed.
  */
+/**
+ * A refund event carries either a Charge or a Refund object depending on the
+ * event type; both expose `payment_intent` as an id or an expanded object.
+ * Read it defensively — an unrecognised shape simply means nothing to
+ * reconcile, never a thrown handler.
+ */
+function paymentIntentIdFrom(object: unknown): string | null {
+  if (typeof object !== "object" || object === null) return null;
+  const value = (object as { payment_intent?: unknown }).payment_intent;
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value !== null) {
+    const id = (value as { id?: unknown }).id;
+    return typeof id === "string" ? id : null;
+  }
+  return null;
+}
+
 const swallow = (what: string) => async (error: unknown) => {
   console.error(`[stripe-webhook] ${what} failed (sweep will recover):`, error);
   await reportError(error, {
@@ -234,6 +252,24 @@ export async function POST(request: Request): Promise<Response> {
           } catch {
             // Swallowed by design — the sweep is the guarantee.
           }
+        }
+        break;
+      }
+      // ADDITIVE (M4 / audit F3) — refunds issued OUT OF BAND (the Stripe
+      // Dashboard, which was the merchant's only option before this
+      // milestone) arrive here. Reconciling them keeps the order record,
+      // loyalty, gift-card balances and stock consistent with money that
+      // moved outside the product. Idempotent: rows are keyed on the Stripe
+      // refund id, so replays insert nothing. Refunds issued IN product
+      // already have their row — this simply finds nothing new.
+      case "charge.refunded":
+      case "charge.refund.updated": {
+        const paymentIntentId = paymentIntentIdFrom(event.data.object);
+        if (paymentIntentId) {
+          await reconcileRefundsForPaymentIntent(
+            paymentIntentId,
+            event.account,
+          );
         }
         break;
       }

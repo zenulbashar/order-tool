@@ -1,7 +1,12 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { orderItemModifiers, orderItems, orders } from "@/lib/db/schema";
+import {
+  orderItemModifiers,
+  orderItems,
+  orders,
+  orderStatus,
+} from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 
 export type ConfirmedOrderItem = {
@@ -19,7 +24,9 @@ export type ConfirmedOrder = {
   publicToken: string;
   // Short daily "call number" (resets per venue per day), or null.
   dailyNumber: number | null;
-  status: "pending_payment" | "confirmed" | "cancelled" | "payment_failed";
+  // Derived from the schema enum so a new payment state (e.g. M4's refund
+  // statuses) is a compile error here rather than a silently unhandled case.
+  status: (typeof orderStatus.enumValues)[number];
   // Kitchen lifecycle, separate from `status` (payment). Read-only here — drives
   // the diner's Placed → Preparing → Ready tracker once the order is paid; the
   // owner board is the only writer.

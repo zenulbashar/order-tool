@@ -7,6 +7,7 @@ import { formatCents, orderReference } from "@/lib/validation";
 
 import { OrderStatusControls } from "./order-status-controls";
 import { PrintButton } from "./print-button";
+import { RefundControl } from "./refund-control";
 import type { KitchenOrder, KitchenOrderItem } from "./queries";
 
 /**
@@ -121,6 +122,18 @@ export function TicketDrawer({
             <span className="text-lg font-bold text-ink">
               ${formatCents(order.totalCents)}
             </span>
+          </div>
+
+          {/* Refunds (M4) — inside the scrolling body rather than the sticky
+              action bar, so the money action is never adjacent to the
+              high-frequency kitchen status buttons. */}
+          <div className="mt-4 border-t border-line pt-4">
+            <RefundControl
+              orderId={order.id}
+              totalCents={order.totalCents}
+              refundedCents={order.refundedCents}
+              status={order.status}
+            />
           </div>
         </div>
 
