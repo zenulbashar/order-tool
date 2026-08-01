@@ -29,9 +29,12 @@ export default async function OnboardingLayout({
         <header className="mb-6 flex items-center justify-center">
           <Wordmark glow className="text-xl text-forest" />
         </header>
-        <div className="rounded-card border border-line bg-surface-elevated p-5 shadow-card sm:p-6">
+        <main
+          id="main-content"
+          className="block rounded-card border border-line bg-surface-elevated p-5 shadow-card sm:p-6"
+        >
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );

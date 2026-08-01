@@ -10,18 +10,30 @@ import { sweepStockDepletion } from "@/lib/stock/depletion";
 
 // The dispatch engine uses the Neon pool + node crypto — keep off Edge.
 export const runtime = "nodejs";
-// Room for a batch of provider calls; well under Vercel's function ceiling.
+// Room for several batches of provider calls; well under Vercel's ceiling.
 export const maxDuration = 60;
 
-/** Jobs processed per invocation — bounded so a burst spreads across ticks. */
+/** Jobs claimed per processDueJobs call — bounds each claim query. */
 const BATCH_SIZE = 10;
 
 /**
- * The integrations job processor + sweep (Track 0). Invoked every minute by
- * Vercel Cron (vercel.json), and its logic is also kicked opportunistically
- * after order confirmation via after() in the Stripe webhook. Protected by
- * CRON_SECRET (Vercel sends `Authorization: Bearer <CRON_SECRET>`); if the
- * secret is absent we fail safe and refuse, mirroring the webhook-secret
+ * Stop draining this long before maxDuration so the sweeps below always get
+ * their turn even when the job backlog alone could fill the whole invocation.
+ */
+const DRAIN_BUDGET_MS = 35_000;
+
+/**
+ * The integrations job processor + sweep (Track 0). Invoked ONCE DAILY by
+ * Vercel Cron (vercel.json, `0 3 * * *`) — cron delivery is best-effort and a
+ * failed run is never retried, which is why the sweeps' 72h lookback windows
+ * must exceed the worst-case gap between successful runs. The fast path is the
+ * opportunistic kick after order confirmation via after() in the Stripe
+ * webhook; this route is the reconciliation backstop. Because a whole day of
+ * retries can be due when it fires, it DRAINS in batches until the queue is
+ * empty or the time budget is spent, rather than processing a single batch.
+ *
+ * Protected by CRON_SECRET (Vercel sends `Authorization: Bearer <CRON_SECRET>`);
+ * if the secret is absent we fail safe and refuse, mirroring the webhook-secret
  * discipline. This route only reads/writes integration outbox state — it can
  * never touch order confirmation.
  */
@@ -34,17 +46,33 @@ export async function GET(request: Request): Promise<Response> {
     return new Response("Unauthorized.", { status: 401 });
   }
 
+  const startedAt = Date.now();
   const swept = await sweepMissedOrders();
-  const processed = await processDueJobs(BATCH_SIZE);
+
+  // Drain the due queue: with a daily tick, a single 10-job batch would cap
+  // throughput at 10 jobs/day and leave any backlog to age another 24h. Keep
+  // claiming batches until one comes back short (queue empty) or the drain
+  // budget is spent. Claims are atomic per row, so an overlapping webhook kick
+  // can never double-run a job we've claimed here.
+  let processed = 0;
+  for (;;) {
+    const batch = await processDueJobs(BATCH_SIZE);
+    processed += batch;
+    if (batch < BATCH_SIZE) break;
+    if (Date.now() - startedAt > DRAIN_BUDGET_MS) break;
+  }
+
   await runMaintenance();
   // Stock depletion backstop (Track D · D4b) — re-derives any missed depletion
   // from confirmed-order state. Independent of the integrations outbox above;
-  // isolated so its failure can't fail the integrations tick.
+  // isolated so its failure can't fail the integrations tick. Failures are
+  // LOGGED (not just swallowed): with a daily tick, "surfaces on the next tick"
+  // means a full day of silence, so the log line is the only timely signal.
   let depleted = 0;
   try {
     depleted = await sweepStockDepletion();
-  } catch {
-    // Advisory backstop — surfaces on the next tick.
+  } catch (error) {
+    console.error("[jobs] stock depletion sweep failed:", error);
   }
   // Loyalty earning backstop (PR1) — credits points for any confirmed,
   // loyalty-eligible order missed by the webhook fast-path (e.g. the customer
@@ -52,24 +80,24 @@ export async function GET(request: Request): Promise<Response> {
   let earned = 0;
   try {
     earned = await sweepLoyaltyEarn();
-  } catch {
-    // Advisory backstop — surfaces on the next tick.
+  } catch (error) {
+    console.error("[jobs] loyalty earn sweep failed:", error);
   }
   // Loyalty redemption debit backstop (PR2) — writes the ledger debit for any
   // confirmed order that redeemed points but missed the webhook. Isolated.
   let redeemed = 0;
   try {
     redeemed = await sweepLoyaltyRedeem();
-  } catch {
-    // Advisory backstop — surfaces on the next tick.
+  } catch (error) {
+    console.error("[jobs] loyalty redeem sweep failed:", error);
   }
   // Gift-card redemption debit backstop (PR2) — writes the ledger debit for any
   // confirmed order that redeemed a card but missed the webhook. Isolated.
   let giftCardsRedeemed = 0;
   try {
     giftCardsRedeemed = await sweepGiftCardRedeem();
-  } catch {
-    // Advisory backstop — surfaces on the next tick.
+  } catch (error) {
+    console.error("[jobs] gift card redeem sweep failed:", error);
   }
   return Response.json({
     ok: true,

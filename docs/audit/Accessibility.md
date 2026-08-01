@@ -18,11 +18,12 @@ plus two primitive gaps.
 
 | # | Finding | WCAG | Severity | Status |
 | --- | --- | --- | --- | --- |
-| 1 | Hand-rolled dialogs (8) had no focus trap, no initial focus, no focus restoration | 2.4.3, 4.1.2 | High | **Fixed** (7/8) |
-| 2 | Escape-to-close inconsistent across dialogs | 2.1.1 | Medium | **Fixed** (7/8) |
+| 1 | Hand-rolled dialogs (8) had no focus trap, no initial focus, no focus restoration | 2.4.3, 4.1.2 | High | **Fixed** (8/8) |
+| 2 | Escape-to-close inconsistent across dialogs | 2.1.1 | Medium | **Fixed** (8/8) |
 | 3 | Concierge "Add all" forced `text-white` on raw `--brand` (contrast on light brands) | 1.4.3 | Medium | **Fixed** |
 | 4 | `Segmented` declared `radiogroup` but lacked the radiogroup keyboard model | 4.1.2, 2.1.1 | Medium | **Fixed** |
 | 5 | `Field` didn't link error/hint to the control (`aria-describedby`/`aria-invalid`) | 3.3.1, 1.3.1 | Medium | **Fixed** |
+| 6 | No skip link anywhere — first Tab stop on every page was the header/nav | 2.4.1 | Medium | **Fixed** (global `SkipLink`, root layout; anchors on the shared shells + JS fallback to first `<main>`/`<h1>` elsewhere) |
 
 ### 1 & 2 — Modal semantics (the systemic fix)
 
@@ -49,11 +50,11 @@ Migrated: `item-modifier-sheet`, `cart-review`, `concierge/multi-item-picker`,
 `dashboard/orders/ticket-drawer`, `dashboard/support-widget`. Per-site scroll-lock
 and ad-hoc Escape effects were removed in favour of the hook.
 
-**Remaining:** `dashboard/integrations/detail-drawer.tsx` is a **navigation**
-drawer (it closes by `<Link>` back to a plain URL, not an `onClose` callback), so
-it doesn't fit the callback-based hook cleanly. Tracked in
-RemainingRecommendations.md — the fix is to give it a router-based close so the
-same hook applies.
+**Remaining:** none. `dashboard/integrations/detail-drawer.tsx` — a
+**navigation** drawer that closes by URL rather than an `onClose` callback —
+was the last holdout; it now closes through `router.push` so the same
+`useDialog` hook applies (see its `panelRef` wiring). All 8 dialogs carry the
+full keyboard contract.
 
 ### 3 — Brand contrast
 

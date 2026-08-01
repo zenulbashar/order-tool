@@ -34,6 +34,22 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 | F6 | Storefront is `force-dynamic`: ~8 Postgres queries per diner pageview | **High** |
 | F12 | Production migrations auto-apply on merge, ungated, with no backup | **High** |
 
+### Remediation status (updated 2026-08-01)
+
+The first remediation pass shipped alongside this report. What changed, per finding:
+
+| Finding | Status | What shipped |
+|---|---|---|
+| F1 | **Mitigated** (step 1) | Delivery is no longer selectable at onboarding — shown as a disabled "Coming soon" tile; the action ignores the field entirely and pins `offers_delivery = false`; validation requires a shipped mode. The delivery *epic* (M9+) remains open. |
+| F2 | **Mitigated** | All five `SWEEP_WINDOW_MS` widened 24h → 72h; the cron route drains batches until empty or budget instead of one 10-job batch; retry backoff gained 0.5×–1.5× jitter; the false "every minute" comment corrected. The `last_swept_at` watermark and a durable queue remain open (M2). |
+| F3 | Open | Refunds epic (M4). |
+| F4 | **Partial** | Misleading `requireOwner()` renamed to `requireVenueMemberSession()` with the role-check seam documented. Invites + enforcement remain open (M5). |
+| F5 | **Partial** | Every silently-swallowed side-effect failure on the webhook and cron paths now logs to Vercel function logs (`swallow()` helper). Real APM/alerting remains open (M1). |
+| F6 | Open | Tag-based ISR (M6). |
+| F10 | **Mitigated** | Global `SkipLink` (first Tab stop on every page; anchors on the shared shells, JS fallback elsewhere); stale "7/8 dialogs" note in `Accessibility.md` corrected — all 8 use `useDialog`. Brand-contrast validation and screen-reader pass remain open (M7). |
+| F12 | **Mitigated** | `migrate-prod` now needs `[build, e2e]` and fails on destructive SQL (`DROP`/`TRUNCATE`/type-narrowing guard, verified against all 59 existing migrations). Environment approval + pre-migration Neon snapshot remain open. |
+| F7, F8, F9, F11 | Open | Roadmap items M3, M8, and the RLS decision pending §8.1's counter-evidence. |
+
 ---
 
 ## 2. Two corrections to the audit brief

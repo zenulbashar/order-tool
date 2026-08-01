@@ -43,7 +43,7 @@ export function MarketingPageShell({
         </div>
       </header>
 
-      <main className="mx-auto max-w-[760px] px-5 py-12 sm:py-16">
+      <main id="main-content" className="mx-auto max-w-[760px] px-5 py-12 sm:py-16">
         <h1 className="font-display text-[clamp(30px,4.4vw,44px)] font-extrabold tracking-tight text-ink">
           {title}
         </h1>

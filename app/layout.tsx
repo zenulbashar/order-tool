@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Hanken_Grotesk, Space_Mono } from "next/font/google";
 
 import { Analytics } from "@/app/_components/analytics";
+import { SkipLink } from "@/app/_components/skip-link";
 import {
   SITE_DESCRIPTION,
   SITE_KEYWORDS,
@@ -98,6 +99,8 @@ export default function RootLayout({
       className={`${bricolage.variable} ${hanken.variable} ${spaceMono.variable}`}
     >
       <body className="min-h-dvh bg-surface text-ink antialiased">
+        {/* First Tab stop on every page — WCAG 2.4.1 Bypass Blocks. */}
+        <SkipLink />
         {children}
         {/* GA4 — renders only when NEXT_PUBLIC_GA_ID is set. */}
         <Analytics />

@@ -69,8 +69,20 @@ export async function runMaintenance(): Promise<void> {
 const BACKOFF_SECONDS = [60, 300, 1_800, 7_200, 43_200];
 const MAX_ATTEMPTS = BACKOFF_SECONDS.length + 1;
 
-/** How far back the sweep re-derives jobs from order state. */
-const SWEEP_WINDOW_MS = 24 * 60 * 60 * 1000;
+/**
+ * How far back the sweep re-derives jobs from order state.
+ *
+ * MUST comfortably exceed the worst-case gap between successful cron runs, not
+ * merely equal the schedule: Vercel cron is best-effort (a failed invocation is
+ * never retried) and Hobby-plan runs land anywhere within the scheduled hour,
+ * so with a daily schedule two consecutive successes can be ~25h — or ~49h —
+ * apart. At exactly 24h a single dropped run permanently orphaned the orders in
+ * the gap. 72h gives one-missed-run-plus-jitter headroom; sweeps are idempotent
+ * (ON CONFLICT DO NOTHING), so the wider window costs only a slightly larger
+ * candidate scan. Keep the five SWEEP_WINDOW_MS constants (integrations, stock,
+ * loyalty earn/redeem, gift cards) in lockstep.
+ */
+const SWEEP_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 /**
  * Keep stored errors short and free of anything secret-shaped: message text
@@ -268,13 +280,17 @@ async function runClaimedJob(job: IntegrationJob): Promise<void> {
     const backoffSeconds =
       BACKOFF_SECONDS[Math.min(job.attempts - 1, BACKOFF_SECONDS.length - 1)] ??
       BACKOFF_SECONDS[0];
+    // Randomized jitter (0.5x–1.5x) so jobs that failed together — e.g. every
+    // job of a venue during a provider outage — don't retry in lockstep and
+    // re-hammer the provider the moment it recovers.
+    const jitteredSeconds = backoffSeconds * (0.5 + Math.random());
 
     await db
       .update(integrationJobs)
       .set({
         status: isDead ? "dead" : "failed",
         lastError: message,
-        nextAttemptAt: new Date(Date.now() + backoffSeconds * 1000),
+        nextAttemptAt: new Date(Date.now() + jitteredSeconds * 1000),
       })
       .where(eq(integrationJobs.id, job.id));
     await db

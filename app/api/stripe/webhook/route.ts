@@ -19,6 +19,17 @@ import { getStripe } from "@/lib/stripe";
 export const runtime = "nodejs";
 
 /**
+ * Log-and-swallow for the best-effort side effects below. The swallow itself is
+ * load-bearing (a side-effect failure must never fail or delay the money path —
+ * the cron sweep is the guarantee), but with a DAILY sweep a silent drop means
+ * up to a day of invisible divergence. The log line is the only timely signal,
+ * and Vercel function logs are currently the platform's only observability.
+ */
+const swallow = (what: string) => (error: unknown) => {
+  console.error(`[stripe-webhook] ${what} failed (sweep will recover):`, error);
+};
+
+/**
  * Stripe webhook — the ONLY path that confirms or fails an order. Treated as a
  * hostile public surface:
  *  - the RAW request body is verified against STRIPE_WEBHOOK_SECRET on EVERY
@@ -83,7 +94,7 @@ export async function POST(request: Request): Promise<Response> {
           const enqueued = await enqueueJobsForOrder(paymentIntent.id);
           if (enqueued > 0) {
             // Kick processing after the response is sent (Vercel waitUntil).
-            after(() => processDueJobs(enqueued).catch(() => {}));
+            after(() => processDueJobs(enqueued).catch(swallow("integrations kick")));
           }
         } catch {
           // Swallowed by design — the sweep is the guarantee.
@@ -97,7 +108,11 @@ export async function POST(request: Request): Promise<Response> {
         // missed depletion from order state, so even deleting this block loses
         // nothing. A stock failure and an integrations failure are independent.
         try {
-          after(() => depleteStockForOrder(paymentIntent.id).catch(() => {}));
+          after(() =>
+            depleteStockForOrder(paymentIntent.id).catch(
+              swallow("stock depletion"),
+            ),
+          );
         } catch {
           // Swallowed by design — the sweep is the guarantee.
         }
@@ -108,7 +123,9 @@ export async function POST(request: Request): Promise<Response> {
         // notifyNewOrder is a complete no-op when FCM is not configured, so this
         // is safe on the money path; losing this block loses only the push.
         try {
-          after(() => notifyNewOrder(paymentIntent.id).catch(() => {}));
+          after(() =>
+            notifyNewOrder(paymentIntent.id).catch(swallow("new-order push")),
+          );
         } catch {
           // Swallowed by design.
         }
@@ -122,7 +139,9 @@ export async function POST(request: Request): Promise<Response> {
           const confirmedId = confirmed[0].id;
           try {
             after(() =>
-              notifyCustomerOrder(confirmedId, "confirmed").catch(() => {}),
+              notifyCustomerOrder(confirmedId, "confirmed").catch(
+                swallow("customer notification"),
+              ),
             );
           } catch {
             // Swallowed by design.
@@ -138,7 +157,11 @@ export async function POST(request: Request): Promise<Response> {
         // (claimOrder) landed after this webhook.
         if (confirmed.length > 0) {
           try {
-            after(() => earnPointsForOrder(paymentIntent.id).catch(() => {}));
+            after(() =>
+              earnPointsForOrder(paymentIntent.id).catch(
+                swallow("loyalty earn"),
+              ),
+            );
           } catch {
             // Swallowed by design — the sweep is the guarantee.
           }
@@ -150,7 +173,11 @@ export async function POST(request: Request): Promise<Response> {
         // redeemed points. sweepLoyaltyRedeem() (cron) is the backstop.
         if (confirmed.length > 0) {
           try {
-            after(() => redeemPointsForOrder(paymentIntent.id).catch(() => {}));
+            after(() =>
+              redeemPointsForOrder(paymentIntent.id).catch(
+                swallow("loyalty redeem"),
+              ),
+            );
           } catch {
             // Swallowed by design — the sweep is the guarantee.
           }
@@ -163,7 +190,9 @@ export async function POST(request: Request): Promise<Response> {
         if (confirmed.length > 0) {
           try {
             after(() =>
-              redeemGiftCardForOrder(paymentIntent.id).catch(() => {}),
+              redeemGiftCardForOrder(paymentIntent.id).catch(
+                swallow("gift card redeem"),
+              ),
             );
           } catch {
             // Swallowed by design — the sweep is the guarantee.
@@ -188,8 +217,9 @@ export async function POST(request: Request): Promise<Response> {
         // Acknowledge unrelated event types so Stripe stops resending them.
         break;
     }
-  } catch {
-    // Persisting failed — return 500 so Stripe retries the delivery later.
+  } catch (error) {
+    // Persisting failed — log it, then 500 so Stripe retries the delivery.
+    console.error("[stripe-webhook] handler error (Stripe will retry):", error);
     return new Response("Handler error.", { status: 500 });
   }
 
