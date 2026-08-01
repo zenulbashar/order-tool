@@ -9,7 +9,7 @@ import {
   topUpGiftCard,
   voidGiftCard,
 } from "@/lib/giftcards/manage";
-import { requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 
 export type GiftCardState = { error?: string; issuedCode?: string };
 
@@ -36,12 +36,12 @@ function dollarsToCents(raw: string): number | null {
 async function requireVenueMemberSession() {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin");
-  return requireVenue();
+  return requireVenuePermission("giftcards:manage");
 }
 
 /**
  * Issue a new gift card with an opening balance (owner comps/refunds/promos).
- * Ownership is from requireVenue() — never a client id. Returns the generated
+ * Ownership is from requireVenuePermission("giftcards:manage") — never a client id. Returns the generated
  * code so the page can show it once for the owner to hand out.
  */
 export async function issueGiftCardAction(

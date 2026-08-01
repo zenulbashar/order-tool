@@ -10,7 +10,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ingredients } from "@/lib/db/schema";
 import { recordStockMovement } from "@/lib/stock/movements";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { idSchema } from "@/lib/validation";
 
 const STOCK_PATH = "/dashboard/stock";
@@ -20,7 +20,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("stock:manage");
 }
 
 /**

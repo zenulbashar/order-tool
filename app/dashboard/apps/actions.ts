@@ -7,7 +7,7 @@ import {
   getRosterSSOUrl,
   mintRosterHandoffToken,
 } from "@/lib/sso/roster";
-import { requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 
 export type RosterHandoff = { token: string; url: string };
 
@@ -30,7 +30,7 @@ export async function createRosterHandoff(): Promise<RosterHandoff> {
     // anyway rather than mint a token with no subject.
     throw new Error("No verified email on the current session.");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const token = mintRosterHandoffToken({
     email,

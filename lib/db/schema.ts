@@ -355,6 +355,10 @@ export const venueMembers = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // PRE-M5 role column, retained as the LEGACY fallback: a member with no
+    // rows in venue_member_roles is still granted access from this value, so
+    // every existing owner keeps exactly the access they had with no data
+    // migration. New assignments are written to venue_member_roles.
     role: memberRole("role").notNull(),
     createdAt: createdAt(),
   },
@@ -362,6 +366,94 @@ export const venueMembers = pgTable(
     uniqueIndex("venue_members_venue_user_idx").on(table.venueId, table.userId),
   ],
 );
+
+/**
+ * The role vocabulary (M5 / audit F4). A SEPARATE enum from the legacy
+ * two-value `venue_role`, deliberately: the audit is explicit that widening
+ * that enum twice is the expensive path, and the legacy column still has a
+ * job to do as the zero-migration fallback.
+ */
+export const venueRoleKey = pgEnum("venue_role_key", [
+  "owner",
+  "manager",
+  "staff",
+]);
+
+/**
+ * Role assignments, MANY-TO-MANY (M5 / audit F4 + §8.3). A member may hold
+ * several roles and their permissions are the UNION — the shape §8.3's
+ * verification actually supports, and the one that collapses cheaply to a
+ * single role later if that turns out to be enough. Permissions themselves
+ * are code, not data (see lib/authz.ts): roles are the unit of assignment.
+ */
+export const venueMemberRoles = pgTable(
+  "venue_member_roles",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: venueRoleKey("role").notNull(),
+    // Who granted it — kept for the audit trail; SET NULL so the record
+    // outlives the granting account.
+    grantedByUserId: text("granted_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("venue_member_roles_venue_user_role_idx").on(
+      table.venueId,
+      table.userId,
+      table.role,
+    ),
+    index("venue_member_roles_venue_user_idx").on(table.venueId, table.userId),
+  ],
+);
+
+/**
+ * Staff invitations (M5 / audit F4). Shipped in the SAME milestone as
+ * enforcement, never before it — the audit is explicit that "any member row
+ * grants full owner powers" must be closed before the first invite exists.
+ *
+ * The raw token is emailed and NEVER stored: only a SHA-256 hash lives here,
+ * so a database read cannot be replayed into venue access. An invitation is
+ * usable exactly once (accepted_at), expires, and can be revoked.
+ */
+export const venueInvitations = pgTable(
+  "venue_invitations",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    // Normalised (lowercased, trimmed) at write time; the acceptance check
+    // compares against the signed-in user's email.
+    email: text("email").notNull(),
+    role: venueRoleKey("role").notNull(),
+    // SHA-256 of the raw token. Unique so a token maps to one invitation.
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    invitedByUserId: text("invited_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("venue_invitations_token_hash_idx").on(table.tokenHash),
+    index("venue_invitations_venue_idx").on(table.venueId),
+    index("venue_invitations_email_idx").on(table.email),
+  ],
+);
+
+export type VenueMemberRole = typeof venueMemberRoles.$inferSelect;
+export type VenueInvitation = typeof venueInvitations.$inferSelect;
 
 /**
  * Dine-in tables (Phase 10). Owner-managed dining tables for a venue. `label`

@@ -14,7 +14,7 @@ import {
   venues,
 } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
-import { requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 import { getBaseUrl } from "@/lib/url";
 
 const MARKETPLACE_PATH = "/dashboard/marketplace";
@@ -55,7 +55,7 @@ export async function checkoutMarketplaceOrder(
 ): Promise<void> {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin");
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
 
   let destination: string;
   try {

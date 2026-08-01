@@ -11,7 +11,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { menuCategories, menuItems } from "@/lib/db/schema";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   dollarsToCents,
   formatCents,
@@ -42,7 +42,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("menu:manage");
 }
 
 /* -------------------------------------------------------------------------- */

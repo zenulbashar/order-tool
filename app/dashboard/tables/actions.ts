@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { venueTables } from "@/lib/db/schema";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { idSchema, tableLabelSchema } from "@/lib/validation";
 
 export type TablesActionState = { error?: string };
@@ -35,7 +35,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("settings:manage");
 }
 
 /** Next sort_order = MAX(sort_order)+1 among this venue's tables. */

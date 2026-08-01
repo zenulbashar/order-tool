@@ -8,7 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { venues, venueStations } from "@/lib/db/schema";
 import { normaliseStationCode } from "@/lib/orders/station";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { idSchema } from "@/lib/validation";
 
 export type StationsSettingsState = { error?: string; success?: boolean };
@@ -33,7 +33,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("settings:manage");
 }
 
 function revalidateStationConsumers(): void {
