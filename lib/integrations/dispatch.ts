@@ -10,6 +10,7 @@ import {
   type VenueIntegration,
   venueIntegrations,
 } from "@/lib/db/schema";
+import { reportJobFailure } from "@/lib/observability";
 
 /**
  * The integrations OUTBOX engine (Track 0). Design contract:
@@ -148,8 +149,18 @@ export async function enqueueJobsForOrder(
  * of venues with an active integration. This is what makes the outbox a
  * guarantee rather than a best effort — the webhook enqueue can fail (or be
  * reverted) and mirroring still converges.
+ *
+ * Returns both the candidate count (every recent confirmed order × active
+ * integration — normally all already enqueued) and the number of jobs this
+ * sweep actually INSERTED. `enqueued > 0` is the honest backlog signal (M1 /
+ * F5): it means the webhook fast path missed those orders, and it feeds the
+ * sweep-backlog alert in the cron route. ON CONFLICT DO NOTHING … RETURNING
+ * yields only the genuinely new rows, so the count is exact.
  */
-export async function sweepMissedOrders(): Promise<number> {
+export async function sweepMissedOrders(): Promise<{
+  candidates: number;
+  enqueued: number;
+}> {
   const since = new Date(Date.now() - SWEEP_WINDOW_MS);
   const candidates = await db
     .select({
@@ -166,9 +177,9 @@ export async function sweepMissedOrders(): Promise<number> {
       ),
     )
     .where(and(eq(orders.status, "confirmed"), gt(orders.createdAt, since)));
-  if (candidates.length === 0) return 0;
+  if (candidates.length === 0) return { candidates: 0, enqueued: 0 };
 
-  await db
+  const inserted = await db
     .insert(integrationJobs)
     .values(
       candidates.map((candidate) => ({
@@ -178,8 +189,9 @@ export async function sweepMissedOrders(): Promise<number> {
         orderId: candidate.orderId,
       })),
     )
-    .onConflictDoNothing();
-  return candidates.length;
+    .onConflictDoNothing()
+    .returning({ id: integrationJobs.id });
+  return { candidates: candidates.length, enqueued: inserted.length };
 }
 
 /**
@@ -277,6 +289,21 @@ async function runClaimedJob(job: IntegrationJob): Promise<void> {
   } catch (error) {
     const message = scrubError(error);
     const isDead = job.attempts >= MAX_ATTEMPTS;
+    // Telemetry FIRST (M1 / F5), so a dead letter is reported even if the
+    // reschedule writes below fail. A dead job will never retry on its own —
+    // this is the alert a human must act on; a retryable failure is a
+    // warning. The reporter never throws and no-ops without a DSN.
+    await reportJobFailure(
+      {
+        jobId: job.id,
+        venueId: job.venueId,
+        provider: job.provider,
+        kind: job.kind,
+        attempts: job.attempts,
+        maxAttempts: MAX_ATTEMPTS,
+      },
+      error,
+    );
     const backoffSeconds =
       BACKOFF_SECONDS[Math.min(job.attempts - 1, BACKOFF_SECONDS.length - 1)] ??
       BACKOFF_SECONDS[0];

@@ -2,8 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // `ws` (the Neon WebSocket driver dependency) is server-only and should not
-  // be bundled into the server build.
-  serverExternalPackages: ["ws"],
+  // be bundled into the server build. `@sentry/node` must stay external too:
+  // bundling breaks its OpenTelemetry internals, and the fork's default
+  // externals list carries only @sentry/profiling-node.
+  serverExternalPackages: ["ws", "@sentry/node"],
   experimental: {
     serverActions: {
       // The menu-photo import sends up to 3 images (~5MB each) through a Server

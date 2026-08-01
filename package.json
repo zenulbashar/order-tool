@@ -20,6 +20,7 @@
     "@auth/drizzle-adapter": "^1.11.2",
     "@aws-sdk/client-s3": "^3.1075.0",
     "@neondatabase/serverless": "^1.1.0",
+    "@sentry/node": "^10.69.0",
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^9.8.0",
     "@upstash/ratelimit": "^2.0.8",

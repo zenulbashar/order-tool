@@ -10,6 +10,7 @@ import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch
 import { redeemGiftCardForOrder } from "@/lib/giftcards/redeem";
 import { earnPointsForOrder } from "@/lib/loyalty/earn";
 import { redeemPointsForOrder } from "@/lib/loyalty/redeem";
+import { reportError } from "@/lib/observability";
 import { notifyNewOrder } from "@/lib/push";
 import { depleteStockForOrder } from "@/lib/stock/depletion";
 import { getStripe } from "@/lib/stripe";
@@ -22,11 +23,17 @@ export const runtime = "nodejs";
  * Log-and-swallow for the best-effort side effects below. The swallow itself is
  * load-bearing (a side-effect failure must never fail or delay the money path —
  * the cron sweep is the guarantee), but with a DAILY sweep a silent drop means
- * up to a day of invisible divergence. The log line is the only timely signal,
- * and Vercel function logs are currently the platform's only observability.
+ * up to a day of invisible divergence. Since M1 the drop is reported to the
+ * error tracker as well as the function log; the reporter never throws and
+ * no-ops without a DSN. Async so the after()/catch chains it terminates keep
+ * the invocation alive until the report is flushed.
  */
-const swallow = (what: string) => (error: unknown) => {
+const swallow = (what: string) => async (error: unknown) => {
   console.error(`[stripe-webhook] ${what} failed (sweep will recover):`, error);
+  await reportError(error, {
+    context: "stripe-webhook.side-effect",
+    tags: { side_effect: what },
+  });
 };
 
 /**
@@ -96,8 +103,16 @@ export async function POST(request: Request): Promise<Response> {
             // Kick processing after the response is sent (Vercel waitUntil).
             after(() => processDueJobs(enqueued).catch(swallow("integrations kick")));
           }
-        } catch {
-          // Swallowed by design — the sweep is the guarantee.
+        } catch (error) {
+          // Swallowed by design — the sweep is the guarantee — but reported
+          // (M1): a failed enqueue here is exactly the miss the sweep-backlog
+          // alert would only surface a day later. Reported via after() so the
+          // flush can never delay this response.
+          try {
+            after(() => swallow("integrations enqueue")(error));
+          } catch {
+            // Swallowed by design.
+          }
         }
         // ADDITIVE (Track D · D4b) — stock depletion, a SECOND independent
         // integrations-style touch, held to the SAME contract as the block
@@ -219,7 +234,14 @@ export async function POST(request: Request): Promise<Response> {
     }
   } catch (error) {
     // Persisting failed — log it, then 500 so Stripe retries the delivery.
+    // Reported to the tracker first (M1): this is the money path itself
+    // failing, the most alert-worthy event in the platform. The ≤2s flush
+    // delays only this already-failed response; Stripe retries regardless.
     console.error("[stripe-webhook] handler error (Stripe will retry):", error);
+    await reportError(error, {
+      context: "stripe-webhook.handler",
+      extra: { eventType: event.type },
+    });
     return new Response("Handler error.", { status: 500 });
   }
 

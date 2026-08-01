@@ -16,6 +16,7 @@ import {
   orders,
   venues,
 } from "@/lib/db/schema";
+import { reportError } from "@/lib/observability";
 import { assignDailyNumber } from "@/lib/orders/daily-number";
 import { getVenueTaxConfig, inclusiveTaxCents } from "@/lib/payments/tax";
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
@@ -489,9 +490,17 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
       publishableKey: getStripePublishableKey(),
       amountCents: totalCents,
     };
-  } catch {
+  } catch (error) {
     // The order remains 'pending_payment' with no PaymentIntent; surface a
-    // retryable error rather than a confirmed order.
+    // retryable error rather than a confirmed order. Reported first (M1):
+    // until now this swallow hid the cause (Stripe auth, Connect account
+    // state, network) — the ≤2s flush lands only on this failure path, never
+    // on a successful order.
+    await reportError(error, {
+      context: "place-order.payment-intent",
+      tags: { venue_id: venueId },
+      extra: { orderId },
+    });
     return reject("We couldn't start payment. Please try again.");
   }
 }
