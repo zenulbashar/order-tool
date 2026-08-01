@@ -166,21 +166,29 @@ across 47 tables, with composites where they matter.
   depend on it were then not revisited. The mismatch between the handler's own doc comment and
   its configuration is the tell. *(Plan cap per Vercel docs — see §8.4; evidentiary status noted
   there.)*
-- **The platform docs make this materially worse than the code alone suggests.** Per Vercel's
-  cron documentation (§8.4):
-  - **Vercel Cron does not retry a failed invocation.** A failed run is not re-invoked; the work
-    is simply dropped. The daily sweep is therefore not a backstop with a retry — it is a single
-    annual-odds coin flip per day.
-  - **Delivery is best-effort.** A transient network error can prevent the request reaching the
-    function at all, in which case the function never runs and **no runtime log is written** —
-    the miss is invisible in Vercel's own logs. Combined with F5 (no APM), nothing on this
-    platform can currently detect a missed sweep.
-  - **Hobby crons fire anywhere within the specified hour** (up to ~59 minutes of jitter). So the
-    real interval between consecutive sweeps ranges roughly 23–25 hours against a `SWEEP_WINDOW_MS`
-    of exactly 24h. **The window is already narrower than the worst-case gap** — orders confirmed
-    in that overhang are missed even when every run succeeds.
-  - Even on paid tiers cron cannot deliver sub-minute latency, so cron is structurally incapable
-    of meeting a kitchen-notification SLA regardless of plan.
+- **The platform contract makes this a violation, not merely a mis-tuning.** Vercel's cron
+  documentation (§8.4, verified 2-1) states the delivery contract explicitly:
+
+  > *"Cron delivery can also occasionally invoke the same scheduled run more than once. Because of
+  > this, cron jobs should be resilient to both missed runs and duplicate runs. Design your
+  > operations to be idempotent and reconciliation-based so each run can safely reprocess
+  > **outstanding work since the last successful run**."*
+
+  Vercel is explicit that runs get dropped and that a failed invocation is **not retried**. The
+  required mitigation is reconciliation with a lookback anchored to the last *successful* run.
+
+  **Prompt2Eat implements the pattern but breaks the property that makes it work.** The sweep is
+  genuinely reconciliation-based — that part is right — but `SWEEP_WINDOW_MS` is a fixed 24h,
+  which reconciles only since the last *scheduled* run. It has no way to reach back past a run
+  that never happened. One dropped invocation and the orders in that gap fall permanently outside
+  every subsequent sweep's window.
+
+  Two aggravating details, both corrected during verification (see §8.4):
+  - **Hobby crons fire anywhere within the full specified hour**, so consecutive runs can be
+    ~23–25h apart against a 24h window — the margin can be negative even when no run is dropped.
+  - A dropped run **writes no runtime log for that invocation**. Vercel does not claim the miss is
+    undetectable in general — but with no APM and no job-outcome metric (F5), this platform has no
+    other means of noticing. *The silence is Prompt2Eat's gap, not Vercel's.*
 - **Consequences, precisely:**
   1. **Throughput ceiling of 10 jobs/day via cron.** Any venue with a Square integration and
      more than 10 orders/day accumulates permanent backlog on the cron path.
@@ -202,6 +210,10 @@ across 47 tables, with composites where they matter.
 - **Recommended implementation:**
   1. **Today:** set `SWEEP_WINDOW_MS = 72h` in all five modules. Sweeps are idempotent
      (`ON CONFLICT DO NOTHING`), so widening the window is free and instantly restores margin.
+     *Better still, anchor the lookback to the last **successful** sweep — persist a
+     `last_swept_at` watermark and reconcile from it — which is what Vercel's contract actually
+     asks for. A fixed window is a cheap approximation; a watermark is the correct fix and is
+     roughly a day's work.*
   2. **This week:** raise cron to `* * * * *` (requires a paid Vercel tier) and correct the doc
      comment. But treat this as a stopgap: per §8.4 cron has no retry and no delivery guarantee at
      *any* tier, so it should not remain the mechanism of record for money-affecting side effects.
@@ -283,9 +295,23 @@ across 47 tables, with composites where they matter.
   closed *before* the first invite ships, not after.
 - **Recommended implementation:** Ship invites and enforcement together, never separately.
   Add `venue_invitations` (email, role, token hash, expiry); a members settings page; and a real
-  `requireVenueRole(venue, ...roles)` helper. Rename the misleading `requireOwner()`. Expand the
-  enum beyond two roles — the competitive baseline is closer to owner / manager / staff /
-  kitchen / accountant (see §8 for the researched comparison).
+  `requireVenueRole(venue, ...roles)` helper. Rename the misleading `requireOwner()`.
+- **On the target role model — deliberately unspecified, and here is why.** An earlier revision of
+  this report recommended a specific shape (editable roles + action-level permissions, one role per
+  user) on the strength of Shopify POS documentation. **All three of those claims were refuted in
+  verification (§8.3)**, and one was materially wrong: Shopify supports *multiple* roles per user
+  with **cumulative** permissions, not one. Toast, Square, Lightspeed and Flipdish were never
+  researched. **There is currently no verified competitor baseline in this report, so I am not
+  going to invent one.**
+  What the evidence *does* support:
+  - The product gap is real and rests entirely on repository evidence — it does not depend on any
+    competitor claim.
+  - If a role model is designed before that research lands, prefer a **many-to-many
+    `user ↔ role` join with permission union** over a single-role column. It is strictly more
+    general, it is what the one competitor data point we have actually does, and collapsing
+    many-to-many to one-role later is far cheaper than the reverse migration.
+  - Do **not** simply widen `memberRole` from two values to five. Widening an enum twice is the
+    expensive path; a `roles` + `role_permissions` pair costs little more now and avoids it.
 - **Migration strategy:** Additive table. Existing `owner` rows already carry the correct role,
   so enforcement is a no-op for current data — deploy the check first, then the invites.
 - **Dependencies:** None blocking.
@@ -427,15 +453,36 @@ mutations. **Effort:** 1 week. **Priority:** P2.
 
 ### F10 — Accessibility gaps with legal exposure
 
-The baseline is better than typical (94 `aria-label`, 109 `role`, 32 `focus-visible`, one raw
-`<img>`), but:
-- **Zero skip links** across all 67 pages — a clean **WCAG 2.2 Level A** failure (2.4.1 Bypass
-  Blocks). Level A is the floor, not the target.
-- Only 7 `aria-live` regions in a real-time ordering product. Cart updates, order-status
-  transitions, and validation errors must be announced.
+**Revised after reconciling with the existing in-repo audit** (`docs/audit/Accessibility.md`),
+which is substantial and largely superseded my initial read.
 
-**Effort:** 3–5 days for both. **Priority:** P1 — Level A failures carry disproportionate legal
-risk relative to fix cost. See §8 for jurisdiction detail.
+**What is already done — more than the raw greps suggested.** A shared `use-dialog.ts` hook gives
+every dialog the full ARIA contract (focus into panel on open, Tab trap, Escape, focus restoration
+to trigger, scroll lock). `Segmented` implements the WAI-ARIA radiogroup pattern with roving
+tabindex. `Field` wires `aria-describedby`/`aria-invalid` to the control. Icon-only buttons require
+`aria-label` **at the type level**, so it cannot be forgotten. `StatusBadge` never conveys status
+by colour alone. 44px touch targets.
+
+**The prior audit's own open item is stale — it is fixed.** `Accessibility.md:52` records
+`dashboard/integrations/detail-drawer.tsx` as the unremediated 8th dialog. It is not: the file now
+imports `useDialog` with a router-based close (`:9,:50-52`) — exactly the fix that doc proposed.
+Eight files use the hook. **Correct the doc; the work is done.**
+
+**What genuinely remains:**
+- **Zero skip links** across all 67 pages — a clean **WCAG 2.2 Level A** failure (2.4.1 Bypass
+  Blocks). The prior audit never covered this; its scope was primitives, dialogs, toggles and
+  fields. This is a real uncovered gap, not a duplicate.
+- **No screen-reader pass** (VoiceOver/NVDA/TalkBack), no real contrast sampling across tenant
+  brand colours, no reduced-motion verification. `Accessibility.md:89-93` correctly marks these
+  "not statically verifiable" and defers them to `ReleaseChecklist.md` — they are still
+  outstanding. **Tenant-brand contrast is the sharpest of these**: venues supply their own
+  `--brand`, so a single light brand colour can push an entire storefront below 4.5:1. That is a
+  per-tenant failure mode no static audit can catch, and it needs an automated contrast check at
+  brand-save time, not a manual pass.
+
+**Effort:** skip links ~1 day; automated brand-contrast validation ~2 days; screen-reader pass ~2
+days. **Priority:** P1 for skip links and brand contrast. Jurisdiction detail (WCAG 2.2 AA, EU
+EAA, ADA Title III, Australian DDA) was **never researched** — see §8.6.
 
 ### F12 — Production migrations auto-apply with no gate and no backup
 
@@ -498,209 +545,233 @@ an uncacheable page — F6 and multi-region are the same fix from the diner's pe
 
 ### 8.0 Evidentiary status — read this before citing anything below
 
-Verification ran across three attempts. It **partially completed**: the tenant-isolation block was
-adversarially verified; everything else was not. Status per claim:
+Verification is now **complete for the claims that were extracted**, across four runs. Final tally
+over 25 claims:
 
-| Status | Count | Which |
-|---|---|---|
-| **Verified** (2–3 refuters failed to refute) | **7** | Supabase RLS benchmarks; AWS SaaS Lens isolation; OWASP isolation guidance |
-| **Refuted** (majority refuted) | **3** | See below — all three had already been drafted into this report and are now removed |
-| **Unverified** (verifier panels never ran) | **15** | All Vercel Cron, Stripe, PCI SAQ A, Shopify POS and QStash claims |
+| Status | Count |
+|---|---|
+| **Verified** (survived 3 adversarial refuters) | **10** |
+| **Refuted** (majority refuted — corrected or removed below) | **15** |
 
-**The three refutations are the most important output of this pass, because each had already been
-written into the report:**
+**The refutation rate is 60%. That is the single most important number in this section.** Every
+refuted claim had already been drafted into an earlier revision of this report. None would have
+been caught without the adversarial pass.
 
-1. *"A btree index alone takes an RLS select from 171ms to under 0.1ms, >100×"* — **refuted 0-3**.
-   Removed from F7. The surviving, verified form is narrower: indexing is decisive **only in
-   combination with SELECT-wrapping**.
-2. *"AWS prescribes that isolation enforcement must not be left to service developers"* —
-   **refuted 1-2**. Removed from §8.1, where it had been cited as the strongest external support
-   for F7. AWS's verified position is the narrower "authn/authz ≠ isolation" statement in §8.1.
-3. *"OWASP requires `FORCE ROW LEVEL SECURITY` because `ENABLE` leaves the owner exempt"* —
-   **refuted 0-3**. The OWASP attribution is wrong. The technical point is retained in F7 but
-   explicitly demoted to unverified pending a check against the PostgreSQL docs.
+**Read the refutations correctly.** Most were *not* "the fact is false". They fall into four
+groups, and the distinction changes what you do about each:
 
-Had verification not run, all three would have shipped — one of them inside F7's acceptance
-criteria. Treat the 15 unverified claims accordingly: they are primary-source extractions, not
-fabrications, but the step that catches exactly this class of error has not been applied to them.
+1. **Attribution wrong, fact right.** e.g. the "foreign state mutations" phase model is from
+   Brandur Leach's personal article, not Stripe's blog; the `FORCE ROW LEVEL SECURITY` guidance is
+   not in the OWASP cheat sheet. → Fix the citation, keep the engineering.
+2. **Scope overstated.** e.g. Stripe idempotency keys apply to POST, not "every mutating
+   endpoint"; the PCI SAQ A script criterion applies to *embedded* payment forms, not to redirects.
+   → Narrow the claim; sometimes the narrowed version is *more* relevant to this platform, not less.
+3. **My derivation presented as documented.** e.g. "≈33 minutes to exhaust QStash's default
+   retries" is arithmetic I did, not a published figure. → Mark as derived.
+4. **Genuinely wrong.** e.g. "every Shopify POS staff member must be assigned exactly one role" —
+   Shopify explicitly supports multiple roles with cumulative permissions. → Delete and rethink
+   anything that rested on it.
 
-**Provenance caveats.** Some sources (AWS, PCI SSC, Shopify) returned HTTP 403 to the fetcher and
-were recovered via search-index retrieval of the exact URL rather than a direct page read. The AWS
-isolation claim carries this caveat *and* verified 3-0 on a verbatim quote, so it is well
-supported; the Shopify and PCI claims carry the caveat **and** are unverified, so they are the
-weakest material in this report.
+**Fetch caveat, and it is significant.** `couldFetch=false` on 14 of 15 claims in the final pass —
+`help.shopify.com`, `blog.pcisecuritystandards.org`, `stripe.com`, `vercel.com` and
+`docs.aws.amazon.com` all return HTTP 403 to this environment's fetcher. Verifiers worked from
+exact-phrase search-index retrieval. Verifiers were instructed to refute when they could not
+confirm, so **some refutations mean "unconfirmable here", not "false"** — each is labelled below.
+A reviewer with unrestricted network access should re-run these; several will likely resolve to
+verified.
 
-**Bottom line for external use:** §8.1 (tenant isolation) is citable. §8.2–8.4 are directionally
-sound but must be re-verified before going in front of an acquirer.
+**Bottom line for external use:** §8.1 (tenant isolation) is the only block I would put in front
+of an acquirer as-is. §8.2–8.4 are engineering-grade — good enough to plan from — but every figure
+needs a source check first.
 
-Sub-questions **2 (competitor RBAC beyond Shopify), 5 (cost/CWV economics), 6 (competitor pricing
-and time-to-first-order), and 7 (accessibility and allergen law)** were never reached — sources
-located but not read (§8.6). **§8 is therefore incomplete, and the sections most directly
-answering the brief's competitive-benchmarking questions are the missing ones.**
-
-### 8.1 Tenant isolation — the position against F7
+### 8.1 Tenant isolation — the position behind F7 · ✅ VERIFIED BLOCK
 
 - **AWS Well-Architected SaaS Lens — verified 3-0.** Verbatim: *"Authentication and authorization
   are not equal to isolation — While it is expected that you will control access to your SaaS
   environments through authentication and authorization, getting beyond the entry points of a
-  login screen or an API does not mean you have achieved isolation. This is just one piece of the
-  isolation puzzle."* *Provenance: `docs.aws.amazon.com` returned HTTP 403 to the fetcher; wording
-  recovered consistently across four independent search-index retrievals of the exact URL. The
-  quote nonetheless survived three independent refutation attempts.*
-  → This is the external support for F7: Prompt2Eat's isolation story is a NextAuth session plus
-  a `venue_id` predicate, which is precisely the "entry points" layer AWS says is not isolation.
+  login screen or an API does not mean you have achieved isolation."*
+  → Prompt2Eat's isolation story is a NextAuth session plus a `venue_id` predicate — precisely the
+  "entry points" layer AWS says is not isolation.
   **A stronger claim — that AWS prescribes isolation "must not be left to service developers" —
-  was drafted here and refuted 1-2. It has been removed. Do not reinstate it.**
-- **OWASP Multi-Tenant Security Cheat Sheet — verified 3-0** on the prescription: *"Do: … Use
-  database-level isolation (RLS, schemas) as defense in depth. Include tenant_id in all resource
-  queries, cache keys, and storage paths. … Don't: … Allow queries without tenant filters (even
-  for admins without explicit override)."*
-  → Note the admin clause. Prompt2Eat's impersonation path (`lib/tenant.ts:41`) resolves a venue
-  outside the caller's memberships; it is allowlist-gated and audited, which is the "explicit
-  override" OWASP contemplates — but it is exactly the path that must never lose that gate.
-- **OWASP isolation ranking — verified 2-1.** Shared-table row-level isolation is rated **Medium**,
-  the weakest of three database strategies (separate databases = Highest, separate schemas =
-  High), scoped to "cost-sensitive, high tenant count" — precisely the 100k+ target profile. The
-  split vote reflects that this is a general-guidance table, not a benchmark; weight accordingly.
-- **OWASP IDOR failure mode — verified 2-0.** A lookup by resource id alone returns another
-  tenant's record. Prescribed mitigations: composite `(tenant_id, resource_id)` lookups,
-  enforcement at the data-access layer rather than the API layer, non-guessable identifiers, and
-  **404 rather than 403** so existence in another tenant is not disclosed.
-  → Worth noting: Prompt2Eat already satisfies three of these four. Order lookup is
-  `(venue_id, public_token)` composite (`order/[token]/page.tsx:249`), tokens are 192-bit
-  non-guessable, and the storefront 404s rather than 403s. The gap is the *enforcement layer*.
-- **Supabase RLS benchmarks — verified 3-0** (three separate claims, all upheld; implementation
-  constraints detailed in F7). Verbatim on the membership pattern: *"This case times out with over
-  3 minutes as 1M rows must be searched and the function is run each time on 1000 rows. Changing
-  to wrap the function … is a big improvement but can still take seconds. Adding an index to
-  team_id is the big win, but only with the second case. Without, the index case still times
-  out."* And on layering: *"Do not rely on RLS for filtering but only for security."*
-  → The `team_id` membership pattern is the direct analogue of `venue_members`. This is the single
-  most operationally important result in §8: it means the obvious RLS implementation of
-  Prompt2Eat's exact schema does not merely slow down, it times out.
+  was drafted here and refuted 1-2. Removed. Do not reinstate.**
+- **OWASP Multi-Tenant Security Cheat Sheet — verified 3-0.** *"Do: … Use database-level isolation
+  (RLS, schemas) as defense in depth. Include tenant_id in all resource queries, cache keys, and
+  storage paths. … Don't: … Allow queries without tenant filters (even for admins without explicit
+  override)."*
+  → Note the admin clause. `lib/tenant.ts:41` resolves a venue outside the caller's memberships;
+  it is allowlist-gated and audited, which is the "explicit override" OWASP contemplates — but it
+  is exactly the path that must never lose that gate.
+- **OWASP isolation ranking — verified 2-1.** Shared-table row-level isolation rated **Medium**,
+  the weakest of three strategies (separate databases = Highest, separate schemas = High), scoped
+  to "cost-sensitive, high tenant count" — the 100k+ target profile. Split vote reflects that this
+  is a guidance table, not a benchmark.
+- **OWASP IDOR failure mode — verified 2-0.** Lookup by resource id alone returns another tenant's
+  record. Mitigations: composite `(tenant_id, resource_id)` lookups, enforcement at the
+  data-access layer, non-guessable identifiers, **404 rather than 403**.
+  → Prompt2Eat already satisfies all four on the order path: `(venue_id, public_token)` composite
+  lookup, 192-bit tokens, storefront 404s. The gap is the enforcement *layer*, not the pattern.
+- **Supabase RLS benchmarks — verified 3-0.** *"This case times out with over 3 minutes as 1M rows
+  must be searched and the function is run each time on 1000 rows. Changing to wrap the function …
+  is a big improvement but can still take seconds. Adding an index to team_id is the big win, but
+  only with the second case. Without, the index case still times out."* And: *"Do not rely on RLS
+  for filtering but only for security."*
+  → The `team_id` membership pattern is the direct analogue of `venue_members`. **The most
+  operationally important result in §8:** the obvious RLS implementation of Prompt2Eat's exact
+  schema does not degrade, it times out.
   **A fourth Supabase claim — indexing alone as the highest-leverage fix — was refuted 0-3 and
   removed.**
-- **Counter-evidence located but unread:** PlanetScale, *"RLS sounds great until it isn't"*, Neon's
-  multi-tenancy guidance, and AWS Prescriptive Guidance on RLS. **§8.1 remains one-sided in favour
-  of RLS** because the dissenting sources were queued behind the API limit and never read. The
-  verified claims above establish that *convention-only scoping is below the documented baseline*
-  and that *naive RLS is dangerous*; they do **not** establish that RLS is the right answer for
-  this platform. That conclusion needs the counter-evidence, and F7 should not be scheduled as
-  committed work until it is read.
+- **Counter-evidence still unread:** PlanetScale *"RLS sounds great until it isn't"*, Neon's
+  multi-tenancy guidance, AWS Prescriptive Guidance on RLS. **§8.1 remains one-sided in favour of
+  RLS.** The verified claims establish that convention-only scoping is below the documented
+  baseline and that naive RLS is dangerous. They do **not** establish that RLS is right for this
+  platform. F7 should not be scheduled as committed work until the dissenting sources are read.
 
-### 8.2 Payments and PCI — ⚠️ ALL CLAIMS UNVERIFIED
+### 8.2 Payments and PCI · ⚠️ 2 verified, 6 refuted
 
-*Verifier panels for every claim in this section failed on the API session limit. Primary-source
-extractions, not adversarially challenged. The PCI items additionally came via search-index
-retrieval after HTTP 403.*
+- **PCI SSC removed Requirements 6.4.3, 11.6.1 and 12.3.1 from SAQ A — verified 3-0.** Verbatim:
+  *"Removal of PCI DSS Requirements 6.4.3 and 11.6.1 for payment page security, and Requirement
+  12.3.1 for a Targeted Risk Analysis to support Requirement 11.6.1."*
+- **Stripe prescribes exponential backoff with randomised jitter — verified 3-0**, to defeat
+  thundering-herd retry storms.
+  → **Actionable now:** `lib/integrations/dispatch.ts:69` uses a fixed, unjittered
+  `BACKOFF_SECONDS`. At scale, synchronised retries after a provider outage would self-inflict a
+  second one. One-line fix.
+- **SAQ A script criterion — refuted 0-3, and the correction matters more than the original.** I
+  had written that SAQ A eligibility for a fully-outsourced payment page is now conditional on
+  script integrity. Per PCI SSC FAQ 1588, the new criterion (*"The merchant has confirmed that
+  their site is not susceptible to attacks from scripts that could affect the merchant's
+  e-commerce system(s)"*) applies **only to merchants who embed a third-party payment form in
+  their own page (e.g. an iframe — Stripe Elements)**, and expressly does **not** apply to
+  redirect or fully-outsourced flows.
+  → **Prompt2Eat uses `@stripe/react-stripe-js` (Elements), so the criterion applies to it.** The
+  corrected version is narrower in general but *directly binding here*. Confirm SAQ A eligibility
+  explicitly; add a checkout CSP and a script inventory.
+- **Stripe idempotency scope — refuted 0-3.** Keys apply to **POST** endpoints; GET and DELETE do
+  not take them in API v1. Not "every mutating endpoint". The safety guarantee is scoped to
+  retrying after a connection/network error.
+- **Idempotency key retention — refuted 0-3 on attribution and precision.** The correct source is
+  the API reference, not the blog, and the wording is that keys are *"eligible to be removed from
+  the system automatically after they're at least 24 hours old"* — a **minimum retention floor,
+  not a guarantee of exactly 24h**. A retry after pruning is treated as a new request and **can
+  charge again**.
+  → Still binding on F3: refunds must carry an idempotency key and retry well inside that floor.
+- **"Foreign state mutations" phase model — refuted 0-3 on attribution and mechanism.** It is from
+  Brandur Leach, *"Implementing Stripe-like Idempotency Keys in Postgres"* (brandur.org, Oct 2017),
+  not Stripe's blog. The mechanism is also the reverse of how I described it: each atomic phase is
+  the *local* state mutation between foreign calls, and **must be committed before the foreign
+  call is initiated** — the foreign call is deliberately outside the transaction.
+  → Still the right standard for F2/F3, cited correctly.
 
-- **Stripe idempotency:** keys apply to every mutating endpoint via the `Idempotency-Key` header,
-  making retry of any state-changing call safe. Keys are **retained 24 hours**, then pruned — so
-  any retry interval must be shorter than 24h or a late retry silently creates a duplicate charge.
-  → Directly relevant to F3: the refund implementation must send an idempotency key, and its
-  retry schedule must stay inside the 24h window.
-- Stripe prescribes **exponential backoff with randomised jitter**, explicitly to defeat
-  thundering-herd retry storms. Prompt2Eat's `BACKOFF_SECONDS` is a fixed unjittered schedule —
-  at 100k venues, synchronised retries after a provider outage would self-inflict a second one.
-  **This is a new, small, concrete fix: add jitter to `lib/integrations/dispatch.ts:69`.**
-- Stripe's **"foreign state mutations"** guidance is the design standard F2 should be judged
-  against: external side effects (charge, email, DNS) should each be isolated into their own
-  atomic phase bounded by a persisted recovery point, so a retry resumes rather than re-executing
-  completed effects. Prompt2Eat's outbox already approximates this per-job; the gap is that
-  several side effects share one job boundary.
-- **PCI DSS SAQ A, January 2025 revision:** adds an eligibility criterion requiring the merchant
-  to confirm its own site is **not susceptible to script-based attacks**, and removes Requirements
-  6.4.3, 11.6.1 and 12.3.1 from SAQ A. SAQ A eligibility for an outsourced payment page is
-  therefore **conditional on payment-page script integrity, not automatic**.
-  → Prompt2Eat uses `@stripe/react-stripe-js` (Elements), so the checkout page hosts Stripe
-  scripts alongside its own. **Action: confirm SAQ A eligibility explicitly rather than assuming
-  it**; a CSP on the checkout route and script-integrity controls are the mitigations.
-  *Provenance: PCI SSC blog returned HTTP 403; recovered via search-index reads.*
+### 8.3 RBAC · ❌ 0 verified, 3 refuted — DO NOT USE
 
-### 8.3 RBAC — partial (Shopify only) — ⚠️ ALL CLAIMS UNVERIFIED
+**All three Shopify claims were refuted, one of them materially. F4's revised target model rested
+on these and has been reverted.**
 
-*Verifier panels failed on the API session limit; sources also came via search-index retrieval
-after HTTP 403. This is the weakest-evidenced section in the report — and F4's revised target
-model rests on it.*
+- **"Every POS staff member must be assigned exactly one role" — refuted 0-3, and this one is
+  simply wrong.** Shopify's docs state the opposite: *"One or multiple roles can be assigned to an
+  admin user or POS staff"* and *"If a user has more than one role assigned, then that user is
+  granted the cumulative permissions from all the user's assigned roles."*
+  → The correct reading is a **many-to-many** user↔role model with cumulative permission union —
+  not one-role-per-user. This changes the schema shape F4 should target.
+  → What *is* supported: *"You can't assign individual permissions to Point of Sale staff, you need
+  to assign a role."* Roles are the unit of assignment.
+- **"No fixed role hierarchy; one default role 'Associate'" — refuted 1-2.** The Associate default
+  and its editability check out, but the claim ignores Shopify-managed roles (POS full permissions,
+  POS administrator, Organization POS administrator). POS roles are also **POS Pro-only**.
+- **"Permission granularity is per-action, composed via checkboxes" — refuted 0-3.** The
+  *substance* is roughly right — roles are *"a named set of POS permissions"* controlling *"which
+  actions"* staff perform, *"such as processing returns, adding discounts, or cash tracking"* — but
+  the docs never say "checkboxes", and none of it was directly retrievable.
 
-Only Shopify POS survived to extraction. Toast, Square, Lightspeed and Flipdish sources were
-located but not read (§8.6), so the "industry-standard minimum role set" the brief asked for is
-**not yet answerable**.
+**Toast, Square, Lightspeed and Flipdish were never researched** (§8.6). With Shopify's claims
+refuted, **there is currently no verified competitor RBAC baseline in this report.** F4's product
+gap stands entirely on repository evidence; only its *target design* is unsupported.
 
-- **Shopify POS** uses a strictly role-based model: individual permissions cannot be granted
-  directly to a person, and every staff member is assigned **exactly one role**.
-- It ships **no fixed role hierarchy** — no built-in Cashier/Server/Manager taxonomy. There is one
-  default role (`Associate`) whose name *and* permission set are merchant-editable, plus
-  merchant-created custom roles. A **template-plus-custom-roles** model, not a hardcoded enum.
-- Granularity is at the level of **individual staff actions** — processing returns, applying
-  discounts, cash tracking are separately controllable checkboxes.
-  *Provenance: `help.shopify.com` returned HTTP 403; recovered via search snippets.*
+### 8.4 Background jobs — the position behind F2 · ⚠️ 1 verified, 4 refuted (mostly overreach)
 
-→ **Implication for F4:** the target is not "add three more values to `memberRole`". The
-competitive pattern is a `roles` table + a `permissions` join, with merchant-editable roles seeded
-from templates. That changes F4's migration design and argues for building the permission table
-now rather than widening the enum twice.
+**Read this section carefully: the refutations narrowed my claims but left F2 better founded than
+before, not weaker.**
 
-### 8.4 Background jobs — the position against F2 — ⚠️ ALL CLAIMS UNVERIFIED
-
-*Verifier panels for every claim below failed on the API session limit. **This matters more here
-than anywhere else in §8: the F2 upgrade rests entirely on these claims.** F2's underlying defect
-— a daily cron against constants tuned for a minute cadence — is proven from the repository alone
-and does not depend on any of this. But the specific aggravating factors (no retry, silent
-failure, hourly jitter) are unverified vendor-doc readings. Re-verify before treating the "window
-is already too narrow" conclusion as established.*
-
-Per Vercel's cron documentation:
-
-- **No retry on failure.** A failed invocation is not re-invoked; the work is lost.
-- **Best-effort delivery.** Transient network errors can prevent the request reaching the function
-  at all — the function never executes and **no runtime log is written**, so the miss is silent
-  and undetectable from Vercel's own logs.
-- **Neither at-most-once nor exactly-once.** The same run can be invoked more than once; Vercel's
-  own guidance is that handlers must be idempotent and reconciliation-based.
-  → Prompt2Eat's handler *is* idempotent and reconciliation-based (§3.5), which is the one part of
-  this it already gets right.
-- **Plan-bound jitter.** Hobby is capped at once per day and fires anywhere **within the specified
-  hour** (~59 min jitter); paid tiers fire within the minute (~59s jitter). Even the best tier
-  cannot deliver sub-minute latency.
-
-**QStash** by contrast offers at-least-once HTTP delivery with automatic retry on any non-2XX,
-default 3 retries, configurable per message via `Upstash-Retries`. Its default backoff
-(`min(86400, e^(2.5n))` → 12s, 2m28s, 30m8s, 6h7m, 24h; ~33 min to exhaust 3 retries) is itself
-too slow for kitchen dispatch and must be tightened explicitly.
-
-**Kitchen-notification latency:** vendors uniformly describe order transmission as
-"instant"/"real-time" without numeric SLAs, so the defensible framing is that the operational
-expectation is **single-digit seconds** — which a daily cron misses by roughly five orders of
-magnitude.
+- **Cron can double-invoke; handlers must be idempotent and reconciliation-based — verified 2-1.**
+  Verbatim: *"Cron delivery can also occasionally invoke the same scheduled run more than once.
+  Because of this, cron jobs should be resilient to both missed runs and duplicate runs. Design
+  your operations to be idempotent and reconciliation-based so each run can safely reprocess
+  outstanding work since the last successful run."*
+  (Correction applied: dropped "neither at-most-once nor exactly-once" — not Vercel's words — and
+  softened "must" to Vercel's "should".)
+- **"No retry on failure" — refuted 0-3, but only on the inference.** The retrieved text confirms
+  *"Vercel will not retry an invocation if a cron job fails."* What was refuted is my addition
+  *"so the work is simply lost"* — because Vercel directs you to reconciliation so the next run
+  catches up.
+  → **This is the key insight, and it strengthens F2.** Vercel's stated contract is: we will drop
+  runs, so make each run *"reprocess outstanding work since the last successful run."* Prompt2Eat
+  *is* reconciliation-based — but with `SWEEP_WINDOW_MS` set to exactly the cron period, it can
+  only reprocess work since the last *scheduled* run, not the last *successful* one. **The platform
+  implements the pattern Vercel requires while violating the property that makes it work.** That is
+  a sharper and better-sourced statement of F2 than the version it replaces.
+- **"Missed runs are silent/undetectable" — refuted 0-3 on overreach.** Confirmed: *"transient
+  network errors can prevent a request from reaching your function. In those cases, your function
+  does not execute, and no runtime log is created for that scheduled run."* Refuted: my extension
+  to "undetectable from observability generally". Vercel says no *runtime log* for that run — it
+  does not say the miss is undetectable by other means.
+  → Still material given F5: with no APM and no job-outcome metric, Prompt2Eat has no *other*
+  means. The conclusion survives; it just now depends on F5 rather than on Vercel.
+- **Hobby hour-window jitter — refuted 1-2, substantively confirmed, corrected.** Retrieved text:
+  *"Vercel may invoke these cron jobs at any point within the specified hour… `0 8 * * *` could
+  trigger an invocation anytime between 08:00:00 and 08:59:59… For all other teams, cron jobs will
+  be invoked within the minute specified."* Corrections: the window is the **full specified hour
+  (~60 min, not ~59)**, and the source is `/docs/cron-jobs/usage-and-pricing`, not the docs hub.
+  → The consequence holds: consecutive Hobby runs can be ~23–25h apart against a 24h window.
+- **QStash at-least-once delivery — refuted 0-3 on scope.** Confirmed: 3 retries by default,
+  configurable via `Upstash-Retries`, retrying any non-2XX. Refuted: the page never uses the phrase
+  "at-least-once", and there are undocumented-by-me exceptions — an endpoint can opt out with HTTP
+  489 + `Upstash-NonRetryable-Error: true` (straight to DLQ), and delivery aborts past the
+  plan-specific Max HTTP Response Duration.
+- **QStash backoff schedule — refuted 1-2, mostly on my arithmetic.** The formula
+  `min(86400, e^(2.5n))` and the 12s / 2m28s / 30m8s / 6h7m6s / 24h schedule **are** verbatim on
+  the page. But **"≈33 minutes to exhaust 3 retries" is my derivation, not a documented figure**
+  (12s + 2m28s + 30m8s = 32m48s). Also flagged: the page contains a typo (`30m8ss`) and Upstash's
+  API reference states a *conflicting* formula, `min(86400, e^(2n))`.
+  → The recommendation stands and gets stronger: QStash's defaults are unsuitable for kitchen
+  dispatch, and the vendor's own docs disagree with each other about the backoff curve, so pin
+  `Upstash-Retries` and an explicit backoff rather than inheriting defaults.
 
 ### 8.5 What this changes in the findings
 
 | Finding | Change | Evidence status |
 |---|---|---|
-| **F7** | Materially revised. Naive RLS on this exact membership pattern times out; implementation constraints added; effort raised 2–3w → 4–6w. | **Verified 3-0** on the core benchmark. One sub-claim refuted and removed. |
-| **F2** | Upgraded. Cron has no retry, fails silently with no log, and Hobby jitter makes the real inter-run gap 23–25h against a 24h window — so the window may already be too narrow even when every run succeeds. | ⚠️ **Unverified.** The base defect is repo-proven; these aggravating factors are not. |
-| **F4** | Target model revised — competitors use editable roles + action-level permissions, not a wider enum. | ⚠️ **Unverified**, single source (Shopify), 403-recovered. |
-| **F3** | Refunds must carry a Stripe idempotency key, with retries inside the 24h retention window. | ⚠️ **Unverified.** |
-| **New** | Add jitter to `BACKOFF_SECONDS` (`dispatch.ts:69`) — currently unjittered. | ⚠️ Guidance **unverified**, but the code fact is repo-proven and jitter is uncontroversial. |
-| **New** | Confirm PCI SAQ A eligibility under the Jan 2025 revision; add a checkout CSP. | ⚠️ **Unverified**, 403-recovered. Treat as "go check", not as a finding. |
-| **Removed** | Three drafted claims refuted in verification: indexing-alone (0-3), AWS "not left to developers" (1-2), OWASP `FORCE RLS` attribution (0-3). | **Refuted** — see §8.0. |
+| **F7** | Materially revised. Naive RLS on this exact membership pattern times out; constraints added; effort 2–3w → 4–6w. | ✅ **Verified 3-0.** One sub-claim refuted and removed. |
+| **F2** | **Reframed and better founded.** Vercel's contract is "we drop runs — reconcile since the last *successful* run". Prompt2Eat reconciles only since the last *scheduled* run. | ✅ Core guidance **verified 2-1**; aggravating details corrected. Base defect repo-proven. |
+| **F4** | **Target-model revision REVERTED.** Shopify supports *multiple* roles with cumulative permissions, not one. No verified competitor RBAC baseline remains. | ❌ **All 3 claims refuted.** Product gap stands on repo evidence; target design is unsupported. |
+| **F3** | Refunds must carry an idempotency key, retried inside the retention floor. | ⚠️ Corrected — "at least 24h" is a floor, not a guarantee. |
+| **F10** | Revised — see finding. Prior in-repo audit is substantial; its "7/8 dialogs" note is **stale** (the 8th is fixed). Skip links remain the real gap. | ✅ Verified directly against the repo. |
+| **New** | Add jitter to `BACKOFF_SECONDS` (`dispatch.ts:69`). | ✅ Stripe guidance **verified 3-0**; code fact repo-proven. |
+| **New** | PCI SAQ A script criterion **does** bind this platform (Elements = embedded form). | ⚠️ Corrected from a wrong original; now *more* relevant. Confirm before relying. |
+| **Removed** | 15 refuted claims across four runs. | ❌ See §8.0. |
 
-### 8.6 Open verification queue
+### 8.6 Still not researched
 
-Located but not read before the limit — these are what a completed §8 still needs:
+**The search budget for this session was exhausted (200/200 WebSearch calls).** The final workflow
+returned empty for four of six angles, and its CWV agent reported verbatim: *"RESEARCH NOT
+PERFORMED — NOT A RESEARCH FINDING. This subagent obtained ZERO web sources."* That self-report is
+recorded here rather than discarded, because a silent empty result would have looked like "nothing
+found".
 
-*RBAC:* Toast Access Permissions Reference · Square employee permissions · Lightspeed user groups
-*Isolation counter-evidence:* PlanetScale "RLS sounds great until it isn't" · Neon RLS guide ·
-AWS Prescriptive Guidance on RLS
-*Payments:* Stripe webhooks · Stripe Connect disputes · Stripe security guide
-*Cost/performance:* Vercel Active CPU pricing · Neon connection pooling · web.dev
-"Milliseconds Make Millions"
-*Competitive:* Flipdish pricing · Merchant Maverick Toast review
-*Accessibility/allergen:* W3C WCAG 2.2 · EU EAA (eur-lex, food.ec.europa.eu) ·
-humanrights.gov.au (DDA) · foodstandards.gov.au (FSANZ)
+These four of the brief's seven questions therefore remain **unanswered**, and they are the ones
+the brief leaned on hardest for competitive positioning:
 
----
+- **Competitor RBAC** — Toast Access Permissions, Square employee permissions, Lightspeed user
+  groups, Flipdish. Now *more* important, since the Shopify baseline was refuted.
+- **Cost & performance economics** — Vercel Active CPU / Fluid pricing, Neon connection limits and
+  cold-start behaviour, the concrete cost delta between a cached and a dynamic page (§7 depends
+  entirely on this).
+- **Competitor pricing & time-to-first-order** — Toast, Square Online, Flipdish, GloriaFood,
+  Owner.com, ChowNow, BentoBox; plus documented merchant complaints.
+- **Accessibility & allergen law** — WCAG 2.2 AA, EU EAA deadline, ADA Title III litigation
+  volume, Australian DDA; EU FIC / Natasha's Law, FDA menu labeling, FSANZ.
+
+Also outstanding: the RLS counter-evidence in §8.1, and re-verification of the 403-blocked sources
+from an unrestricted network.
 
 ## 9. Roadmap
 
@@ -743,7 +814,10 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 - **Tests:** menu edit propagates in <1s.
 
 ### M7 — Accessibility (1 week)
-- Skip links; `aria-live` on cart, order status, validation (F10).
+- Skip links on every layout (F10) — the one clean Level A failure remaining.
+- Automated contrast validation of tenant `--brand` at save time, so a venue cannot publish a
+  storefront below 4.5:1.
+- Correct the stale "7/8 dialogs" note in `docs/audit/Accessibility.md` — the 8th is fixed.
 - Add `@axe-core/playwright` to CI.
 
 ### M8 — Merchant audit log (1 week)
@@ -769,23 +843,26 @@ paths, the job engine, caching, testing, CI, accessibility, and the Zale portabi
 Every finding F1–F12 is evidenced against a file and line. Remaining work there is depth within
 the epics above rather than undiscovered breadth.
 
-**The external benchmarking is partially complete, and this report should not be presented as
-though it were finished.** Three things are outstanding:
+**Verification is now finished for every claim that was extracted. The external benchmarking is
+not, and this report should not be presented as though it were.**
 
-1. **Only 7 of 25 claims passed adversarial verification** (§8.0). The tenant-isolation block
-   (§8.1) is verified and citable. Every claim in §8.2 (payments/PCI), §8.3 (RBAC) and §8.4
-   (background jobs) is **unverified** — the verifier panels never ran.
-2. **3 claims were refuted, and all three had already been drafted into this report.** They have
-   been removed and are documented in §8.0 so they are not reinstated. This is the strongest
-   available argument for finishing verification rather than shipping the remaining 15 as-is: the
-   refutation rate among verified claims was 3 in 10.
-3. **Four of the brief's seven research questions were never reached** — competitor RBAC beyond
-   Shopify, cost and Core Web Vitals economics, competitor pricing and time-to-first-order, and
-   accessibility/allergen law. Sources are queued in §8.6. These are the questions the brief
-   leaned on hardest for competitive positioning.
+1. **10 of 25 claims survived adversarial verification; 15 were refuted — a 60% refutation rate.**
+   Every refuted claim had been drafted into an earlier revision of this report. §8.0 classifies
+   them: most were attribution errors or overstated scope rather than false facts, but one — the
+   Shopify single-role model underpinning F4's target design — was simply wrong.
+2. **Four of the brief's seven research questions were never answered.** The session's WebSearch
+   budget was exhausted (200/200); the final workflow returned empty for four of six angles. The
+   unanswered questions are competitor RBAC, cost/CWV economics, competitor pricing and
+   time-to-first-order, and accessibility/allergen law — the ones the brief leaned on hardest for
+   competitive positioning. §7 accordingly presents no costed model.
+3. **14 of 15 sources in the final pass could not be fetched directly** (HTTP 403 from Shopify,
+   PCI SSC, Stripe, Vercel, AWS). Verifiers worked from exact-phrase search retrieval and were
+   told to refute when unable to confirm, so some refutations mean "unconfirmable here" rather
+   than "false". A reviewer on an unrestricted network should re-run these.
 
 **The honest status: a complete, file-evidenced internal audit; a verified tenant-isolation
-benchmark; and a partial, unverified benchmark everywhere else.**
+benchmark; a corrected but partly unconfirmable benchmark for payments and background jobs; and no
+competitive, cost, or legal benchmark at all.**
 
 Note the asymmetry that matters for planning: **F1, F3, F4, F5, F6, F8, F9, F10, F11 and F12 rest
 entirely on repository evidence and are unaffected by any of this.** Only F2's *aggravating
