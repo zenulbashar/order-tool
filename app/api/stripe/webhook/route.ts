@@ -135,15 +135,27 @@ export async function POST(request: Request): Promise<Response> {
         // customer-facing one. `confirmed` is empty on a redelivered webhook
         // (the status guard already matched), so a retry can't re-alert. Fired
         // inside after() so the Sentry flush can't delay Stripe's 200.
-        for (const order of confirmed) {
-          after(() =>
-            reportChargeAmountMismatch({
-              orderId: order.id,
-              paymentIntentId: paymentIntent.id,
-              chargedCents: paymentIntent.amount_received,
-              orderTotalCents: order.totalCents,
-            }).catch(swallow("charge amount check")),
-          );
+        //
+        // Wrapped like every other best-effort block here, and for the same
+        // reason: `after()` itself THROWS synchronously when waitUntil is
+        // unavailable. Unreachable on Vercel, but this block runs FIRST, so an
+        // uncaught throw would 500 the handler after the confirm had already
+        // committed — and Stripe's retry would then find `confirmed` empty and
+        // skip the customer notification and push, neither of which the cron
+        // sweep re-derives. A diagnostic must never cost an order its receipt.
+        try {
+          for (const order of confirmed) {
+            after(() =>
+              reportChargeAmountMismatch({
+                orderId: order.id,
+                paymentIntentId: paymentIntent.id,
+                chargedCents: paymentIntent.amount_received,
+                orderTotalCents: order.totalCents,
+              }).catch(swallow("charge amount check")),
+            );
+          }
+        } catch (error) {
+          await swallow("charge amount check scheduling")(error);
         }
         // ADDITIVE (Track 0) — the SINGLE integrations touch in this handler.
         // Runs strictly AFTER the confirm UPDATE above (which is unchanged),

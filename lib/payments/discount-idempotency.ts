@@ -38,11 +38,20 @@
  * every retry would reproduce it: the order wedges, unable to re-price at all.
  *
  * Including the amount means the key only repeats when the revision AND the
- * destination both repeat — which, because a revision can only recur after a
- * rollback reverted the row, is genuinely the SAME transition being retried.
- * Replaying there is correct: it re-applies the identical update the rolled-back
- * attempt made. That is what an idempotency key is for, and it is the property
- * the original comment claimed but the original key did not have.
+ * destination both repeat. On any committed path that is the SAME transition
+ * being retried, and replaying is correct: it re-applies the identical update
+ * the rolled-back attempt made. That is what an idempotency key is for, and it
+ * is the property the original comment claimed but the original key did not have.
+ *
+ * Not a total guarantee, and worth stating honestly: TWO consecutive
+ * rollbacks-after-Stripe-succeeded on one order, at different targets, could
+ * re-mint an earlier key (r1->1800 rolled back, r1->1300 rolled back, then a
+ * third apply back to 1800 replays r1-1800 against a PI now at 1300). That needs
+ * two commit failures in a row on the same order, each after Stripe had already
+ * accepted the update — and the webhook's charge-vs-order backstop catches the
+ * result if it ever happens. Strictly better than keying on the amount alone;
+ * closing it completely would need the revision persisted outside the
+ * transaction, which trades a rarer fault for a permanent extra write.
  */
 export function discountIdempotencyKey(
   orderId: string,

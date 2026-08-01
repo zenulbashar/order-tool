@@ -9,6 +9,7 @@ import {
   resolveGiftCardForRedemption,
 } from "@/lib/giftcards/queries";
 import { getAvailablePoints } from "@/lib/loyalty/balance";
+import { reportError } from "@/lib/observability";
 import {
   BANK_METHODS,
   MIN_TOTAL_CENTS,
@@ -368,7 +369,15 @@ export async function applyOrderDiscounts(
 
       result = successResult;
     });
-  } catch {
+  } catch (error) {
+    // Report BEFORE swallowing. To the diner a failure here is indistinguishable
+    // from "no discount available" — the page just shows the undiscounted total
+    // — so an outage was invisible: a Stripe rejection, or a schema change not
+    // yet applied in production, would silently stop every promo, bank saving,
+    // loyalty redemption and gift card from applying, on every checkout page
+    // load, with nothing in the logs. That is the money-path rule the audit set
+    // in F5: swallow if you must, but never silently.
+    await reportError(error, { context: "checkout.apply-discounts" });
     return { ok: false };
   }
 
