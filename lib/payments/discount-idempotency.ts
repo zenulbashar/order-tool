@@ -19,18 +19,35 @@
  * It is symmetric, so it is not only an attack: a diner ticking points on, off,
  * and on again lands the PI on the HIGHER amount and is overcharged.
  *
- * Keying on a monotonic per-order revision fixes it at the root. A from/to pair
- * would not: an A->B->A->B oscillation repeats the pair, while the counter never
- * repeats. Verifying the returned PaymentIntent's `amount` would not either —
- * the replayed body IS the earlier successful response, so it already carries
- * the expected amount.
+ * Verifying the RETURNED PaymentIntent would not have caught it either — the
+ * replayed body IS the earlier successful response, so it already carries the
+ * expected amount. Only a key that cannot repeat closes this.
  *
- * Pure and amount-free by construction: there is no parameter here that a
- * repeated target total could collide on.
+ * ## Why BOTH the revision and the amount
+ *
+ * The revision is what fixes the bug: it is monotonic per order, so it stays
+ * unique across an A->B->A->B oscillation, which a from/to pair would not.
+ *
+ * The target amount is here for the rollback case, and dropping it would trade
+ * one defect for another. The DB write and the Stripe call share a transaction,
+ * so if the COMMIT fails after Stripe already succeeded, the revision reverts
+ * with everything else. The next apply then reuses that revision — and if the
+ * diner has since changed the discount, it would reuse it with a DIFFERENT body.
+ * Stripe answers a key reused with different parameters by ERRORING, not
+ * replaying, so the update would throw, the transaction would roll back, and
+ * every retry would reproduce it: the order wedges, unable to re-price at all.
+ *
+ * Including the amount means the key only repeats when the revision AND the
+ * destination both repeat — which, because a revision can only recur after a
+ * rollback reverted the row, is genuinely the SAME transition being retried.
+ * Replaying there is correct: it re-applies the identical update the rolled-back
+ * attempt made. That is what an idempotency key is for, and it is the property
+ * the original comment claimed but the original key did not have.
  */
 export function discountIdempotencyKey(
   orderId: string,
   revision: number,
+  targetTotalCents: number,
 ): string {
   if (!Number.isInteger(revision) || revision < 1) {
     // Revisions come from `locked.discountRevision + 1`, so this is a
@@ -38,5 +55,10 @@ export function discountIdempotencyKey(
     // that could collide with a previous one.
     throw new Error(`discountIdempotencyKey: bad revision ${revision}`);
   }
-  return `${orderId}-disc-r${revision}`;
+  if (!Number.isInteger(targetTotalCents) || targetTotalCents < 0) {
+    throw new Error(
+      `discountIdempotencyKey: bad target ${targetTotalCents}`,
+    );
+  }
+  return `${orderId}-disc-r${revision}-${targetTotalCents}`;
 }

@@ -42,12 +42,13 @@ import { computeApplicationFeeCents, getStripe } from "@/lib/stripe";
  *    the DB into disagreement. The DB is written first and the PI update is last
  *    inside the same transaction, so a Stripe failure rolls the DB back — PI and
  *    DB never diverge on the common failure paths.
- *  - IDEMPOTENT: the PI update carries an idempotency key keyed to a monotonic
- *    per-order revision, so it identifies this state TRANSITION. It must not be
- *    keyed to the target amount: discounts are composable, the same total is
- *    reachable twice, and Stripe REPLAYS a reused key rather than erroring —
- *    which left the PI on one amount and the order row on another. See
- *    lib/payments/discount-idempotency.ts.
+ *  - IDEMPOTENT: the PI update's key is (order, monotonic revision, target), so
+ *    it identifies this state TRANSITION. It must not be keyed to the target
+ *    ALONE: discounts are composable, the same total is reachable twice, and
+ *    Stripe REPLAYS a reused key rather than erroring — which left the PI on one
+ *    amount and the order row on another. The target still belongs in the key so
+ *    that a revision reused after a rolled-back commit re-prices instead of
+ *    hitting a Stripe idempotency error. See lib/payments/discount-idempotency.ts.
  *  - CLAMPED ONCE: composeOrderDiscount sums promo + bank then clamps to
  *    [0, subtotal − Stripe minimum]; neither can ever produce a negative or
  *    sub-minimum charge, and it is never a surcharge.
@@ -357,7 +358,11 @@ export async function applyOrderDiscounts(
         },
         {
           stripeAccount: venue.stripeAccountId!,
-          idempotencyKey: discountIdempotencyKey(locked.id, nextRevision),
+          idempotencyKey: discountIdempotencyKey(
+            locked.id,
+            nextRevision,
+            finalTotalCents,
+          ),
         },
       );
 

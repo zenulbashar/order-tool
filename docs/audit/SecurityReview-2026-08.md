@@ -76,11 +76,25 @@ leaves the PI on the *higher* amount, so an honest diner is over-charged. Nothin
 downstream compared the two numbers — the webhook confirms on PaymentIntent id
 alone and never read `amount_received`.
 
-**Fix.** A monotonic `orders.discount_revision`, claimed under the existing row
-lock, keys the update (`lib/payments/discount-idempotency.ts`). A from/to pair
-would not have been enough — an A→B→A→B oscillation repeats it, a counter cannot.
-Verifying the *returned* PaymentIntent would not have worked either: the replayed
-body is the earlier successful response and already carries the expected amount.
+**Fix.** The key is now `(order, revision, target)`, where `revision` is a
+monotonic `orders.discount_revision` claimed under the existing row lock
+(`lib/payments/discount-idempotency.ts`). A from/to pair would not have been
+enough — an A→B→A→B oscillation repeats it, a counter cannot. Verifying the
+*returned* PaymentIntent would not have worked either: the replayed body is the
+earlier successful response and already carries the expected amount.
+
+The target is still in the key, and self-review is why. Keying on the revision
+**alone** trades this bug for another: the DB write and the Stripe call share a
+transaction, so a commit that fails *after* Stripe succeeded reverts the revision
+too. The next apply then reuses that revision — and if the diner has since
+changed the discount, reuses it with a different body. Stripe answers a reused
+key with changed parameters by **erroring**, not replaying, so the update throws,
+the transaction rolls back, and every retry reproduces it: the order wedges,
+unable to re-price at all. With the target included, the key repeats only when
+the revision *and* the destination both repeat — which, since a revision only
+recurs after a rollback reverted the row, is genuinely the same transition being
+retried, where replaying is the correct answer. Both halves are mutation-tested
+separately.
 
 Separately, the webhook now compares `amount_received` to `orders.total_cents` on
 the confirming transition and raises a `charge_amount_mismatch` alert on any
