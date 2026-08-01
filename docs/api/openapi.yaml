@@ -1,0 +1,275 @@
+openapi: 3.1.0
+
+# Prompt2Eat HTTP surface (F11 / roadmap).
+#
+# SCOPE, stated up front because it changes how this document should be read:
+# every path below is an INTERNAL endpoint — provider webhooks, cron ticks,
+# and same-origin browser calls from the app's own UI. There is NO public,
+# third-party-facing API yet, and nothing here is a stability promise to an
+# external integrator.
+#
+# The audit's F11 notes the gap is not urgent for that reason, but that the
+# marketplace ambition implies third-party integrators eventually. This spec
+# is the honest starting point: it documents what actually exists so the
+# first real public endpoint is added to a described surface rather than an
+# undocumented one.
+#
+# Most of the product's mutations are NOT here at all: they are Next.js
+# Server Actions (RPC over POST to the rendering route), not REST endpoints.
+# Documenting them as if they were an API would misrepresent the system.
+#
+# Kept in sync by test/openapi.test.ts, which fails if a route exists in
+# app/api without a path here (or vice versa).
+
+info:
+  title: Prompt2Eat internal HTTP surface
+  version: 0.1.0
+  description: >-
+    Webhooks, cron endpoints and same-origin browser routes. Not a public API.
+    See docs/ops/PCI.md for the payment-page security posture and
+    docs/ops/Observability.md for error reporting.
+
+servers:
+  - url: https://prompt2eat.com
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: webhooks
+    description: Inbound provider callbacks. Signature-verified, never trusted.
+  - name: cron
+    description: Scheduled reconciliation. Bearer-secret protected.
+  - name: browser
+    description: Same-origin calls from the app's own UI, session-authenticated.
+  - name: auth
+    description: Auth.js (NextAuth) handler routes.
+
+paths:
+  /api/stripe/webhook:
+    post:
+      tags: [webhooks]
+      summary: Stripe order webhook — the ONLY path that confirms an order
+      description: >-
+        Verifies the raw body against STRIPE_WEBHOOK_SECRET on every request;
+        an unverified request is rejected and does nothing. Handling is
+        idempotent: the confirm UPDATE is guarded on status='pending_payment',
+        so replays move no value. Also reconciles refunds issued out of band
+        from the Stripe Dashboard. See test/stripe-webhook-idempotency.test.ts.
+      security:
+        - stripeSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StripeEvent'
+      responses:
+        '200':
+          description: Acknowledged (including for unrelated event types).
+          content:
+            text/plain:
+              schema: { type: string, example: ok }
+        '400':
+          description: Missing/invalid signature, or the signing secret is unset (fail safe).
+        '500':
+          description: Persistence failed — returned deliberately so Stripe retries.
+
+  /api/stripe/billing-webhook:
+    post:
+      tags: [webhooks]
+      summary: Stripe platform-billing webhook (subscriptions, hardware orders)
+      description: >-
+        Separate signing secret from the order webhook; charges on the
+        PLATFORM account, sharing nothing with the diner money path.
+      security:
+        - stripeBillingSignature: []
+      responses:
+        '200': { description: Acknowledged. }
+        '400': { description: Missing/invalid signature. }
+        '500': { description: Persistence failed — Stripe retries. }
+
+  /api/integrations/square/webhook:
+    post:
+      tags: [webhooks]
+      summary: Square integration webhook
+      security:
+        - squareSignature: []
+      responses:
+        '200': { description: Acknowledged. }
+        '400': { description: Missing/invalid signature. }
+
+  /api/support/webhook:
+    post:
+      tags: [webhooks]
+      summary: Inbound support-desk callback
+      security:
+        - supportSignature: []
+      responses:
+        '200': { description: Acknowledged. }
+        '400': { description: Missing/invalid signature. }
+
+  /api/integrations/square/callback:
+    get:
+      tags: [webhooks]
+      summary: Square OAuth redirect target
+      description: >-
+        Completes the OAuth round trip. The `state` parameter is signed and
+        venue-bound, so a forged callback cannot attach a Square account to
+        someone else's venue.
+      parameters:
+        - { name: code, in: query, schema: { type: string } }
+        - { name: state, in: query, schema: { type: string } }
+      responses:
+        '307': { description: Redirect back into the integrations hub. }
+
+  /api/jobs/integrations:
+    get:
+      tags: [cron]
+      summary: Integrations job processor and reconciliation sweeps
+      description: >-
+        Drains due jobs and runs the five watermark-anchored sweeps. Safe at
+        ANY invocation frequency — sweeps are idempotent, claims are atomic
+        and leased. Invoked by Vercel Cron daily, and optionally hourly by
+        .github/workflows/job-tick.yml.
+      security:
+        - cronBearer: []
+      responses:
+        '200':
+          description: Tick complete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  swept: { type: integer, description: Candidate orders scanned. }
+                  sweepEnqueued: { type: integer, description: Jobs the webhook fast path had missed. }
+                  processed: { type: integer }
+                  drainBudgetExhausted: { type: boolean }
+                  depleted: { type: integer }
+                  earned: { type: integer }
+                  redeemed: { type: integer }
+                  giftCardsRedeemed: { type: integer }
+        '401': { description: Wrong or missing bearer secret. }
+        '503': { description: CRON_SECRET is not configured — fail safe, never open. }
+
+  /api/jobs/seo-stats:
+    get:
+      tags: [cron]
+      summary: Search Console statistics sync
+      security:
+        - cronBearer: []
+      responses:
+        '200': { description: Sync complete. }
+        '401': { description: Wrong or missing bearer secret. }
+        '503': { description: CRON_SECRET is not configured. }
+
+  /api/push/register:
+    post:
+      tags: [browser]
+      summary: Register a device token for order push notifications
+      security:
+        - session: []
+      responses:
+        '200': { description: Registered. }
+        '401': { description: No session. }
+
+  /api/support/chat:
+    post:
+      tags: [browser]
+      summary: Support assistant message
+      security:
+        - session: []
+      responses:
+        '200': { description: Assistant reply. }
+        '400': { description: Invalid input. }
+        '401': { description: No session. }
+        '403': { description: Session has no venue. }
+
+  /api/support/feedback:
+    post:
+      tags: [browser]
+      summary: Submit support feedback
+      security:
+        - session: []
+      responses:
+        '200': { description: Recorded. }
+        '400': { description: Invalid input. }
+        '401': { description: No session. }
+        '403': { description: Session has no venue. }
+
+  /api/auth/{nextauth}:
+    get:
+      tags: [auth]
+      summary: Auth.js handler (sign-in, callback, session, sign-out)
+      description: >-
+        Catch-all handled by Auth.js. Documented for completeness; its
+        contract is Auth.js's, not this application's.
+      parameters:
+        - name: nextauth
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Handler response. }
+    post:
+      tags: [auth]
+      summary: Auth.js handler (POST actions)
+      parameters:
+        - name: nextauth
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Handler response. }
+
+components:
+  securitySchemes:
+    stripeSignature:
+      type: apiKey
+      in: header
+      name: stripe-signature
+      description: HMAC over the RAW body, verified against STRIPE_WEBHOOK_SECRET.
+    stripeBillingSignature:
+      type: apiKey
+      in: header
+      name: stripe-signature
+      description: As above, against the separate billing endpoint secret.
+    squareSignature:
+      type: apiKey
+      in: header
+      name: x-square-hmacsha256-signature
+      description: Square's webhook signature.
+    supportSignature:
+      type: apiKey
+      in: header
+      name: x-support-signature
+      description: Shared-secret signature on the support callback.
+    cronBearer:
+      type: http
+      scheme: bearer
+      description: >-
+        `Authorization: Bearer <CRON_SECRET>`. When the secret is unset the
+        route refuses with 503 rather than running unauthenticated.
+    session:
+      type: apiKey
+      in: cookie
+      name: authjs.session-token
+      description: Auth.js session cookie; same-origin browser calls only.
+
+  schemas:
+    StripeEvent:
+      type: object
+      description: A Stripe Event envelope. Only `type` and `data.object` are read.
+      properties:
+        id: { type: string }
+        type: { type: string, example: payment_intent.succeeded }
+        account:
+          type: string
+          description: Set for Connect events; identifies the connected account.
+        data:
+          type: object
+          properties:
+            object: { type: object }
+      required: [type, data]
