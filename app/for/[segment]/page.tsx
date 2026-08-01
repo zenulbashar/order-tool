@@ -157,7 +157,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
                   {faq.question}
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-[#B08A30] transition group-open:rotate-45"
+                    className="shrink-0 text-[#856819] transition group-open:rotate-45"
                   >
                     +
                   </span>
@@ -189,7 +189,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
 
         {/* Cross-links to the other audiences (internal linking). */}
         <nav aria-label="Other venue types" className="mt-14">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#B08A30]">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#856819]">
             Prompt2Eat for
           </p>
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[15px]">

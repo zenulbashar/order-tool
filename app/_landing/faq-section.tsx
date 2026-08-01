@@ -20,7 +20,7 @@ export function FaqSection() {
     >
       <div className="mx-auto w-full max-w-[840px] px-[clamp(18px,4vw,48px)]">
         <div className="text-center" data-reveal>
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#B08A30]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#856819]">
             FAQ
           </span>
           <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em]">
@@ -40,7 +40,7 @@ export function FaqSection() {
                 {item.question}
                 <span
                   aria-hidden="true"
-                  className="shrink-0 text-[#B08A30] transition-transform group-open:rotate-45"
+                  className="shrink-0 text-[#856819] transition-transform group-open:rotate-45"
                 >
                   ＋
                 </span>

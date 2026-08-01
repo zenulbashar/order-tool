@@ -38,7 +38,7 @@ export default function LearnIndexPage() {
       </header>
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#B08A30]">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">
           Guides
         </span>
         <h1 className="mt-3 max-w-[640px] font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.05] tracking-[-0.03em]">
@@ -56,7 +56,7 @@ export default function LearnIndexPage() {
               href={`/learn/${article.slug}`}
               className="group flex flex-col rounded-[22px] border border-[#EDE4D2] bg-[#FFFDF8] p-6 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-24px_rgba(20,30,25,0.35)]"
             >
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#B08A30]">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#856819]">
                 {article.eyebrow}
               </span>
               <h2 className="mt-2 font-display text-[19px] font-extrabold tracking-[-0.015em]">
@@ -78,7 +78,7 @@ export default function LearnIndexPage() {
           ))}
         </div>
 
-        <p className="mt-12 text-sm text-[#7A8A7C]">
+        <p className="mt-12 text-sm text-[#5A6E60]">
           Quick answers instead?{" "}
           <Link
             href="/#faq"
@@ -90,7 +90,7 @@ export default function LearnIndexPage() {
       </main>
 
       <footer className="border-t border-[#EDE4D2] py-8">
-        <div className={`${CONTAINER} text-sm text-[#7A8A7C]`}>
+        <div className={`${CONTAINER} text-sm text-[#5A6E60]`}>
           © 2026 Prompt2Eat. All rights reserved.
         </div>
       </footer>

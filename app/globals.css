@@ -31,7 +31,7 @@
   --color-line: #e6ddcb; /* hairline border — adopt in new work only */
   /* Text */
   --color-ink: #0e1f18; /* default text — forest near-black */
-  --color-muted: #6e756b; /* muted text — sage-grey */
+  --color-muted: #666d63; /* muted text — sage-grey (WCAG AA: 4.8:1 on the page bg, 5.3:1 on cards) */
   --color-label: #a0987f; /* muted-tan mono eyebrow/label — new work only */
   /* Owner sidebar (the owner's one dark chrome surface; sage-on-forest, like
      the concierge-* tokens). Additive — used only by the dashboard sidebar. */

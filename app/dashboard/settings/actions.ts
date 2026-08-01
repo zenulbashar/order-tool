@@ -5,6 +5,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import {
+  contrastRatio,
+  formatContrastRatio,
+  WCAG_AA_NORMAL,
+} from "@/lib/contrast";
 import { db } from "@/lib/db";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { venues } from "@/lib/db/schema";
@@ -59,6 +64,24 @@ export async function updateBrandTheme(
     });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  // M7 / audit F10 — a venue must not be able to publish a storefront below
+  // WCAG AA. This only applies to a CUSTOM text colour: "auto" derives a
+  // readable ink/cream automatically and is safe by construction. Checked
+  // server-side because the picker is only a convenience — a direct POST
+  // must not be able to ship an unreadable storefront either.
+  if (parsed.data.textColor) {
+    const ratio = contrastRatio(parsed.data.textColor, parsed.data.brandColor);
+    if (ratio === null || ratio < WCAG_AA_NORMAL) {
+      return {
+        error: `That text colour is hard to read on your brand colour (${
+          ratio === null ? "unreadable" : formatContrastRatio(ratio)
+        }). Accessibility rules need at least ${formatContrastRatio(
+          WCAG_AA_NORMAL,
+        )} — pick a lighter or darker text colour, or switch to Auto.`,
+      };
+    }
   }
 
   await db

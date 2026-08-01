@@ -80,7 +80,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
       </header>
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#B08A30]">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">
           {article.eyebrow}
         </span>
         <h1 className="mt-3 font-display text-[clamp(28px,4vw,44px)] font-extrabold leading-[1.08] tracking-[-0.03em]">
@@ -125,7 +125,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
 
         {others.length > 0 ? (
           <nav aria-label="More guides" className="mt-12">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#B08A30]">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#856819]">
               Keep reading
             </p>
             <ul className="mt-3 space-y-2">
@@ -145,7 +145,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
       </main>
 
       <footer className="border-t border-[#EDE4D2] py-8">
-        <div className={`${CONTAINER} text-sm text-[#7A8A7C]`}>
+        <div className={`${CONTAINER} text-sm text-[#5A6E60]`}>
           © 2026 Prompt2Eat. All rights reserved.
         </div>
       </footer>
