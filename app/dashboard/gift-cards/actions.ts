@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { recordVenueAudit } from "@/lib/audit";
 import {
   issueGiftCard,
   topUpGiftCard,
@@ -12,6 +13,15 @@ import {
 import { requireVenuePermission } from "@/lib/tenant";
 
 export type GiftCardState = { error?: string; issuedCode?: string };
+
+/** The acting member, for audit attribution (M8 / audit F9). */
+async function giftCardAuditActor(): Promise<{
+  id?: string | null;
+  email?: string | null;
+}> {
+  const session = await auth();
+  return { id: session?.user?.id, email: session?.user?.email };
+}
 
 const PATH = "/dashboard/gift-cards";
 // A single card's value ceiling — a guard against a fat-finger ($100k here).
@@ -56,6 +66,15 @@ export async function issueGiftCardAction(
 
   const result = await issueGiftCard(venue.id, cents, note);
   if (!result.ok) return { error: "Couldn't create the gift card. Try again." };
+
+  // M8 / audit F9 — gift-card issuance is stored value leaving the venue;
+  // the code itself is never logged, only the amount.
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "gift_card_issued",
+    detail: `$${(cents / 100).toFixed(2)}${note ? ` — ${note}` : ""}`,
+    actor: await giftCardAuditActor(),
+  });
 
   revalidatePath(PATH);
   return { issuedCode: result.code };

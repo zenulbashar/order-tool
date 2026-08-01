@@ -102,6 +102,7 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
         { label: "Tax (GST)", href: "/dashboard/settings/tax" },
         { label: "Prep stations", href: "/dashboard/settings/stations" },
         { label: "Staff & roles", href: "/dashboard/settings/staff" },
+        { label: "Activity", href: "/dashboard/settings/activity" },
         { label: "Order notifications", href: "/dashboard/settings/notifications" },
       ],
     },
