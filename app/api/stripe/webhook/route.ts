@@ -11,7 +11,7 @@ import { drainDueJobs } from "@/lib/integrations/drain";
 import { redeemGiftCardForOrder } from "@/lib/giftcards/redeem";
 import { earnPointsForOrder } from "@/lib/loyalty/earn";
 import { redeemPointsForOrder } from "@/lib/loyalty/redeem";
-import { reportError } from "@/lib/observability";
+import { reportChargeAmountMismatch, reportError } from "@/lib/observability";
 import { reconcileRefundsForPaymentIntent } from "@/lib/payments/refund-service";
 import { notifyNewOrder } from "@/lib/push";
 import { depleteStockForOrder } from "@/lib/stock/depletion";
@@ -121,7 +121,30 @@ export async function POST(request: Request): Promise<Response> {
               eq(orders.status, "pending_payment"),
             ),
           )
-          .returning({ id: orders.id });
+          .returning({ id: orders.id, totalCents: orders.totalCents });
+
+        // Charge-vs-order backstop. The two are equal by construction — the
+        // recompute writes the order row and re-prices the PaymentIntent inside
+        // one transaction — but a discount-idempotency defect once made them
+        // disagree SILENTLY, in both directions, and nothing anywhere compared
+        // them. This is now the one place that does, and it catches divergence
+        // from any cause, not just that one.
+        //
+        // Reported, never enforced: by the time this runs the money has already
+        // moved, so refusing to confirm would turn an accounting fault into a
+        // customer-facing one. `confirmed` is empty on a redelivered webhook
+        // (the status guard already matched), so a retry can't re-alert. Fired
+        // inside after() so the Sentry flush can't delay Stripe's 200.
+        for (const order of confirmed) {
+          after(() =>
+            reportChargeAmountMismatch({
+              orderId: order.id,
+              paymentIntentId: paymentIntent.id,
+              chargedCents: paymentIntent.amount_received,
+              orderTotalCents: order.totalCents,
+            }).catch(swallow("charge amount check")),
+          );
+        }
         // ADDITIVE (Track 0) — the SINGLE integrations touch in this handler.
         // Runs strictly AFTER the confirm UPDATE above (which is unchanged),
         // and its try/catch swallows EVERYTHING: an integrations failure can

@@ -14,6 +14,7 @@ import {
   MIN_TOTAL_CENTS,
   bankDiscountCents,
 } from "@/lib/payments/bank-discount";
+import { discountIdempotencyKey } from "@/lib/payments/discount-idempotency";
 import { composeOrderDiscount } from "@/lib/payments/order-discount";
 import { inclusiveTaxCents } from "@/lib/payments/tax";
 import { resolveActivePromo } from "@/lib/promotions";
@@ -41,8 +42,12 @@ import { computeApplicationFeeCents, getStripe } from "@/lib/stripe";
  *    the DB into disagreement. The DB is written first and the PI update is last
  *    inside the same transaction, so a Stripe failure rolls the DB back — PI and
  *    DB never diverge on the common failure paths.
- *  - IDEMPOTENT: the PI update carries an idempotency key keyed to the target
- *    amount, so a retry to the same amount replays rather than double-applies.
+ *  - IDEMPOTENT: the PI update carries an idempotency key keyed to a monotonic
+ *    per-order revision, so it identifies this state TRANSITION. It must not be
+ *    keyed to the target amount: discounts are composable, the same total is
+ *    reachable twice, and Stripe REPLAYS a reused key rather than erroring —
+ *    which left the PI on one amount and the order row on another. See
+ *    lib/payments/discount-idempotency.ts.
  *  - CLAMPED ONCE: composeOrderDiscount sums promo + bank then clamps to
  *    [0, subtotal − Stripe minimum]; neither can ever produce a negative or
  *    sub-minimum charge, and it is never a surcharge.
@@ -227,6 +232,7 @@ export async function applyOrderDiscounts(
           giftCardId: orders.giftCardId,
           giftCardRedeemedCents: orders.giftCardRedeemedCents,
           appliedPromoId: orders.appliedPromoId,
+          discountRevision: orders.discountRevision,
         })
         .from(orders)
         .where(and(eq(orders.id, pre.id), eq(orders.venueId, venue.id)))
@@ -319,11 +325,17 @@ export async function applyOrderDiscounts(
         return;
       }
 
+      // Past the no-op guard, so this apply really does re-price the order.
+      // Claim the next revision UNDER the row lock — it is what makes the Stripe
+      // key below unique to this transition rather than to its destination.
+      const nextRevision = locked.discountRevision + 1;
+
       // DB first, PI last — a Stripe failure rolls the whole transaction back so
       // the PI and the order can't disagree.
       await tx
         .update(orders)
         .set({
+          discountRevision: nextRevision,
           totalCents: finalTotalCents,
           taxCents: finalTaxCents,
           discountCents: finalDiscountCents,
@@ -345,7 +357,7 @@ export async function applyOrderDiscounts(
         },
         {
           stripeAccount: venue.stripeAccountId!,
-          idempotencyKey: `${locked.id}-disc-${finalTotalCents}`,
+          idempotencyKey: discountIdempotencyKey(locked.id, nextRevision),
         },
       );
 

@@ -33,7 +33,10 @@ type SentrySdk = typeof import("@sentry/node");
 type ReportLevel = "error" | "warning";
 
 /** Values Sentry alert rules match on (tag key `alert`) — see the runbook. */
-export type AlertKind = "integration_job_dead_letter" | "sweep_backlog";
+export type AlertKind =
+  | "integration_job_dead_letter"
+  | "sweep_backlog"
+  | "charge_amount_mismatch";
 
 export type TelemetryEvent = {
   message: string;
@@ -226,6 +229,61 @@ export function sweepBacklogTelemetry(
 /** Report a cron tick's backlog (no-op when the tick was clean). */
 export async function reportSweepBacklog(backlog: SweepBacklog): Promise<void> {
   const event = sweepBacklogTelemetry(backlog);
+  if (!event) return;
+  await captureTelemetry(event, null);
+}
+
+export type ChargeAmountFacts = {
+  orderId: string;
+  paymentIntentId: string;
+  /** What Stripe actually took from the diner (`amount_received`). */
+  chargedCents: number;
+  /** What the order row says the diner owes. */
+  orderTotalCents: number;
+};
+
+/**
+ * Decide what a confirmed order's charge-vs-order comparison reports.
+ *
+ * These two numbers are supposed to be equal by construction: applyOrderDiscounts
+ * writes the order row and re-prices the PaymentIntent inside one transaction.
+ * A discount-idempotency defect made them silently disagree in production —
+ * hence this check. It is a BACKSTOP, not the fix: it catches divergence from
+ * any cause, including causes not yet imagined, and it is the only place that
+ * ever compares them.
+ *
+ * Deliberately does not decide whether to confirm the order — the money has
+ * already moved by the time this runs, and refusing to feed the kitchen would
+ * turn an accounting fault into a customer-facing one. It reports so a human
+ * reconciles: over-charge means the diner is owed a refund, under-charge means
+ * the venue is short. Equal amounts (the healthy case) report nothing.
+ */
+export function chargeAmountMismatchTelemetry(
+  facts: ChargeAmountFacts,
+): TelemetryEvent | null {
+  const deltaCents = facts.chargedCents - facts.orderTotalCents;
+  if (deltaCents === 0) return null;
+  const direction = deltaCents > 0 ? "OVER-charged" : "UNDER-charged";
+  return {
+    message: `Order ${facts.orderId} was ${direction} by ${Math.abs(deltaCents)}c: Stripe took ${facts.chargedCents}c, the order says ${facts.orderTotalCents}c.`,
+    level: "error",
+    alert: "charge_amount_mismatch",
+    tags: {
+      context: "stripe-webhook",
+      alert: "charge_amount_mismatch",
+      direction: deltaCents > 0 ? "over" : "under",
+    },
+    extra: { ...facts, deltaCents },
+    // One issue for the whole class — the per-order ids live in `extra`.
+    fingerprint: ["charge-amount-mismatch"],
+  };
+}
+
+/** Report a charge/order divergence (no-op when the amounts agree). */
+export async function reportChargeAmountMismatch(
+  facts: ChargeAmountFacts,
+): Promise<void> {
+  const event = chargeAmountMismatchTelemetry(facts);
   if (!event) return;
   await captureTelemetry(event, null);
 }

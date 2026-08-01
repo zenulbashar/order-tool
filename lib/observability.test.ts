@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  chargeAmountMismatchTelemetry,
   initObservability,
   isObservabilityEnabled,
   jobFailureTelemetry,
+  reportChargeAmountMismatch,
   reportError,
   reportJobFailure,
   reportRequestError,
@@ -217,10 +219,91 @@ describe("without a DSN (dev, tests, CI)", () => {
       giftCardRedeemsApplied: 0,
       drainBudgetExhausted: true,
     });
+    await reportChargeAmountMismatch({
+      orderId: "order-1",
+      paymentIntentId: "pi_1",
+      chargedCents: 1300,
+      orderTotalCents: 1800,
+    });
 
     expect(sentry.init).not.toHaveBeenCalled();
     expect(sentry.captureException).not.toHaveBeenCalled();
     expect(sentry.captureMessage).not.toHaveBeenCalled();
     expect(sentry.flush).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The backstop for the discount-idempotency defect: the charge and the order
+ * row are equal by construction, so any inequality is a real accounting fault
+ * that a human has to reconcile. Both directions matter — the bug was symmetric,
+ * so an honest diner could be OVER-charged just by toggling points.
+ */
+describe("chargeAmountMismatchTelemetry", () => {
+  const BASE = { orderId: "order-1", paymentIntentId: "pi_1" };
+
+  it("reports nothing when the charge matches the order", () => {
+    expect(
+      chargeAmountMismatchTelemetry({
+        ...BASE,
+        chargedCents: 1800,
+        orderTotalCents: 1800,
+      }),
+    ).toBeNull();
+  });
+
+  it("alerts when the diner was UNDER-charged (the venue is short)", () => {
+    const event = chargeAmountMismatchTelemetry({
+      ...BASE,
+      chargedCents: 1300,
+      orderTotalCents: 1800,
+    });
+    expect(event).not.toBeNull();
+    expect(event!.alert).toBe("charge_amount_mismatch");
+    expect(event!.level).toBe("error");
+    expect(event!.tags.direction).toBe("under");
+    expect(event!.extra.deltaCents).toBe(-500);
+    expect(event!.message).toContain("UNDER-charged");
+  });
+
+  it("alerts when the diner was OVER-charged (a refund is owed)", () => {
+    const event = chargeAmountMismatchTelemetry({
+      ...BASE,
+      chargedCents: 1800,
+      orderTotalCents: 1300,
+    });
+    expect(event).not.toBeNull();
+    expect(event!.tags.direction).toBe("over");
+    expect(event!.extra.deltaCents).toBe(500);
+    expect(event!.message).toContain("OVER-charged");
+  });
+
+  it("groups every mismatch into one issue, ids in extra", () => {
+    const under = chargeAmountMismatchTelemetry({
+      ...BASE,
+      chargedCents: 1,
+      orderTotalCents: 2,
+    });
+    const over = chargeAmountMismatchTelemetry({
+      orderId: "order-2",
+      paymentIntentId: "pi_2",
+      chargedCents: 9,
+      orderTotalCents: 2,
+    });
+    expect(under!.fingerprint).toEqual(over!.fingerprint);
+    expect(over!.extra.orderId).toBe("order-2");
+    expect(over!.extra.paymentIntentId).toBe("pi_2");
+  });
+
+  it("catches a one-cent divergence", () => {
+    // No tolerance band: these are integers written by the same transaction, so
+    // "close enough" would only ever hide a real fault.
+    expect(
+      chargeAmountMismatchTelemetry({
+        ...BASE,
+        chargedCents: 1799,
+        orderTotalCents: 1800,
+      }),
+    ).not.toBeNull();
   });
 });
