@@ -3,6 +3,8 @@
  * the signed-in customer. No venue_id, no owner data.
  */
 
+import type { orderStatus } from "@/lib/db/schema";
+
 /**
  * A line ready to seed into the cart for reorder — the SAME shape the cart
  * persists (ids only, NEVER a price). The cart's existing reconciliation
@@ -19,7 +21,10 @@ export type CartSeedLine = {
 /** One past order in the customer's history list (rendered from snapshots). */
 export type CustomerOrderSummary = {
   publicToken: string;
-  status: "pending_payment" | "confirmed" | "cancelled" | "payment_failed";
+  // Derived from the schema enum so a new payment state (e.g. M4's refund
+  // statuses) is a compile error in the label/tone maps rather than a blank
+  // badge in a diner's order history.
+  status: (typeof orderStatus.enumValues)[number];
   orderType: "pickup" | "dine_in";
   totalCents: number;
   createdAt: Date;

@@ -781,6 +781,12 @@ export const pointsLedgerReason = pgEnum("points_ledger_reason", [
   "earn",
   "redeem",
   "adjust",
+  // Unwinds an order's loyalty effect when it is FULLY refunded (M4). One row
+  // per order carrying the NET reversal — it cancels both the earn (points
+  // credited on a purchase that no longer stands) and the redeem (points the
+  // diner spent and must get back). UNIQUE(order_id, reason) keeps it
+  // idempotent across the action, the webhook, and the cron backstop.
+  "refund_reversal",
 ]);
 
 /**
@@ -834,6 +840,11 @@ export const giftCardReason = pgEnum("gift_card_reason", [
   "redeem",
   "topup",
   "adjust",
+  // Returns the value a card paid toward an order that was FULLY refunded
+  // (M4). The Stripe refund only returns the CASH the card was charged; the
+  // gift-card portion was a discount, so it has to come back to the card or
+  // the diner is short-changed. UNIQUE(order_id, reason) keeps it idempotent.
+  "refund_reversal",
 ]);
 
 /**
@@ -1026,6 +1037,13 @@ export const orderStatus = pgEnum("order_status", [
   // Stripe reported the PaymentIntent failed (Phase 2c). Reached only via the
   // webhook; the customer sees a clear, non-alarming retry path.
   "payment_failed",
+  // Refund lifecycle (M4 / audit F3). A refunded order was PAID — it is a
+  // terminal state reached from 'confirmed', never a substitute for
+  // 'cancelled' (which means the order never took money). 'partially_refunded'
+  // means some cash went back and the rest stands. Both are derived from the
+  // SUM of succeeded rows in `refunds`, never set by hand.
+  "partially_refunded",
+  "refunded",
 ]);
 
 // Kitchen/fulfillment lifecycle (Phase 3), DELIBERATELY SEPARATE from the
@@ -1270,6 +1288,76 @@ export const orderItemModifiers = pgTable(
     ),
   ],
 );
+
+/**
+ * Refund lifecycle mirroring Stripe's own (M4 / audit F3). A row is written
+ * BEFORE the Stripe call, as `pending`, so its id can serve as the
+ * idempotency key and so a crash mid-call leaves a durable record to
+ * reconcile rather than a silent money movement.
+ */
+export const refundStatus = pgEnum("refund_status", [
+  "pending",
+  "succeeded",
+  "failed",
+  "canceled",
+]);
+
+/**
+ * Cash refunds against a paid order (M4 / audit F3). Append-only in spirit:
+ * a row's amount never changes, only its status as Stripe reports back.
+ *
+ *  - The ORDER's refund state is DERIVED from the sum of `succeeded` rows —
+ *    never stored independently, so the two can't disagree.
+ *  - `stripe_refund_id` is unique so a `charge.refunded` webhook for a refund
+ *    issued OUT OF BAND (Stripe Dashboard) inserts exactly one row, and a
+ *    replay of that webhook inserts none. This is what keeps the platform
+ *    consistent with money moved outside the product — the precise
+ *    reconciliation gap F3 describes.
+ *  - `actor_user_id` records WHO refunded (null = reconciled from Stripe, i.e.
+ *    nobody clicked a button in this product). SET NULL on user delete so the
+ *    financial record outlives the account.
+ */
+export const refunds = pgTable(
+  "refunds",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    // Always positive, in the order's currency. Sum of succeeded rows can
+    // never exceed the order's total_cents (enforced in planRefund).
+    amountCents: integer("amount_cents").notNull(),
+    status: refundStatus("status").notNull().default("pending"),
+    // Stripe's own reason vocabulary (requested_by_customer / duplicate /
+    // fraudulent), plus a free-text merchant note.
+    reason: text("reason"),
+    note: text("note"),
+    actorUserId: text("actor_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    stripeRefundId: text("stripe_refund_id"),
+    // Scrubbed failure summary — same discipline as venue_integrations.
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("refunds_order_idx").on(table.orderId),
+    index("refunds_venue_created_idx").on(table.venueId, table.createdAt),
+    // One row per Stripe refund — the idempotency backbone for out-of-band
+    // refunds arriving by webhook. Partial so many rows may sit pre-call with
+    // a NULL stripe_refund_id.
+    uniqueIndex("refunds_stripe_refund_id_uniq")
+      .on(table.stripeRefundId)
+      .where(sql`${table.stripeRefundId} IS NOT NULL`),
+    check("refunds_amount_positive", sql`${table.amountCents} > 0`),
+  ],
+);
+
+export type Refund = typeof refunds.$inferSelect;
 
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
@@ -1581,6 +1669,11 @@ export const stockMovementReason = pgEnum("stock_movement_reason", [
   "wastage",
   "stocktake",
   "depletion",
+  // Returns ingredients to stock when an UNMADE order is fully refunded (M4).
+  // Deliberately NOT applied to an order the kitchen already prepared — those
+  // ingredients really were consumed, and restocking them would corrupt
+  // inventory. See lib/payments/refund-compensation.ts for the exact rule.
+  "refund_restock",
 ]);
 
 /**
@@ -1624,6 +1717,21 @@ export const stockMovements = pgTable(
     uniqueIndex("stock_movements_order_depletion_uniq")
       .on(table.orderId, table.ingredientId)
       .where(sql`${table.reason} = 'depletion' AND ${table.orderId} IS NOT NULL`),
+    // The same guarantee, generalised for M4's refund restocks: at most ONE
+    // order-linked movement per (order, ingredient, REASON). The refund
+    // action, the charge.refunded webhook, and a replay of either therefore
+    // cannot return the same ingredients to stock twice.
+    //
+    // Keyed on `reason` rather than written as a second predicate index on
+    // `reason = 'refund_restock'` deliberately: PostgreSQL forbids USING a
+    // newly-added enum value in the same transaction that adds it, and
+    // drizzle-kit applies all pending migrations in ONE transaction — an
+    // index predicate naming the new value would fail to deploy. Keying on
+    // the column names no enum literal at all, and it generalises to any
+    // future order-linked reason for free.
+    uniqueIndex("stock_movements_order_ingredient_reason_uniq")
+      .on(table.orderId, table.ingredientId, table.reason)
+      .where(sql`${table.orderId} IS NOT NULL`),
   ],
 );
 

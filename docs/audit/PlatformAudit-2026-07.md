@@ -37,14 +37,14 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 ### Remediation status (updated 2026-08-01)
 
 The first remediation pass shipped alongside this report; a second (M1 —
-observability), third (M2 — job engine), and fourth (M3 — checkout safety net)
-followed the same day. What changed, per finding:
+observability), third (M2 — job engine), fourth (M3 — checkout safety net), and fifth
+(M4 — refunds) followed the same day. What changed, per finding:
 
 | Finding | Status | What shipped |
 |---|---|---|
 | F1 | **Mitigated** (step 1) | Delivery is no longer selectable at onboarding — shown as a disabled "Coming soon" tile; the action ignores the field entirely and pins `offers_delivery = false`; validation requires a shipped mode. The delivery *epic* (M9+) remains open. |
 | F2 | **Mitigated** (M2 shipped) | First pass: all five `SWEEP_WINDOW_MS` widened 24h → 72h; cron drains until empty/budget; retry jitter; comment corrected. M2 (third pass): every sweep now anchors to a persisted **`last_swept_at` watermark** (72h stays the floor; an outage longer than it widens the lookback instead of orphaning orders — Vercel's "since the last successful run" contract, §8.4); claims carry a **5-minute lease** with `attempts`-fenced completion writes, so a crashed invocation no longer strands jobs in `processing` forever; the webhook kick and owner retries **drain opportunistically** (~8s budget), making retries run at order cadence; an **opt-in hourly GitHub Actions tick** (`job-tick.yml`) caps worst-case retry latency at ~1h on the Hobby plan. Still open: minute cron (paid Vercel tier) or a durable queue as the mechanism of record. |
-| F3 | Open | Refunds epic (M4). |
+| F3 | **Mitigated** (M4 shipped) | A `refunds` table + `refunded`/`partially_refunded` order states; a dashboard refund action calling `stripe.refunds.create` on the venue's connected account with the pending row's id as the **idempotency key** (durable record written BEFORE the money moves) and `refund_application_fee: true`; `charge.refunded` / `charge.refund.updated` webhooks **reconcile refunds issued out of band from the Stripe Dashboard**, closing the exact consistency gap the finding describes; and idempotent compensation on full refunds — net loyalty reversal, gift-card value returned, and ingredient restock for orders the kitchen had not yet made. Revenue reporting is now net of refunds. Partial refunds deliberately move cash only (see the module docstring). |
 | F4 | **Partial** | Misleading `requireOwner()` renamed to `requireVenueMemberSession()` with the role-check seam documented. Invites + enforcement remain open (M5). |
 | F5 | **Mitigated** (M1 shipped) | Sentry error tracking behind `SENTRY_DSN`, initialised via `instrumentation.ts` (`register` + `onRequestError`, so every server error Next captures is visible). The webhook handler and all its swallowed side effects, `placeOrder`'s previously-silent PaymentIntent failure, and every job-engine failure now report; dead-lettered jobs and non-empty sweep backlogs emit tagged alert events (`alert:integration_job_dead_letter`, `alert:sweep_backlog`). Runbook: `docs/ops/Observability.md`. Open (console-side ops, not code): create the Sentry project/DSN and the two alert rules. Tracing/latency percentiles remain future work. |
 | F6 | Open | Tag-based ISR (M6). |
@@ -846,6 +846,14 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 
 ### M4 — Refunds (2 weeks)
 - `refunds` table, dashboard action, webhook handling, loyalty/stock compensation (F3).
+- **Shipped 2026-08-01** (fifth remediation pass): all of the above, plus
+  out-of-band reconciliation from Stripe so a Dashboard-issued refund lands in
+  the order record. Order refund state is DERIVED from the sum of succeeded
+  refunds, so the two can never drift. Deliberately out of scope: line-level
+  partial refunds (a partial refund moves cash only — splitting a loyalty
+  accrual or gift-card balance across an arbitrary partial has no correct
+  answer without line-level data, and a wrong answer is a customer-money
+  error).
 
 ### M5 — Staff and roles (2 weeks)
 - `requireVenueRole` enforcement first, then invitations and the members page (F4).

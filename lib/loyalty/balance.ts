@@ -1,7 +1,7 @@
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { orders, pointsLedger } from "@/lib/db/schema";
+import { orders, pointsLedger, pointsLedgerReason } from "@/lib/db/schema";
 
 /**
  * Loyalty balance + activity reads. The balance is ALWAYS derived — SUM of the
@@ -13,7 +13,9 @@ import { orders, pointsLedger } from "@/lib/db/schema";
 export type PointsActivity = {
   id: string;
   deltaPoints: number;
-  reason: "earn" | "redeem" | "adjust";
+  // Derived from the schema enum so a new ledger reason (e.g. M4's
+  // refund_reversal) surfaces here as a compile error, not a blank label.
+  reason: (typeof pointsLedgerReason.enumValues)[number];
   createdAt: Date;
 };
 

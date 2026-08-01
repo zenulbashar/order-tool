@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orderItemModifiers, orderItems, orders } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 
@@ -118,7 +119,9 @@ export async function getCustomerUsual(
       and(
         scopedToVenue(orders.venueId, venueId),
         eq(orders.customerId, customerId),
-        eq(orders.status, "confirmed"),
+        // A fully refunded order is not a "usual" — a partly refunded one
+        // (goodwill on an otherwise good meal) still is.
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
       ),
     )
     .orderBy(desc(orders.createdAt))

@@ -1,6 +1,7 @@
-import { and, asc, desc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, venueTables } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 import { orderReference } from "@/lib/validation";
@@ -79,7 +80,7 @@ export async function getTablesWithStatus(
       and(
         scopedToVenue(orders.venueId, venueId),
         eq(orders.orderType, "dine_in"),
-        eq(orders.status, "confirmed"),
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         gt(orders.createdAt, since),
       ),
     )

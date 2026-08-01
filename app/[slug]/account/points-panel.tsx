@@ -6,6 +6,9 @@ const REASON_LABEL: Record<PointsActivity["reason"], string> = {
   earn: "Earned",
   redeem: "Redeemed",
   adjust: "Adjustment",
+  // M4 — the net unwind of a refunded order's points, shown plainly so the
+  // balance change is never unexplained.
+  refund_reversal: "Order refunded",
 };
 
 const dateFmt = new Intl.DateTimeFormat("en-AU", {

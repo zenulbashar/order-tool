@@ -1,12 +1,15 @@
 import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import {
   menuCategories,
   menuItems,
   orderItemModifiers,
   orderItems,
   orders,
+  orderStatus,
+  refunds,
   venueStations,
 } from "@/lib/db/schema";
 import {
@@ -66,8 +69,13 @@ export type KitchenOrder = {
   // Optional customer special request (e.g. "no onion"); rendered as plain text.
   notes: string | null;
   fulfillmentStatus: FulfillmentStatus;
+  // Payment status — 'confirmed' or, once money has gone back, one of M4's
+  // refund states. Drives the drawer's refund control.
+  status: (typeof orderStatus.enumValues)[number];
   subtotalCents: number;
   totalCents: number;
+  // Cash already refunded on this order (sum of succeeded refunds).
+  refundedCents: number;
   createdAt: Date;
   // Scheduled pickup instant (Phase 8), or null for ASAP. The page surfaces a
   // scheduled order by this time, not its created_at.
@@ -91,7 +99,7 @@ export async function getActiveOrderCount(venueId: string): Promise<number> {
     .where(
       and(
         scopedToVenue(orders.venueId, venueId),
-        eq(orders.status, "confirmed"),
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         inArray(orders.fulfillmentStatus, ACTIVE_FULFILLMENT),
       ),
     );
@@ -99,9 +107,11 @@ export async function getActiveOrderCount(venueId: string): Promise<number> {
 }
 
 /**
- * Venue-scoped kitchen queue. Returns ONLY paid orders (status='confirmed') —
- * an unpaid order is not a kitchen order, so pending_payment / payment_failed /
- * cancelled never appear. By default returns the ACTIVE orders
+ * Venue-scoped kitchen queue. Returns ONLY paid orders — an unpaid order is not
+ * a kitchen order, so pending_payment / payment_failed / cancelled never appear.
+ * A PARTIALLY refunded order is still live (the kitchen may still be making it)
+ * and stays on the board; a fully refunded one drops off. See
+ * lib/db/order-status.ts. By default returns the ACTIVE orders
  * (fulfillment_status new/preparing/ready) OLDEST-FIRST (FIFO: the kitchen works
  * the oldest order first); pass { completed: true } for the completed history,
  * newest-first. Every line of detail comes from the immutable order snapshots,
@@ -126,8 +136,16 @@ export async function getVenueOrders(
       customerPhone: orders.customerPhone,
       notes: orders.notes,
       fulfillmentStatus: orders.fulfillmentStatus,
+      status: orders.status,
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
+      // Correlated sum so one query still hydrates the whole board.
+      refundedCents: sql<number>`coalesce((
+        select sum(${refunds.amountCents})
+          from ${refunds}
+         where ${refunds.orderId} = ${orders.id}
+           and ${refunds.status} = 'succeeded'
+      ), 0)::int`,
       createdAt: orders.createdAt,
       scheduledFor: orders.scheduledFor,
     })
@@ -135,7 +153,7 @@ export async function getVenueOrders(
     .where(
       and(
         scopedToVenue(orders.venueId, venueId),
-        eq(orders.status, "confirmed"),
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         completed
           ? eq(orders.fulfillmentStatus, "completed")
           : inArray(orders.fulfillmentStatus, ACTIVE_FULFILLMENT),
@@ -172,8 +190,15 @@ export async function getRecentCompletedOrders(
       customerPhone: orders.customerPhone,
       notes: orders.notes,
       fulfillmentStatus: orders.fulfillmentStatus,
+      status: orders.status,
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
+      refundedCents: sql<number>`coalesce((
+        select sum(${refunds.amountCents})
+          from ${refunds}
+         where ${refunds.orderId} = ${orders.id}
+           and ${refunds.status} = 'succeeded'
+      ), 0)::int`,
       createdAt: orders.createdAt,
       scheduledFor: orders.scheduledFor,
     })
@@ -181,7 +206,7 @@ export async function getRecentCompletedOrders(
     .where(
       and(
         scopedToVenue(orders.venueId, venueId),
-        eq(orders.status, "confirmed"),
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         eq(orders.fulfillmentStatus, "completed"),
         gte(completedTime, since),
       ),
@@ -202,8 +227,10 @@ type OrderHeaderRow = {
   customerPhone: string | null;
   notes: string | null;
   fulfillmentStatus: FulfillmentStatus;
+  status: (typeof orderStatus.enumValues)[number];
   subtotalCents: number;
   totalCents: number;
+  refundedCents: number;
   createdAt: Date;
   scheduledFor: Date | null;
 };
@@ -312,6 +339,8 @@ async function hydrateKitchenOrders(
     dailyNumber: order.dailyNumber,
     orderType: order.orderType,
     tableLabel: order.tableLabel,
+    status: order.status,
+    refundedCents: Number(order.refundedCents ?? 0),
     customerName: order.customerName,
     customerPhone: order.customerPhone,
     notes: order.notes,

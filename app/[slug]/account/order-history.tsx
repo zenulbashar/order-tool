@@ -16,6 +16,9 @@ const STATUS_LABEL: Record<CustomerOrderSummary["status"], string> = {
   pending_payment: "Processing",
   payment_failed: "Not completed",
   cancelled: "Cancelled",
+  // M4 — a diner should see their own money coming back without asking.
+  partially_refunded: "Partly refunded",
+  refunded: "Refunded",
 };
 
 // Payment/order state → StatusBadge semantic tone (success/accent/warm/muted).
@@ -24,6 +27,8 @@ const STATUS_TONE: Record<CustomerOrderSummary["status"], PaymentTone> = {
   pending_payment: "processing",
   payment_failed: "failed",
   cancelled: "cancelled",
+  partially_refunded: "processing",
+  refunded: "cancelled",
 };
 
 /**
