@@ -81,8 +81,12 @@ describe("discountIdempotencyKey", () => {
       // Same order, same revision, same destination = the identical update the
       // rolled-back attempt made. Replaying is correct, and is what an
       // idempotency key is for — the fix must not throw that away.
+      //
+      // Pinned against the literal key rather than against a second call to
+      // itself: comparing f(x) to f(x) is true for every possible
+      // implementation, including a broken one, so it asserts nothing.
       expect(discountIdempotencyKey(ORDER, 5, 1800)).toBe(
-        discountIdempotencyKey(ORDER, 5, 1800),
+        `${ORDER}-disc-r5-1800`,
       );
     });
   });

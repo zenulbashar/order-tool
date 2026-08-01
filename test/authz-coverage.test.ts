@@ -40,6 +40,25 @@ const SCAN_ROOTS = [
 const GATES = ["requireVenuePermission(", "requireWizardVenue("];
 
 /**
+ * Helpers that RESOLVE a venue. A file calling any of these touches tenant
+ * state and therefore owes a permission gate.
+ *
+ * getCurrentVenue and requireOnboardedVenue are listed because they were an
+ * open escape hatch: the check used to look for `requireVenue(` alone, so a new
+ * action written against `getCurrentVenue()` would mutate tenant data and be
+ * skipped as "touches no venue state" — while the docblock above promised new
+ * files are covered automatically. A resolver added to lib/tenant.ts and not
+ * added here silently widens that hole, so the test below pins this list
+ * against tenant.ts's actual exports.
+ */
+const VENUE_RESOLVERS = [
+  "requireVenue(",
+  "getCurrentVenue(",
+  "getImpersonatedVenue(",
+  "requireOnboardedVenue(",
+];
+
+/**
  * Files that resolve a venue WITHOUT a permission gate, each with the reason
  * that is legitimate. As with the tenant-scoping harness, an exemption must
  * carry a justification — otherwise it is just a hole with a comment.
@@ -71,8 +90,17 @@ function serverActionFiles(dir: string): string[] {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) out.push(...serverActionFiles(full));
     else if (entry.endsWith(".ts") && !entry.endsWith(".test.ts")) {
-      const source = stripComments(readFileSync(full, "utf8"));
-      if (source.includes('"use server"')) out.push(full);
+      // Membership is decided on the RAW source, deliberately. stripComments is
+      // a regex, not a lexer: it mis-parses regex literals ending in \/\/ and
+      // eats across a stray "/*" inside a line comment. If that ever removed a
+      // "use server" directive, the file would drop out of the scan silently and
+      // an ungated mutating action would be invisible — the exact failure this
+      // harness exists to prevent. Deciding membership on raw text makes the
+      // regex's failure direction fail-CLOSED: at worst a file that merely
+      // mentions the directive in prose is scanned, which costs nothing because
+      // it will not resolve a venue either. Comments are stripped only for the
+      // gate checks below, where over-deletion turns a test RED, not green.
+      if (readFileSync(full, "utf8").includes('"use server"')) out.push(full);
     }
   }
   return out;
@@ -112,7 +140,8 @@ describe("permission gates on dashboard server actions", () => {
     for (const file of files) {
       if (isExempt(file)) continue;
       const source = code(file);
-      const resolvesVenue = source.includes("requireVenue(") || isGated(source);
+      const resolvesVenue =
+        VENUE_RESOLVERS.some((r) => source.includes(r)) || isGated(source);
       if (!resolvesVenue) continue; // touches no venue state
       if (!isGated(source)) {
         ungated.push(file.replace(process.cwd() + "/", ""));
@@ -190,6 +219,61 @@ describe("permission gates on dashboard server actions", () => {
       expect(/\brequireVenue\(\)/.test(source), page.file).toBe(false);
       expect(page.reason.length, page.file).toBeGreaterThan(30);
     }
+  });
+
+  /**
+   * The onboarding STEP pages. The scan above only walks `.ts` files carrying
+   * a "use server" directive, so these `.tsx` pages are invisible to it — and
+   * S5 was a page-level hole as much as an action-level one. Reverting any of
+   * them to a bare `requireVenue()` re-opens read access to wizard state for a
+   * kitchen login, and nothing else in the suite would notice.
+   */
+  const WIZARD_PAGES = [
+    "app/onboarding/service/page.tsx",
+    "app/onboarding/menu/page.tsx",
+    "app/onboarding/stations/page.tsx",
+    "app/onboarding/plan/page.tsx",
+    "app/onboarding/live/page.tsx",
+  ];
+
+  it("gates every onboarding step page on the wizard guard", () => {
+    for (const page of WIZARD_PAGES) {
+      const source = code(join(process.cwd(), page));
+      expect(source, `${page} must call requireWizardVenue()`).toContain(
+        "requireWizardVenue(",
+      );
+      expect(/\brequireVenue\(\)/.test(source), page).toBe(false);
+    }
+    // /onboarding/details must NOT be guarded — it creates the venue, and the
+    // sidebar's "Add location" points at it while the current venue is complete.
+    const details = code(join(process.cwd(), "app/onboarding/details/page.tsx"));
+    expect(details).not.toContain("requireWizardVenue(");
+  });
+
+  it("knows about every venue resolver lib/tenant.ts exports", () => {
+    // VENUE_RESOLVERS decides which files owe a gate. A resolver added to
+    // tenant.ts but not listed there would let a new action mutate tenant data
+    // and be skipped as "touches no venue state" — so derive the truth from
+    // tenant.ts rather than trusting the constant.
+    const tenant = stripComments(
+      readFileSync(join(process.cwd(), "lib", "tenant.ts"), "utf8"),
+    );
+    const known = [...VENUE_RESOLVERS, ...GATES];
+    const missing: string[] = [];
+    for (const match of tenant.matchAll(/export async function (\w+)/g)) {
+      const name = match[1];
+      // Look at the signature only, up to the opening brace of the body.
+      const sig = tenant.slice(match.index, tenant.indexOf("{", match.index));
+      const returnsOneVenue =
+        /Promise<Venue\s*(\|\s*null\s*)?>/.test(sig) && !sig.includes("Venue[]");
+      if (returnsOneVenue && !known.includes(`${name}(`)) missing.push(name);
+    }
+    expect(
+      missing,
+      `lib/tenant.ts exports venue resolver(s) the coverage scan does not know ` +
+        `about — add them to VENUE_RESOLVERS or GATES:\n` +
+        missing.map((m) => `  ${m}`).join("\n"),
+    ).toEqual([]);
   });
 
   it("requires every exemption to carry a reason", () => {
