@@ -10,6 +10,7 @@ import {
   formatContrastRatio,
   WCAG_AA_NORMAL,
 } from "@/lib/contrast";
+import { recordVenueAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { venues } from "@/lib/db/schema";
@@ -719,6 +720,17 @@ export async function updateVenueDetails(
       schedulingEnabled,
     })
     .where(eq(venues.id, venue.id));
+
+  // M8 / audit F9 — hours changes are one of the mutations the finding
+  // names: "closed when we should have been open" is a real dispute.
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "hours_updated",
+    detail: schedulingEnabled
+      ? "Opening hours + scheduled pickup updated"
+      : "Opening hours updated",
+    actor: { id: session.user.id, email: session.user.email },
+  });
 
   revalidatePath("/dashboard/settings/hours");
   revalidateStorefront(venue);

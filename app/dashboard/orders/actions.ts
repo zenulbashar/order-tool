@@ -5,10 +5,16 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { notifyCustomerOrder } from "@/lib/customer/notify";
+import { auth } from "@/lib/auth";
+import { recordVenueAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { requireUser, requireVenuePermission, scopedToVenue } from "@/lib/tenant";
-import { fulfillmentStatusSchema, idSchema } from "@/lib/validation";
+import {
+  fulfillmentStatusSchema,
+  idSchema,
+  orderReference,
+} from "@/lib/validation";
 
 export type UpdateFulfillmentResult = { error?: string };
 
@@ -48,8 +54,18 @@ export async function updateOrderFulfillmentStatus(
       completedAt: status.data === "completed" ? new Date() : null,
     })
     .where(and(eq(orders.id, id.data), scopedToVenue(orders.venueId, venue.id)))
-    .returning({ id: orders.id });
+    .returning({ id: orders.id, publicToken: orders.publicToken });
   if (updated.length !== 1) return { error: "Order not found." };
+
+  // M8 / audit F9 — order status transitions are one of the merchant-side
+  // mutations the finding names; a refund dispute usually starts here.
+  const session = await auth();
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "order_status_changed",
+    detail: `${orderReference(updated[0].publicToken)} → ${status.data}`,
+    actor: { id: session?.user?.id, email: session?.user?.email },
+  });
 
   // ADDITIVE (customer notifications) — when the kitchen marks an order READY,
   // fire the ready email/SMS to the linked customer per their opt-in. Best-effort

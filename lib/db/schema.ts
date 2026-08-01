@@ -1883,9 +1883,28 @@ export const platformAuditLog = pgTable(
     actorEmail: text("actor_email").notNull(),
     action: text("action").notNull(),
     detail: text("detail"),
+    // M8 / audit F9 — the table previously covered ONLY admin-console actions
+    // (every writer sat under app/admin/), so you could prove that an admin
+    // opened a venue but not what anyone changed inside it. A nullable
+    // venue_id widens the same table to merchant-side mutations: NULL = a
+    // platform-wide admin action, set = something done to that venue.
+    //
+    // No FK, deliberately: an audit entry must outlive the venue it describes.
+    // A cascade delete would erase exactly the history a dispute needs.
+    venueId: text("venue_id"),
+    // The acting member for a merchant-side entry. SET NULL on user delete so
+    // the record survives the account; actor_email keeps the human-readable
+    // attribution either way.
+    actorUserId: text("actor_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: createdAt(),
   },
-  (table) => [index("platform_audit_created_idx").on(table.createdAt)],
+  (table) => [
+    index("platform_audit_created_idx").on(table.createdAt),
+    // The venue activity feed reads by venue, newest first.
+    index("platform_audit_venue_created_idx").on(table.venueId, table.createdAt),
+  ],
 );
 
 export type PlatformAuditEntry = typeof platformAuditLog.$inferSelect;

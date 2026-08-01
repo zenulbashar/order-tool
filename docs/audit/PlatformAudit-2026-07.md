@@ -39,7 +39,8 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 The first remediation pass shipped alongside this report; a second (M1 —
 observability), third (M2 — job engine), fourth (M3 — checkout safety net), fifth
 (M4 — refunds), sixth (M5 — staff roles) seventh (M6 — storefront
-caching) and eighth (M7 — accessibility) followed the same day. What changed, per finding:
+caching) eighth (M7 — accessibility) and ninth (M8 — merchant audit log) followed
+the same day. What changed, per finding:
 
 | Finding | Status | What shipped |
 |---|---|---|
@@ -52,7 +53,8 @@ caching) and eighth (M7 — accessibility) followed the same day. What changed, 
 | F10 | **Mitigated** (M7 shipped) | M0: global `SkipLink`, stale "7/8 dialogs" note corrected. M7: `@axe-core/playwright` now runs on every PR asserting zero WCAG 2.1 A/AA violations across the marketing surface — which **found and fixed four real contrast failures that had shipped** (worst 2.91:1, all now ≥4.75:1) and a landing page with **no `<main>` landmark**, meaning its no-JS skip link did nothing. A WCAG gate at brand-save time now refuses a custom text colour below 4.5:1 on the brand colour, so a venue cannot publish an unreadable storefront. Open: the manual screen-reader pass, and axe coverage of the DB-backed storefront/dashboard (CI has no database). |
 | F12 | **Mitigated** | `migrate-prod` now needs `[build, e2e]` and fails on destructive SQL (`DROP`/`TRUNCATE`/type-narrowing guard, verified against all 59 existing migrations). Environment approval + pre-migration Neon snapshot remain open. |
 | F8 | **Mitigated** (M3 shipped) | The two money paths that had zero coverage now have it, running on every CI run: the checkout recompute (`lib/payments/line-plan.ts`, extracted pure and unchanged in behaviour) is tested against hostile input — cross-item/cross-venue option injection, stray/missing variants, duplicate options, per-group min/max, and price authority; and the Stripe webhook's **replay/idempotency contract** is tested by driving the real handler (`test/stripe-webhook-idempotency.test.ts`) — a redelivered event confirms nothing again and moves no value. Both suites were mutation-checked (the guard was broken, the tests failed by name, the code was restored). The full browser path (`e2e/checkout.spec.ts`) is written and **gated**: it needs a seeded DB + Stripe test credentials + a Connect account, which CI does not have — see `docs/ops/Testing.md`. |
-| F7, F9, F11 | Open | Roadmap item M8, and the RLS decision pending §8.1's counter-evidence. |
+| F9 | **Mitigated** (M8 shipped) | `platform_audit_log` gains a nullable `venue_id` + `actor_user_id` (additive; NULL = a platform-wide admin action, exactly as the finding prescribes) and merchant-side mutations now write to it: menu item create/edit/delete with the price in the detail, opening hours, order status transitions, refunds, gift-card issuance, and staff invite/role-change/removal. A venue-facing **Activity** page (gated on `settings:manage`) shows who changed what. Auditing never fails the action it describes, details are scrubbed and truncated, and no FK is used on `venue_id` so an entry outlives the venue it describes. |
+| F7, F11 | Open | The RLS decision pending §8.1's counter-evidence, and the OpenAPI spec. |
 
 ---
 
@@ -895,6 +897,12 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 
 ### M8 — Merchant audit log (1 week)
 - Extend audit table with `venue_id`; log merchant mutations (F9).
+- **Shipped 2026-08-01** (ninth remediation pass): the additive `venue_id` +
+  `actor_user_id` columns, writers on every mutation the finding names, and a
+  merchant-visible Activity page. Deliberately append-only — nothing in the
+  product updates or deletes an entry — and the audit write is swallowed on
+  failure, because refusing a merchant's price change over a failed log
+  insert would be worse than the gap it closes.
 
 ### M8b — PCI SAQ A confirmation (3 days)
 - Confirm SAQ A eligibility under the January 2025 revision, which is now conditional on

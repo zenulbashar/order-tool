@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 
 import { assignableRoles, parseRoleKey, type RoleKey } from "@/lib/authz";
+import { recordVenueAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { venueMemberRoles, venueMembers } from "@/lib/db/schema";
 import { sendStaffInviteEmail } from "@/lib/staff/invite-email";
@@ -55,6 +56,13 @@ export async function inviteStaffAction(
     to: String(formData.get("email") ?? ""),
     venueName: venue.name,
     inviteUrl,
+  });
+
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "staff_invited",
+    detail: `${String(formData.get("email") ?? "")} as ${String(formData.get("role") ?? "")}`,
+    actor: { id: user.id, email: user.email },
   });
 
   revalidatePath(STAFF_PATH);
@@ -130,6 +138,13 @@ export async function setMemberRoleAction(
       );
   });
 
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "staff_role_changed",
+    detail: `member ${userId.data.slice(0, 8)} → ${role}`,
+    actor: { id: actor.id, email: actor.email },
+  });
+
   revalidatePath(STAFF_PATH);
   return { ok: true };
 }
@@ -166,8 +181,24 @@ export async function removeMemberAction(
       );
   });
 
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "staff_removed",
+    detail: `member ${userId.data.slice(0, 8)} removed`,
+    actor: await staffAuditActor(),
+  });
+
   revalidatePath(STAFF_PATH);
   return { ok: true };
+}
+
+/** The acting member, for audit attribution. */
+async function staffAuditActor(): Promise<{
+  id?: string | null;
+  email?: string | null;
+}> {
+  const user = await requireUser();
+  return { id: user.id, email: user.email };
 }
 
 /**

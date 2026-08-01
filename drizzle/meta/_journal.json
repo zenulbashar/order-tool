@@ -435,6 +435,13 @@
       "when": 1785594142319,
       "tag": "0061_staff_roles_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1785596583616,
+      "tag": "0062_venue_audit_log",
+      "breakpoints": true
     }
   ]
 }

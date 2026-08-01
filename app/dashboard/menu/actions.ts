@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { recordVenueAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import {
@@ -40,6 +41,12 @@ import {
 } from "@/lib/validation";
 
 export type MenuActionState = { error?: string };
+
+/** The signed-in member, for audit attribution (M8 / audit F9). */
+async function auditActor(): Promise<{ id?: string | null; email?: string | null }> {
+  const session = await auth();
+  return { id: session?.user?.id, email: session?.user?.email };
+}
 
 const MENU_PATH = "/dashboard/menu";
 
@@ -383,6 +390,13 @@ export async function createItem(
     await replaceItemTags(tx, venue.id, created.id, tags);
   });
 
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "menu_item_created",
+    detail: `${parsed.data.name}: $${(parsed.data.priceCents / 100).toFixed(2)}`,
+    actor: await auditActor(),
+  });
+
   revalidatePath(MENU_PATH);
   revalidateStorefront(venue);
   return {};
@@ -449,6 +463,17 @@ export async function updateItem(
   });
   if (!hit) return { error: "Item not found." };
 
+  // M8 / audit F9 — record WHAT changed, not just that something did. The
+  // price is the field a dispute actually turns on.
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "menu_item_updated",
+    detail: `${parsed.data.name}: $${(parsed.data.priceCents / 100).toFixed(2)}${
+      isAvailable ? "" : " (unavailable)"
+    }`,
+    actor: await auditActor(),
+  });
+
   revalidatePath(MENU_PATH);
   revalidateStorefront(venue);
   return {};
@@ -459,11 +484,21 @@ export async function deleteItem(formData: FormData): Promise<void> {
   const id = idSchema.safeParse(formData.get("id"));
   if (!id.success) return;
 
-  await db
+  const removed = await db
     .delete(menuItems)
     .where(
       and(eq(menuItems.id, id.data), scopedToVenue(menuItems.venueId, venue.id)),
-    );
+    )
+    .returning({ name: menuItems.name });
+
+  if (removed.length > 0) {
+    await recordVenueAudit({
+      venueId: venue.id,
+      action: "menu_item_deleted",
+      detail: removed[0].name,
+      actor: await auditActor(),
+    });
+  }
 
   revalidatePath(MENU_PATH);
   revalidateStorefront(venue);

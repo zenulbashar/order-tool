@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { recordVenueAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import {
@@ -61,6 +62,16 @@ export async function refundOrderAction(
 
   revalidatePath(ORDERS_PATH);
   if (!result.ok) return { error: result.error };
+
+  // M8 / audit F9 — a refund is the single most dispute-prone merchant
+  // action; WHO issued it and for how much has to be answerable later.
+  await recordVenueAudit({
+    venueId: venue.id,
+    action: "order_refunded",
+    detail: `$${(result.amountCents / 100).toFixed(2)} → ${result.orderStatus}`,
+    actor: { id: user.id, email: user.email },
+  });
+
   return { ok: true };
 }
 
