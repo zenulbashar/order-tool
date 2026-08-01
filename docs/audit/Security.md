@@ -5,7 +5,20 @@ verification, input validation, injection/XSS, secrets, rate limiting, session
 handling, file uploads. Method: read the auth/tenant helpers, then trace every
 server action and route handler that reads/writes venue-owned data.
 
-## Verdict: strong. No Critical or High findings.
+## Verdict (2026-07 pass): strong. No Critical or High findings.
+
+> **Partly superseded.** A second, adversarial pass in 2026-08 re-tested this
+> verdict against the whole repository rather than inheriting it, and found
+> **three High** findings this pass missed: S4 (PaymentIntent desync via an
+> amount-keyed idempotency key), S5 (all five onboarding server actions gated on
+> membership rather than permission), S6 (gift-card bearer codes listed to any
+> venue member). All three are fixed — see **SecurityReview-2026-08.md**.
+>
+> The conclusions below on tenant isolation, webhook verification, platform
+> admin and the customer-identity firewall were re-confirmed by that pass and
+> still stand. What did not stand was the *scope*: each new finding sits in a
+> place where the same control exists correctly a directory away, which is not
+> something a per-file read reliably catches.
 
 Tenant isolation is applied uniformly and was verified end-to-end:
 

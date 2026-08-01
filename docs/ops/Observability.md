@@ -17,6 +17,7 @@ no-op — dev, tests, CI, and unconfigured previews behave exactly as before.
 | `placeOrder` (`app/[slug]/checkout/actions.ts`) | The previously-silent PaymentIntent creation failure (`context:place-order.payment-intent`) — Stripe auth, Connect account state, network. Flush cost (≤2s) lands on the failure path only. |
 | Job engine (`lib/integrations/dispatch.ts`) | Every failed job attempt. Retryable failures are warnings grouped per provider/kind; an exhausted job (`attempts >= 6`) is an **error** with the `alert:integration_job_dead_letter` tag. |
 | Jobs cron (`app/api/jobs/integrations/route.ts`) | Each sweep's own failure (`context:jobs-cron.sweep-*`), plus one **warning** with the `alert:sweep_backlog` tag whenever any sweep recovered work the webhook fast path missed, or the drain loop hit its time budget with jobs still due. A clean tick reports nothing. |
+| Charge reconciliation (`app/api/stripe/webhook/route.ts`) | One **error** with the `alert:charge_amount_mismatch` tag when a confirming order's `amount_received` differs from `orders.total_cents`. Fires only on the real status transition, so a redelivered webhook cannot re-alert. Matching amounts report nothing. |
 
 ## Enabling it (one-time ops setup)
 
@@ -30,11 +31,11 @@ and cannot be done from this repo:
 3. Optional: `SENTRY_ENVIRONMENT` to override the default environment name
    (otherwise `VERCEL_ENV`: `production` / `preview` / `development`).
    Releases are stamped automatically from `VERCEL_GIT_COMMIT_SHA`.
-4. Create the two alert rules below.
+4. Create the three alert rules below.
 
-## The two alert rules
+## The three alert rules
 
-Create issue alert rules in Sentry matching on the `alert` tag. These two tag
+Create issue alert rules in Sentry matching on the `alert` tag. These three tag
 values are a stable contract with the code (see `AlertKind` in
 `lib/observability.ts`); alerts on anything else are optional extras.
 
@@ -79,6 +80,37 @@ Respond:
    "Job engine cadence" below) if it isn't on; if it fires with the tick
    already hourly, that is the signal to move to a paid Vercel tier's minute
    cron or a queue.
+
+### `alert:charge_amount_mismatch` — page-worthy
+
+Stripe took a different amount than the order says it should. These two numbers
+are equal by construction — `applyOrderDiscounts` writes the order row and
+re-prices the PaymentIntent inside one transaction — so any event here is a real
+accounting fault, never noise. There is no tolerance band: both values are
+integer cents written by the same transaction, so "close enough" would only hide
+a fault. Security review S4 is the reason this check exists (an amount-keyed
+Stripe idempotency key let the two diverge silently, in both directions), but the
+check is deliberately generic and will catch causes unrelated to that one.
+
+The order is **still confirmed** — by the time this fires the money has moved, and
+refusing to feed the kitchen would turn an accounting fault into a customer-facing
+one. Reconciliation is a human step.
+
+Respond:
+
+1. Read `extra`: `orderId`, `paymentIntentId`, `chargedCents`, `orderTotalCents`,
+   `deltaCents`. The `direction` tag is `over` or `under`.
+2. `direction:over` — the diner was charged **more** than the order. They are owed
+   `deltaCents`; refund that amount from `/dashboard/orders` (the refund path
+   creates on the connected account and caps at the order total, so a partial
+   refund here is correct and safe).
+3. `direction:under` — the venue is **short** `deltaCents`. Do not re-charge
+   silently; treat it as a billing conversation with the venue.
+4. Either way, check whether other orders in the same window diverged: filter
+   Sentry by the fingerprint and compare `deltaCents`. A cluster means a code
+   defect, not a one-off — capture the PaymentIntent ids before changing anything.
+5. Cross-check the PaymentIntent in the Stripe Dashboard against the order row
+   before acting; the event is a report, not a source of truth.
 
 ## Job engine cadence (M2)
 
