@@ -53,7 +53,10 @@ jobs:
 
   migrate-prod:
     name: Migrate prod (additive only)
-    needs: build
+    # A failing E2E suite must block a production schema change, not just a
+    # failing build — migrations are the one step here that can't be rolled
+    # back by redeploying.
+    needs: [build, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -63,6 +66,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The "additive only" rule, enforced rather than trusted: drizzle-kit
+      # happily emits DROP/narrowing DDL from a routine schema refactor, and a
+      # destructive statement that auto-applies to prod is unrecoverable data
+      # loss. No committed migration contains any of these patterns today, so
+      # any hit is new — fail the job and route it to the documented manual
+      # process (see README) instead of applying it blind.
+      - name: Guard against destructive SQL
+        run: |
+          if grep -rnEi 'DROP TABLE|DROP COLUMN|DROP TYPE|TRUNCATE|ALTER COLUMN[^;]*SET DATA TYPE|ALTER COLUMN[^;]*SET NOT NULL' drizzle --include='*.sql'; then
+            echo '::error::Destructive SQL found in drizzle/ migrations. These do not auto-apply — run destructive changes manually against prod per README.'
+            exit 1
+          fi
       # Applies committed migrations only. Keep these ADDITIVE — destructive
       # changes (drop/rename/narrow) are run manually against prod. See README.
       - name: Apply additive migrations

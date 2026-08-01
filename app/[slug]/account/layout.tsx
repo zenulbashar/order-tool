@@ -36,6 +36,7 @@ export default async function AccountLayout({
 
   return (
     <main
+      id="main-content"
       style={brandStyle}
       data-domain="diner"
       className="mx-auto min-h-dvh max-w-2xl bg-surface lg:max-w-[960px]"

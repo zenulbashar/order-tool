@@ -26,7 +26,14 @@ function dollarsToCents(raw: string): number | null {
   return cents;
 }
 
-async function requireOwner() {
+/**
+ * Session + venue gate for the actions below. Deliberately NOT named
+ * requireOwner: venue_members.role exists but is not yet enforced anywhere, so
+ * this guarantees an authenticated member of the venue — not the owner role.
+ * When role enforcement ships (staff invites), this is the seam where the role
+ * check belongs.
+ */
+async function requireVenueMemberSession() {
   const session = await auth();
   if (!session?.user?.id) redirect("/signin");
   return requireVenue();
@@ -41,7 +48,7 @@ export async function issueGiftCardAction(
   _prev: GiftCardState,
   formData: FormData,
 ): Promise<GiftCardState> {
-  const venue = await requireOwner();
+  const venue = await requireVenueMemberSession();
 
   const cents = dollarsToCents(String(formData.get("amount") ?? ""));
   if (cents === null) return { error: "Enter a valid amount." };
@@ -56,7 +63,7 @@ export async function issueGiftCardAction(
 
 /** Add value to an existing active card. */
 export async function topUpGiftCardAction(formData: FormData): Promise<void> {
-  const venue = await requireOwner();
+  const venue = await requireVenueMemberSession();
   const cardId = String(formData.get("cardId") ?? "");
   const cents = dollarsToCents(String(formData.get("amount") ?? ""));
   if (cardId && cents !== null) {
@@ -67,7 +74,7 @@ export async function topUpGiftCardAction(formData: FormData): Promise<void> {
 
 /** Void a card so it can no longer be redeemed. */
 export async function voidGiftCardAction(formData: FormData): Promise<void> {
-  const venue = await requireOwner();
+  const venue = await requireVenueMemberSession();
   const cardId = String(formData.get("cardId") ?? "");
   if (cardId) await voidGiftCard(venue.id, cardId);
   revalidatePath(PATH);

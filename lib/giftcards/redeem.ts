@@ -19,7 +19,13 @@ import { giftCardLedger, giftCards, orders } from "@/lib/db/schema";
  * a race can never drive it negative (the CHECK would otherwise reject it).
  */
 
-const SWEEP_WINDOW_MS = 24 * 60 * 60 * 1000;
+/**
+ * 72h — must exceed the worst-case gap between successful daily cron runs
+ * (Vercel cron never retries a failed run, and runs jitter within the hour), or
+ * orders in a missed run's gap are permanently skipped. See the rationale on
+ * lib/integrations/dispatch.ts SWEEP_WINDOW_MS; keep all five in lockstep.
+ */
+const SWEEP_WINDOW_MS = 72 * 60 * 60 * 1000;
 const SWEEP_BATCH = 100;
 
 async function insertDebit(row: {
