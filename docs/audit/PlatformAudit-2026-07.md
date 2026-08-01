@@ -36,7 +36,8 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 
 ### Remediation status (updated 2026-08-01)
 
-The first remediation pass shipped alongside this report. What changed, per finding:
+The first remediation pass shipped alongside this report; a second pass
+(M1 — observability) followed the same day. What changed, per finding:
 
 | Finding | Status | What shipped |
 |---|---|---|
@@ -44,7 +45,7 @@ The first remediation pass shipped alongside this report. What changed, per find
 | F2 | **Mitigated** | All five `SWEEP_WINDOW_MS` widened 24h → 72h; the cron route drains batches until empty or budget instead of one 10-job batch; retry backoff gained 0.5×–1.5× jitter; the false "every minute" comment corrected. The `last_swept_at` watermark and a durable queue remain open (M2). |
 | F3 | Open | Refunds epic (M4). |
 | F4 | **Partial** | Misleading `requireOwner()` renamed to `requireVenueMemberSession()` with the role-check seam documented. Invites + enforcement remain open (M5). |
-| F5 | **Partial** | Every silently-swallowed side-effect failure on the webhook and cron paths now logs to Vercel function logs (`swallow()` helper). Real APM/alerting remains open (M1). |
+| F5 | **Mitigated** (M1 shipped) | Sentry error tracking behind `SENTRY_DSN`, initialised via `instrumentation.ts` (`register` + `onRequestError`, so every server error Next captures is visible). The webhook handler and all its swallowed side effects, `placeOrder`'s previously-silent PaymentIntent failure, and every job-engine failure now report; dead-lettered jobs and non-empty sweep backlogs emit tagged alert events (`alert:integration_job_dead_letter`, `alert:sweep_backlog`). Runbook: `docs/ops/Observability.md`. Open (console-side ops, not code): create the Sentry project/DSN and the two alert rules. Tracing/latency percentiles remain future work. |
 | F6 | Open | Tag-based ISR (M6). |
 | F10 | **Mitigated** | Global `SkipLink` (first Tab stop on every page; anchors on the shared shells, JS fallback elsewhere); stale "7/8 dialogs" note in `Accessibility.md` corrected — all 8 use `useDialog`. Brand-contrast validation and screen-reader pass remain open (M7). |
 | F12 | **Mitigated** | `migrate-prod` now needs `[build, e2e]` and fails on destructive SQL (`DROP`/`TRUNCATE`/type-narrowing guard, verified against all 59 existing migrations). Environment approval + pre-migration Neon snapshot remain open. |
@@ -808,6 +809,10 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 - Sentry via `instrumentation.ts`; instrument webhook, `placeOrder`, `processDueJobs` (F5).
 - Alert on dead-lettered jobs and non-empty sweep backlogs.
 - **Tests:** verify a forced job failure produces an alert. **Docs:** runbook.
+- **Shipped 2026-08-01** (second remediation pass): all of the above, behind
+  `SENTRY_DSN` — see `docs/ops/Observability.md`. Remaining: the DSN and the
+  two alert rules are Sentry-console setup (ops, not code). The approval gate
+  and pre-migration snapshot noted under M0/F12 also remain repo/Neon settings.
 
 ### M2 — Make the job engine real (1 week)
 - Minute cron or durable queue; loop `processDueJobs` until drained (F2 steps 2–3).

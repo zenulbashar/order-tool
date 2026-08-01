@@ -6,6 +6,7 @@ import {
 import { sweepGiftCardRedeem } from "@/lib/giftcards/redeem";
 import { sweepLoyaltyEarn } from "@/lib/loyalty/earn";
 import { sweepLoyaltyRedeem } from "@/lib/loyalty/redeem";
+import { reportError, reportSweepBacklog } from "@/lib/observability";
 import { sweepStockDepletion } from "@/lib/stock/depletion";
 
 // The dispatch engine uses the Neon pool + node crypto — keep off Edge.
@@ -47,19 +48,27 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const startedAt = Date.now();
-  const swept = await sweepMissedOrders();
+  // `enqueued` counts jobs the sweep had to INSERT — orders the webhook fast
+  // path missed. Non-zero feeds the sweep-backlog alert below (M1 / F5).
+  const { candidates, enqueued } = await sweepMissedOrders();
 
   // Drain the due queue: with a daily tick, a single 10-job batch would cap
   // throughput at 10 jobs/day and leave any backlog to age another 24h. Keep
   // claiming batches until one comes back short (queue empty) or the drain
   // budget is spent. Claims are atomic per row, so an overlapping webhook kick
-  // can never double-run a job we've claimed here.
+  // can never double-run a job we've claimed here. Stopping on budget with
+  // jobs still due is itself alert-worthy — it means a daily tick can no
+  // longer keep up (tracked and reported below).
   let processed = 0;
+  let drainBudgetExhausted = false;
   for (;;) {
     const batch = await processDueJobs(BATCH_SIZE);
     processed += batch;
     if (batch < BATCH_SIZE) break;
-    if (Date.now() - startedAt > DRAIN_BUDGET_MS) break;
+    if (Date.now() - startedAt > DRAIN_BUDGET_MS) {
+      drainBudgetExhausted = true;
+      break;
+    }
   }
 
   await runMaintenance();
@@ -73,6 +82,7 @@ export async function GET(request: Request): Promise<Response> {
     depleted = await sweepStockDepletion();
   } catch (error) {
     console.error("[jobs] stock depletion sweep failed:", error);
+    await reportError(error, { context: "jobs-cron.sweep-stock-depletion" });
   }
   // Loyalty earning backstop (PR1) — credits points for any confirmed,
   // loyalty-eligible order missed by the webhook fast-path (e.g. the customer
@@ -82,6 +92,7 @@ export async function GET(request: Request): Promise<Response> {
     earned = await sweepLoyaltyEarn();
   } catch (error) {
     console.error("[jobs] loyalty earn sweep failed:", error);
+    await reportError(error, { context: "jobs-cron.sweep-loyalty-earn" });
   }
   // Loyalty redemption debit backstop (PR2) — writes the ledger debit for any
   // confirmed order that redeemed points but missed the webhook. Isolated.
@@ -90,6 +101,7 @@ export async function GET(request: Request): Promise<Response> {
     redeemed = await sweepLoyaltyRedeem();
   } catch (error) {
     console.error("[jobs] loyalty redeem sweep failed:", error);
+    await reportError(error, { context: "jobs-cron.sweep-loyalty-redeem" });
   }
   // Gift-card redemption debit backstop (PR2) — writes the ledger debit for any
   // confirmed order that redeemed a card but missed the webhook. Isolated.
@@ -98,11 +110,26 @@ export async function GET(request: Request): Promise<Response> {
     giftCardsRedeemed = await sweepGiftCardRedeem();
   } catch (error) {
     console.error("[jobs] gift card redeem sweep failed:", error);
+    await reportError(error, { context: "jobs-cron.sweep-gift-card-redeem" });
   }
+  // M1 / F5: every sweep is a backstop for work the webhook fast path should
+  // already have done, so ANY recovered work — or a drain that ran out of
+  // budget — is a warning-level alert event ("sweep_backlog"). A clean tick
+  // (all zero, budget not exhausted) reports nothing. No-op without a DSN.
+  await reportSweepBacklog({
+    integrationJobsEnqueued: enqueued,
+    stockDepletionsApplied: depleted,
+    loyaltyEarnsApplied: earned,
+    loyaltyRedeemsApplied: redeemed,
+    giftCardRedeemsApplied: giftCardsRedeemed,
+    drainBudgetExhausted,
+  });
   return Response.json({
     ok: true,
-    swept,
+    swept: candidates,
+    sweepEnqueued: enqueued,
     processed,
+    drainBudgetExhausted,
     depleted,
     earned,
     redeemed,
