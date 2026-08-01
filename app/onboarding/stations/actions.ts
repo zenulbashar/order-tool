@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { venues, venueStations } from "@/lib/db/schema";
 import { normaliseStationCode } from "@/lib/orders/station";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 import { MAX_STATIONS, type StationsState } from "./constants";
 
@@ -30,8 +30,13 @@ export async function saveStations(
   _prev: StationsState,
   formData: FormData,
 ): Promise<StationsState> {
-  await requireUser();
-  const venue = await requireVenue();
+  // requireWizardVenue = requireVenuePermission("settings:manage") + "wizard not
+  // finished". Both halves matter here: the dashboard's Settings → Stations
+  // screen gates the SAME writes on settings:manage, so onboarding must not be a
+  // lower-privilege door into venue config; and the replace-set below is only
+  // safe before item→station assignments exist. Reachable by direct POST, so the
+  // check has to live here and not only on the step page.
+  const venue = await requireWizardVenue();
 
   const count = Number(formData.get("stationCount"));
   if (!Number.isInteger(count) || count < 0 || count > MAX_STATIONS) {

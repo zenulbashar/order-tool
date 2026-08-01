@@ -1,4 +1,4 @@
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 import { WizardProgress } from "../_components/wizard-progress";
 import { advanceToLiveStep } from "./actions";
@@ -12,9 +12,10 @@ type PlanParams = {
 };
 
 export default async function PlanStepPage({ searchParams }: PlanParams) {
-  await requireUser();
-  // No venue -> requireVenue redirects to /onboarding, which routes to Step 1.
-  await requireVenue();
+  // No venue -> redirects to /onboarding, which routes to Step 1. Already live
+  // -> back to the dashboard; the Billing page owns plan changes from then on.
+  // (createBillingCheckout only returns here when the WIZARD started Checkout.)
+  await requireWizardVenue();
   const sp = await searchParams;
   const success = sp.checkout === "success";
   const canceled = sp.checkout === "cancel";

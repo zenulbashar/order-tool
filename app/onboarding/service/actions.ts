@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 export type ServiceState = { error?: string };
 
@@ -21,8 +21,7 @@ export async function saveServiceStyle(
   _prevState: ServiceState,
   formData: FormData,
 ): Promise<ServiceState> {
-  await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireWizardVenue();
 
   // Unchecked checkboxes are simply absent from the form data.
   const offersDineIn = formData.get("offersDineIn") === "on";

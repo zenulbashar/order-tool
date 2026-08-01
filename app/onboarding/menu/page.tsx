@@ -1,5 +1,5 @@
 import { ImportClient } from "@/app/dashboard/menu/import/import-client";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 import { WizardProgress } from "../_components/wizard-progress";
 import { completeMenuStep } from "./actions";
@@ -8,9 +8,9 @@ import { completeMenuStep } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function MenuStepPage() {
-  await requireUser();
-  // No venue -> requireVenue redirects to /onboarding, which routes to Step 1.
-  await requireVenue();
+  // No venue -> redirects to /onboarding, which routes to Step 1. Already live
+  // -> back to the dashboard; the menu editor owns imports from then on.
+  await requireWizardVenue();
 
   return (
     <div className="space-y-6">

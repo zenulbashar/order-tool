@@ -291,6 +291,33 @@ export async function requireOnboardedVenue(): Promise<Venue> {
 }
 
 /**
+ * Resolve the current venue for a WIZARD STEP: require settings:manage AND that
+ * onboarding is still unfinished. The mirror image of requireOnboardedVenue.
+ *
+ * Two separate reasons, both load-bearing:
+ *  - Permission. The steps write the same venue config the dashboard's Settings
+ *    screens do, so they carry the same capability. Without it, membership alone
+ *    let a kitchen login re-run setup on a live venue.
+ *  - Unfinished. The Stations step REPLACE-SETS venue_stations, and its safety
+ *    argument is "item→station assignments are made later in the menu editor,
+ *    not during onboarding". That holds only while the wizard is unfinished; a
+ *    completed venue re-entering would null every assignment made since.
+ *
+ * /onboarding already sends completed venues to the dashboard — this closes the
+ * same door on the step routes, which nothing links to but which stay directly
+ * addressable. Deliberately NOT used by /onboarding/details: that step CREATES a
+ * venue and is how the sidebar's "Add location" opens a second one, so a
+ * completed CURRENT venue is the normal case there.
+ */
+export async function requireWizardVenue(): Promise<Venue> {
+  const venue = await requireVenuePermission("settings:manage");
+  if (isOnboardingComplete(venue)) {
+    redirect("/dashboard");
+  }
+  return venue;
+}
+
+/**
  * Every venue the current user is a member of (for the venue switcher and the
  * "you have N locations" UI). Empty when signed out. Scoped to the user's
  * memberships — never returns a venue they don't belong to.
