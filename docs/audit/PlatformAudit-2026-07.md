@@ -37,15 +37,15 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 ### Remediation status (updated 2026-08-01)
 
 The first remediation pass shipped alongside this report; a second (M1 —
-observability), third (M2 — job engine), fourth (M3 — checkout safety net), and fifth
-(M4 — refunds) followed the same day. What changed, per finding:
+observability), third (M2 — job engine), fourth (M3 — checkout safety net), fifth
+(M4 — refunds) and sixth (M5 — staff roles) followed the same day. What changed, per finding:
 
 | Finding | Status | What shipped |
 |---|---|---|
 | F1 | **Mitigated** (step 1) | Delivery is no longer selectable at onboarding — shown as a disabled "Coming soon" tile; the action ignores the field entirely and pins `offers_delivery = false`; validation requires a shipped mode. The delivery *epic* (M9+) remains open. |
 | F2 | **Mitigated** (M2 shipped) | First pass: all five `SWEEP_WINDOW_MS` widened 24h → 72h; cron drains until empty/budget; retry jitter; comment corrected. M2 (third pass): every sweep now anchors to a persisted **`last_swept_at` watermark** (72h stays the floor; an outage longer than it widens the lookback instead of orphaning orders — Vercel's "since the last successful run" contract, §8.4); claims carry a **5-minute lease** with `attempts`-fenced completion writes, so a crashed invocation no longer strands jobs in `processing` forever; the webhook kick and owner retries **drain opportunistically** (~8s budget), making retries run at order cadence; an **opt-in hourly GitHub Actions tick** (`job-tick.yml`) caps worst-case retry latency at ~1h on the Hobby plan. Still open: minute cron (paid Vercel tier) or a durable queue as the mechanism of record. |
 | F3 | **Mitigated** (M4 shipped) | A `refunds` table + `refunded`/`partially_refunded` order states; a dashboard refund action calling `stripe.refunds.create` on the venue's connected account with the pending row's id as the **idempotency key** (durable record written BEFORE the money moves) and `refund_application_fee: true`; `charge.refunded` / `charge.refund.updated` webhooks **reconcile refunds issued out of band from the Stripe Dashboard**, closing the exact consistency gap the finding describes; and idempotent compensation on full refunds — net loyalty reversal, gift-card value returned, and ingredient restock for orders the kitchen had not yet made. Revenue reporting is now net of refunds. Partial refunds deliberately move cash only (see the module docstring). |
-| F4 | **Partial** | Misleading `requireOwner()` renamed to `requireVenueMemberSession()` with the role-check seam documented. Invites + enforcement remain open (M5). |
+| F4 | **Mitigated** (M5 shipped) | Roles are now READ for authorization. A many-to-many `venue_member_roles` table with **cumulative permission union** (the shape §8.3's surviving evidence supports — not the refuted one-role-per-user model), a code-defined permission catalogue (roles are the unit of assignment, per the one verified Shopify claim), and `requireVenuePermission()` enforced inside **all 22 dashboard action files**. Invites ship in the SAME milestone as enforcement, as the finding demands: `venue_invitations` with a hashed single-use token bound to the invited email, a Staff & roles settings page, and last-owner protection so a venue cannot be left unrecoverable. Existing members need **no data migration** — the legacy `venue_members.role` column is the fallback until an explicit assignment exists. |
 | F5 | **Mitigated** (M1 shipped) | Sentry error tracking behind `SENTRY_DSN`, initialised via `instrumentation.ts` (`register` + `onRequestError`, so every server error Next captures is visible). The webhook handler and all its swallowed side effects, `placeOrder`'s previously-silent PaymentIntent failure, and every job-engine failure now report; dead-lettered jobs and non-empty sweep backlogs emit tagged alert events (`alert:integration_job_dead_letter`, `alert:sweep_backlog`). Runbook: `docs/ops/Observability.md`. Open (console-side ops, not code): create the Sentry project/DSN and the two alert rules. Tracing/latency percentiles remain future work. |
 | F6 | Open | Tag-based ISR (M6). |
 | F10 | **Mitigated** | Global `SkipLink` (first Tab stop on every page; anchors on the shared shells, JS fallback elsewhere); stale "7/8 dialogs" note in `Accessibility.md` corrected — all 8 use `useDialog`. Brand-contrast validation and screen-reader pass remain open (M7). |
@@ -858,6 +858,13 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 ### M5 — Staff and roles (2 weeks)
 - `requireVenueRole` enforcement first, then invitations and the members page (F4).
 - Rename the misleading `requireOwner()`.
+- **Shipped 2026-08-01** (sixth remediation pass): enforcement and invites
+  together. `assignableRoles()` states the anti-escalation rule as a property
+  — an actor may grant only roles whose permissions are a SUBSET of their own
+  — so a manager can never mint an owner and reach billing. Deliberately NOT
+  built: an editable-roles/permission-checkbox UI, whose supporting claims
+  §8.3 refuted 0-3. The role set stays small (owner/manager/staff) until a
+  verified competitor baseline exists.
 
 ### M6 — Storefront caching (2 weeks)
 - Tag-based ISR for menu payloads; `revalidateTag` on every mutation (F6).

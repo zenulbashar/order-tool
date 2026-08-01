@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { promotions, promotionVenues } from "@/lib/db/schema";
-import { requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 
 export type DiscountState = { error?: string; success?: boolean };
 
@@ -16,7 +16,7 @@ const CODE_RE = /^[A-Z0-9]{3,24}$/;
 
 /**
  * Create an owner-managed, diner-redeemable discount CODE for the current venue.
- * Ownership comes from requireVenue() (never a client id). The promo is forced
+ * Ownership comes from requireVenuePermission("promotions:manage") (never a client id). The promo is forced
  * merchant-funded and scoped to this one venue, so it can never touch another
  * venue or the platform's co-funding accounting; it applies ONLY when a diner
  * enters the code at checkout (server-recomputed through the existing pipeline).
@@ -29,7 +29,7 @@ export async function createOwnerDiscount(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("promotions:manage");
 
   const name = String(formData.get("name") ?? "").trim();
   const code = String(formData.get("code") ?? "").trim().toUpperCase();
@@ -109,7 +109,7 @@ export async function setOwnerDiscountActive(formData: FormData): Promise<void> 
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("promotions:manage");
   const id = String(formData.get("id") ?? "");
   const active = formData.get("active") === "true";
   if (!id) return;

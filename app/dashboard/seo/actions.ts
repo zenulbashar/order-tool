@@ -31,7 +31,7 @@ import {
   toAeoGeneratedCopy,
   toSeoGeneratedCopy,
 } from "@/lib/seo-audit-llm";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { storefrontDescriptionSchema } from "@/lib/validation";
 
 import { getCategoriesForVenue, getItemsForVenue } from "../menu/queries";
@@ -53,7 +53,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("settings:manage");
 }
 
 /**

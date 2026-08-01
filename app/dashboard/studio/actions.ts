@@ -10,7 +10,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { menuItems } from "@/lib/db/schema";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 
 import type { MenuArtworkData } from "./artwork";
 import { buildMenuCategories } from "./menu-data";
@@ -41,7 +41,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("settings:manage");
 }
 
 // The rules live in the system prompt. They encode the feature constraints:

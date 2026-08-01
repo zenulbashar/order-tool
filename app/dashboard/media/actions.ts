@@ -8,7 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { menuItems, venueImages } from "@/lib/db/schema";
 import { deleteFromR2, r2KeyFromPublicUrl, uploadToR2 } from "@/lib/r2";
-import { requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 
 export type MediaState = { error?: string };
 
@@ -30,7 +30,7 @@ export async function uploadLibraryImage(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("menu:manage");
 
   const file = formData.get("image");
   if (!(file instanceof File) || file.size === 0) {
@@ -67,7 +67,7 @@ export async function deleteLibraryImage(formData: FormData): Promise<void> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("menu:manage");
 
   const id = String(formData.get("id") ?? "");
   if (!id) return;
@@ -106,7 +106,7 @@ export async function deleteLibraryImage(formData: FormData): Promise<void> {
 export async function listVenueImages(): Promise<{ id: string; url: string }[]> {
   const session = await auth();
   if (!session?.user?.id) return [];
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("menu:manage");
   return db
     .select({ id: venueImages.id, url: venueImages.url })
     .from(venueImages)

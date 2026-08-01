@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { dismissNudge } from "@/lib/nudges";
-import { requireVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, type Venue } from "@/lib/tenant";
 
 const SUGGESTIONS_PATH = "/dashboard/stock/suggestions";
 
@@ -16,7 +16,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("stock:manage");
 }
 
 // A dismiss target is a suggestion's stable dedupe key ("kind:subjectId").

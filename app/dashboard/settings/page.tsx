@@ -52,6 +52,11 @@ const SECTIONS: { href: string; title: string; description: string }[] = [
     description: "Show the GST portion on receipts.",
   },
   {
+    href: "/dashboard/settings/staff",
+    title: "Staff & roles",
+    description: "Invite your team and control what each person can do.",
+  },
+  {
     href: "/dashboard/settings/stations",
     title: "Prep stations",
     description: "Per-station kitchen labels & the packaging docket.",

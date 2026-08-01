@@ -12,7 +12,7 @@ import { db } from "@/lib/db";
 import { ingredients, invoiceScans, menuItems, recipeLines } from "@/lib/db/schema";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { costPerUnitCents, dishCost, marginOf } from "@/lib/stock/cost";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 
 const STOCK_PATH = "/dashboard/stock";
 const SCAN_PATH = "/dashboard/stock/scan";
@@ -42,7 +42,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("stock:manage");
 }
 
 /* -------------------------------------------------------------------------- */

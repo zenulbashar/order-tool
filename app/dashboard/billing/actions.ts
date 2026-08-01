@@ -15,7 +15,7 @@ import {
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 import { getBaseUrl } from "@/lib/url";
 
 const PAID_PLANS: ReadonlySet<string> = new Set(["pro", "scale"]);
@@ -38,7 +38,7 @@ function parseInterval(
 /**
  * Start (or change) the venue's platform subscription via Stripe-hosted
  * Checkout. Creates the platform billing CUSTOMER on first use — server-side,
- * scoped to the venue via requireVenue(), never from client input — stamping
+ * scoped to the venue via requireVenuePermission("billing:manage"), never from client input — stamping
  * venueId in metadata so the billing webhook can resolve the venue. Card data
  * never touches our servers. The redirect stays OUTSIDE the try/catch (it throws
  * NEXT_REDIRECT, which a catch would swallow).
@@ -48,7 +48,7 @@ function parseInterval(
  */
 export async function createBillingCheckout(formData: FormData): Promise<void> {
   const user = await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
   const plan = parsePaidPlan(formData.get("plan"));
   const interval = parseInterval(formData.get("interval"));
   // Return-URL context only (Phase 3c). When the onboarding wizard initiates
@@ -130,7 +130,7 @@ export async function createBillingCheckout(formData: FormData): Promise<void> {
  */
 export async function addRosterAddon(): Promise<void> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
 
   try {
     if (!venue.stripeSubscriptionId) {
@@ -174,7 +174,7 @@ export async function addRosterAddon(): Promise<void> {
 /** Remove the Roster add-on line from the venue's subscription (prorated). */
 export async function removeRosterAddon(): Promise<void> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
 
   try {
     if (!venue.stripeSubscriptionId) {
@@ -210,7 +210,7 @@ export async function removeRosterAddon(): Promise<void> {
  */
 export async function createBillingPortalSession(): Promise<void> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
 
   let destination: string;
   try {

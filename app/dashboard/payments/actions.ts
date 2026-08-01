@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 import { getBaseUrl } from "@/lib/url";
 
 import { syncStripeAccountStatus } from "./queries";
@@ -15,13 +15,13 @@ import { syncStripeAccountStatus } from "./queries";
 /**
  * Start (or resume) Stripe Connect Express onboarding for the current venue.
  * Creates the connected account on first use — server-side, scoped to the
- * venue via requireVenue(), never from client input — then redirects the owner
+ * venue via requireVenuePermission("billing:manage"), never from client input — then redirects the owner
  * to the Stripe-hosted onboarding flow via an Account Link. The redirect stays
  * OUTSIDE the try/catch (it throws NEXT_REDIRECT, which a catch would swallow).
  */
 export async function connectStripe(): Promise<void> {
   const user = await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
 
   let destination: string;
   try {
@@ -70,7 +70,7 @@ export async function connectStripe(): Promise<void> {
  */
 export async function refreshStripeStatus(): Promise<void> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
   if (venue.stripeAccountId) {
     await syncStripeAccountStatus(venue.id, venue.stripeAccountId);
   }
@@ -93,7 +93,7 @@ export async function refreshStripeStatus(): Promise<void> {
  */
 export async function setPayToEnabled(formData: FormData): Promise<void> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
   const enable = formData.get("enable") === "on";
 
   // PayTo lives on the connected account; only meaningful once charges work.
@@ -126,7 +126,7 @@ export async function setPayToEnabled(formData: FormData): Promise<void> {
  */
 export async function setPaytoDiscount(formData: FormData): Promise<void> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
 
   const modeRaw = formData.get("mode");
   const mode = modeRaw === "flat" || modeRaw === "percent" ? modeRaw : "off";
@@ -170,7 +170,7 @@ const LOYALTY_REDEEM_VALUES = new Set([1, 2, 5, 10]);
  */
 export async function setLoyaltyConfig(formData: FormData): Promise<void> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("billing:manage");
 
   const enabled = formData.get("enabled") === "on";
 

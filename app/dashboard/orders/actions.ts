@@ -7,7 +7,7 @@ import { after } from "next/server";
 import { notifyCustomerOrder } from "@/lib/customer/notify";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission, scopedToVenue } from "@/lib/tenant";
 import { fulfillmentStatusSchema, idSchema } from "@/lib/validation";
 
 export type UpdateFulfillmentResult = { error?: string };
@@ -30,7 +30,7 @@ export async function updateOrderFulfillmentStatus(
   newStatus: string,
 ): Promise<UpdateFulfillmentResult> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("orders:manage");
 
   const id = idSchema.safeParse(orderId);
   if (!id.success) return { error: "Missing order." };

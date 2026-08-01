@@ -12,7 +12,7 @@ import {
   r2KeyFromPublicUrl,
   uploadToR2,
 } from "@/lib/r2";
-import { requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 import {
   hostedImageUrlSchema,
   logoUrlSchema,
@@ -28,7 +28,7 @@ export type LogoState = { error?: string };
  * The storefront theming that used to live in one bundled form is now split into
  * focused server actions — one per Settings sub-page — so each save touches ONLY
  * its own columns and can never clobber a sibling field. They all share the same
- * discipline: ownership comes from requireVenue() (no client-supplied id), the
+ * discipline: ownership comes from requireVenuePermission("settings:manage") (no client-supplied id), the
  * write is scoped WHERE id = venue.id, only whitelisted validated columns are set
  * (no mass assignment), and both the sub-page and the storefront are revalidated.
  * logo_url + imagery stay owned by their own upload/URL/remove actions below.
@@ -43,7 +43,7 @@ export async function updateBrandTheme(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const parsed = venueSettingsSchema
     .pick({ brandColor: true, textColor: true })
@@ -80,7 +80,7 @@ export async function updateStorefrontAbout(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const parsed = venueSettingsSchema
     .pick({ storefrontDescription: true })
@@ -110,7 +110,7 @@ export async function updateAnnouncement(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const parsed = venueSettingsSchema
     .pick({ announcement: true })
@@ -138,7 +138,7 @@ export async function updateSocialLinks(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const parsed = venueSettingsSchema
     .pick({
@@ -195,7 +195,7 @@ export async function saveTaxSettings(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const enabled = formData.get("taxEnabled") === "on";
   const label = String(formData.get("taxLabel") ?? "").trim() || "GST";
@@ -232,7 +232,7 @@ export async function setPushNewOrders(formData: FormData): Promise<void> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
   const enabled = formData.get("enable") === "on";
   await db
     .update(venues)
@@ -310,7 +310,7 @@ export async function uploadVenueLogo(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const file = formData.get("logo");
   if (!(file instanceof File) || file.size === 0) {
@@ -366,7 +366,7 @@ export async function setVenueLogoUrl(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const parsed = logoUrlSchema.safeParse(formData.get("logoUrl") ?? "");
   if (!parsed.success) {
@@ -394,7 +394,7 @@ export async function removeVenueLogo(): Promise<void> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const previousUrl = await currentLogoUrl(venue.id);
   await db
@@ -464,7 +464,7 @@ async function uploadVenueImage(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const file = formData.get("image");
   if (!(file instanceof File) || file.size === 0) {
@@ -506,7 +506,7 @@ async function setVenueImageUrl(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const parsed = hostedImageUrlSchema.safeParse(formData.get("imageUrl") ?? "");
   if (!parsed.success) {
@@ -531,7 +531,7 @@ async function removeVenueImage(slot: ImagerySlot): Promise<void> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const previousUrl = await currentImageUrl(venue.id, slot);
   await setImageColumn(venue.id, slot, null);
@@ -637,7 +637,7 @@ function readOpeningHours(
 /**
  * Update the current venue's business details — the address, phone, opening
  * hours, and geo that feed the storefront's search-listing JSON-LD. Security is
- * identical to updateVenueSettings: ownership comes from requireVenue() (never a
+ * identical to updateVenueSettings: ownership comes from requireVenuePermission("settings:manage") (never a
  * client-supplied id), the write is scoped WHERE id = venue.id, and only
  * whitelisted, validated columns are set (no mass assignment). Every field is
  * optional and empty input is stored as NULL, so nothing fabricated is saved.
@@ -650,7 +650,7 @@ export async function updateVenueDetails(
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const hours = readOpeningHours(formData);
   if (!hours.ok) {

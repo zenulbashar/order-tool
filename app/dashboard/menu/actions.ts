@@ -21,7 +21,7 @@ import {
   r2KeyFromPublicUrl,
   uploadToR2,
 } from "@/lib/r2";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
   categoryCreateSchema,
   categoryUpdateSchema,
@@ -53,7 +53,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("menu:manage");
 }
 
 /** Option price delta defaults to 0 when the field is left blank. */

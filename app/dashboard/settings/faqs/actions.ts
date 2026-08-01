@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { seoAudits, venueFaqs } from "@/lib/db/schema";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { venueFaqsSchema } from "@/lib/validation";
 
 const FAQ_PATH = "/dashboard/settings/faqs";
@@ -22,7 +22,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("settings:manage");
 }
 
 export type FaqRow = { question: string; answer: string };

@@ -1,12 +1,18 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { auth } from "@/lib/auth";
+import {
+  can,
+  type Permission,
+  type RoleKey,
+  roleFromLegacyMemberRole,
+} from "@/lib/authz";
 import { db } from "@/lib/db";
-import { venueMembers, venues } from "@/lib/db/schema";
+import { venueMemberRoles, venueMembers, venues } from "@/lib/db/schema";
 import { emailIsPlatformAdmin } from "@/lib/platform-admin";
 
 export type Venue = typeof venues.$inferSelect;
@@ -153,6 +159,101 @@ export async function requireVenue(): Promise<Venue> {
   const venue = await getCurrentVenue();
   if (!venue) {
     redirect("/onboarding");
+  }
+  return venue;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Roles and permissions (M5 / audit F4)                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The roles a user holds at a venue, as a cumulative set.
+ *
+ * Resolution order, and why:
+ *  1. Rows in `venue_member_roles` — the M5 source of truth, many-to-many.
+ *  2. If the user has NO role rows but IS a member, fall back to the legacy
+ *     `venue_members.role` column. This is what makes the migration free:
+ *     every venue created before M5 keeps working, its owner keeps owner
+ *     access, and nothing had to be backfilled.
+ *  3. No membership at all → no roles.
+ *
+ * A PLATFORM ADMIN opening a venue through the support tool is granted owner
+ * for the duration — the same widening `getCurrentVenue` already applies, and
+ * it is re-derived from the allowlist on every call rather than cached.
+ *
+ * Wrapped in cache() so a page that checks several permissions issues one
+ * query per request, matching getMembershipVenues.
+ */
+export const getVenueRoles = cache(
+  async (userId: string, venueId: string): Promise<RoleKey[]> => {
+    const assigned = await db
+      .select({ role: venueMemberRoles.role })
+      .from(venueMemberRoles)
+      .where(
+        and(
+          eq(venueMemberRoles.userId, userId),
+          eq(venueMemberRoles.venueId, venueId),
+        ),
+      );
+    if (assigned.length > 0) {
+      return [...new Set(assigned.map((row) => row.role))];
+    }
+
+    const [legacy] = await db
+      .select({ role: venueMembers.role })
+      .from(venueMembers)
+      .where(
+        and(
+          eq(venueMembers.userId, userId),
+          eq(venueMembers.venueId, venueId),
+        ),
+      )
+      .limit(1);
+    return legacy ? [roleFromLegacyMemberRole(legacy.role)] : [];
+  },
+);
+
+/** The signed-in user's roles at the venue they're currently managing. */
+export async function getCurrentVenueRoles(venueId: string): Promise<RoleKey[]> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return [];
+  // Support-tool impersonation already resolves venues outside the user's
+  // memberships; grant owner there so the operator view is not half-broken.
+  if (await emailIsPlatformAdmin(session?.user?.email)) {
+    const roles = await getVenueRoles(userId, venueId);
+    return roles.length > 0 ? roles : ["owner"];
+  }
+  return getVenueRoles(userId, venueId);
+}
+
+/** Does the signed-in user hold this permission at this venue? */
+export async function hasVenuePermission(
+  venueId: string,
+  permission: Permission,
+): Promise<boolean> {
+  return can(await getCurrentVenueRoles(venueId), permission);
+}
+
+/**
+ * Resolve the current venue AND require a permission on it — the gate the
+ * audit's F4 says must exist before any invite ships, since without it every
+ * member row grants full owner powers.
+ *
+ * Server Functions are reachable by direct POST, so this must be called
+ * INSIDE each protected action, not merely relied upon in the UI that hides
+ * the button. Denial redirects to the dashboard rather than rendering a
+ * forbidden page — the caller has a valid session, just not this capability.
+ * Like the other redirects here it throws a control-flow signal, so call it
+ * OUTSIDE any try/catch.
+ */
+export async function requireVenuePermission(
+  permission: Permission,
+): Promise<Venue> {
+  const venue = await requireVenue();
+  if (!(await hasVenuePermission(venue.id, permission))) {
+    redirect("/dashboard?denied=1");
   }
   return venue;
 }

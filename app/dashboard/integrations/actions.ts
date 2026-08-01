@@ -19,7 +19,7 @@ import {
   signOAuthState,
 } from "@/lib/integrations/square/oauth";
 import { decryptSecret } from "@/lib/crypto";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { getBaseUrl } from "@/lib/url";
 import { idSchema } from "@/lib/validation";
 
@@ -59,7 +59,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("integrations:manage");
 }
 
 /** Venue-scoped Square integration row, or null. IDOR-safe by construction. */

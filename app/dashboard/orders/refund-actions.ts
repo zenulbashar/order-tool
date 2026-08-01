@@ -9,7 +9,7 @@ import {
   refundOrder,
 } from "@/lib/payments/refund-service";
 import { remainingRefundableCents } from "@/lib/payments/refund";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission, scopedToVenue } from "@/lib/tenant";
 import { idSchema } from "@/lib/validation";
 import { and, eq } from "drizzle-orm";
 
@@ -34,7 +34,7 @@ export async function refundOrderAction(
   formData: FormData,
 ): Promise<RefundActionResult> {
   const user = await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("refunds:issue");
 
   const id = idSchema.safeParse(formData.get("orderId"));
   if (!id.success) return { error: "Missing order." };
@@ -76,7 +76,7 @@ export async function getOrderRefundSummary(
   orderId: string,
 ): Promise<OrderRefundSummary | null> {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("refunds:issue");
 
   const parsed = idSchema.safeParse(orderId);
   if (!parsed.success) return null;
