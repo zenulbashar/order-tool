@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/app/_components/page-header";
 import { getVenueGiftCards } from "@/lib/giftcards/queries";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 
 import { GiftCardsClient } from "./gift-cards-client";
 
@@ -12,12 +12,18 @@ export const metadata: Metadata = { title: "Gift cards" };
 /**
  * Owner gift cards — issue stored-value cards (comps, refunds, promos) that
  * diners redeem at checkout. Redeem-only v1: cards are created here, not bought
- * online. Venue-scoped via requireVenue; no money-path (issuing changes no
- * order or charge — redemption, which does, ships separately).
+ * online.
+ *
+ * Gated on giftcards:manage, NOT on bare membership. Redemption has SHIPPED and
+ * authorises on the code alone — resolveGiftCardForRedemption matches venue +
+ * code + active, with no purchaser, no PIN and no possession proof — so every
+ * code this page prints is a bearer instrument. Listing them to a kitchen login
+ * would hand out the venue's stored value, redeemable as an ordinary diner on
+ * the public storefront. The mutating actions in this directory already require
+ * this permission; the read has to match them or the gate is decorative.
  */
 export default async function GiftCardsPage() {
-  await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("giftcards:manage");
   const cards = await getVenueGiftCards(venue.id);
 
   return (
