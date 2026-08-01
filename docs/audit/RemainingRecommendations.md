@@ -77,11 +77,26 @@ Ordered by priority. Nothing here is Critical.
 12. **Tables empty state (R4).** Add a first-run empty message.
 
 13. **Automated tests — remaining gaps.** No longer "no unit tests": the suite is
-    261 tests across 30 files, and the money path, refunds, authz, invitations,
-    tenant scoping and both webhook contracts are covered. The gap that remains is
-    **loyalty** (`lib/loyalty/*` has no direct unit tests — earn/redeem are
-    exercised only through the webhook handler's mocks) and the stock depletion
-    path. See TechnicalDebt.md.
+    269 tests across 31 files, and the money path (including the discount
+    re-price call site), refunds, authz, invitations, tenant scoping and both
+    webhook contracts are covered. The gap that remains is **loyalty**
+    (`lib/loyalty/*` has no direct unit tests — earn/redeem are exercised only
+    through the webhook handler's mocks) and the stock depletion path. See
+    TechnicalDebt.md.
+
+14. **Owners with 2+ venues cannot add another.** Found while reviewing the
+    2026-08 security fixes; pre-existing and unrelated to them (`main` behaves
+    identically), so recorded rather than fixed here. `app/dashboard/sidebar.tsx`
+    renders the "＋ Add location" link — the one that points at
+    `/onboarding/details`, which actually creates a venue — only when the owner
+    has a single venue (`hasMultiple ? null : …`). Everyone else gets
+    `app/dashboard/venue-switcher.tsx`'s "＋ Add another location", which points
+    at `/onboarding`, and that redirects to `/dashboard` whenever the selected
+    venue is complete (`app/onboarding/page.tsx`). So a two-venue owner has no
+    working path to a third. Fix: point the switcher link at
+    `/onboarding/details` too, or drop the `hasMultiple` condition on the sidebar
+    link. Worth confirming the intended multi-location product story first —
+    this may be a deliberate cap that outgrew its comment.
 
 ## Out of static scope (need a runtime environment)
 
