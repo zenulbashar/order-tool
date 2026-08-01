@@ -1,15 +1,17 @@
 import "server-only";
 
-import { and, eq, gt } from "drizzle-orm";
+import { and, gt, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { orders } from "@/lib/db/schema";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
+import { orders, refunds } from "@/lib/db/schema";
 import { scopedToVenue } from "@/lib/tenant";
 
 /**
  * Owner customer directory (Square parity, quick-win #3) — FIREWALL-SAFE.
  *
- * Aggregated ENTIRELY from the owner's OWN venue's confirmed orders. We never
+ * Aggregated ENTIRELY from the owner's OWN venue's PAID orders (net of any
+ * refunds — see the select below). We never
  * join or read the diner `customers` auth table (no email, no cross-venue
  * correlation): the grouping key is a three-tier coalesce of columns already on
  * the order row — `customerId` (an opaque in-venue bucket label, never
@@ -77,14 +79,25 @@ export async function getVenueCustomers(
       customerId: orders.customerId,
       customerName: orders.customerName,
       customerPhone: orders.customerPhone,
-      totalCents: orders.totalCents,
+      // NET of refunds (M4): a partially refunded order is still a real
+      // visit by a real customer, so it must keep counting — but at what the
+      // venue actually kept, not its face value. Excluding refunded orders
+      // outright (the pre-refunds behaviour, when every paid order was
+      // 'confirmed') would silently erase the visit AND its value from the
+      // customer's record over a small goodwill refund.
+      totalCents: sql<number>`(${orders.totalCents} - coalesce((
+        select sum(${refunds.amountCents})
+          from ${refunds}
+         where ${refunds.orderId} = ${orders.id}
+           and ${refunds.status} = 'succeeded'
+      ), 0))::int`,
       createdAt: orders.createdAt,
     })
     .from(orders)
     .where(
       and(
         scopedToVenue(orders.venueId, venueId),
-        eq(orders.status, "confirmed"),
+        inArray(orders.status, PAID_ORDER_STATUSES),
         gt(orders.createdAt, windowSince),
       ),
     );

@@ -10,7 +10,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { ingredients, menuItems, recipeLines } from "@/lib/db/schema";
-import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { idSchema } from "@/lib/validation";
 
 const MENU_PATH = "/dashboard/menu";
@@ -20,7 +20,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("stock:manage");
 }
 
 /** Quantity in the ingredient's recipe unit; positive, may be fractional. */

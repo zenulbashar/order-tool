@@ -7,7 +7,7 @@ import { z } from "zod";
 import { getAnthropic, MENU_COPY_MODEL } from "@/lib/anthropic";
 import { auth } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { requireVenue, type Venue } from "@/lib/tenant";
+import { requireVenuePermission, type Venue } from "@/lib/tenant";
 import {
   DIETARY_TAGS,
   type DietaryTag,
@@ -42,7 +42,7 @@ async function requireVenueForAction(): Promise<Venue> {
   if (!session?.user?.id) {
     redirect("/signin");
   }
-  return requireVenue();
+  return requireVenuePermission("menu:manage");
 }
 
 /* -------------------------------------------------------------------------- */
