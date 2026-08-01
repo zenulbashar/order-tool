@@ -27,7 +27,7 @@ jobs:
       - run: npm run build
 
   e2e:
-    name: E2E smoke (marketing/SEO)
+    name: E2E smoke + a11y (marketing/SEO)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,8 +39,10 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       # Anonymous marketing/SEO routes only — no DB, only a dummy AUTH_SECRET.
-      # Playwright's webServer builds + starts the app.
-      - name: Run E2E smoke tests
+      # Playwright's webServer builds + starts the app. Includes the
+      # @axe-core/playwright WCAG 2.1 A/AA scan (M7 / audit F10); the seeded
+      # storefront + dashboard specs skip themselves without a database.
+      - name: Run E2E smoke + accessibility tests
         run: npm run test:e2e
         env:
           AUTH_SECRET: e2e-smoke-secret-not-real

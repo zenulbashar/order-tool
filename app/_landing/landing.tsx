@@ -27,7 +27,7 @@ function BentoIcon({ d }: { d: string }) {
         height="20"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#B08A30"
+        stroke="#856819"
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -105,6 +105,11 @@ export function Landing() {
         </nav>
       </header>
 
+      {/* The skip link's no-JS anchor target (M7 / audit F10). Without a
+          main landmark the plain `href="#main-content"` did nothing here and
+          only the JS fallback worked. */}
+      <main id="main-content" tabIndex={-1}>
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_78%_-8%,#1D4636,#143228_38%,#0F281E_70%,#0C1C15)]">
         <span className="pointer-events-none absolute -right-24 -top-32 h-96 w-96 rounded-full bg-[var(--color-accent)]/20 blur-3xl [animation:p2e-aurora_18s_ease-in-out_infinite]" />
@@ -144,12 +149,12 @@ export function Landing() {
               </a>
             </div>
             <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[#9FB0A2]">
-              <span className={`${eyebrow} text-[10px] text-[#5F7568]`}>Order with</span>
+              <span className={`${eyebrow} text-[10px] text-[#7E9486]`}>Order with</span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-3 w-3 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
                 Google Gemini
               </span>
-              <span className="text-[#5F7568]">·</span>
+              <span className="text-[#7E9486]">·</span>
               <span> Pay · G Pay · PayTo</span>
             </p>
           </div>
@@ -162,7 +167,7 @@ export function Landing() {
       {/* Trust strip */}
       <section className="bg-[#0C1C15] py-6">
         <div className={`${CONTAINER} flex flex-wrap items-center justify-center gap-x-4 gap-y-3`}>
-          <span className={`${eyebrow} text-[10.5px] text-[#5F7568]`}>
+          <span className={`${eyebrow} text-[10.5px] text-[#7E9486]`}>
             Works everywhere you already are
           </span>
           {[
@@ -190,7 +195,7 @@ export function Landing() {
       <section id="concierge" className="bg-gradient-to-b from-[#FFFDF8] to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="mx-auto max-w-[640px] text-center" data-reveal>
-            <span className={`${eyebrow} text-[var(--color-accent-ink,#B08A30)] text-[#B08A30]`}>
+            <span className={`${eyebrow} text-[var(--color-accent-ink,#856819)] text-[#856819]`}>
               The concierge
             </span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
@@ -334,7 +339,7 @@ export function Landing() {
       <section id="restaurants" className="bg-gradient-to-b from-[#FBF6EC] to-[#FFFDF8] py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="max-w-[680px]" data-reveal>
-            <span className={`${eyebrow} text-[#B08A30]`}>For restaurants</span>
+            <span className={`${eyebrow} text-[#856819]`}>For restaurants</span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
               One platform to run the whole venue.
             </h2>
@@ -435,7 +440,7 @@ export function Landing() {
       <section id="pricing" className="bg-gradient-to-b from-[#FFFDF8] to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="text-center" data-reveal>
-            <span className={`${eyebrow} text-[#B08A30]`}>Pricing</span>
+            <span className={`${eyebrow} text-[#856819]`}>Pricing</span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em]">
               Free for 30 days. No card.
             </h2>
@@ -461,7 +466,7 @@ export function Landing() {
                     Most popular
                   </span>
                 ) : null}
-                <span className={`${eyebrow} text-[10px] ${tier.featured ? "text-[#9FB0A2]" : "text-[#B08A30]"}`}>
+                <span className={`${eyebrow} text-[10px] ${tier.featured ? "text-[#9FB0A2]" : "text-[#856819]"}`}>
                   {tier.name}
                 </span>
                 <p className="mt-3">
@@ -525,6 +530,8 @@ export function Landing() {
       </section>
 
       {/* Footer */}
+      </main>
+
       <footer className="bg-[#0C1C15] py-14 text-[#C9D4CB]">
         <div className={CONTAINER}>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
@@ -577,7 +584,7 @@ export function Landing() {
               },
             ].map((col) => (
               <div key={col.h}>
-                <p className={`${eyebrow} text-[10px] text-[#5F7568]`}>{col.h}</p>
+                <p className={`${eyebrow} text-[10px] text-[#7E9486]`}>{col.h}</p>
                 <ul className="mt-3 space-y-2 text-sm font-medium">
                   {col.links.map((l) => (
                     <li key={l.label}>
@@ -637,7 +644,7 @@ function FeatureRow({
   return (
     <div className="grid items-center gap-[clamp(28px,4vw,64px)] lg:grid-cols-2" data-reveal>
       <div className={flip ? "lg:order-2" : ""}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#B08A30]">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">
           {eb}
         </span>
         <h3 className="mt-2.5 font-display text-[clamp(24px,3vw,34px)] font-extrabold leading-[1.08] tracking-[-0.02em]">

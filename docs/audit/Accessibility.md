@@ -92,3 +92,31 @@ finding log above.
 Screen-reader pass (VoiceOver/NVDA/TalkBack), real contrast sampling across
 tenant brand colours, and reduced-motion behaviour in a live browser — these need
 runtime testing and are listed in ReleaseChecklist.md.
+
+## Automated checks in CI (M7, 2026-08-01)
+
+`e2e/a11y.spec.ts` runs `@axe-core/playwright` against the anonymous
+marketing surface (landing, sign-in, /learn hub, a /learn article) on every
+PR, asserting **zero** WCAG 2.1 A/AA violations, plus an explicit assertion
+that the skip link is the first Tab stop and moves real focus (axe can detect
+a broken skip link but not a missing one).
+
+Enabling it found and fixed four genuine contrast failures that had shipped:
+
+| Element | Before | After |
+|---|---|---|
+| Landing eyebrow labels on the dark hero (`#5F7568`) | 3.55:1 | 4.82:1 (`#7E9486`) |
+| The shared `--color-muted` token on the page background | 4.29:1 | 4.82:1 (`#666d63`) |
+| `/learn` secondary text on cream (`#7A8A7C`) | 3.30:1 | 4.95:1 (`#5A6E60`) |
+| The gold accent label (`#B08A30`), 17 usages | 2.91:1 | 4.75:1 (`#856819`) |
+
+The landing page also had **no `<main>` landmark at all**, so the skip link's
+no-JS anchor silently did nothing there and only the JS fallback worked. It
+now has one.
+
+**Scope limit, stated plainly:** CI has no database, so the storefront and
+dashboard cannot render there and are NOT scanned. Venue-branded surfaces are
+guarded from the other direction by the WCAG contrast gate that now runs at
+brand-save time (`lib/contrast.ts`), which refuses a custom text colour below
+4.5:1 against the brand colour. Axe also detects only ~a third of WCAG issues;
+the manual screen-reader pass remains outstanding.

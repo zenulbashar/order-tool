@@ -26,7 +26,7 @@ export async function ShopTeaser() {
       <div className={CONTAINER}>
         <div className="flex flex-wrap items-end justify-between gap-4" data-reveal>
           <div className="max-w-[560px]">
-            <span className={`${eyebrow} text-[#B08A30]`}>The shop</span>
+            <span className={`${eyebrow} text-[#856819]`}>The shop</span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
               Everything your venue needs.
             </h2>
