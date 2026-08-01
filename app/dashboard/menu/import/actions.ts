@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { getAnthropic, MENU_EXTRACTION_MODEL } from "@/lib/anthropic";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { menuCategories, menuItems, menuItemVariants } from "@/lib/db/schema";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
@@ -355,5 +356,6 @@ export async function publishMenu(
   });
 
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   return { ok: true, addedCategories, addedItems, addedSizes };
 }

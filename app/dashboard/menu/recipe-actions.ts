@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { ingredients, menuItems, recipeLines } from "@/lib/db/schema";
 import { requireVenue, scopedToVenue, type Venue } from "@/lib/tenant";
 import { idSchema } from "@/lib/validation";
@@ -90,6 +91,7 @@ export async function addRecipeLine(formData: FormData): Promise<void> {
       });
   }
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   redirect(backToItem(formData));
 }
 
@@ -110,6 +112,7 @@ export async function updateRecipeLine(formData: FormData): Promise<void> {
       );
   }
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   redirect(backToItem(formData));
 }
 
@@ -128,5 +131,6 @@ export async function removeRecipeLine(formData: FormData): Promise<void> {
       );
   }
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
   redirect(backToItem(formData));
 }

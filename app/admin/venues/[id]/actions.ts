@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { menuItems, platformAuditLog, venues } from "@/lib/db/schema";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { getStripe } from "@/lib/stripe";
@@ -126,6 +127,17 @@ export async function setVenueItemPrice(formData: FormData): Promise<void> {
       action: "venue_menu_item_price",
       detail: `${row.name} → $${(priceCents / 100).toFixed(2)}`,
     });
+    // The storefront caches its menu payload (M6 / audit F6), and this is the
+    // one price write that happens OUTSIDE the venue's own dashboard — without
+    // this a diner keeps seeing the old price. The slug is looked up rather
+    // than passed in, so a forged form value cannot clear another venue's
+    // cache.
+    const [venue] = await db
+      .select({ id: venues.id, slug: venues.slug })
+      .from(venues)
+      .where(eq(venues.id, venueId))
+      .limit(1);
+    if (venue) revalidateStorefront(venue);
   }
 
   revalidatePath(pathFor(venueId));

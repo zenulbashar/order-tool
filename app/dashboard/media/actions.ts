@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { menuItems, venueImages } from "@/lib/db/schema";
 import { deleteFromR2, r2KeyFromPublicUrl, uploadToR2 } from "@/lib/r2";
 import { requireVenuePermission } from "@/lib/tenant";
@@ -54,6 +55,7 @@ export async function uploadLibraryImage(
 
   await db.insert(venueImages).values({ venueId: venue.id, url });
   revalidatePath(MEDIA_PATH);
+  revalidateStorefront(venue);
   return {};
 }
 
@@ -99,7 +101,9 @@ export async function deleteLibraryImage(formData: FormData): Promise<void> {
     .where(and(eq(venueImages.id, id), eq(venueImages.venueId, venue.id)));
 
   revalidatePath(MEDIA_PATH);
+  revalidateStorefront(venue);
   revalidatePath(MENU_PATH);
+  revalidateStorefront(venue);
 }
 
 /** The current venue's library images (newest first) — for the item picker. */

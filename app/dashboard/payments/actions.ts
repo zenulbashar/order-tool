@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { venues } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
 import { requireUser, requireVenuePermission } from "@/lib/tenant";
@@ -114,7 +115,7 @@ export async function setPayToEnabled(formData: FormData): Promise<void> {
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/payments");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
 }
 
 /**
@@ -151,7 +152,7 @@ export async function setPaytoDiscount(formData: FormData): Promise<void> {
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/payments");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
 }
 
 /** Point-values the redemption ratio may take (cents per point). Constrained to
@@ -196,5 +197,5 @@ export async function setLoyaltyConfig(formData: FormData): Promise<void> {
     .where(eq(venues.id, venue.id));
 
   revalidatePath("/dashboard/payments");
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
 }

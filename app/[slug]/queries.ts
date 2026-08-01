@@ -16,6 +16,11 @@ import {
   venueFaqs,
   venues,
 } from "@/lib/db/schema";
+import {
+  venueMenuTag,
+  venueProfileTag,
+  venueSlugTag,
+} from "@/lib/cache-tags";
 import { scopedToVenue } from "@/lib/tenant";
 import { normalizeDietaryTags } from "@/lib/validation";
 
@@ -31,12 +36,25 @@ import type {
  * (question + answer only). Rendered visibly in the footer AND emitted as
  * FAQPage JSON-LD from this same data, so the two can never diverge.
  */
-export async function getPublicFaqs(venueId: string): Promise<PublicFaq[]> {
+async function loadPublicFaqs(venueId: string): Promise<PublicFaq[]> {
   return db
     .select({ question: venueFaqs.question, answer: venueFaqs.answer })
     .from(venueFaqs)
     .where(scopedToVenue(venueFaqs.venueId, venueId))
     .orderBy(asc(venueFaqs.sortOrder), asc(venueFaqs.createdAt));
+}
+
+/**
+ * Storefront FAQs, cached under the venue's PROFILE tag (M6 / audit F6) —
+ * they render in the footer and as FAQPage JSON-LD on every view, and change
+ * a handful of times a year.
+ */
+export function getPublicFaqs(venueId: string): Promise<PublicFaq[]> {
+  return unstable_cache(
+    () => loadPublicFaqs(venueId),
+    ["public-faqs", venueId],
+    { tags: [venueProfileTag(venueId)], revalidate: 3600 },
+  )();
 }
 
 /**
@@ -51,6 +69,19 @@ export const getPublicVenueBySlug = cache(
   async (slug: string): Promise<PublicVenue | null> => {
     const normalized = slug.trim().toLowerCase();
     if (normalized.length === 0) return null;
+    // Cached per slug and cleared by tag on every venue mutation (M6 /
+    // audit F6). React cache() above still dedups within one request;
+    // this removes the query ACROSS requests. Safe to key by slug: a
+    // slug is written once at onboarding and never updated.
+    return unstable_cache(
+      () => loadPublicVenue(normalized),
+      ["public-venue", normalized],
+      { tags: [venueSlugTag(normalized)], revalidate: 3600 },
+    )();
+  },
+);
+
+async function loadPublicVenue(normalized: string): Promise<PublicVenue | null> {
 
     const rows = await db
       .select({
@@ -118,9 +149,8 @@ export const getPublicVenueBySlug = cache(
       .where(eq(venues.slug, normalized))
       .limit(1);
 
-    return rows[0] ?? null;
-  },
-);
+  return rows[0] ?? null;
+}
 
 /**
  * Public menu tree for a venue. Customers only ever see is_active categories,
@@ -129,7 +159,7 @@ export const getPublicVenueBySlug = cache(
  * timestamps). Categories that end up with zero available items are dropped so
  * a customer never lands on an empty section.
  */
-export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
+async function loadPublicMenu(venueId: string): Promise<PublicMenu> {
   const [categories, items, groups, options, tags, variants] = await Promise.all([
     db
       .select({
@@ -282,6 +312,30 @@ export async function getPublicMenu(venueId: string): Promise<PublicMenu> {
   }
 
   return menu;
+}
+
+/**
+ * The diner-facing menu, cached per venue and invalidated by TAG (M6 / audit
+ * F6). Before this the full menu — categories, items, variants, modifier
+ * groups and options, dietary tags — was re-queried on EVERY storefront view,
+ * so database load scaled with diner traffic rather than with menu changes.
+ *
+ * Invalidation is by tag, not time, which is what preserves the property
+ * `force-dynamic` was originally chosen for: 86-ing an item is visible on the
+ * next load, not after a TTL. Every dashboard mutation clears it through the
+ * single revalidateStorefront() helper.
+ *
+ * The one-hour `revalidate` is a SAFETY NET, not the mechanism: if a mutation
+ * path is ever added without invalidation, staleness is bounded to an hour
+ * instead of forever. It is deliberately long so it never becomes the thing
+ * doing the work.
+ */
+export function getPublicMenu(venueId: string): Promise<PublicMenu> {
+  return unstable_cache(
+    () => loadPublicMenu(venueId),
+    ["public-menu", venueId],
+    { tags: [venueMenuTag(venueId)], revalidate: 3600 },
+  )();
 }
 
 /* -------------------------------------------------------------------------- */

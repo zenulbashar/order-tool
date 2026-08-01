@@ -38,7 +38,8 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 
 The first remediation pass shipped alongside this report; a second (M1 —
 observability), third (M2 — job engine), fourth (M3 — checkout safety net), fifth
-(M4 — refunds) and sixth (M5 — staff roles) followed the same day. What changed, per finding:
+(M4 — refunds), sixth (M5 — staff roles) and seventh (M6 — storefront
+caching) followed the same day. What changed, per finding:
 
 | Finding | Status | What shipped |
 |---|---|---|
@@ -47,7 +48,7 @@ observability), third (M2 — job engine), fourth (M3 — checkout safety net), 
 | F3 | **Mitigated** (M4 shipped) | A `refunds` table + `refunded`/`partially_refunded` order states; a dashboard refund action calling `stripe.refunds.create` on the venue's connected account with the pending row's id as the **idempotency key** (durable record written BEFORE the money moves) and `refund_application_fee: true`; `charge.refunded` / `charge.refund.updated` webhooks **reconcile refunds issued out of band from the Stripe Dashboard**, closing the exact consistency gap the finding describes; and idempotent compensation on full refunds — net loyalty reversal, gift-card value returned, and ingredient restock for orders the kitchen had not yet made. Revenue reporting is now net of refunds. Partial refunds deliberately move cash only (see the module docstring). |
 | F4 | **Mitigated** (M5 shipped) | Roles are now READ for authorization. A many-to-many `venue_member_roles` table with **cumulative permission union** (the shape §8.3's surviving evidence supports — not the refuted one-role-per-user model), a code-defined permission catalogue (roles are the unit of assignment, per the one verified Shopify claim), and `requireVenuePermission()` enforced inside **all 22 dashboard action files**. Invites ship in the SAME milestone as enforcement, as the finding demands: `venue_invitations` with a hashed single-use token bound to the invited email, a Staff & roles settings page, and last-owner protection so a venue cannot be left unrecoverable. Existing members need **no data migration** — the legacy `venue_members.role` column is the fallback until an explicit assignment exists. |
 | F5 | **Mitigated** (M1 shipped) | Sentry error tracking behind `SENTRY_DSN`, initialised via `instrumentation.ts` (`register` + `onRequestError`, so every server error Next captures is visible). The webhook handler and all its swallowed side effects, `placeOrder`'s previously-silent PaymentIntent failure, and every job-engine failure now report; dead-lettered jobs and non-empty sweep backlogs emit tagged alert events (`alert:integration_job_dead_letter`, `alert:sweep_backlog`). Runbook: `docs/ops/Observability.md`. Open (console-side ops, not code): create the Sentry project/DSN and the two alert rules. Tracing/latency percentiles remain future work. |
-| F6 | Open | Tag-based ISR (M6). |
+| F6 | **Mitigated** (M6 shipped) | The three storefront reads — menu tree, venue profile, FAQs — are cached per venue and invalidated by TAG, so database load now scales with menu *changes* rather than diner traffic. Instant 86-ing is preserved: invalidation uses `updateTag` (immediate expiry, next request waits for fresh data), NOT `revalidateTag(tag, "max")`, which serves the stale copy while refreshing and would show a diner an item just marked unavailable. Every mutation path goes through one `revalidateStorefront()` helper — including the platform-admin price override, a path outside the venue dashboard that would otherwise have served a stale price. A 1h TTL is a safety net only, bounding staleness if a future path forgets. Removing `force-dynamic` for true edge/ISR remains open, per the finding's own page-by-page rollout guidance. |
 | F10 | **Mitigated** | Global `SkipLink` (first Tab stop on every page; anchors on the shared shells, JS fallback elsewhere); stale "7/8 dialogs" note in `Accessibility.md` corrected — all 8 use `useDialog`. Brand-contrast validation and screen-reader pass remain open (M7). |
 | F12 | **Mitigated** | `migrate-prod` now needs `[build, e2e]` and fails on destructive SQL (`DROP`/`TRUNCATE`/type-narrowing guard, verified against all 59 existing migrations). Environment approval + pre-migration Neon snapshot remain open. |
 | F8 | **Mitigated** (M3 shipped) | The two money paths that had zero coverage now have it, running on every CI run: the checkout recompute (`lib/payments/line-plan.ts`, extracted pure and unchanged in behaviour) is tested against hostile input — cross-item/cross-venue option injection, stray/missing variants, duplicate options, per-group min/max, and price authority; and the Stripe webhook's **replay/idempotency contract** is tested by driving the real handler (`test/stripe-webhook-idempotency.test.ts`) — a redelivered event confirms nothing again and moves no value. Both suites were mutation-checked (the guard was broken, the tests failed by name, the code was restored). The full browser path (`e2e/checkout.spec.ts`) is written and **gated**: it needs a seeded DB + Stripe test credentials + a Connect account, which CI does not have — see `docs/ops/Testing.md`. |
@@ -870,6 +871,14 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 - Tag-based ISR for menu payloads; `revalidateTag` on every mutation (F6).
 - Per-venue rollout flag.
 - **Tests:** menu edit propagates in <1s.
+- **Shipped 2026-08-01** (seventh remediation pass): payload caching with
+  per-venue tags and single-helper invalidation across every mutation path.
+  Uses `updateTag` rather than `revalidateTag` — in this Next version the
+  latter's `profile="max"` is stale-while-revalidate, which would serve an
+  86'd item once more; the whole point of F6's tag-based recommendation is to
+  keep that from happening. Still open: dropping `force-dynamic` so the page
+  itself is edge-cacheable, which the finding says to roll out behind a
+  per-venue flag.
 
 ### M7 — Accessibility (1 week)
 - Skip links on every layout (F10) — the one clean Level A failure remaining.

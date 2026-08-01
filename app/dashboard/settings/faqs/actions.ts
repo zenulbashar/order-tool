@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { seoAudits, venueFaqs } from "@/lib/db/schema";
 import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { venueFaqsSchema } from "@/lib/validation";
@@ -80,7 +81,7 @@ export async function saveVenueFaqs(input: {
   });
 
   revalidatePath(FAQ_PATH);
-  revalidatePath(`/${venue.slug}`);
+  revalidateStorefront(venue);
   revalidatePath(`/${venue.slug}/menu`);
   return { ok: true, saved: parsed.data.faqs.length };
 }
