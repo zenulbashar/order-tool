@@ -54,7 +54,8 @@ the same day. What changed, per finding:
 | F12 | **Mitigated** | `migrate-prod` now needs `[build, e2e]` and fails on destructive SQL (`DROP`/`TRUNCATE`/type-narrowing guard, verified against all 59 existing migrations). Environment approval + pre-migration Neon snapshot remain open. |
 | F8 | **Mitigated** (M3 shipped) | The two money paths that had zero coverage now have it, running on every CI run: the checkout recompute (`lib/payments/line-plan.ts`, extracted pure and unchanged in behaviour) is tested against hostile input — cross-item/cross-venue option injection, stray/missing variants, duplicate options, per-group min/max, and price authority; and the Stripe webhook's **replay/idempotency contract** is tested by driving the real handler (`test/stripe-webhook-idempotency.test.ts`) — a redelivered event confirms nothing again and moves no value. Both suites were mutation-checked (the guard was broken, the tests failed by name, the code was restored). The full browser path (`e2e/checkout.spec.ts`) is written and **gated**: it needs a seeded DB + Stripe test credentials + a Connect account, which CI does not have — see `docs/ops/Testing.md`. |
 | F9 | **Mitigated** (M8 shipped) | `platform_audit_log` gains a nullable `venue_id` + `actor_user_id` (additive; NULL = a platform-wide admin action, exactly as the finding prescribes) and merchant-side mutations now write to it: menu item create/edit/delete with the price in the detail, opening hours, order status transitions, refunds, gift-card issuance, and staff invite/role-change/removal. A venue-facing **Activity** page (gated on `settings:manage`) shows who changed what. Auditing never fails the action it describes, details are scrubbed and truncated, and no FK is used on `venue_id` so an entry outlives the venue it describes. |
-| F7, F11 | Open | The RLS decision pending §8.1's counter-evidence, and the OpenAPI spec. |
+| F11 | **Mitigated** | `docs/api/openapi.yaml` documents the whole HTTP surface — webhooks, cron ticks and same-origin browser routes — with the real auth mechanism and status codes for each. `test/openapi.test.ts` fails CI if a route exists without a documented path (or vice versa), so the spec cannot silently rot. It states plainly that there is **no public third-party API yet**: F11's actual gap is a versioned public contract, and this documents what exists so the first public endpoint joins a described surface rather than an undocumented one. |
+| F7 | Open | The RLS decision, pending §8.1's counter-evidence on naive-RLS timeouts. |
 
 ---
 
@@ -909,6 +910,14 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
   payment-page script integrity rather than automatic (§8.2).
 - Add a Content-Security-Policy to the checkout route; document the script inventory.
 - **Docs:** record the eligibility determination and its basis.
+- **Shipped 2026-08-01** (tenth remediation pass): `docs/ops/PCI.md` records the
+  SAQ A determination against the CORRECTED §8.2 reading — per FAQ 1588 the
+  script criterion applies only to embedded payment forms, which is exactly
+  what Stripe Elements is, so it binds here. A checkout-scoped CSP allowlists
+  only the origins Stripe.js requires (verified served, and absent
+  elsewhere), plus `frame-ancestors 'none'`. The `'unsafe-inline'` script-src
+  limitation is recorded rather than hidden: removing it needs the nonce
+  approach and must be validated against live Elements.
 
 ### M9+ — Delivery epic (6–10 weeks)
 - Full delivery domain (F1 step 2). Sequenced last because it is the largest, and because M0
