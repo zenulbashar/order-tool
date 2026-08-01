@@ -1,0 +1,51 @@
+# Opt-in hourly tick for the integrations job engine (M2 / audit F2).
+#
+# Vercel Hobby caps crons at once per day, which turns the engine's
+# minute-scale retry backoff into days. This workflow invokes the same
+# CRON_SECRET-protected route hourly, so retries and sweeps happen at worst
+# hourly instead of daily. The endpoint is reconciliation-based, idempotent,
+# and lease-protected, so extra/overlapping/missed ticks are all safe —
+# GitHub schedules are best-effort (runs can be delayed or dropped, and
+# GitHub disables schedules after ~60 days of repo inactivity), which is
+# exactly the delivery contract the engine already tolerates.
+#
+# DISABLED BY DEFAULT. To enable:
+#   1. Repo Settings → Secrets and variables → Actions:
+#      - Variable JOB_TICK_URL = https://<your-domain>/api/jobs/integrations
+#      - Secret   CRON_SECRET  = the same value Vercel holds
+#   2. That's it — the job-level `if` starts passing on the next tick.
+#
+# Cost note (private repos): each run bills a minimum of 1 Actions minute, so
+# hourly ≈ 720 minutes/month against the plan's included quota. Public repos
+# are free. Prefer a paid Vercel tier's minute cron or a queue (QStash — pin
+# Upstash-Retries explicitly, see the audit §8.4) when either is available;
+# this tick is the zero-new-vendor middle ground.
+name: Job tick
+
+on:
+  schedule:
+    # Hourly, off the congested top-of-hour (GitHub delays :00 schedules most).
+    - cron: "7 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: job-tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    name: Invoke integrations job route
+    if: vars.JOB_TICK_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call /api/jobs/integrations
+        env:
+          JOB_TICK_URL: ${{ vars.JOB_TICK_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body -sS --max-time 90 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${JOB_TICK_URL}"

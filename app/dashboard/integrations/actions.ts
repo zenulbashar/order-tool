@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { and, eq, inArray } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { integrationJobs, venueIntegrations } from "@/lib/db/schema";
+import { processDueJobs } from "@/lib/integrations/dispatch";
+import { drainDueJobs } from "@/lib/integrations/drain";
+import { reportError } from "@/lib/observability";
 import {
   buildAuthorizeUrl,
   listLocations,
@@ -20,6 +24,29 @@ import { getBaseUrl } from "@/lib/url";
 import { idSchema } from "@/lib/validation";
 
 const HUB_PATH = "/dashboard/integrations";
+
+/**
+ * Post-response processing kick for the retry actions (M2): the owner just
+ * asked for a retry, so run it NOW instead of parking the job until the next
+ * tick. Same contract as the webhook's kick — inside after(), bounded, and
+ * fully swallowed (the re-queued job is already durable; a kick failure only
+ * costs immediacy).
+ */
+function kickJobProcessing(): void {
+  try {
+    after(() =>
+      drainDueJobs({
+        claimBatch: processDueJobs,
+        batchSize: 10,
+        deadlineMs: Date.now() + 8_000,
+      }).catch((error) =>
+        reportError(error, { context: "integrations.retry-kick" }),
+      ),
+    );
+  } catch {
+    // Swallowed — the next cron/webhook tick picks the job up regardless.
+  }
+}
 
 /**
  * Server Functions are reachable via direct POST, so re-check auth on every
@@ -171,6 +198,7 @@ export async function retrySquareJob(formData: FormData): Promise<void> {
           inArray(integrationJobs.status, ["failed", "dead"]),
         ),
       );
+    kickJobProcessing();
   }
   revalidatePath(HUB_PATH);
   redirect(`${HUB_PATH}?detail=square`);
@@ -189,6 +217,7 @@ export async function retryAllSquareJobs(): Promise<void> {
         inArray(integrationJobs.status, ["failed", "dead"]),
       ),
     );
+  kickJobProcessing();
   revalidatePath(HUB_PATH);
   redirect(`${HUB_PATH}?detail=square`);
 }

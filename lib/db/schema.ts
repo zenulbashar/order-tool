@@ -1413,6 +1413,25 @@ export const integrationJobs = pgTable(
 export type VenueIntegration = typeof venueIntegrations.$inferSelect;
 export type IntegrationJob = typeof integrationJobs.$inferSelect;
 
+/**
+ * Per-sweep reconciliation watermarks (M2 / audit F2). One row per named
+ * sweep (integrations, stock depletion, loyalty earn/redeem, gift cards);
+ * `last_swept_at` is the start time of the last sweep that ran to completion.
+ * Vercel's cron contract is "runs get dropped — reprocess outstanding work
+ * since the last SUCCESSFUL run"; this table is what makes the sweeps'
+ * lookback anchor to the last successful run instead of a fixed window. The
+ * fixed 72h window remains the FLOOR (lookback is never narrower than
+ * today), the watermark only ever widens it after an outage.
+ */
+export const sweepWatermarks = pgTable("sweep_watermarks", {
+  name: text("name").primaryKey(),
+  lastSweptAt: timestamp("last_swept_at", { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export type SweepWatermark = typeof sweepWatermarks.$inferSelect;
+
 /* -------------------------------------------------------------------------- */
 /* Stock & recipe costing (Track D)                                            */
 /*                                                                            */

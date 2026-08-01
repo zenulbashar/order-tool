@@ -4,6 +4,7 @@ import { and, eq, gt, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orders, pointsLedger } from "@/lib/db/schema";
+import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
 /**
  * Loyalty points REDEMPTION debit (Loyalty PR2). The DISCOUNT itself is applied
@@ -86,7 +87,10 @@ export async function redeemPointsForOrder(
  * latency optimization only. Bounded; idempotent so the next tick continues.
  */
 export async function sweepLoyaltyRedeem(): Promise<number> {
-  const since = new Date(Date.now() - SWEEP_WINDOW_MS);
+  const startedAt = new Date();
+  // Anchored to the last SUCCESSFUL sweep (M2) — the 72h window is the floor,
+  // an outage longer than it widens the lookback instead of orphaning orders.
+  const since = await sweepLookbackSince("loyalty_redeem", SWEEP_WINDOW_MS);
   const pending = await db
     .select({
       id: orders.id,
@@ -129,6 +133,12 @@ export async function sweepLoyaltyRedeem(): Promise<number> {
     } catch {
       // A single order's debit failure must not abort the sweep.
     }
+  }
+  // Advance the watermark only when this sweep saw its WHOLE backlog — a
+  // batch-capped tick leaves it alone so the remainder stays inside the next
+  // lookback even past the 72h floor.
+  if (pending.length < SWEEP_BATCH) {
+    await advanceSweepWatermark("loyalty_redeem", startedAt);
   }
   return applied;
 }

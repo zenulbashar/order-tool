@@ -3,6 +3,7 @@ import {
   runMaintenance,
   sweepMissedOrders,
 } from "@/lib/integrations/dispatch";
+import { drainDueJobs } from "@/lib/integrations/drain";
 import { sweepGiftCardRedeem } from "@/lib/giftcards/redeem";
 import { sweepLoyaltyEarn } from "@/lib/loyalty/earn";
 import { sweepLoyaltyRedeem } from "@/lib/loyalty/redeem";
@@ -26,17 +27,23 @@ const DRAIN_BUDGET_MS = 35_000;
 /**
  * The integrations job processor + sweep (Track 0). Invoked ONCE DAILY by
  * Vercel Cron (vercel.json, `0 3 * * *`) — cron delivery is best-effort and a
- * failed run is never retried, which is why the sweeps' 72h lookback windows
- * must exceed the worst-case gap between successful runs. The fast path is the
- * opportunistic kick after order confirmation via after() in the Stripe
- * webhook; this route is the reconciliation backstop. Because a whole day of
- * retries can be due when it fires, it DRAINS in batches until the queue is
- * empty or the time budget is spent, rather than processing a single batch.
+ * failed run is never retried. Two M2 mechanisms make that survivable:
+ * every sweep anchors its lookback to a persisted last-successful-run
+ * watermark (72h floor — an outage longer than the floor widens the window
+ * instead of orphaning orders), and the opt-in GitHub Actions tick
+ * (.github/workflows/job-tick.yml) can invoke this same route hourly so
+ * retry backoff means minutes-to-hours, not days. The fast path is the
+ * opportunistic drain after order confirmation via after() in the Stripe
+ * webhook; this route is the reconciliation backstop. Because a backlog can
+ * be due when it fires, it DRAINS in batches until the queue is empty or the
+ * time budget is spent, rather than processing a single batch.
  *
- * Protected by CRON_SECRET (Vercel sends `Authorization: Bearer <CRON_SECRET>`);
- * if the secret is absent we fail safe and refuse, mirroring the webhook-secret
- * discipline. This route only reads/writes integration outbox state — it can
- * never touch order confirmation.
+ * Protected by CRON_SECRET (Vercel sends `Authorization: Bearer <CRON_SECRET>`;
+ * the GitHub tick sends the same header); if the secret is absent we fail safe
+ * and refuse, mirroring the webhook-secret discipline. Safe at ANY invocation
+ * frequency: sweeps and jobs are idempotent, claims are atomic + leased, and
+ * overlapping ticks skip each other's claims. This route only reads/writes
+ * integration outbox state — it can never touch order confirmation.
  */
 export async function GET(request: Request): Promise<Response> {
   const secret = process.env.CRON_SECRET;
@@ -52,24 +59,19 @@ export async function GET(request: Request): Promise<Response> {
   // path missed. Non-zero feeds the sweep-backlog alert below (M1 / F5).
   const { candidates, enqueued } = await sweepMissedOrders();
 
-  // Drain the due queue: with a daily tick, a single 10-job batch would cap
-  // throughput at 10 jobs/day and leave any backlog to age another 24h. Keep
-  // claiming batches until one comes back short (queue empty) or the drain
-  // budget is spent. Claims are atomic per row, so an overlapping webhook kick
-  // can never double-run a job we've claimed here. Stopping on budget with
-  // jobs still due is itself alert-worthy — it means a daily tick can no
-  // longer keep up (tracked and reported below).
-  let processed = 0;
-  let drainBudgetExhausted = false;
-  for (;;) {
-    const batch = await processDueJobs(BATCH_SIZE);
-    processed += batch;
-    if (batch < BATCH_SIZE) break;
-    if (Date.now() - startedAt > DRAIN_BUDGET_MS) {
-      drainBudgetExhausted = true;
-      break;
-    }
-  }
+  // Drain the due queue: a single 10-job batch would cap throughput at 10
+  // jobs/tick and leave any backlog to age until the next one. Keep claiming
+  // batches until one comes back short (queue empty) or the drain budget is
+  // spent. Claims are atomic per row, so an overlapping webhook kick can
+  // never double-run a job we've claimed here. Stopping on budget with jobs
+  // still due is itself alert-worthy — it means this cadence can no longer
+  // keep up (tracked and reported below).
+  const { processed, budgetExhausted: drainBudgetExhausted } =
+    await drainDueJobs({
+      claimBatch: processDueJobs,
+      batchSize: BATCH_SIZE,
+      deadlineMs: startedAt + DRAIN_BUDGET_MS,
+    });
 
   await runMaintenance();
   // Stock depletion backstop (Track D · D4b) — re-derives any missed depletion

@@ -11,6 +11,7 @@ import {
   venueIntegrations,
 } from "@/lib/db/schema";
 import { reportJobFailure } from "@/lib/observability";
+import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
 /**
  * The integrations OUTBOX engine (Track 0). Design contract:
@@ -27,7 +28,11 @@ import { reportJobFailure } from "@/lib/observability";
  *    retries can never double-mirror.
  *  - Claiming is atomic per row (guarded UPDATE … RETURNING), so overlapping
  *    processor invocations (cron + post-response kicks) never double-run a
- *    job.
+ *    job. Claims carry a LEASE (next_attempt_at = now + PROCESSING_LEASE_MS):
+ *    an invocation that dies mid-job no longer strands the row in
+ *    'processing' — the lease expires and the job is claimable again, and
+ *    completion writes are fenced on `attempts` so a slow original claimant
+ *    can never overwrite a reclaim's result.
  */
 
 type Provider = VenueIntegration["provider"];
@@ -69,6 +74,20 @@ export async function runMaintenance(): Promise<void> {
 /** Exponential backoff schedule (seconds); attempts beyond it go dead. */
 const BACKOFF_SECONDS = [60, 300, 1_800, 7_200, 43_200];
 const MAX_ATTEMPTS = BACKOFF_SECONDS.length + 1;
+
+/**
+ * Claim lease (M2): how long a claimed job may sit in 'processing' before it
+ * is presumed crashed and becomes claimable again. Before the lease, an
+ * invocation dying mid-job (deploy, OOM, timeout) stranded the row in
+ * 'processing' FOREVER — no sweep touches an existing row, so the mirror was
+ * silently lost. The claim now writes next_attempt_at = now + lease, and the
+ * due-set includes 'processing' rows whose lease expired; re-running is safe
+ * because the Square worker keys every provider call on the job id
+ * (idempotency_key = job.id / job.id + "-pay") and resumes via provider_ref.
+ * Must comfortably exceed the worst-case single-job runtime (the cron route
+ * caps the whole invocation at 60s).
+ */
+const PROCESSING_LEASE_MS = 5 * 60 * 1000;
 
 /**
  * How far back the sweep re-derives jobs from order state.
@@ -161,7 +180,10 @@ export async function sweepMissedOrders(): Promise<{
   candidates: number;
   enqueued: number;
 }> {
-  const since = new Date(Date.now() - SWEEP_WINDOW_MS);
+  const startedAt = new Date();
+  // Anchored to the last SUCCESSFUL sweep (M2) — the 72h window is the floor,
+  // an outage longer than it widens the lookback instead of orphaning orders.
+  const since = await sweepLookbackSince("integrations", SWEEP_WINDOW_MS);
   const candidates = await db
     .select({
       orderId: orders.id,
@@ -177,7 +199,11 @@ export async function sweepMissedOrders(): Promise<{
       ),
     )
     .where(and(eq(orders.status, "confirmed"), gt(orders.createdAt, since)));
-  if (candidates.length === 0) return { candidates: 0, enqueued: 0 };
+  if (candidates.length === 0) {
+    // Uncapped scan saw the whole (empty) backlog — a completed sweep.
+    await advanceSweepWatermark("integrations", startedAt);
+    return { candidates: 0, enqueued: 0 };
+  }
 
   const inserted = await db
     .insert(integrationJobs)
@@ -191,15 +217,22 @@ export async function sweepMissedOrders(): Promise<{
     )
     .onConflictDoNothing()
     .returning({ id: integrationJobs.id });
+  // The scan is uncapped, so reaching here means the full lookback was
+  // re-derived — advance the watermark to this sweep's start.
+  await advanceSweepWatermark("integrations", startedAt);
   return { candidates: candidates.length, enqueued: inserted.length };
 }
 
 /**
- * Claim and run due jobs (pending/failed with next_attempt_at reached), up to
- * `limit`. Each claim is an atomic guarded UPDATE — a job another invocation
- * already claimed simply returns no row and is skipped. Failures never throw
- * out of this function: they are recorded on the job + integration health
- * fields and rescheduled (or marked dead after MAX_ATTEMPTS).
+ * Claim and run due jobs (pending/failed with next_attempt_at reached, plus
+ * 'processing' rows whose claim LEASE expired — a crashed invocation's jobs
+ * become claimable again instead of being stranded forever), up to `limit`.
+ * Each claim is an atomic guarded UPDATE — a job another invocation already
+ * claimed simply returns no row and is skipped; the claim itself writes the
+ * lease (next_attempt_at = now + PROCESSING_LEASE_MS), so an expired-lease
+ * row can be reclaimed by exactly one invocation. Failures never throw out
+ * of this function: they are recorded on the job + integration health fields
+ * and rescheduled (or marked dead after MAX_ATTEMPTS).
  */
 export async function processDueJobs(limit: number): Promise<number> {
   const now = new Date();
@@ -208,7 +241,7 @@ export async function processDueJobs(limit: number): Promise<number> {
     .from(integrationJobs)
     .where(
       and(
-        inArray(integrationJobs.status, ["pending", "failed"]),
+        inArray(integrationJobs.status, ["pending", "failed", "processing"]),
         lte(integrationJobs.nextAttemptAt, now),
       ),
     )
@@ -222,21 +255,72 @@ export async function processDueJobs(limit: number): Promise<number> {
       .set({
         status: "processing",
         attempts: sql`${integrationJobs.attempts} + 1`,
+        // The lease: while this claim runs, the row is NOT due; if this
+        // invocation dies mid-job, the row becomes claimable again when the
+        // lease expires. A completed run overwrites this (success leaves the
+        // due-set entirely; failure sets the real backoff).
+        nextAttemptAt: new Date(Date.now() + PROCESSING_LEASE_MS),
       })
       .where(
         and(
           eq(integrationJobs.id, candidate.id),
-          inArray(integrationJobs.status, ["pending", "failed"]),
+          inArray(integrationJobs.status, ["pending", "failed", "processing"]),
           lte(integrationJobs.nextAttemptAt, now),
         ),
       )
       .returning();
     if (!job) continue; // claimed by a concurrent invocation
 
+    // Poison guard: a clean failure dead-letters at MAX_ATTEMPTS, so attempts
+    // can only exceed MAX_ATTEMPTS + 1 via repeated CRASH-reclaims (a job
+    // that kills its invocation never reaches the failure path). One
+    // post-crash grace run is allowed — the crash may have been the
+    // deploy's fault, not the job's — then park it dead instead of letting
+    // it crash a tick every lease interval forever.
+    if (job.attempts > MAX_ATTEMPTS + 1) {
+      await reportJobFailure(
+        {
+          jobId: job.id,
+          venueId: job.venueId,
+          provider: job.provider,
+          kind: job.kind,
+          attempts: job.attempts,
+          maxAttempts: MAX_ATTEMPTS,
+        },
+        new Error(
+          "Job crashed its invocation repeatedly (presumed poison); parked dead.",
+        ),
+      );
+      await db
+        .update(integrationJobs)
+        .set({
+          status: "dead",
+          lastError: "Crashed repeatedly (presumed poison).",
+        })
+        .where(claimedBy(job));
+      processed += 1;
+      continue;
+    }
+
     await runClaimedJob(job);
     processed += 1;
   }
   return processed;
+}
+
+/**
+ * Fence for a claim's completion writes: `attempts` was incremented by THIS
+ * claim, so matching on the value the claim returned makes the write a no-op
+ * if the lease expired and another invocation reclaimed the job (its
+ * increment changes `attempts`). Without this, a slow-but-alive original
+ * claimant could overwrite the reclaim's terminal state — e.g. flip a
+ * 'succeeded' row back to 'failed' and re-run a finished mirror.
+ */
+function claimedBy(job: IntegrationJob) {
+  return and(
+    eq(integrationJobs.id, job.id),
+    eq(integrationJobs.attempts, job.attempts),
+  );
 }
 
 async function runClaimedJob(job: IntegrationJob): Promise<void> {
@@ -256,7 +340,7 @@ async function runClaimedJob(job: IntegrationJob): Promise<void> {
       await db
         .update(integrationJobs)
         .set({ status: "dead", lastError: "Integration disconnected." })
-        .where(eq(integrationJobs.id, job.id));
+        .where(claimedBy(job));
       return;
     }
 
@@ -274,7 +358,7 @@ async function runClaimedJob(job: IntegrationJob): Promise<void> {
         lastError: null,
         ...(result.providerRef ? { providerRef: result.providerRef } : {}),
       })
-      .where(eq(integrationJobs.id, job.id));
+      .where(claimedBy(job));
     await db
       .update(venueIntegrations)
       .set({
@@ -319,7 +403,7 @@ async function runClaimedJob(job: IntegrationJob): Promise<void> {
         lastError: message,
         nextAttemptAt: new Date(Date.now() + jitteredSeconds * 1000),
       })
-      .where(eq(integrationJobs.id, job.id));
+      .where(claimedBy(job));
     await db
       .update(venueIntegrations)
       .set({

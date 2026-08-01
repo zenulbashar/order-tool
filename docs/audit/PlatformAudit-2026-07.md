@@ -37,12 +37,13 @@ production-blocking gaps**, not as a mature multi-tenant SaaS.
 ### Remediation status (updated 2026-08-01)
 
 The first remediation pass shipped alongside this report; a second pass
-(M1 — observability) followed the same day. What changed, per finding:
+(M1 — observability) and a third (M2 — job engine) followed the same day.
+What changed, per finding:
 
 | Finding | Status | What shipped |
 |---|---|---|
 | F1 | **Mitigated** (step 1) | Delivery is no longer selectable at onboarding — shown as a disabled "Coming soon" tile; the action ignores the field entirely and pins `offers_delivery = false`; validation requires a shipped mode. The delivery *epic* (M9+) remains open. |
-| F2 | **Mitigated** | All five `SWEEP_WINDOW_MS` widened 24h → 72h; the cron route drains batches until empty or budget instead of one 10-job batch; retry backoff gained 0.5×–1.5× jitter; the false "every minute" comment corrected. The `last_swept_at` watermark and a durable queue remain open (M2). |
+| F2 | **Mitigated** (M2 shipped) | First pass: all five `SWEEP_WINDOW_MS` widened 24h → 72h; cron drains until empty/budget; retry jitter; comment corrected. M2 (third pass): every sweep now anchors to a persisted **`last_swept_at` watermark** (72h stays the floor; an outage longer than it widens the lookback instead of orphaning orders — Vercel's "since the last successful run" contract, §8.4); claims carry a **5-minute lease** with `attempts`-fenced completion writes, so a crashed invocation no longer strands jobs in `processing` forever; the webhook kick and owner retries **drain opportunistically** (~8s budget), making retries run at order cadence; an **opt-in hourly GitHub Actions tick** (`job-tick.yml`) caps worst-case retry latency at ~1h on the Hobby plan. Still open: minute cron (paid Vercel tier) or a durable queue as the mechanism of record. |
 | F3 | Open | Refunds epic (M4). |
 | F4 | **Partial** | Misleading `requireOwner()` renamed to `requireVenueMemberSession()` with the role-check seam documented. Invites + enforcement remain open (M5). |
 | F5 | **Mitigated** (M1 shipped) | Sentry error tracking behind `SENTRY_DSN`, initialised via `instrumentation.ts` (`register` + `onRequestError`, so every server error Next captures is visible). The webhook handler and all its swallowed side effects, `placeOrder`'s previously-silent PaymentIntent failure, and every job-engine failure now report; dead-lettered jobs and non-empty sweep backlogs emit tagged alert events (`alert:integration_job_dead_letter`, `alert:sweep_backlog`). Runbook: `docs/ops/Observability.md`. Open (console-side ops, not code): create the Sentry project/DSN and the two alert rules. Tracing/latency percentiles remain future work. |
@@ -817,6 +818,15 @@ Each milestone is independently deployable, ≤2 weeks, and backward-compatible.
 ### M2 — Make the job engine real (1 week)
 - Minute cron or durable queue; loop `processDueJobs` until drained (F2 steps 2–3).
 - **Tests:** backlog of 100 jobs drains within one invocation.
+- **Shipped 2026-08-01** (third remediation pass): `last_swept_at` watermarks
+  for all five sweeps (72h floor kept); claim leases + fenced completion
+  writes (crashed invocations can no longer strand `processing` rows);
+  drain-until-empty extracted and reused by the cron route, the webhook's
+  post-response kick, and the dashboard retry actions; opt-in hourly GitHub
+  Actions tick for Hobby-plan deployments. The 100-job drain test is
+  `lib/integrations/drain.test.ts`. Remaining: minute cron (paid tier) or a
+  durable queue as the mechanism of record — the audit's §8.4 QStash caveats
+  apply when that lands.
 
 ### M3 — Checkout safety net (1 week)
 - Playwright E2E: cart → checkout → test card → webhook → confirmed (F8).
