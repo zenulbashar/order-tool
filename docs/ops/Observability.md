@@ -52,11 +52,13 @@ Respond:
    exception. Cross-check `venue_integrations.last_error`.
 2. Fix the cause — expired/revoked provider credentials (owner reconnects via
    the dashboard), revoked scopes, or a provider API change (code fix).
-3. Re-drive the job. There is no dashboard button yet (M2 material); today it
-   is a manual SQL update:
-   `UPDATE integration_jobs SET status = 'failed', next_attempt_at = now() WHERE id = '<job_id>';`
-   The next cron tick (or webhook kick) reclaims it. Attempts stay maxed, so
-   one more failure re-deads it immediately — fix the cause first.
+3. Re-drive the job from `/dashboard/integrations` (the venue owner's Square
+   detail drawer has per-job **Retry** and **Retry all** buttons; both
+   re-queue the job and — since M2 — kick processing immediately, so the
+   outcome is visible in seconds). Attempts stay maxed, so one more failure
+   re-deads it immediately — fix the cause first. An earlier revision of this
+   runbook claimed re-driving required manual SQL; that was wrong — the
+   buttons predate it.
 
 ### `alert:sweep_backlog` — investigate same day
 
@@ -72,9 +74,51 @@ Respond:
    to `/api/stripe/webhook` in the window.
 2. Check Sentry for `context:stripe-webhook.*` events around the same time —
    the side-effect failures that caused the misses should be there.
-3. `drain_budget_exhausted:true` means a single daily tick can no longer
-   drain the queue: the cadence is the bottleneck. That is roadmap M2 (minute
-   cron / durable queue) — escalate its priority rather than tuning budgets.
+3. `drain_budget_exhausted:true` means one tick can no longer drain the
+   queue: the cadence is the bottleneck. Enable the hourly GitHub tick (see
+   "Job engine cadence" below) if it isn't on; if it fires with the tick
+   already hourly, that is the signal to move to a paid Vercel tier's minute
+   cron or a queue.
+
+## Job engine cadence (M2)
+
+Three processing triggers, all safe to overlap (claims are atomic and
+leased; sweeps are idempotent and watermark-anchored):
+
+1. **After every confirmed order** — the Stripe webhook's post-response kick
+   drains due jobs on a small budget (~8s), so on an active venue retries
+   run at order cadence. Owner-initiated retries on
+   `/dashboard/integrations` kick the same drain.
+2. **The daily Vercel cron** (`vercel.json`, 03:00 UTC — the Hobby-plan
+   ceiling) — the reconciliation backstop: sweeps + full drain on a ~35s
+   budget.
+3. **The opt-in hourly GitHub Actions tick**
+   (`.github/workflows/job-tick.yml`) — disabled by default; enable by
+   setting the repo variable `JOB_TICK_URL`
+   (`https://<domain>/api/jobs/integrations`) and the repo secret
+   `CRON_SECRET`. Caps worst-case retry latency at ~1h without a new vendor.
+   Cost note: on a private repo each run bills ≥1 Actions minute (~720
+   min/month hourly); public repos are free.
+
+Durability properties shipped with M2, relied on by all three triggers:
+
+- **Claim leases** — a claimed job carries `next_attempt_at = now + 5min`;
+  an invocation dying mid-job (deploy, OOM, timeout) no longer strands the
+  row in `processing` forever — the lease expires and exactly one later tick
+  reclaims it. Completion writes are fenced on `attempts`, so a slow
+  original claimant can never overwrite a reclaim's result. Re-running is
+  provider-safe: Square calls are keyed `idempotency_key = job.id`. A job
+  that repeatedly **crashes** its invocation (never reaching the clean
+  failure path) gets one post-crash grace run, then is parked dead as
+  presumed poison — it raises the same dead-letter alert.
+- **Sweep watermarks** (`sweep_watermarks` table) — every sweep reconciles
+  from the last *successful* run (Vercel's own cron contract), with the 72h
+  window as the floor: lookback never narrows below today's behaviour and
+  widens automatically after an outage longer than the floor.
+
+Upgrade path when scale demands it: a paid Vercel tier's minute cron, or a
+queue (QStash — pin `Upstash-Retries` and an explicit backoff; the audit
+§8.4 documents why its defaults are unsuitable for order-path work).
 
 ## Design constraints (read before extending)
 

@@ -4,6 +4,7 @@ import { and, eq, gt, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { giftCardLedger, giftCards, orders } from "@/lib/db/schema";
+import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
 /**
  * Gift-card redemption DEBIT (Gift cards PR2). The DISCOUNT is applied
@@ -97,7 +98,10 @@ export async function redeemGiftCardForOrder(
  * but has no `redeem` ledger row yet. Bounded; idempotent.
  */
 export async function sweepGiftCardRedeem(): Promise<number> {
-  const since = new Date(Date.now() - SWEEP_WINDOW_MS);
+  const startedAt = new Date();
+  // Anchored to the last SUCCESSFUL sweep (M2) — the 72h window is the floor,
+  // an outage longer than it widens the lookback instead of orphaning orders.
+  const since = await sweepLookbackSince("gift_card_redeem", SWEEP_WINDOW_MS);
   const pending = await db
     .select({
       id: orders.id,
@@ -140,6 +144,12 @@ export async function sweepGiftCardRedeem(): Promise<number> {
     } catch {
       // A single order's debit failure must not abort the sweep.
     }
+  }
+  // Advance the watermark only when this sweep saw its WHOLE backlog — a
+  // batch-capped tick leaves it alone so the remainder stays inside the next
+  // lookback even past the 72h floor.
+  if (pending.length < SWEEP_BATCH) {
+    await advanceSweepWatermark("gift_card_redeem", startedAt);
   }
   return applied;
 }

@@ -7,6 +7,7 @@ import { notifyCustomerOrder } from "@/lib/customer/notify";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
+import { drainDueJobs } from "@/lib/integrations/drain";
 import { redeemGiftCardForOrder } from "@/lib/giftcards/redeem";
 import { earnPointsForOrder } from "@/lib/loyalty/earn";
 import { redeemPointsForOrder } from "@/lib/loyalty/redeem";
@@ -18,6 +19,18 @@ import { getStripe } from "@/lib/stripe";
 // Stripe signature verification uses Node crypto, and the Neon pool needs Node —
 // keep this handler off the Edge runtime.
 export const runtime = "nodejs";
+
+/**
+ * The post-response integrations kick (M2): drain due jobs in small batches
+ * on a tight budget, entirely inside after(). Every confirmed order becomes
+ * an opportunistic processing tick, so on any active venue a failed job's
+ * 60s/5m backoff is honoured at roughly order cadence instead of waiting for
+ * the next cron run. Small on purpose — this runs post-response but still
+ * inside the function's execution window; the cron route is where big
+ * backlogs drain.
+ */
+const KICK_BATCH_SIZE = 10;
+const KICK_DRAIN_BUDGET_MS = 8_000;
 
 /**
  * Log-and-swallow for the best-effort side effects below. The swallow itself is
@@ -101,7 +114,16 @@ export async function POST(request: Request): Promise<Response> {
           const enqueued = await enqueueJobsForOrder(paymentIntent.id);
           if (enqueued > 0) {
             // Kick processing after the response is sent (Vercel waitUntil).
-            after(() => processDueJobs(enqueued).catch(swallow("integrations kick")));
+            // The drain claims due jobs generally — this order's fresh
+            // enqueues AND any older retries whose backoff has elapsed — so
+            // busy hours self-heal at order cadence (M2).
+            after(() =>
+              drainDueJobs({
+                claimBatch: processDueJobs,
+                batchSize: KICK_BATCH_SIZE,
+                deadlineMs: Date.now() + KICK_DRAIN_BUDGET_MS,
+              }).catch(swallow("integrations kick")),
+            );
           }
         } catch (error) {
           // Swallowed by design — the sweep is the guarantee — but reported

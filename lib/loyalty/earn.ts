@@ -4,6 +4,7 @@ import { and, eq, gt, isNotNull, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { orders, pointsLedger, venues } from "@/lib/db/schema";
+import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
 /**
  * Loyalty points EARNING (PR1 — money-inert). When an order is confirmed, a
@@ -114,7 +115,10 @@ export async function earnPointsForOrder(
  * idempotency lets the next tick continue.
  */
 export async function sweepLoyaltyEarn(): Promise<number> {
-  const since = new Date(Date.now() - SWEEP_WINDOW_MS);
+  const startedAt = new Date();
+  // Anchored to the last SUCCESSFUL sweep (M2) — the 72h window is the floor,
+  // an outage longer than it widens the lookback instead of orphaning orders.
+  const since = await sweepLookbackSince("loyalty_earn", SWEEP_WINDOW_MS);
   const pending = await db
     .select({
       id: orders.id,
@@ -162,6 +166,12 @@ export async function sweepLoyaltyEarn(): Promise<number> {
       // A single order's earning failure must not abort the sweep; the next
       // tick retries it (idempotent).
     }
+  }
+  // Advance the watermark only when this sweep saw its WHOLE backlog — a
+  // batch-capped tick leaves it alone so the remainder stays inside the next
+  // lookback even past the 72h floor.
+  if (pending.length < SWEEP_BATCH) {
+    await advanceSweepWatermark("loyalty_earn", startedAt);
   }
   return applied;
 }
