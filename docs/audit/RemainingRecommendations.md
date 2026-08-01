@@ -56,9 +56,10 @@ Ordered by priority. Nothing here is Critical.
 10. **Dashboard read surfaces gated on membership.** Investigated during the
     2026-08 security review and scored 7/10 — below that report's bar, but real,
     and the same root cause as S6. Page-level `requireVenuePermission` appears on
-    only two pages (`settings/staff`, `settings/activity`); `/dashboard/reports`,
-    `/customers`, `/billing`, `/payments` and `/discounts` all use bare
-    `requireVenue()`, so a `staff` login can read 30-day revenue and GST, the
+    only three pages — `settings/staff`, `settings/activity`, and `gift-cards`
+    as of S6. The other ~25 dashboard pages use bare `requireVenue()`; the ones
+    worth fixing first are `/dashboard/reports`, `/customers`, `/billing`,
+    `/payments` and `/discounts`, where a `staff` login can read 30-day revenue and GST, the
     diner directory (names, phone numbers, lifetime spend — real PII), plan and
     invoice state, and promo codes. Every *mutation* on those pages is correctly
     gated, and no bearer secret is exposed (that was S6) — this is reads only.
