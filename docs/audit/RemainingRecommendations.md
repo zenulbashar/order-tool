@@ -88,11 +88,19 @@ Ordered by priority. Nothing here is Critical.
    | Disabled state | `disabled:cursor-not-allowed disabled:opacity-60` | *absent* |
    | Read-only state | `read-only:bg-sand/40` | *absent* |
 
-   So those controls give **no visual feedback when disabled or read-only** —
+   So those controls gave **no visual feedback when disabled or read-only** —
    a usability gap, not a tidiness one, and the more interesting half of D2.
-   Adopting `<Input>` fixes it but simultaneously changes padding and adds three
-   states, so it is a visible change on 21 surfaces and wants the review the
-   entry asks for. Note also that `<Input>` is a client component: several
+
+   **That half is now fixed** (22 control strings across 18 files): the
+   `disabled:` and `read-only:` utilities were appended directly. Those are
+   state-prefixed, so they emit `:disabled` / `:read-only` rules only and the
+   default rendering is byte-identical — the change is visible *only* in the
+   states that were previously broken. `placeholder:text-muted` was deliberately
+   NOT added: it alters a visible default and belongs with the review below.
+
+   **Still open:** the duplication itself, and the `px-2.5` / `px-3` divergence.
+   Adopting `<Input>` would resolve both but changes padding on 21 surfaces, so
+   it wants the review the entry asks for. Note also that `<Input>` is a client component: several
    offenders (`app/admin/**`) are server components, so a blind swap would push
    a client boundary onto pages that do not need one. `controlClass` itself is
    pure and server-safe, so calling it directly is the cheaper fix where the

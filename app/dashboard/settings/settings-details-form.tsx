@@ -19,7 +19,7 @@ const microLabel =
 // Compact time input on the foundation focus recipe (amber focus-visible border
 // + subtle ring), matching every other control — but not w-full (stays compact).
 const timeClass =
-  "rounded-input border border-line bg-surface-elevated px-2 py-1.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
+  "rounded-input border border-line bg-surface-elevated px-2 py-1.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
 
 type VenueDetails = {
   streetAddress: string | null;

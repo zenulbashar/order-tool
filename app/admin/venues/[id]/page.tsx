@@ -128,7 +128,7 @@ export default async function AdminVenuePage({ params }: Params) {
                     inputMode="decimal"
                     defaultValue={formatCents(item.priceCents)}
                     aria-label={`Price of ${item.name}`}
-                    className="w-20 rounded-input border border-line bg-surface-elevated px-2 py-1 text-right text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
+                    className="w-20 rounded-input border border-line bg-surface-elevated px-2 py-1 text-right text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
                   />
                   <button
                     type="submit"

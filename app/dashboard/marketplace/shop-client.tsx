@@ -214,7 +214,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                 maxLength={500}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder="Delivery notes (optional)"
-                className="mt-3 w-full resize-none rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
+                className="mt-3 w-full resize-none rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
               />
               <p className="mt-3 rounded-control bg-hover-secondary px-3 py-2 text-[11px] text-muted">
                 <span className="font-bold text-ink">Secure checkout.</span>{" "}
