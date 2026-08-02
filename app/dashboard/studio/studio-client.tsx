@@ -14,6 +14,7 @@ import {
   type MenuArtworkData,
 } from "./artwork";
 import { presetsFor, type SizePreset, type StudioMode } from "./presets";
+import { useStickyMetric } from "@/app/_components/use-sticky-metrics";
 
 /** Serialize the rendered <svg> node to a standalone SVG document string. */
 function serializeSvg(svg: SVGSVGElement): string {
@@ -360,6 +361,13 @@ export function StudioClient({
     setTimeout(() => iframe.remove(), 1000);
   }
 
+  /*
+    Measured and published on <html> (R2-1) — the support FAB that reads it is a
+    sibling of <main>, so a value set on this section never reaches it. lg:hidden
+    means the bar measures 0 on desktop, so no breakpoint reset is needed.
+  */
+  const barRef = useStickyMetric<HTMLDivElement>("--p2e-bottom-bar-h");
+
   const control = controlClass({ padding: "px-2.5 py-2", width: "w-full" });
   const microLabel =
     "mb-2 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
@@ -367,10 +375,7 @@ export function StudioClient({
     "w-full justify-start rounded-control px-3 py-2 text-left text-sm font-semibold transition disabled:opacity-50";
 
   return (
-    <section
-      className="px-5 py-6 pb-24 lg:pb-6 lg:[--p2e-bottom-bar-h:0px]"
-      style={{ "--p2e-bottom-bar-h": "72px" } as React.CSSProperties}
-    >
+    <section className="px-5 py-6 pb-24 lg:pb-6">
       {/* Toolbar — mode tabs (left), Download + Publish actions (right). */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
@@ -661,7 +666,10 @@ export function StudioClient({
 
       {/* Mobile action bar (design: Studio bottom bar). Desktop keeps the header
           Download/Publish disclosures above. */}
-      <div className="fixed inset-x-0 bottom-0 z-chrome flex gap-2 border-t border-line bg-surface px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 lg:hidden">
+      <div
+        ref={barRef}
+        className="fixed inset-x-0 bottom-0 z-chrome flex gap-2 border-t border-line bg-surface px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 lg:hidden"
+      >
         <button
           type="button"
           onClick={downloadPng}

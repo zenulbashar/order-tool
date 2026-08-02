@@ -23,7 +23,7 @@ import { StorefrontFooter } from "./storefront-footer";
 import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
 import { SearchEmptyState } from "./search-empty-state";
-import { useStickyMetric } from "./use-sticky-metrics";
+import { useStickyMetric } from "@/app/_components/use-sticky-metrics";
 import { ToastProvider } from "@/app/_components/toast";
 import type {
   PublicFaq,
