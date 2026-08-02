@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { controlClass } from "@/app/_components/field";
 import Link from "next/link";
 import { asc, desc, eq, sql } from "drizzle-orm";
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = { title: "Promotions · admin" };
 
 const eyebrow = "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const control =
-  "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+  controlClass({ padding: "px-2.5 py-2", width: "w-full" });
 
 function fmtDate(d: Date | null): string {
   return d ? d.toLocaleDateString("en-AU", { day: "numeric", month: "short" }) : "—";

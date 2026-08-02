@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { controlClass } from "@/app/_components/field";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
@@ -128,7 +129,7 @@ export default async function AdminVenuePage({ params }: Params) {
                     inputMode="decimal"
                     defaultValue={formatCents(item.priceCents)}
                     aria-label={`Price of ${item.name}`}
-                    className="w-20 rounded-input border border-line bg-surface-elevated px-2 py-1 text-right text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
+                    className={controlClass({ padding: "px-2 py-1", width: "w-20", className: "text-right" })}
                   />
                   <button
                     type="submit"

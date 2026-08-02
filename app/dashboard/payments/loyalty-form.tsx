@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { controlClass } from "@/app/_components/field";
 
 import { Button } from "@/app/_components/button";
 import { Toggle } from "@/app/_components/selection-controls";
@@ -45,7 +46,7 @@ export function LoyaltyForm({
   const [pending, startTransition] = useTransition();
 
   const control =
-    "rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+    controlClass({ padding: "px-2.5 py-2", width: "" });
   const microLabel =
     "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 

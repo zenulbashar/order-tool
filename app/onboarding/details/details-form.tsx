@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { controlClass } from "@/app/_components/field";
 
 import { slugify } from "@/lib/validation";
 
@@ -9,7 +10,7 @@ import { createVenueFromOnboarding, type DetailsState } from "./actions";
 const initialState: DetailsState = {};
 
 const fieldClass =
-  "w-full rounded-input border border-line bg-surface-elevated px-3 py-2.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+  controlClass({ padding: "px-3 py-2.5", width: "w-full" });
 const labelClass =
   "mb-1.5 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 

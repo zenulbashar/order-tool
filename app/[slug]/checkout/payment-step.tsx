@@ -8,6 +8,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import { controlClass } from "@/app/_components/field";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -412,7 +413,7 @@ function PaymentForm({
               autoComplete="off"
               maxLength={24}
               aria-label="Promo code"
-              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
+              className={controlClass({ padding: "px-3 py-2", width: "", className: "min-w-0 flex-1 uppercase placeholder:normal-case" })}
             />
             <button
               type="button"
@@ -455,7 +456,7 @@ function PaymentForm({
               autoComplete="off"
               maxLength={20}
               aria-label="Gift card code"
-              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
+              className={controlClass({ padding: "px-3 py-2", width: "", className: "min-w-0 flex-1 uppercase placeholder:normal-case" })}
             />
             <button
               type="button"

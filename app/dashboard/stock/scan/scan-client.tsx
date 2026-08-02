@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { controlClass } from "@/app/_components/field";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -448,7 +449,7 @@ function ReviewRow({
   const priceMissing = !skipped && packCostCents === null;
 
   const inputClass =
-    "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-1.5 text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+    controlClass({ padding: "px-2.5 py-1.5", width: "w-full" });
   const microLabel =
     "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
@@ -472,7 +473,7 @@ function ReviewRow({
                 maxLength={120}
                 onChange={(event) => onChange({ nameInput: event.target.value })}
                 placeholder="Ingredient name"
-                className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-2.5 py-1 text-sm font-semibold text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
+                className={controlClass({ padding: "px-2.5 py-1", width: "", className: "min-w-0 flex-1 font-semibold" })}
               />
             )}
             {matched ? (
