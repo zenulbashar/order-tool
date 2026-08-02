@@ -57,9 +57,17 @@ Ordered by priority. Nothing here is Critical.
 7. **Firewall CTAs (D1).** Convert the remaining amber functional CTAs
    (admin promotions, marketplace) to `<Button variant="primary">`.
 
-8. **Dialog `detail-drawer` (A1 remainder).** The Square activity drawer is
-   navigation-based (closes via `<Link>`), so it didn't fit the callback hook.
-   Give it a router-based close and apply `useDialog` for parity.
+8. **Dialog `detail-drawer` (A1 remainder) — ✅ done.** The Square activity
+   drawer closes by navigation rather than a callback, which is why it did not
+   fit the hook originally; it now passes `useDialog(() => router.push(closeHref))`
+   and has the same focus trap, Escape and focus restoration as the other seven.
+   A1/A2 are 8/8.
+
+   Verified by derivation rather than by re-reading the eight files:
+   `test/dialog-a11y.test.ts` finds every component declaring `role="dialog"` and
+   requires a `useDialog(...)` CALL, `aria-modal`, and an accessible name. A ninth
+   dialog cannot ship without them — which matters more than the eighth, since the
+   ninth is the one nobody remembers to check.
 
 9. **Removal-policy convergence (R3).** Pick one policy (recommend archive +
    confirm everywhere) and add edit paths for value-bearing entities. Product

@@ -49,8 +49,8 @@ RemainingRecommendations.md. Full method and findings there.
 
 | # | Severity | Finding | Status |
 | --- | --- | --- | --- |
-| A1 | High | 8 hand-rolled dialogs: no focus trap, no initial focus, no focus restoration. | ✅ Fixed (7/8) |
-| A2 | Medium | Escape-to-close present on only one dialog. | ✅ Fixed (7/8) |
+| A1 | High | 8 hand-rolled dialogs: no focus trap, no initial focus, no focus restoration. | ✅ Fixed (8/8) |
+| A2 | Medium | Escape-to-close present on only one dialog. | ✅ Fixed (8/8) |
 | A3 | Medium | Concierge "Add all" forced `text-white` on raw `--brand` (contrast fails on light brands). | ✅ Fixed |
 | A4 | Medium | `Segmented` declared `radiogroup` but lacked the roving-tabindex/arrow keyboard model. | ✅ Fixed |
 | A5 | Medium | `Field` didn't link error/hint to the control (`aria-describedby`/`aria-invalid`). | ✅ Fixed |
