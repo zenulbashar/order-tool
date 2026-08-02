@@ -110,7 +110,7 @@ export default async function AppsPage() {
                     By Zale
                   </span>
                   {venue.rosterEntitled ? (
-                    <span className="rounded-[6px] bg-[var(--color-success)]/12 px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider text-success-deep">
+                    <span className="rounded-sm bg-[var(--color-success)]/12 px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider text-success-deep">
                       Included in your plan
                     </span>
                   ) : null}

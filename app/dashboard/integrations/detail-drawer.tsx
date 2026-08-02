@@ -87,12 +87,12 @@ export function SquareDetailDrawer({
         </header>
 
         <div className="flex shrink-0 flex-wrap gap-1.5 px-5 pt-3">
-          <span className="rounded-[6px] bg-sand px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide text-muted">
+          <span className="rounded-sm bg-sand px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide text-muted">
             {stats.mirrored24h} mirrored · 24h
           </span>
           <span
             className={cx(
-              "rounded-[6px] px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide",
+              "rounded-sm px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide",
               stats.attention > 0
                 ? "bg-[var(--color-warm)]/10 text-warm-deep"
                 : "bg-sand text-muted",
@@ -101,7 +101,7 @@ export function SquareDetailDrawer({
             {stats.attention} need attention
           </span>
           {stats.avgDelayLabel ? (
-            <span className="rounded-[6px] bg-sand px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide text-muted">
+            <span className="rounded-sm bg-sand px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide text-muted">
               Avg delay {stats.avgDelayLabel}
             </span>
           ) : null}
