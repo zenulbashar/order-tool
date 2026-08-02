@@ -13,7 +13,7 @@ Status is tracked in IssuesResolved.md / RemainingRecommendations.md.
 | C2 | Medium | Checkout / GST | `applyOrderDiscounts` lowered `totalCents` but never re-snapshotted `taxCents`, overstating the inclusive-GST component on receipts **and** in the owner's BAS report (`reports` aggregates `orders.tax_cents`). | ✅ Fixed |
 | C3 | Medium | Gift cards | Redemption amount was derived from an **unlocked** availability read; two orders applying the same card concurrently could each reserve the full balance (bearer-instrument double-spend). | ✅ Fixed |
 | C4 | Low | Stock | `"set"` stocktake read `on_hand` outside the transaction, then applied a delta — a concurrent depletion between read and write corrupts the count. | ✅ Fixed |
-| C5 | Low | Email receipt | Order-confirmation email lists full-price line items against a discounted Total with no discount line, so the rows don't reconcile to the Total. | 🔶 Recommended |
+| C5 | Low | Email receipt | Order-confirmation email listed full-price line items against a discounted Total with no discount line, so the rows didn't reconcile. A Subtotal + Discount breakdown now renders in both the HTML and plain-text parts, and the subtotal is DERIVED when a caller supplies a discount without one (defaulting it to the total produced a breakdown that contradicted itself). | ✅ Fixed |
 
 ## Security
 
