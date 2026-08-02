@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { denseButtonStyles } from "@/app/_components/button-variants";
 import Link from "next/link";
 
 import { requirePlatformAdmin } from "@/lib/platform-admin";
@@ -96,7 +97,7 @@ export default async function AdminShopPage({
                 </label>
                 <button
                   type="submit"
-                  className="rounded-control bg-[var(--action)] px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
+                  className={denseButtonStyles({ variant: "solid" })}
                 >
                   Save markup
                 </button>
@@ -139,7 +140,7 @@ export default async function AdminShopPage({
               <div className="mt-3 flex items-center gap-3">
                 <button
                   type="submit"
-                  className="rounded-control bg-[var(--action)] px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
+                  className={denseButtonStyles({ variant: "solid" })}
                 >
                   Save visibility
                 </button>
@@ -163,7 +164,7 @@ export default async function AdminShopPage({
               />
               <button
                 type="submit"
-                className="rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+                className={denseButtonStyles()}
               >
                 Search
               </button>
@@ -238,7 +239,7 @@ export default async function AdminShopPage({
                           </label>
                           <button
                             type="submit"
-                            className="rounded-control bg-[var(--action)] px-3 py-1 text-xs font-bold text-white transition hover:opacity-90"
+                            className={denseButtonStyles({ variant: "solid", padding: "px-3 py-1" })}
                           >
                             Save
                           </button>

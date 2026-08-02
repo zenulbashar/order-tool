@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { denseButtonStyles } from "@/app/_components/button-variants";
 import { controlClass } from "@/app/_components/field";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -62,7 +63,7 @@ export default async function AdminVenuePage({ params }: Params) {
           <input type="hidden" name="venueId" value={venue.id} />
           <button
             type="submit"
-            className="rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+            className={denseButtonStyles()}
           >
             Open owner dashboard as this venue →
           </button>
@@ -133,7 +134,7 @@ export default async function AdminVenuePage({ params }: Params) {
                   />
                   <button
                     type="submit"
-                    className="rounded-control border border-line-strong px-2.5 py-1 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+                    className={denseButtonStyles({ size: "xs" })}
                   >
                     Save
                   </button>

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import { MarketingHeader } from "@/app/_landing/marketing-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { getSegment, SEGMENTS } from "@/lib/marketing-segments";
 import { serializeJsonLd, SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -66,20 +66,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
       />
 
       {/* Slim nav */}
-      <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
-        <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
-          <Link href="/" className="flex items-center gap-2">
-            <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
-            <Wordmark className="text-[21px] text-surface" />
-          </Link>
-          <Link
-            href="/signin"
-            className="ml-auto rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-forest transition hover:-translate-y-0.5"
-          >
-            Start free
-          </Link>
-        </nav>
-      </header>
+      <MarketingHeader container={CONTAINER} cta />
 
       {/* Hero */}
       <section className="bg-[radial-gradient(110%_90%_at_80%_-10%,#1D4636,#143228_40%,#0F281E_72%)] text-surface">

@@ -21,6 +21,12 @@ import { applyOrderDiscounts } from "./discount-actions";
 
 import type { PublicVenue } from "../types";
 
+/** The "Apply" button beside the promo-code and gift-card inputs. One const,
+    because two hand-written copies of a button are how a pair drifts. */
+const applyButton =
+  "shrink-0 rounded-control border border-line-strong bg-surface-elevated px-4 py-2 " +
+  "text-sm font-semibold text-ink transition hover:bg-hover-secondary disabled:opacity-50";
+
 /**
  * Stripe payment step for a DIRECT CHARGE on the venue's connected account.
  * Stripe.js MUST be loaded with { stripeAccount } so the Payment Element and
@@ -419,7 +425,7 @@ function PaymentForm({
               type="button"
               onClick={applyCode}
               disabled={recomputing || codeInput.trim().length === 0}
-              className="shrink-0 rounded-control border border-line-strong bg-surface-elevated px-4 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary disabled:opacity-50"
+              className={applyButton}
             >
               Apply
             </button>
@@ -462,7 +468,7 @@ function PaymentForm({
               type="button"
               onClick={applyGiftCard}
               disabled={recomputing || giftCardInput.trim().length === 0}
-              className="shrink-0 rounded-control border border-line-strong bg-surface-elevated px-4 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary disabled:opacity-50"
+              className={applyButton}
             >
               Apply
             </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { wizardSubmitButton } from "../wizard-button";
 
 import { saveServiceStyle, type ServiceState } from "./actions";
 
@@ -94,7 +95,7 @@ export function ServiceForm({ defaults }: { defaults: Defaults }) {
       <button
         type="submit"
         disabled={pending}
-        className="flex w-full items-center justify-center gap-1.5 rounded-control bg-forest px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+        className={wizardSubmitButton}
       >
         {pending ? "Saving…" : "Continue"}
         {pending ? null : (

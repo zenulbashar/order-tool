@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { asc } from "drizzle-orm";
 
-import { PageHeader } from "@/app/_components/page-header";
+import { StockHeader, StockNav } from "./stock-chrome";
 import { db } from "@/lib/db";
 import { ingredients } from "@/lib/db/schema";
 import { dishCost, isCosted, isLowStock, marginOf } from "@/lib/stock/cost";
@@ -108,45 +107,12 @@ export default async function StockPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1600px]">
-      <PageHeader
-        title="Stock"
-        description={venue.name}
-        action={
-          <Link
-            href="/dashboard/stock/scan"
-            className="inline-flex items-center gap-1.5 rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-forest transition hover:opacity-90"
-          >
-            <span aria-hidden="true">✦</span> Scan invoice
-          </Link>
-        }
-      />
+      <StockHeader venueName={venue.name} />
 
       <section className="space-y-4 px-5 py-8">
         {/* Tab bar — Ingredients is live here; Overview (D4c) + Invoices (D3)
             link out to their own surfaces. */}
-        <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
-          <Link
-            href="/dashboard/stock/overview"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Overview
-          </Link>
-          <span className="rounded-[7px] bg-surface-elevated px-3 py-1.5 text-xs font-bold text-ink shadow-sm">
-            Ingredients
-          </span>
-          <Link
-            href="/dashboard/stock/scan"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Invoices
-          </Link>
-          <Link
-            href="/dashboard/stock/suggestions"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Suggestions
-          </Link>
-        </div>
+        <StockNav current="ingredients" />
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi

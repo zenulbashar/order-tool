@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { denseButtonStyles } from "@/app/_components/button-variants";
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { Card } from "@/app/_components/card";
@@ -151,7 +152,7 @@ export default async function DiscountsPage() {
                       />
                       <button
                         type="submit"
-                        className="rounded-control border border-line-strong bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-hover-secondary"
+                        className={denseButtonStyles({ elevated: true })}
                       >
                         {p.isActive ? "Pause" : "Resume"}
                       </button>
@@ -164,7 +165,12 @@ export default async function DiscountsPage() {
                       and open-able without JavaScript.
                     */}
                     <details className="w-full">
-                      <summary className="inline-flex cursor-pointer list-none rounded-control border border-line-strong bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-hover-secondary">
+                      <summary
+                        className={denseButtonStyles({
+                          elevated: true,
+                          className: "inline-flex cursor-pointer list-none",
+                        })}
+                      >
                         Edit
                       </summary>
                       <div className="mt-4 border-t border-line pt-4">

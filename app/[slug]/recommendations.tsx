@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { buttonStyles } from "@/app/_components/button-variants";
+import { buttonStyles, iconButtonStyles } from "@/app/_components/button-variants";
 import { useDialog } from "@/app/_components/use-dialog";
 import { formatCents } from "@/lib/validation";
 
@@ -296,7 +296,7 @@ export function PreCheckoutUpsell({
                 type="button"
                 onClick={dismiss}
                 aria-label="Close"
-                className="flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:bg-sand hover:text-ink"
+                className={iconButtonStyles()}
               >
                 ✕
               </button>

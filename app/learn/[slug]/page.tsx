@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import { MarketingHeader } from "@/app/_landing/marketing-header";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { ARTICLES, getArticle } from "@/lib/marketing-content";
 import { serializeJsonLd, SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -64,20 +64,10 @@ export default async function ArticlePage({ params }: ArticleParams) {
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
 
-      <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
-        <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
-          <Link href="/" className="flex items-center gap-2">
-            <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
-            <Wordmark className="text-[21px] text-surface" />
-          </Link>
-          <Link
-            href="/learn"
-            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface"
-          >
-            ← All guides
-          </Link>
-        </nav>
-      </header>
+      <MarketingHeader
+        container={CONTAINER}
+        back={{ href: "/learn", label: "← All guides" }}
+      />
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
         <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">

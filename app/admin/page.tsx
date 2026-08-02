@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { and, count, desc, eq, gt, sql } from "drizzle-orm";
 
-import { buttonStyles } from "@/app/_components/button-variants";
+import { buttonStyles, denseButtonStyles } from "@/app/_components/button-variants";
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
 import {
@@ -136,19 +136,19 @@ export default async function AdminConsolePage() {
         <nav className="mt-3 flex flex-wrap gap-2">
           <Link
             href="/admin/stats"
-            className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+            className={denseButtonStyles({ withIcon: true })}
           >
             Stats →
           </Link>
           <Link
             href="/admin/promotions"
-            className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+            className={denseButtonStyles({ withIcon: true })}
           >
             Promotions →
           </Link>
           <Link
             href="/admin/marketplace"
-            className="inline-flex items-center gap-1.5 rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+            className={denseButtonStyles({ withIcon: true })}
           >
             Marketplace →
           </Link>

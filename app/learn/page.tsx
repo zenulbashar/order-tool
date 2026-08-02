@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { MarketingHeader } from "@/app/_landing/marketing-header";
 import Link from "next/link";
 
-import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { ARTICLES } from "@/lib/marketing-content";
 
 export const metadata: Metadata = {
@@ -22,20 +22,10 @@ const CONTAINER = "mx-auto w-full max-w-[1080px] px-[clamp(18px,4vw,48px)]";
 export default function LearnIndexPage() {
   return (
     <div className="min-h-dvh bg-surface-elevated text-forest">
-      <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
-        <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
-          <Link href="/" className="flex items-center gap-2">
-            <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
-            <Wordmark className="text-[21px] text-surface" />
-          </Link>
-          <Link
-            href="/"
-            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface"
-          >
-            ← Back to home
-          </Link>
-        </nav>
-      </header>
+      <MarketingHeader
+        container={CONTAINER}
+        back={{ href: "/", label: "← Back to home" }}
+      />
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
         <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">

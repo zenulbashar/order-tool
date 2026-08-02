@@ -3,7 +3,7 @@ import { controlClass } from "@/app/_components/field";
 import Link from "next/link";
 import { asc, desc, eq, sql } from "drizzle-orm";
 
-import { buttonStyles } from "@/app/_components/button-variants";
+import { buttonStyles, denseButtonStyles } from "@/app/_components/button-variants";
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
 import { orders, promotions, promotionVenues, venues } from "@/lib/db/schema";
@@ -219,7 +219,7 @@ export default async function AdminPromotionsPage() {
                       <input type="hidden" name="isActive" value={promo.isActive ? "off" : "on"} />
                       <button
                         type="submit"
-                        className="rounded-control border border-line-strong px-2.5 py-1 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+                        className={denseButtonStyles({ size: "xs" })}
                       >
                         {promo.isActive ? "Pause" : "Activate"}
                       </button>

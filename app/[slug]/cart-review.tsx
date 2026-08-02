@@ -1,6 +1,6 @@
 "use client";
 
-import { buttonStyles } from "@/app/_components/button-variants";
+import { buttonStyles, iconButtonStyles } from "@/app/_components/button-variants";
 import { Stepper } from "@/app/_components/stepper";
 import { useDialog } from "@/app/_components/use-dialog";
 import { formatCents } from "@/lib/validation";
@@ -72,7 +72,7 @@ export function CartReview({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-11 w-11 items-center justify-center rounded-pill text-muted hover:bg-sand hover:text-ink"
+            className={iconButtonStyles()}
           >
             ✕
           </button>

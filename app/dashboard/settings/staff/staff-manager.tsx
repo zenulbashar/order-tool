@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { inkPillStyles } from "@/app/_components/button-variants";
+
+/** Secondary pill for the invite/role row actions. */
+const outlinePill =
+  "rounded-pill border border-line px-3 py-1.5 text-sm font-semibold text-ink " +
+  "transition hover:bg-sand disabled:opacity-60";
 
 import {
   assignableRoles,
@@ -127,7 +133,7 @@ export function StaffManager({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-surface transition disabled:opacity-60"
+            className={inkPillStyles}
           >
             {pending ? "Sending…" : "Send invite"}
           </button>
@@ -193,7 +199,7 @@ export function StaffManager({
                   <button
                     type="submit"
                     disabled={pending}
-                    className="rounded-pill border border-line px-3 py-1.5 text-sm font-semibold text-ink transition hover:bg-sand disabled:opacity-60"
+                    className={outlinePill}
                   >
                     Withdraw
                   </button>
@@ -269,7 +275,7 @@ export function StaffManager({
                     <button
                       type="submit"
                       disabled={pending}
-                      className="rounded-pill border border-line px-3 py-1.5 text-sm font-semibold text-ink transition hover:bg-sand disabled:opacity-60"
+                      className={outlinePill}
                     >
                       Remove
                     </button>
