@@ -171,28 +171,50 @@ export function emailKey(normalizedEmail: string): string {
 /**
  * Best real client IP. The app is served DIRECTLY by Vercel (prompt2eat.com is
  * DNS-only at Cloudflare — no Cloudflare proxy in front), so Vercel's edge is the
- * trusted hop and its headers are authoritative. Read ONLY proxy-set headers, in
- * order of trust:
- *  - first (left-most) hop of `x-forwarded-for`: Vercel sets this on its edge and
- *    the left-most entry is the real client IP — the primary, trusted source for
- *    this deployment.
- *  - `x-real-ip` / `x-vercel-forwarded-for`: Vercel-set fallbacks if x-forwarded-for
- *    is absent.
- *  - `cf-connecting-ip`: last resort only (Cloudflare's proxy is no longer in front,
- *    so this header is normally absent; kept solely in case the proxy is re-enabled).
+ * trusted hop and its headers are authoritative.
+ *
+ * Order of trust, MOST-SPECIFIC FIRST (audit S3). This used to read the left-most
+ * hop of `x-forwarded-for` first, and that is the one header here a client can
+ * influence: XFF is a comma-joined chain that proxies APPEND to, so a request
+ * arriving with its own `X-Forwarded-For: 1.2.3.4` can leave an attacker-chosen
+ * value sitting left-most. Every per-IP limit — checkout floods, concierge and
+ * support (real model spend), and both magic-link gates — is only as good as this
+ * function, and rotating a spoofed value defeats all of them at once.
+ *
+ *  - `x-vercel-forwarded-for`: set by Vercel's edge from the connecting socket
+ *    and not derived from anything the client sent. Present on every request in
+ *    production, so in practice this is the value used.
+ *  - `x-real-ip`: also edge-set, single-valued (no chain to prepend to).
+ *  - first (left-most) hop of `x-forwarded-for`: kept for LOCAL DEVELOPMENT and
+ *    any non-Vercel host, where the two above do not exist. Reached only when
+ *    they are absent, so the spoofable path is no longer the primary one.
+ *  - `cf-connecting-ip`: last resort (Cloudflare's proxy is no longer in front,
+ *    so this is normally absent; kept in case the proxy is re-enabled).
  *  - "unknown": never crash; collapses unknown-IP traffic into one bucket.
+ *
+ * Reordering is safe on any host: the Vercel headers simply do not exist
+ * elsewhere, so off-platform behaviour is unchanged.
  *
  * Accepts anything header-like (Headers / Next's ReadonlyHeaders) so it can be
  * called with `await headers()` directly from a server action or route handler.
  */
+/**
+ * Trim, and treat a blank header as absent. A present-but-empty header would
+ * otherwise short-circuit the ladder and collapse every caller into one bucket.
+ */
+function nonEmpty(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
 export function clientIpFromHeaders(h: {
   get(name: string): string | null;
 }): string {
   return (
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    h.get("x-real-ip") ??
-    h.get("x-vercel-forwarded-for") ??
-    h.get("cf-connecting-ip") ??
+    nonEmpty(h.get("x-vercel-forwarded-for")) ??
+    nonEmpty(h.get("x-real-ip")) ??
+    nonEmpty(h.get("x-forwarded-for")?.split(",")[0]) ??
+    nonEmpty(h.get("cf-connecting-ip")) ??
     "unknown"
   );
 }
