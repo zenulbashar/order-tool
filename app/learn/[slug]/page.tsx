@@ -57,7 +57,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
   });
 
   return (
-    <div className="min-h-dvh bg-[#FFFDF8] text-[#16241C]">
+    <div className="min-h-dvh bg-surface-elevated text-forest">
       <script
         type="application/ld+json"
         // Safe: serializeJsonLd escapes "<" so no value can break out of the tag.
@@ -68,11 +68,11 @@ export default async function ArticlePage({ params }: ArticleParams) {
         <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
           <Link href="/" className="flex items-center gap-2">
             <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
-            <Wordmark className="text-[21px] text-[#F7F3EA]" />
+            <Wordmark className="text-[21px] text-surface" />
           </Link>
           <Link
             href="/learn"
-            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-[#F7F3EA]"
+            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface"
           >
             ← All guides
           </Link>
@@ -117,7 +117,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
           </p>
           <Link
             href="/signin"
-            className="mt-4 inline-block rounded-xl bg-[#16241C] px-6 py-3 font-bold text-[#F7F3EA] transition hover:-translate-y-0.5"
+            className="mt-4 inline-block rounded-xl bg-forest px-6 py-3 font-bold text-surface transition hover:-translate-y-0.5"
           >
             Start free →
           </Link>
@@ -133,7 +133,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
                 <li key={other.slug}>
                   <Link
                     href={`/learn/${other.slug}`}
-                    className="font-bold text-[#16241C] underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 hover:opacity-80"
+                    className="font-bold text-forest underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 hover:opacity-80"
                   >
                     {other.title}
                   </Link>

@@ -21,16 +21,16 @@ const CONTAINER = "mx-auto w-full max-w-[1080px] px-[clamp(18px,4vw,48px)]";
  */
 export default function LearnIndexPage() {
   return (
-    <div className="min-h-dvh bg-[#FFFDF8] text-[#16241C]">
+    <div className="min-h-dvh bg-surface-elevated text-forest">
       <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
         <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
           <Link href="/" className="flex items-center gap-2">
             <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
-            <Wordmark className="text-[21px] text-[#F7F3EA]" />
+            <Wordmark className="text-[21px] text-surface" />
           </Link>
           <Link
             href="/"
-            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-[#F7F3EA]"
+            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface"
           >
             ← Back to home
           </Link>
@@ -54,7 +54,7 @@ export default function LearnIndexPage() {
             <Link
               key={article.slug}
               href={`/learn/${article.slug}`}
-              className="group flex flex-col rounded-[22px] border border-[#EDE4D2] bg-[#FFFDF8] p-6 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-24px_rgba(20,30,25,0.35)]"
+              className="group flex flex-col rounded-[22px] border border-[#EDE4D2] bg-surface-elevated p-6 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-24px_rgba(20,30,25,0.35)]"
             >
               <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#856819]">
                 {article.eyebrow}
@@ -65,7 +65,7 @@ export default function LearnIndexPage() {
               <p className="mt-2 text-[14.5px] leading-[1.55] text-[#5C6B5E]">
                 {article.description}
               </p>
-              <span className="mt-4 text-sm font-bold text-[#16241C]">
+              <span className="mt-4 text-sm font-bold text-forest">
                 Read the guide{" "}
                 <span
                   aria-hidden="true"
@@ -82,7 +82,7 @@ export default function LearnIndexPage() {
           Quick answers instead?{" "}
           <Link
             href="/#faq"
-            className="font-bold text-[#16241C] underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 hover:opacity-80"
+            className="font-bold text-forest underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 hover:opacity-80"
           >
             Read the FAQ
           </Link>

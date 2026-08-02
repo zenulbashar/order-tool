@@ -69,6 +69,30 @@ Ordered by priority. Nothing here is Critical.
    `[data-domain="diner"]` and `.admin-dark`, and shop/landing sit in neither
    scope, so they always resolve to the light values the literals hard-coded.
 
+   **D5 second pass — the finding's own scope was too small.** "Shop/landing
+   surfaces" left three route groups unscanned, and a derived check found **27
+   more** token-duplicating literals in them: `/for/[segment]` (10), `/learn` and
+   `/learn/[slug]` (16), plus one in `_landing/landing.tsx`. All 27 are
+   converted, over 5 utilities proven to exist elsewhere in the app
+   (`text-forest`, `bg-forest`, `text-surface`, `bg-surface-elevated`) — with
+   `outline-` kept in `outline-[var(--color-forest)]` form because no
+   `outline-forest` exists anywhere in the codebase to confirm Tailwind emits it,
+   and an unknown utility fails SILENTLY (no class, no error, wrong colour).
+
+   `test/token-hex-drift.test.ts` now enforces the rule instead of the next
+   person re-deriving the scope: **no Tailwind arbitrary value may spell out a
+   hex a domain-neutral token already names.** Read from `globals.css`, so a new
+   token extends the rule automatically — which matters because the usual way
+   this regresses is someone defining a token and pasting the hex anyway, and any
+   hand-written list of banned hexes would miss exactly that.
+
+   The carve-out is derived too, not an allowlist. `#7fa890` is held by
+   `--color-sidebar-muted` AND `--color-concierge-thinking`; `#3a2a08` only by
+   `--color-concierge-amber-ink`. Both colours are used on marketing pages, and
+   `text-sidebar-muted` in a landing footer trades an honest literal for a name
+   that raises the question of why the sidebar is involved. So a colour counts as
+   NAMED only when some token names it without claiming a domain.
+
    Two things the original entry got wrong, both worth knowing before the next
    pass. Its example mapping is **incorrect** — `#16241C` is `--color-forest`;
    `--color-ink` is `#0e1f18`, so following it literally would have darkened text
