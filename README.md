@@ -31,7 +31,7 @@ npm run dev                  # http://localhost:3000
 | `AUTH_SECRET`    | Auth.js        | `openssl rand -base64 33`.                                            |
 | `RESEND_API_KEY` | Resend         | API key for magic-link delivery.                                      |
 | `EMAIL_FROM`     | Resend         | Sender identity. **Must be a Resend-verified sending domain.**        |
-| `AUTH_URL`       | Auth.js (prod) | Set once a custom domain is live (see Deployment). Also builds Stripe onboarding return URLs. |
+| `AUTH_URL`       | Auth.js (prod) | Set once a custom domain is live (see Deployment). Also builds Stripe onboarding return URLs and emailed magic-links. Optional — unset falls back to Vercel's env-provided URL, never the request Host. |
 | `STRIPE_SECRET_KEY`      | Stripe (server)  | TEST secret key (`sk_test_…`). Lazily read; build/typecheck need none. |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe (browser) | TEST publishable key (`pk_test_…`); handed to the Payment Element.     |
 | `STRIPE_WEBHOOK_SECRET`  | Stripe webhook   | Signing secret (`whsec_…`) for the **order** webhook; added **post-deploy** (see Payments). |
@@ -378,7 +378,10 @@ Configure these in the Vercel project (Production):
 - `AUTH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`
 - `AUTH_URL` — set to the production URL once a custom domain is live (e.g.
   `https://prompt2eat.com`) so magic-link callbacks don't use the
-  `*.vercel.app` URL.
+  `*.vercel.app` URL. Optional: `lib/url.ts` falls back to
+  `VERCEL_PROJECT_PRODUCTION_URL` / `VERCEL_URL` — both env-provided — and only
+  reaches the request Host in local development, so an emailed magic-link token
+  can never be pointed at an attacker's domain by a poisoned header.
 - `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` — Stripe **test** keys.
 - `STRIPE_WEBHOOK_SECRET` — added after registering the webhook (see
   [Payments](#payments-phase-2c)).
