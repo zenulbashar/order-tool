@@ -87,7 +87,10 @@ export function ItemCard({
       : `$${formatCents(item.priceCents)}`;
 
   return (
-    <div className="relative overflow-hidden rounded-card border border-sand bg-surface-elevated text-left shadow-card transition hover:border-muted/40 hover:shadow-lift">
+    // h-full + flex-col so every card in a grid row shares a bottom edge. The
+    // <li> stretches but the card did not, so the absolute "Add +" pill landed
+    // at a different height in every card of a row (UI audit P1-3).
+    <div className="relative flex h-full flex-col overflow-hidden rounded-card border border-sand bg-surface-elevated text-left shadow-card transition hover:border-muted/40 hover:shadow-lift">
       {/* ---- Mobile: horizontal row ---- */}
       <button
         type="button"
@@ -144,7 +147,7 @@ export function ItemCard({
       <button
         type="button"
         onClick={() => onSelect(item)}
-        className="hidden w-full flex-col text-left lg:flex"
+        className="hidden w-full flex-1 flex-col text-left lg:flex"
       >
         <div className="h-24 w-full overflow-hidden">
           {item.imageUrl ? (

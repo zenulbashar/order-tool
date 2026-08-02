@@ -14,6 +14,7 @@ import { getActiveOrderCount } from "./orders/queries";
 import { PushRegistrar } from "./push-registrar";
 import { Sidebar } from "./sidebar";
 import { SupportWidget } from "./support-widget";
+import { ToastProvider } from "@/app/_components/toast";
 
 // Belt-and-braces with robots.txt: Disallow blocks crawling but an externally
 // linked URL can still be indexed — noindex closes that gap for the dashboard.
@@ -58,6 +59,13 @@ export default async function DashboardLayout({
   const permissions = [...permissionsFor(await getCurrentVenueRoles(current.id))];
 
   return (
+    /*
+      ToastProvider wraps the whole owner shell (UI audit P1-8 / RC-6). The
+      toast system was complete and on-brand but nothing mounted it, so every
+      owner mutation — settings save, menu edit, stock adjust, staff invite,
+      station reorder, table create — returned in silence.
+    */
+    <ToastProvider>
     <div className="lg:flex lg:h-dvh">
       <Sidebar
         venues={venues.map((venue) => ({ id: venue.id, name: venue.name }))}
@@ -109,5 +117,6 @@ export default async function DashboardLayout({
       {/* Owner AI support chat (docs/ai-support-chat-plan.md) — FAB + panel. */}
       <SupportWidget venueId={current.id} />
     </div>
+    </ToastProvider>
   );
 }

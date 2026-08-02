@@ -16,10 +16,12 @@ import { cx } from "./cx";
 /**
  * On-brand toast system (design export). Presentational + a small queue,
  * mirroring the print-context.tsx provider idiom (createContext(null) + a
- * useToast() that throws outside the provider). Ships UNUSED — nothing mounts
- * <ToastProvider> yet — so it's build-not-wire (zero render diff), like Card /
- * PageHeader / ThinkingDots were. Wire it later by mounting the provider at the
- * owner root and inside the diner Storefront, then calling useToast().add(...).
+ * useToast() that throws outside the provider).
+ *
+ * Mounted at the owner root (app/dashboard/layout.tsx) and inside the diner
+ * Storefront. It shipped UNUSED for a while and its own docstring said so, which
+ * is how every owner save — settings, menu, stock, staff, stations, tables —
+ * came to complete with no visible confirmation at all (UI audit P1-8 / RC-6).
  *
  * Variants map to the existing semantic tokens (success/warm/accent) with the
  * codebase's tinted-background pattern — no new colour tokens. Amber appears only
@@ -81,11 +83,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       {/* Viewport — top-right on desktop, full-width top on mobile. Above the
-          sidebar (z-modal) and diner chrome; never prints. */}
+          sidebar (z-modal) and diner chrome; never prints.
+
+          `top` clears whatever sticky header the surface publishes (0 when
+          there is none) and the notch on top of that: at a flat top-4 the
+          toasts landed ON the sticky mobile dashboard header. */}
       <div
         role="region"
         aria-label="Notifications"
-        className="pointer-events-none fixed inset-x-4 top-4 z-toast flex flex-col items-end gap-2 print:hidden sm:inset-x-auto sm:right-4"
+        className="pointer-events-none fixed inset-x-4 z-toast flex flex-col items-end gap-2 pt-[calc(1rem+env(safe-area-inset-top))] print:hidden sm:inset-x-auto sm:right-4"
+        style={{ top: "var(--p2e-header-h, 0px)" }}
       >
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} dismiss={dismiss} />

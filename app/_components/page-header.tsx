@@ -30,7 +30,9 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <header className={cx("border-b border-line px-5 py-5", className)}>
+    <header // lg:px-8 so the header aligns with the content rhythm on large monitors,
+      // where pages run to max-w-[1600px] but this stayed at px-5.
+      className={cx("border-b border-line px-5 py-5 lg:px-8", className)}>
       {backHref ? (
         <Link
           href={backHref}
@@ -39,7 +41,9 @@ export function PageHeader({
           ← Back
         </Link>
       ) : null}
-      <div className="flex items-start justify-between gap-4">
+      {/* Stacks below sm: the title had ~180px beside a shrink-0 action slot at
+          360–390px and broke to two or three lines (UI audit P1-6). */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
             {title}

@@ -12,7 +12,7 @@ than re-done.
 | RC-3 | — | Fixed overlays reserve no scroll space | ✅ Fixed |
 | RC-4 | — | Controls below the iOS zoom floor and touch floor | ✅ Fixed |
 | RC-5 | — | Five unrelated sticky magic numbers | ✅ Fixed |
-| RC-6 | — | Toast system built, never mounted | ⬜ PR5 |
+| RC-6 | — | Toast system built, never mounted | ✅ Fixed |
 | P0-1 | P0 | Support FAB overlaps the mobile nav drawer *(reported)* | ✅ Fixed |
 | P0-2 | P0 | Support FAB covers both mobile bottom action bars | ✅ Fixed |
 | P0-3 | P0 | No bottom reserve on any dashboard page | ✅ Fixed |
@@ -20,15 +20,15 @@ than re-done.
 | P0-5 | P0 | Every text input triggers iOS auto-zoom | ✅ Fixed |
 | P1-1 | P1 | Concierge FAB covers the storefront footer at `lg` | ✅ Fixed |
 | P1-2 | P1 | Mobile category anchors land under the sticky strip | ✅ Fixed |
-| P1-3 | P1 | Desktop menu cards have ragged bottoms | ⬜ PR5 |
+| P1-3 | P1 | Desktop menu cards have ragged bottoms | ✅ Fixed |
 | P1-4 | P1 | Marketing nav has no mobile treatment | ✅ Fixed |
 | P1-5 | P1 | `Segmented` is ~30px on the checkout path | ✅ Fixed |
-| P1-6 | P1 | `PageHeader` crushes the title on narrow phones | ⬜ PR5 |
+| P1-6 | P1 | `PageHeader` crushes the title on narrow phones | ✅ Fixed |
 | P1-7 | P1 | Admin console has no mobile layout | ✅ Fixed |
-| P1-8 | P1 | No save feedback anywhere (toasts unmounted) | ⬜ PR5 |
+| P1-8 | P1 | No save feedback anywhere (toasts unmounted) | ✅ Fixed |
 | P1-9 | P1 | Account nav: 36px targets, no scroll affordance | ✅ Fixed |
-| P1-10 | P1 | Tables board unusable at 360–390px | ⬜ PR5 |
-| P1-11 | P1 | Kitchen fullscreen hides all notifications | ⬜ PR5 |
+| P1-10 | P1 | Tables board unusable at 360–390px | ✅ Fixed |
+| P1-11 | P1 | Kitchen fullscreen hides all notifications | ✅ Fixed |
 | P2-1 | P2 | 362 instances of 9–11px type | ⬜ PR6 |
 | P2-2 | P2 | Emoji used as UI iconography | ⬜ PR6 |
 | P2-3 | P2 | Unify the sticky offsets | ✅ Fixed |
