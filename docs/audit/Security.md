@@ -58,14 +58,23 @@ gating only the audit row), contradicting its own comment. A mismatched id could
 edit another tenant's price and skip the audit entry. Fix: `venueId` is now part
 of the WHERE.
 
-### S2 — Owner magic-link rate-limit bypass — **Recommended**
-The sign-in action applies per-IP + per-email limiters, but the NextAuth Resend
+### S2 — Owner magic-link rate-limit bypass — **Fixed**
+The sign-in action applied per-IP + per-email limiters, but the NextAuth Resend
 provider is reachable directly at `POST /api/auth/signin/resend` (CSRF token is
-freely fetchable), bypassing the app limiter. Today this relies entirely on edge
-rules. Fix: apply the same limiter inside a NextAuth `signIn` event/callback in
-`lib/auth.ts`, or enforce an edge rate-limit on `/api/auth/signin/*` and document
-it as a hard dependency. (The custom *customer* magic-link flow has no equivalent
-bypass.)
+freely fetchable), bypassing the app limiter — so inbox-flooding and account
+probing relied entirely on edge rules this repo neither owns nor asserts. (The
+custom *customer* magic-link flow has no equivalent bypass.)
+
+**Fixed (2026-08).** Taken at the send itself rather than at either suggested
+seam: `sendVerificationRequest` in `lib/auth.ts` is the ONE point every path that
+mails a link goes through — the form action, a direct POST, and anything Auth.js
+adds later — so a limit there cannot be walked around. It uses separate, looser
+buckets (`authSendEmail` / `authSendIp`) so the form's stricter gate still trips
+first and the owner keeps the friendly inline error instead of an Auth.js error
+redirect; the new buckets bite only on the bypass path. Fails open like every
+other limiter here. See `lib/auth-send-limit.ts`; the guard, its two dimensions,
+its hashed key, and the fact that `lib/auth.ts` calls it BEFORE sending are all
+pinned by mutation-tested assertions.
 
 ### S3 — Left-most `X-Forwarded-For` trust — **Recommended**
 `clientIpFromHeaders` (`lib/rate-limit.ts`) takes the left-most XFF entry, which

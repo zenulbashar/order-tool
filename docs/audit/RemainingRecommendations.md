@@ -14,9 +14,12 @@ Ordered by priority. Nothing here is Critical.
    exercised against a Square sandbox order with a promo + gift card to confirm
    `total_money` reconciles and the payment posts.
 
-3. **Owner magic-link rate limiting (S2).** Add the limiter to a NextAuth `signIn`
-   event in `lib/auth.ts`, or enforce an edge rule on `/api/auth/signin/*` and
-   document it as a hard dependency. Today it depends entirely on edge config.
+3. **Owner magic-link rate limiting (S2) — ✅ done.** Limited at the send itself
+   (`sendVerificationRequest` in `lib/auth.ts` via `lib/auth-send-limit.ts`),
+   which is the one point every path that mails a link goes through — so neither
+   suggested seam was needed and no edge dependency remains. Separate, looser
+   buckets keep the form's stricter gate tripping first, so the owner still gets
+   the friendly inline error.
 
 4. **Pin `AUTH_URL` in production.** Investigated during the 2026-08 security
    review and **dropped as a finding** (3/10 confidence), not as a task. Without
