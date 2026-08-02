@@ -348,13 +348,54 @@ Ordered by priority. Nothing here is Critical.
    to claim platform funding. Five mutations verified, each failing only its own
    test.
 
-   **Still open: the policy itself.** Soft-toggle (discounts, promotions,
-   products) vs hard-delete (tables, stations, ingredients, library images) vs
-   void (gift cards). Recommendation unchanged — archive + confirm everywhere,
-   with void kept for gift cards because a bearer instrument genuinely differs
-   from a config row. But converging it changes what an owner's "Delete" button
-   does to data they can currently destroy, and that is a product call, not a
-   refactor to slip in unannounced.
+   **The policy ✅ — and it was already coherent; the finding read the button
+   labels rather than the mechanisms.** Going through what each removal action
+   actually DOES:
+
+   | Entity | Control | Mechanism | Recoverable |
+   | --- | --- | --- | --- |
+   | Discount / promotion | Pause | `isActive` toggle | yes |
+   | Gift card | Void | `status` change, row kept | auditable |
+   | Invitation | Withdraw | `revokedAt` stamp | re-invite |
+   | Staff member | Remove | `db.delete` | re-invite |
+   | Table, station, ingredient, menu row, image | Delete | `db.delete` | no |
+
+   The split is not arbitrary: **anything a diner or an auditor might later ask
+   about is soft-marked, and configuration rows are hard-deleted.** A voided gift
+   card must stay queryable; a deleted table need not. So "soft-toggle vs
+   hard-delete vs void" is three different OPERATIONS, not one operation done
+   three ways, and converging them would lose information rather than add
+   consistency.
+
+   What was genuinely wrong is that two row-destroying actions had no
+   confirmation:
+
+   - **`removeMemberAction`** — `db.delete`s the membership row, revoking
+     someone's access to the venue, and rendered as a neutral secondary pill.
+     Arguably higher stakes than any of the four R1 fixed.
+   - **`deleteVariant` in `has-sizes-editor.tsx`** — destroys a PRICED menu row.
+     R2's destructive styling was there; R1's confirmation was not. A fifth
+     instance of R1's own class that R1 missed.
+
+   Both now use `<ConfirmSubmit>`. `revokeInvitationAction` is deliberately left
+   as a plain button: it only stamps `revokedAt`, so it is auditable and undone
+   by re-inviting.
+
+   `test/destructive-confirm.test.ts` derives the rule from the IMPLEMENTATION —
+   every exported action issuing a `db.delete` must be confirmed at each call
+   site — which is what makes it hold. A name-based rule would have demanded a
+   confirm on `removeVenueLogo` (which nulls a column and is undone by
+   re-uploading) while missing `removeMemberAction` the moment it was renamed.
+   Four delete-then-reinsert save strategies are excluded by name and by reason.
+
+   Two detector bugs are worth recording, because both produced a WRONG answer
+   that looked right: requiring `window.confirm` reported `ingredient-row.tsx`
+   (bare `confirm`) as a gap, and then loosening it to exclude the qualified form
+   reported `delete-image-button.tsx` (`window.confirm`) as a gap instead. And a
+   check that only read the triggering file called `media/page.tsx` unconfirmed
+   when its confirm lives in the `<DeleteImageButton>` it renders — so the walk
+   follows local imports one level, deliberately not further, since an unbounded
+   walk eventually finds the word "confirm" somewhere and passes everything.
 
 10. **Dashboard read surfaces gated on membership — ✅ done for the money and
     PII pages.** Investigated during the 2026-08 security review and scored

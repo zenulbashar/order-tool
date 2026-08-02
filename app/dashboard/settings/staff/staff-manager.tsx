@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { inkPillStyles } from "@/app/_components/button-variants";
 
 /** Secondary pill for the invite/role row actions. */
@@ -272,13 +273,22 @@ export function StaffManager({
                     }}
                   >
                     <input type="hidden" name="userId" value={member.userId} />
-                    <button
-                      type="submit"
+                    {/*
+                      Confirmed + destructive (audit R1/R2, extended under R3).
+                      removeMemberAction DELETES the membership row, so this
+                      revokes someone's access to the venue and cannot be undone
+                      except by re-inviting them. It read as a neutral pill.
+
+                      Withdrawing an invitation above stays a plain button on
+                      purpose: revokeInvitation only stamps revokedAt, so it is
+                      auditable and reversible by re-inviting.
+                    */}
+                    <ConfirmSubmit
                       disabled={pending}
-                      className={outlinePill}
+                      message={`Remove ${member.email ?? "this member"} from the team? They lose access to this venue immediately.`}
                     >
                       Remove
-                    </button>
+                    </ConfirmSubmit>
                   </form>
                 )}
               </div>
