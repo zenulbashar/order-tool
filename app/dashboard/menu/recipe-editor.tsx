@@ -122,12 +122,12 @@ export function RecipeEditor({
                       aria-label={`Quantity of ${line.ingredientName}`}
                       className="w-14 rounded-md border border-line bg-surface-elevated px-2 py-1 text-center text-base sm:text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
                     />
-                    <span className="w-8 font-mono text-[10px] text-muted">
+                    <span className="w-8 font-mono text-micro text-muted">
                       {line.unit}
                     </span>
                     <button
                       type="submit"
-                      className="text-[10px] font-bold text-[var(--action)] hover:opacity-80"
+                      className="text-micro font-bold text-[var(--action)] hover:opacity-80"
                     >
                       Save
                     </button>
@@ -173,7 +173,7 @@ export function RecipeEditor({
           </span>
         </div>
         {cost.uncostedLines > 0 ? (
-          <p className="text-[11px] font-semibold text-warm-deep">
+          <p className="text-eyebrow font-semibold text-warm-deep">
             {cost.uncostedLines} ingredient
             {cost.uncostedLines === 1 ? " has" : "s have"} no cost yet — the dish
             cost is incomplete until you set a pack price in Stock.
@@ -227,7 +227,7 @@ export function RecipeEditor({
               <div className="mt-2 flex items-center gap-2">
                 <span
                   className={cx(
-                    "rounded-[7px] px-2 py-0.5 text-[10px] font-bold",
+                    "rounded-[7px] px-2 py-0.5 text-micro font-bold",
                     healthy
                       ? "bg-[var(--color-success)]/12 text-success-deep"
                       : "bg-[var(--color-warm)]/12 text-warm-deep",
@@ -235,13 +235,13 @@ export function RecipeEditor({
                 >
                   {healthy ? "Healthy" : "Below target"}
                 </span>
-                <span className="text-[11px] text-muted">
+                <span className="text-eyebrow text-muted">
                   Target {Math.round(TARGET_MARGIN * 100)}%.
                 </span>
               </div>
             </div>
           ) : (
-            <p className="mt-4 text-[11px] text-muted">
+            <p className="mt-4 text-eyebrow text-muted">
               Set a sell price to see this dish&apos;s margin.
             </p>
           )}
@@ -263,14 +263,14 @@ export function RecipeEditor({
                       <span className="font-medium text-ink">
                         {variant.name} · ${formatCents(variant.priceCents)}
                       </span>
-                      <span className="font-mono text-[10px] text-muted">
+                      <span className="font-mono text-micro text-muted">
                         {vMargin ? `${Math.round(vMargin.fraction * 100)}%` : "—"}
                       </span>
                     </li>
                   );
                 })}
               </ul>
-              <p className="mt-2 text-[10px] text-muted">
+              <p className="mt-2 text-micro text-muted">
                 Costed per serve; larger sizes may use more — adjust the recipe
                 if they differ.
               </p>
@@ -282,7 +282,7 @@ export function RecipeEditor({
           <span aria-hidden="true" className="shrink-0 text-[13px] text-concierge-mint">
             ℹ
           </span>
-          <p className="text-[11px] leading-relaxed text-concierge-sage">
+          <p className="text-eyebrow leading-relaxed text-concierge-sage">
             Costs come from your ingredient library — update a pack price once
             and every dish recomputes.
           </p>

@@ -80,7 +80,7 @@ export function LoyaltyForm({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span
-            className={`font-mono text-[10px] font-bold uppercase tracking-wider ${
+            className={`font-mono text-micro font-bold uppercase tracking-wider ${
               on ? "text-success-deep" : "text-label"
             }`}
           >

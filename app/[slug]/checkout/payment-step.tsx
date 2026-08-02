@@ -485,7 +485,7 @@ function PaymentForm({
           <div className="mb-3 flex items-center gap-2 rounded-input border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-2">
             <span
               aria-hidden
-              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-success-deep"
+              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wider text-success-deep"
             >
               −${formatCents(giftCardDiscountCents)}
             </span>
@@ -498,7 +498,7 @@ function PaymentForm({
           <div className="mb-3 flex items-center gap-2 rounded-input border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-2">
             <span
               aria-hidden
-              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-success-deep"
+              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wider text-success-deep"
             >
               −${formatCents(promoDiscountCents)}
             </span>
@@ -510,7 +510,7 @@ function PaymentForm({
           <div className="mb-3 flex items-center gap-2 rounded-input border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-2">
             <span
               aria-hidden
-              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-success-deep"
+              className="rounded-pill bg-[var(--color-success)]/20 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wider text-success-deep"
             >
               Save ${formatCents(offerDiscountCents)}
             </span>

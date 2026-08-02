@@ -8,6 +8,7 @@ import { readableOn } from "@/app/_components/brand-contrast";
 import { Button } from "@/app/_components/button";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { cx } from "@/app/_components/cx";
+import { IconPrinter } from "@/app/_components/icons";
 import { PageHeader } from "@/app/_components/page-header";
 import { formatCents } from "@/lib/validation";
 
@@ -213,7 +214,7 @@ export function TablesBoard({
                 onClick={() => doPrint("all")}
                 className="rounded-control border border-line-strong bg-surface-elevated px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary"
               >
-                <span aria-hidden>🖨</span> Print all QR
+                <IconPrinter /> Print all QR
               </button>
             ) : null}
             <button
@@ -281,7 +282,7 @@ export function TablesBoard({
                     dangerouslySetInnerHTML={{ __html: table.svg }}
                   />
                   {table.session ? (
-                    <p className="mt-2 truncate text-[11px] text-ink">
+                    <p className="mt-2 truncate text-eyebrow text-ink">
                       <span className="font-mono font-semibold">
                         {table.session.orderRef}
                       </span>{" "}
@@ -346,7 +347,7 @@ export function TablesBoard({
                   onClick={() => printOne(selected.id)}
                   className="flex-1"
                 >
-                  <span aria-hidden>🖨</span> Print
+                  <IconPrinter /> Print
                 </Button>
                 <button
                   type="button"

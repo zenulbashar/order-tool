@@ -168,7 +168,7 @@ export default async function AdminPromotionsPage() {
             Create promotion
           </button>
         </form>
-        <p className="mt-2 text-[11px] text-muted">
+        <p className="mt-2 text-eyebrow text-muted">
           Budget is a soft cap on confirmed-order discounts. Funding is recorded
           for reporting; the platform fee is charged on the discounted total.
         </p>
@@ -201,7 +201,7 @@ export default async function AdminPromotionsPage() {
                           </span>
                         ) : null}
                       </span>
-                      <span className="font-mono text-[10px] text-muted">
+                      <span className="font-mono text-micro text-muted">
                         {promo.type === "percent" ? `${promo.value}% off` : `$${formatCents(promo.value)} off`}
                         {promo.minBasketCents > 0 ? ` · min $${formatCents(promo.minBasketCents)}` : ""}
                         {promo.scope === "selected" ? ` · ${targetsByPromo.get(promo.id) ?? 0} venues` : " · all venues"}

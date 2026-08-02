@@ -74,19 +74,19 @@ export function ItemRow({
           ) : null}
           <span className="min-w-0">
             <span className="block truncate text-sm text-ink">{item.name}</span>
-            <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-muted">
+            <span className="mt-0.5 flex items-center gap-1.5 font-mono text-eyebrow text-muted">
               <span>
                 {fromPriceCents !== null
                   ? `from $${formatCents(fromPriceCents)}`
                   : `$${formatCents(item.priceCents)}`}
               </span>
               {variants.length > 0 ? (
-                <span className="rounded bg-sand px-1 py-0.5 text-[10px] text-muted">
+                <span className="rounded bg-sand px-1 py-0.5 text-micro text-muted">
                   {variants.length} size{variants.length === 1 ? "" : "s"}
                 </span>
               ) : null}
               {!item.isAvailable ? (
-                <span className="rounded bg-sand px-1 py-0.5 text-[10px] text-muted">
+                <span className="rounded bg-sand px-1 py-0.5 text-micro text-muted">
                   Unavailable
                 </span>
               ) : null}

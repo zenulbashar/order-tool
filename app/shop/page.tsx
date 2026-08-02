@@ -35,7 +35,7 @@ export default async function ShopPage() {
 
       <main className={`${CONTAINER} py-[clamp(40px,6vw,80px)]`}>
         <div className="max-w-[640px]">
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
+          <span className="font-mono text-eyebrow font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
             The shop
           </span>
           <h1 className="mt-3 font-display text-[clamp(32px,5vw,56px)] font-extrabold leading-[1.02] tracking-[-0.03em]">

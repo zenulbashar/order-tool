@@ -197,9 +197,18 @@ export function CheckoutClient({
     <main
       style={brandStyle}
       data-domain="diner"
-      className="mx-auto min-h-dvh max-w-2xl bg-surface"
+      /*
+        The storefront container from lg up (UI audit P2-7). max-w-2xl (672px)
+        clamped everything, so the inner grid's lg:max-w-[900px] could never take
+        effect — the desktop two-column checkout was squeezed into 672px, giving
+        the form ~330px beside a 320px summary. Widening the page lets that 900px
+        column work AND keeps the header in the same container as the storefront,
+        so the transition no longer reads as a different site. Mobile is
+        unchanged: max-w-2xl exceeds every phone viewport.
+      */
+      className="mx-auto min-h-dvh max-w-2xl bg-surface lg:max-w-[1440px] 2xl:max-w-[1680px]"
     >
-      <header className="border-b border-line px-5 py-5">
+      <header className="border-b border-line px-5 py-5 lg:px-6">
         <Link
           href={`/${venue.slug}`}
           className="text-xs text-muted hover:text-ink"
@@ -221,7 +230,7 @@ export function CheckoutClient({
         <div className="px-5 py-5 lg:mx-auto lg:grid lg:max-w-[900px] lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6 lg:px-6">
           {/* Order summary + pay — top on mobile, sticky right column on desktop */}
           <aside className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-6 lg:rounded-card lg:border lg:border-line lg:bg-surface-elevated lg:p-5 lg:shadow-card">
-            <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+            <h2 className="font-mono text-eyebrow font-bold uppercase tracking-wider text-label">
               Your order
             </h2>
             <ul className="mt-2 divide-y divide-line">
@@ -294,7 +303,7 @@ export function CheckoutClient({
           {/* Details — below the summary on mobile, left column on desktop. */}
           <div className="mt-5 space-y-5 lg:col-start-1 lg:row-start-1 lg:mt-0">
             <div className="space-y-1.5">
-              <span className="block font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+              <span className="block font-mono text-eyebrow font-bold uppercase tracking-wider text-label">
                 Order type
               </span>
               <Segmented

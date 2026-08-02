@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -15,6 +16,13 @@ import { dinerBrandStyle } from "../../brand-style";
 import { getPublicVenueBySlug } from "../../queries";
 import { PaymentStatusPoller } from "./payment-status-poller";
 import { getOrderByToken, type ConfirmedOrder } from "./queries";
+import {
+  IconBag,
+  IconCheck,
+  IconCutlery,
+  IconPan,
+  IconReceipt,
+} from "@/app/_components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +67,7 @@ function PayToWaiting({ amountCents }: { amountCents: number }) {
 
   return (
     <div className="p2e-rise rounded-card bg-forest-deep p-6 text-concierge-sage shadow-card">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-concierge-mint">
+      <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-concierge-mint">
         Pay by bank
       </p>
       <p className="mt-2 font-display text-2xl font-extrabold text-white">
@@ -79,7 +87,7 @@ function PayToWaiting({ amountCents }: { amountCents: number }) {
           >
             <span
               aria-hidden
-              className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+              className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-eyebrow font-bold ${
                 step.state === "complete"
                   ? "bg-concierge-mint text-forest"
                   : step.state === "active"
@@ -135,11 +143,11 @@ function OrderTracker({
   const f = order.fulfillmentStatus;
   const isDineIn = order.orderType === "dine_in";
 
-  const steps: { label: string; glyph: string; state: StepState }[] = [
-    { label: "Placed", glyph: "🧾", state: "complete" },
+  const steps: { label: string; glyph: ReactNode; state: StepState }[] = [
+    { label: "Placed", glyph: <IconReceipt />, state: "complete" },
     {
       label: "Preparing",
-      glyph: "🍳",
+      glyph: <IconPan />,
       state:
         f === "preparing"
           ? "active"
@@ -149,7 +157,7 @@ function OrderTracker({
     },
     {
       label: "Ready",
-      glyph: isDineIn ? "🍽️" : "🛍️",
+      glyph: isDineIn ? <IconCutlery /> : <IconBag />,
       state: f === "ready" ? "active" : f === "completed" ? "complete" : "upcoming",
     },
   ];
@@ -180,7 +188,7 @@ function OrderTracker({
         </p>
         <p className="mt-1 text-sm text-muted">{hero[f].sub}</p>
         {order.scheduledFor ? (
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-control bg-sand px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-muted">
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-control bg-sand px-2.5 py-1 font-mono text-eyebrow font-semibold uppercase tracking-wide text-muted">
             Scheduled pickup · {formatVenueTime(order.scheduledFor, timeZone)}
           </p>
         ) : null}
@@ -208,10 +216,10 @@ function OrderTracker({
                       : "border border-line bg-surface text-muted"
                 }`}
               >
-                {step.state === "complete" ? "✓" : step.glyph}
+                {step.state === "complete" ? <IconCheck /> : step.glyph}
               </span>
               <span
-                className={`mt-2 text-[11px] font-bold ${
+                className={`mt-2 text-eyebrow font-bold ${
                   step.state === "upcoming" ? "text-muted" : "text-ink"
                 }`}
               >
@@ -308,7 +316,7 @@ export default async function OrderConfirmationPage({
   // the status. Extracted so the two layouts render the exact same markup.
   const orderSummaryCard = (
     <div className="rounded-card border border-line bg-surface p-4">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+      <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-muted">
         Your order
       </p>
       <ul className="mt-2 divide-y divide-line">

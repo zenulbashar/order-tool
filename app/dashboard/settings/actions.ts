@@ -6,8 +6,10 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import {
-  contrastRatio,
   formatContrastRatio,
+  meetsSurfaceContrastAA,
+  surfaceContrast,
+  WCAG_AA_LARGE,
   WCAG_AA_NORMAL,
 } from "@/lib/contrast";
 import { recordVenueAudit } from "@/lib/audit";
@@ -72,15 +74,27 @@ export async function updateBrandTheme(
   // readable ink/cream automatically and is safe by construction. Checked
   // server-side because the picker is only a convenience — a direct POST
   // must not be able to ship an unreadable storefront either.
+  //
+  // Gate the text colour against the PAGE, not against the brand.
+  //
+  // brandTextColor overrides --color-ink (see app/[slug]/brand-style.ts), so it
+  // is the venue's BODY TEXT on the cream page and on elevated cards. It is not
+  // the label on a brand-filled button — that is --brand-contrast, which
+  // readableOn() derives and is safe by construction.
+  //
+  // Checking it against the brand was therefore checking a pairing that never
+  // renders, and it waved through the worst case: with the default navy brand
+  // (#111827), near-white text scores 16.2:1 against the brand and passed, then
+  // rendered at 1.01:1 on the cream page (UI audit P2-10).
   if (parsed.data.textColor) {
-    const ratio = contrastRatio(parsed.data.textColor, parsed.data.brandColor);
+    const ratio = surfaceContrast(parsed.data.textColor);
     if (ratio === null || ratio < WCAG_AA_NORMAL) {
       return {
-        error: `That text colour is hard to read on your brand colour (${
+        error: `That text colour is hard to read on your storefront's background (${
           ratio === null ? "unreadable" : formatContrastRatio(ratio)
         }). Accessibility rules need at least ${formatContrastRatio(
           WCAG_AA_NORMAL,
-        )} — pick a lighter or darker text colour, or switch to Auto.`,
+        )} — pick a darker text colour, or switch to Auto.`,
       };
     }
   }
@@ -368,11 +382,27 @@ export async function uploadVenueLogo(
   // failure (or a near-white/black logo) leaves the current brand colour intact.
   const derivedBrand = await deriveBrandColorFromLogo(buffer);
 
+  // A logo upload must not be a back door that lands a colour the settings form
+  // would reject (UI audit P2-10). The derived colour becomes --brand, and so
+  // --action on diner roots, which is painted as a FOREGROUND (links, prices,
+  // accents) on the cream page as well as used as a fill. Its fill pairing is
+  // safe by construction — readableOn() picks the label — but nothing checked
+  // the foreground case, where the only guard was a luminance band that is not
+  // a contrast check against anything.
+  //
+  // AA_LARGE, not AA_NORMAL: the accent is used at display sizes and on fills,
+  // and holding it to body-text contrast would reject most real brand colours.
+  // Failing means the logo still uploads and the existing brand is kept.
+  const safeBrand =
+    derivedBrand && meetsSurfaceContrastAA(derivedBrand, WCAG_AA_LARGE)
+      ? derivedBrand
+      : null;
+
   await db
     .update(venues)
     .set({
       logoUrl: publicUrl,
-      ...(derivedBrand ? { brandColor: derivedBrand } : {}),
+      ...(safeBrand ? { brandColor: safeBrand } : {}),
     })
     .where(eq(venues.id, venue.id));
 

@@ -20,7 +20,7 @@ export function FaqSection() {
     >
       <div className="mx-auto w-full max-w-[840px] px-[clamp(18px,4vw,48px)]">
         <div className="text-center" data-reveal>
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
+          <span className="font-mono text-micro font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
             FAQ
           </span>
           <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em]">

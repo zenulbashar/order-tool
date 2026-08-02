@@ -92,7 +92,7 @@ export function IssuesList({ issues }: { issues: SeoAuditIssue[] }) {
           {buckets.map((bucket) => (
             <span
               key={bucket.severity}
-              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${SEVERITY_PILL[bucket.severity]}`}
+              className={`rounded-full px-2.5 py-0.5 text-micro font-bold ${SEVERITY_PILL[bucket.severity]}`}
             >
               {bucket.issues.length} {SEVERITY_BADGE[bucket.severity].label}
             </span>

@@ -40,7 +40,7 @@ function Kpi({
       <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
         {value}
       </p>
-      {sub ? <p className="mt-1 text-[10px] font-semibold text-muted">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-micro font-semibold text-muted">{sub}</p> : null}
     </div>
   );
 }
@@ -242,7 +242,7 @@ export default async function StockOverviewPage() {
                         )}
                       </span>
                       <span className="flex items-center gap-4">
-                        <span className="font-mono text-[11px] text-muted">
+                        <span className="font-mono text-eyebrow text-muted">
                           {m.row.onHandQty == null
                             ? "—"
                             : `${formatQty(m.row.onHandQty)}`}
@@ -292,10 +292,10 @@ export default async function StockOverviewPage() {
                       <span className="truncate font-bold text-ink">
                         {m.row.name}
                       </span>
-                      <span className="font-mono text-[11px] text-muted">
+                      <span className="font-mono text-eyebrow text-muted">
                         {formatQty(Math.round(m.consumed * 100) / 100)} {m.row.unit}
                       </span>
-                      <span className="font-mono text-[11px] text-muted">
+                      <span className="font-mono text-eyebrow text-muted">
                         {formatQty(Math.round(m.dailyRate * 100) / 100)} {m.row.unit}
                       </span>
                       <span className="text-right font-display text-[13px] font-extrabold text-ink">
@@ -333,7 +333,7 @@ export default async function StockOverviewPage() {
                         </span>
                         <span
                           className={cx(
-                            "shrink-0 font-mono text-[11px] font-bold",
+                            "shrink-0 font-mono text-eyebrow font-bold",
                             positive ? "text-success-deep" : "text-muted",
                           )}
                         >

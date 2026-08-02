@@ -133,13 +133,13 @@ export function ScoreSparkline({ values }: { values: number[] }) {
 /** ▲/▼ percent-point change vs the previous run ("new" when none exists). */
 export function ScoreDelta({ value }: { value: number | null }) {
   if (value === null) {
-    return <span className="text-[11px] font-semibold text-muted">first run</span>;
+    return <span className="text-eyebrow font-semibold text-muted">first run</span>;
   }
   const up = value >= 0;
   return (
     <span
       className={cx(
-        "text-[11px] font-bold",
+        "text-eyebrow font-bold",
         up ? "text-success-deep" : "text-warm-deep",
       )}
     >
@@ -174,7 +174,7 @@ export function CategoryBars({
                 className={`block h-full rounded-full ${fill}`}
               />
             </span>
-            <span className="w-7 shrink-0 text-right font-mono text-[11px] font-bold text-muted">
+            <span className="w-7 shrink-0 text-right font-mono text-eyebrow font-bold text-muted">
               {category.pct}
             </span>
           </div>

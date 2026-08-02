@@ -59,6 +59,19 @@
      Other sub-xs sizes (8/10/11/13/15px) are still arbitrary — turning those into
      a scale is a design decision, not a rename. See RemainingRecommendations. */
   --text-2xs: 9px;
+  /*
+   * The rest of the micro scale (UI audit P2-1). 205 arbitrary text-[10px] /
+   * text-[11px] values sat beside the --text-2xs added for D3.
+   *
+   * --text-eyebrow is EXACTLY 11px, so adopting it is a rename with no visual
+   * change. --text-micro is 12px: the audit's readability floor for
+   * body-adjacent text, applied where 10px was doing body-adjacent work.
+   *
+   * No paired --text-*--line-height, deliberately, matching --text-2xs: Tailwind
+   * emits font-size alone unless one is declared, so nothing reflows.
+   */
+  --text-eyebrow: 11px; /* mono uppercase labels                */
+  --text-micro: 12px;   /* smallest body-adjacent text          */
   /* Radius scale (export: pill 999 / card 16 / control 11 / small 6). Only
      --radius-sm overrides a Tailwind default; rounded-sm is unused, so no diff. */
   --radius-pill: 999px;

@@ -18,7 +18,7 @@ import { MobileNavDisclosure } from "./mobile-nav-disclosure";
 
 const CONTAINER = "mx-auto w-full max-w-[1240px] px-[clamp(18px,4vw,48px)]";
 const eyebrow =
-  "font-mono text-[11px] font-bold uppercase tracking-[0.18em]";
+  "font-mono text-eyebrow font-bold uppercase tracking-[0.18em]";
 
 function BentoIcon({ d }: { d: string }) {
   return (
@@ -153,7 +153,7 @@ export function Landing() {
               </a>
             </div>
             <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[var(--mkt-on-dark-muted)]">
-              <span className={`${eyebrow} text-[10px] text-[var(--mkt-on-dark-sage)]`}>Order with</span>
+              <span className={`${eyebrow} text-micro text-[var(--mkt-on-dark-sage)]`}>Order with</span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-3 w-3 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
                 Google Gemini
@@ -275,7 +275,7 @@ export function Landing() {
                     ))}
                   </div>
                   <p className="mt-3 font-display text-lg font-extrabold">Table 12</p>
-                  <p className={`${eyebrow} text-[10px] text-[var(--mkt-on-dark-dim)]`}>Scan to order</p>
+                  <p className={`${eyebrow} text-micro text-[var(--mkt-on-dark-dim)]`}>Scan to order</p>
                 </div>
               }
             />
@@ -470,7 +470,7 @@ export function Landing() {
                     Most popular
                   </span>
                 ) : null}
-                <span className={`${eyebrow} text-[10px] ${tier.featured ? "text-[var(--mkt-on-dark-muted)]" : "text-[var(--mkt-eyebrow)]"}`}>
+                <span className={`${eyebrow} text-micro ${tier.featured ? "text-[var(--mkt-on-dark-muted)]" : "text-[var(--mkt-eyebrow)]"}`}>
                   {tier.name}
                 </span>
                 <p className="mt-3">
@@ -588,7 +588,7 @@ export function Landing() {
               },
             ].map((col) => (
               <div key={col.h}>
-                <p className={`${eyebrow} text-[10px] text-[var(--mkt-on-dark-sage)]`}>{col.h}</p>
+                <p className={`${eyebrow} text-micro text-[var(--mkt-on-dark-sage)]`}>{col.h}</p>
                 <ul className="mt-3 space-y-2 text-sm font-medium">
                   {col.links.map((l) => (
                     <li key={l.label}>
@@ -610,11 +610,10 @@ export function Landing() {
           </div>
           <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(247,243,234,0.08)] pt-6 text-sm text-[var(--mkt-on-dark-sage-bright)]">
             <span>© 2026 Prompt2Eat. All rights reserved.</span>
-            <span className="flex gap-4">
-              <span>X</span>
-              <span>Instagram</span>
-              <span>LinkedIn</span>
-            </span>
+            {/* Removed rather than linked: three inert <span>s styled as social
+                links read as a broken page (UI audit P2-9), and inventing
+                profile URLs that may not exist would be worse. Re-add as real
+                <a> elements when the accounts are live. */}
           </div>
         </div>
       </footer>
@@ -648,7 +647,7 @@ function FeatureRow({
   return (
     <div className="grid items-center gap-[clamp(28px,4vw,64px)] lg:grid-cols-2" data-reveal>
       <div className={flip ? "lg:order-2" : ""}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
+        <span className="font-mono text-eyebrow font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
           {eb}
         </span>
         <h3 className="mt-2.5 font-display text-[clamp(24px,3vw,34px)] font-extrabold leading-[1.08] tracking-[-0.02em]">

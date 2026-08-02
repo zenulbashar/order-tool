@@ -35,11 +35,11 @@ export function StationLabelDocket({
       <p className="text-center text-4xl font-extrabold tracking-wider">
         {tag}
       </p>
-      <p className="mt-0.5 text-center text-[11px] font-bold uppercase tracking-widest">
+      <p className="mt-0.5 text-center text-eyebrow font-bold uppercase tracking-widest">
         {label.station.name}
       </p>
 
-      <div className="mt-1 border-y border-dashed border-black py-0.5 text-center text-[10px] font-bold uppercase">
+      <div className="mt-1 border-y border-dashed border-black py-0.5 text-center text-micro font-bold uppercase">
         {isDineIn ? `Dine-in · Table ${order.tableLabel ?? "—"}` : "Pickup"}
       </div>
 
@@ -64,7 +64,7 @@ export function StationLabelDocket({
       </ul>
 
       {label.otherItemCount > 0 ? (
-        <p className="mt-1 border-t border-dashed border-black pt-1 text-[11px] font-bold">
+        <p className="mt-1 border-t border-dashed border-black pt-1 text-eyebrow font-bold">
           + {label.otherItemCount} more{" "}
           {label.otherItemCount === 1 ? "item" : "items"}
         </p>

@@ -35,7 +35,7 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${classes[tone]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-micro font-bold uppercase tracking-wider ${classes[tone]}`}
     >
       {label}
     </span>
@@ -119,7 +119,7 @@ function SubscriptionCard({ overview }: { overview: BillingOverview }) {
                 ) : null}
               </div>
               {line.description ? (
-                <p className="text-[11px] text-muted">{line.description}</p>
+                <p className="text-eyebrow text-muted">{line.description}</p>
               ) : null}
             </div>
             <div className="shrink-0 text-right">
@@ -140,7 +140,7 @@ function SubscriptionCard({ overview }: { overview: BillingOverview }) {
             One total · billed {cadence}
           </p>
           {overview.interval === "annual" ? (
-            <p className="text-[11px] text-muted">
+            <p className="text-eyebrow text-muted">
               ${formatCents(overview.totalCents)} charged annually
             </p>
           ) : null}
@@ -210,7 +210,7 @@ export default async function BillingPage({ searchParams }: BillingParams) {
           </div>
           {isTrialing && venue.trialEndsAt ? (
             <div className="mt-3 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-3 py-2.5">
-              <span className="inline-flex items-center rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent-deep">
+              <span className="inline-flex items-center rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wider text-accent-deep">
                 {daysLeft(venue.trialEndsAt)} days left
               </span>
               <p className="mt-1.5 text-sm text-ink">
@@ -285,7 +285,7 @@ export default async function BillingPage({ searchParams }: BillingParams) {
         ) : null}
 
         <Card>
-          <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+          <h2 className="font-mono text-eyebrow font-bold uppercase tracking-wider text-label">
             {hasCustomer ? "Change plan" : "Choose a plan"}
           </h2>
           <p className="mt-1 text-sm text-muted">
@@ -359,7 +359,7 @@ export default async function BillingPage({ searchParams }: BillingParams) {
 
         {hasCustomer ? (
           <Card>
-            <h2 className="font-mono text-[11px] font-bold uppercase tracking-wider text-label">
+            <h2 className="font-mono text-eyebrow font-bold uppercase tracking-wider text-label">
               Manage billing
             </h2>
             <p className="mt-1 text-sm text-muted">

@@ -205,7 +205,7 @@ export function ConciergeDemo() {
         <div className="relative flex aspect-[9/18.6] flex-col overflow-hidden rounded-[35px] bg-gradient-to-b from-[var(--mkt-forest-deeper)] to-[var(--mkt-forest-darkest)]">
           {/* Header */}
           <div className="relative shrink-0 bg-gradient-to-b from-[var(--mkt-forest-deep)] to-[var(--mkt-forest-deeper)] px-4 pb-3 pt-3">
-            <div className="mb-2 flex justify-between font-mono text-[10px] text-[var(--mkt-on-dark-muted)]">
+            <div className="mb-2 flex justify-between font-mono text-micro text-[var(--mkt-on-dark-muted)]">
               <span>9:41</span>
               <span>▚▚ 5G</span>
             </div>
@@ -215,7 +215,7 @@ export function ConciergeDemo() {
                 <p className="truncate font-display text-sm font-extrabold text-surface">
                   Maple &amp; Thyme
                 </p>
-                <p className="flex items-center gap-1.5 text-[11px] text-[var(--mkt-on-dark-muted)]">
+                <p className="flex items-center gap-1.5 text-eyebrow text-[var(--mkt-on-dark-muted)]">
                   <span className="h-1.5 w-1.5 rounded-full bg-success [animation:p2e-pulse_2s_ease-in-out_infinite]" />
                   AI Concierge · online
                 </p>
@@ -274,7 +274,7 @@ export function ConciergeDemo() {
                         <span className="block truncate font-display text-[13px] font-extrabold text-surface">
                           {dish.name}
                         </span>
-                        <span className="block truncate text-[11px] text-[var(--mkt-on-dark-muted)]">
+                        <span className="block truncate text-eyebrow text-[var(--mkt-on-dark-muted)]">
                           {dish.tag}
                         </span>
                       </span>
@@ -299,7 +299,7 @@ export function ConciergeDemo() {
                 <Bubble side="left">{script.question}</Bubble>
                 <div className="flex flex-wrap gap-1.5">
                   <span
-                    className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+                    className={`rounded-full px-3 py-1.5 text-eyebrow font-bold transition ${
                       answered
                         ? "bg-success/20 text-[#8fe0ac]"
                         : "bg-[var(--color-accent)] text-[var(--mkt-forest-darkest)]"
@@ -309,7 +309,7 @@ export function ConciergeDemo() {
                     {script.yes}
                   </span>
                   {!answered ? (
-                    <span className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-[var(--mkt-on-dark)]">
+                    <span className="rounded-full border border-white/15 px-3 py-1.5 text-eyebrow font-semibold text-[var(--mkt-on-dark)]">
                       No thanks
                     </span>
                   ) : null}
@@ -341,7 +341,7 @@ export function ConciergeDemo() {
 
       {/* Try-it chips */}
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-on-dark-muted)]">
+        <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-[var(--mkt-on-dark-muted)]">
           Try it
         </span>
         {SCRIPTS.map((s, i) => (
@@ -349,7 +349,7 @@ export function ConciergeDemo() {
             key={s.label}
             type="button"
             onClick={() => dispatch({ type: "run", scriptIndex: i })}
-            className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
+            className={`rounded-full border px-3 py-1.5 text-eyebrow font-semibold transition ${
               state.scriptIndex === i && started
                 ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--mkt-forest-darkest)]"
                 : "border-white/15 text-[var(--mkt-on-dark)] hover:bg-white/5"

@@ -163,13 +163,13 @@ function Ring({ pct, stroke }: { pct: number; stroke: string }) {
 
 function Delta({ value }: { value: number | null }) {
   if (value === null) {
-    return <span className="text-[11px] font-semibold text-muted">new</span>;
+    return <span className="text-eyebrow font-semibold text-muted">new</span>;
   }
   const up = value >= 0;
   return (
     <span
       className={cx(
-        "text-[11px] font-bold",
+        "text-eyebrow font-bold",
         up ? "text-success-deep" : "text-warm-deep",
       )}
     >
@@ -388,7 +388,7 @@ export default async function DashboardPage() {
               </p>
               <p
                 className={cx(
-                  "mt-1.5 text-[10px] font-semibold",
+                  "mt-1.5 text-micro font-semibold",
                   healthIssues > 0 ? "text-accent-deep" : "text-muted",
                 )}
               >
@@ -440,7 +440,7 @@ export default async function DashboardPage() {
                       </div>
                       <span
                         className={cx(
-                          "font-mono text-[10px]",
+                          "font-mono text-micro",
                           isToday ? "font-bold text-ink" : "text-muted",
                         )}
                       >
@@ -508,7 +508,7 @@ export default async function DashboardPage() {
               <p className="font-display text-sm font-bold text-ink">Live orders</p>
               <Link
                 href="/dashboard/orders"
-                className="text-[11px] font-bold text-success-deep hover:opacity-80"
+                className="text-eyebrow font-bold text-success-deep hover:opacity-80"
               >
                 ● {active.length} active
               </Link>
@@ -538,13 +538,13 @@ export default async function DashboardPage() {
                       </span>
                       <span
                         className={cx(
-                          "shrink-0 rounded-sm px-2 py-0.5 text-[10px] font-bold",
+                          "shrink-0 rounded-sm px-2 py-0.5 text-micro font-bold",
                           liveBadge[order.fulfillmentStatus] ?? "bg-sand text-muted",
                         )}
                       >
                         {liveLabel[order.fulfillmentStatus] ?? order.fulfillmentStatus}
                       </span>
-                      <span className="w-10 shrink-0 text-right font-mono text-[11px] text-muted">
+                      <span className="w-10 shrink-0 text-right font-mono text-eyebrow text-muted">
                         {relativeAge(order.scheduledFor ?? order.createdAt, nowMs)}
                       </span>
                     </li>
@@ -575,7 +575,7 @@ export default async function DashboardPage() {
               <span className="text-base text-[var(--color-accent)]" aria-hidden="true">
                 ✦
               </span>
-              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--color-accent)]">
+              <span className="font-mono text-eyebrow font-bold uppercase tracking-wider text-[var(--color-accent)]">
                 Concierge insight
               </span>
             </div>

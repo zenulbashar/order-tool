@@ -41,7 +41,7 @@ export function PointsPanel({
       <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-card">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+            <p className="font-mono text-micro font-bold uppercase tracking-wider text-label">
               Your points
             </p>
             <p className="p2e-count mt-1 font-display text-3xl font-extrabold leading-none text-ink">
@@ -54,7 +54,7 @@ export function PointsPanel({
                 ? `$${formatCents(available * redeemValueCents)} to spend`
                 : `worth $${formatCents(available * redeemValueCents)}`}
               {onHold > 0 ? (
-                <span className="mt-0.5 block text-[11px] font-normal text-muted">
+                <span className="mt-0.5 block text-eyebrow font-normal text-muted">
                   {onHold.toLocaleString("en-AU")} on hold in a pending order
                 </span>
               ) : null}

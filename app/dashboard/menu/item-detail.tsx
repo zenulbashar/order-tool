@@ -192,13 +192,13 @@ function ItemModifierGroups({
                       {group.name}
                     </p>
                     {/* Diner-facing selection constraint, surfaced from maxSelect. */}
-                    <span className="shrink-0 rounded-pill bg-sand px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+                    <span className="shrink-0 rounded-pill bg-sand px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wider text-label">
                       {group.maxSelect === 1
                         ? "Choose 1"
                         : `Choose up to ${group.maxSelect}`}
                     </span>
                   </div>
-                  <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-muted">
+                  <p className="mt-0.5 font-mono text-micro uppercase tracking-wider text-muted">
                     Min {group.minSelect} · Max {group.maxSelect} ·{" "}
                     {group.minSelect >= 1 ? "required" : "optional"}
                   </p>

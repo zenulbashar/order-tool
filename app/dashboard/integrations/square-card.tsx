@@ -63,7 +63,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
             POS
           </span>
         </div>
-        <p className="mt-0.5 text-[11px] text-muted">
+        <p className="mt-0.5 text-eyebrow text-muted">
           Orders mirrored into your register
         </p>
       </div>
@@ -71,7 +71,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
         <>
           <span
             className={cx(
-              "inline-flex shrink-0 items-center gap-1.5 rounded-pill px-2 py-1 text-[10px] font-bold",
+              "inline-flex shrink-0 items-center gap-1.5 rounded-pill px-2 py-1 text-micro font-bold",
               data.state === "connected"
                 ? "bg-[var(--color-success)]/12 text-success-deep"
                 : "bg-sand text-muted",
@@ -150,7 +150,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
       {data.state === "not_connected" || data.state === "revoked" ? (
         <>
           {data.state === "revoked" ? (
-            <p className="rounded-control border border-[var(--color-warm)]/40 bg-[var(--color-warm)]/10 px-2.5 py-2 text-[11px] font-semibold text-ink">
+            <p className="rounded-control border border-[var(--color-warm)]/40 bg-[var(--color-warm)]/10 px-2.5 py-2 text-eyebrow font-semibold text-ink">
               Square access was revoked — reconnect to resume mirroring.
             </p>
           ) : (
@@ -178,7 +178,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
               Takes ~2 min · opens Square
             </p>
             {data.sandbox ? (
-              <p className="mt-2 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/8 px-2.5 py-2 text-[11px] leading-relaxed text-muted">
+              <p className="mt-2 rounded-control border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/8 px-2.5 py-2 text-eyebrow leading-relaxed text-muted">
                 <span className="font-semibold text-ink">Sandbox:</span> open a
                 Square test-account dashboard in another tab first, or the
                 authorize page shows blank.
@@ -232,7 +232,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
               </span>
               <Link
                 href={data.remapHref}
-                className="text-[11px] font-bold text-ink hover:opacity-80"
+                className="text-eyebrow font-bold text-ink hover:opacity-80"
               >
                 Edit
               </Link>
@@ -246,7 +246,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
             ) : null}
             <button
               type="submit"
-              className="flex items-center gap-2 text-[11px] font-semibold text-ink"
+              className="flex items-center gap-2 text-eyebrow font-semibold text-ink"
               aria-pressed={data.state === "connected"}
             >
               <span
@@ -267,7 +267,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
           </form>
 
           {data.lastMirroredAgo ? (
-            <p className="flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-muted">
+            <p className="flex items-center gap-1.5 font-mono text-micro font-semibold uppercase tracking-wide text-muted">
               <span
                 aria-hidden="true"
                 className={cx(
@@ -284,7 +284,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
               <span aria-hidden="true" className="shrink-0 text-[13px] text-warm-deep">
                 ▲
               </span>
-              <p className="flex-1 text-[11px] leading-snug text-ink">
+              <p className="flex-1 text-eyebrow leading-snug text-ink">
                 <b className="font-bold">
                   {data.attentionCount}{" "}
                   {data.attentionCount === 1 ? "order needs" : "orders need"}{" "}
@@ -294,7 +294,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
               </p>
               <Link
                 href={data.detailHref}
-                className="shrink-0 rounded-[8px] border border-line-strong bg-surface-elevated px-2.5 py-1.5 text-[11px] font-bold text-ink hover:bg-hover-secondary"
+                className="shrink-0 rounded-[8px] border border-line-strong bg-surface-elevated px-2.5 py-1.5 text-eyebrow font-bold text-ink hover:bg-hover-secondary"
               >
                 Review
               </Link>
@@ -302,7 +302,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
           ) : (
             <Link
               href={data.detailHref}
-              className="mt-auto text-[11px] font-bold text-[var(--action)] hover:opacity-80"
+              className="mt-auto text-eyebrow font-bold text-[var(--action)] hover:opacity-80"
             >
               View activity →
             </Link>

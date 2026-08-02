@@ -100,7 +100,7 @@ export function OrderHistory({
               aria-hidden
               className="p2e-glow absolute -right-6 -top-9 h-28 w-28 bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-accent)_30%,transparent),transparent_65%)]"
             />
-            <p className="relative font-mono text-[10px] font-bold uppercase tracking-wider text-accent">
+            <p className="relative font-mono text-micro font-bold uppercase tracking-wider text-accent">
               Your usual
             </p>
             <p className="relative mt-1.5 text-[15px] font-bold text-white">
@@ -161,7 +161,7 @@ export function OrderHistory({
                     {order.itemSummary || "—"}
                   </p>
                   <div className="mt-3 flex items-center justify-between gap-3">
-                    <span className="font-mono text-[11px] font-bold uppercase text-label">
+                    <span className="font-mono text-eyebrow font-bold uppercase text-label">
                       <span suppressHydrationWarning>
                         {new Date(order.createdAt).toLocaleDateString("en-AU", {
                           day: "numeric",

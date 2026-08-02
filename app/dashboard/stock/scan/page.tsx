@@ -1,6 +1,8 @@
 import { desc } from "drizzle-orm";
 
 import { PageHeader } from "@/app/_components/page-header";
+
+import { StockNav } from "../stock-chrome";
 import { db } from "@/lib/db";
 import { invoiceScans } from "@/lib/db/schema";
 import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
@@ -50,7 +52,16 @@ export default async function ScanInvoicePage() {
         backHref="/dashboard/stock"
       />
 
-      <div className="max-w-3xl px-5">
+      <div className="max-w-3xl space-y-4 px-5 py-4">
+        {/*
+          The hub tab bar advertises "Invoices" as a peer tab pointing here, but
+          this page rendered without it — so the tabs vanished on arrival.
+          Flagged during the design audit as a design call rather than a
+          duplication; extracting <StockNav> made it a one-line fix. The page
+          keeps its own header and back link, since it is a detail surface
+          rather than a fourth hub list.
+        */}
+        <StockNav current="invoices" />
         <ScanClient recentScans={recentScans} />
       </div>
     </main>

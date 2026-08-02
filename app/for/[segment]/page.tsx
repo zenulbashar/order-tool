@@ -71,7 +71,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
       {/* Hero */}
       <section className="bg-[radial-gradient(110%_90%_at_80%_-10%,#1D4636,#143228_40%,#0F281E_72%)] text-surface">
         <div className={`${CONTAINER} py-[clamp(56px,8vw,104px)]`}>
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+          <span className="font-mono text-eyebrow font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
             {segment.eyebrow}
           </span>
           <h1 className="mt-3 max-w-[18ch] font-display text-[clamp(30px,5vw,56px)] font-extrabold leading-[1.04] tracking-[-0.03em]">
@@ -176,7 +176,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
 
         {/* Cross-links to the other audiences (internal linking). */}
         <nav aria-label="Other venue types" className="mt-14">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
+          <p className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
             Prompt2Eat for
           </p>
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[15px]">

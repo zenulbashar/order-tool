@@ -187,7 +187,7 @@ export default async function AdminConsolePage() {
                     {row.status.replace("_", " ")}
                   </StatusBadge>
                 </span>
-                <span className="font-mono text-[11px] text-muted">
+                <span className="font-mono text-eyebrow text-muted">
                   {row.consecutiveFailures > 0
                     ? `${row.consecutiveFailures} consecutive failures · `
                     : ""}
@@ -228,12 +228,12 @@ export default async function AdminConsolePage() {
                   >
                     {venue.name}
                   </Link>
-                  <span className="font-mono text-[10px] text-muted">
+                  <span className="font-mono text-micro text-muted">
                     /{venue.slug}
                     {venue.isLive ? "" : " · not live"}
                   </span>
                 </span>
-                <span className="font-mono text-[11px] font-bold uppercase text-ink">
+                <span className="font-mono text-eyebrow font-bold uppercase text-ink">
                   {venue.plan}
                 </span>
                 <span>
@@ -258,7 +258,7 @@ export default async function AdminConsolePage() {
                     ))
                   )}
                 </span>
-                <span className="font-mono text-[11px] text-muted">
+                <span className="font-mono text-eyebrow text-muted">
                   {timeAgo(venue.createdAt, now)}
                 </span>
               </li>
@@ -340,11 +340,11 @@ export default async function AdminConsolePage() {
                         <span className="text-muted"> · {entry.detail}</span>
                       ) : null}
                     </span>
-                    <span className="font-mono text-[10px] text-muted">
+                    <span className="font-mono text-micro text-muted">
                       {entry.actorEmail}
                     </span>
                   </span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted">
+                  <span className="shrink-0 font-mono text-micro text-muted">
                     {timeAgo(entry.createdAt, now)}
                   </span>
                 </li>

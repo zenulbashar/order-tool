@@ -4,8 +4,12 @@ import {
   contrastRatio,
   formatContrastRatio,
   meetsContrastAA,
+  meetsSurfaceContrastAA,
   parseHexColor,
   relativeLuminance,
+  SURFACE_ELEVATED,
+  SURFACE_PAGE,
+  surfaceContrast,
   WCAG_AA_LARGE,
   WCAG_AA_NORMAL,
 } from "@/lib/contrast";
@@ -88,5 +92,54 @@ describe("formatContrastRatio", () => {
   it("renders one decimal for the operator message", () => {
     expect(formatContrastRatio(4.4999)).toBe("4.5:1");
     expect(formatContrastRatio(21)).toBe("21.0:1");
+  });
+});
+
+/**
+ * Surface contrast — the pairing that actually renders (UI audit P2-10).
+ *
+ * `brandTextColor` overrides `--color-ink` (app/[slug]/brand-style.ts), so it is
+ * the venue's BODY TEXT on the cream page. The gate it replaced compared it to
+ * the BRAND, which text is never painted on — and that inversion waved through
+ * precisely the worst case.
+ */
+describe("surfaceContrast", () => {
+  it("catches the case the brand-paired gate waved through", () => {
+    const brand = "#111827"; // the schema default
+    const text = "#f5f5f0"; // near-white
+
+    // What the old gate measured: comfortably over AA, so it passed.
+    expect(contrastRatio(text, brand)!).toBeGreaterThan(WCAG_AA_NORMAL);
+    // What the diner actually sees: invisible.
+    expect(surfaceContrast(text)!).toBeLessThan(1.2);
+    expect(meetsSurfaceContrastAA(text)).toBe(false);
+  });
+
+  it("returns the WORSE of the two page surfaces", () => {
+    // Cream page and elevated cards differ, so a colour has to clear both; the
+    // helper must not report the flattering one.
+    const text = "#767066";
+    const onPage = contrastRatio(text, SURFACE_PAGE)!;
+    const onElevated = contrastRatio(text, SURFACE_ELEVATED)!;
+    expect(surfaceContrast(text)).toBe(Math.min(onPage, onElevated));
+    expect(onPage).not.toBe(onElevated);
+  });
+
+  it("still accepts a readable dark text colour", () => {
+    expect(meetsSurfaceContrastAA("#1d2b22")).toBe(true);
+    expect(meetsSurfaceContrastAA("#0e1f18")).toBe(true);
+  });
+
+  it("fails closed on an unparseable colour", () => {
+    expect(surfaceContrast("not-a-colour")).toBeNull();
+    expect(meetsSurfaceContrastAA("not-a-colour")).toBe(false);
+  });
+
+  it("large-text threshold is what gates a derived brand accent", () => {
+    // uploadVenueLogo holds the logo-derived brand to AA_LARGE, since the accent
+    // is used at display sizes and as a fill. A near-cream dominant must still
+    // be rejected — that is the case the old luminance band half-covered.
+    expect(meetsSurfaceContrastAA("#f5f2e8", WCAG_AA_LARGE)).toBe(false);
+    expect(meetsSurfaceContrastAA("#8a3324", WCAG_AA_LARGE)).toBe(true);
   });
 });

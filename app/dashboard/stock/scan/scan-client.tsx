@@ -326,7 +326,7 @@ export function ScanClient({ recentScans }: { recentScans: RecentScan[] }) {
                     {scan.scannedLabel}
                   </span>
                 </span>
-                <span className="shrink-0 font-mono text-[10px] text-muted">
+                <span className="shrink-0 font-mono text-micro text-muted">
                   {scan.updatedCount} updated
                   {scan.createdCount > 0 ? ` · ${scan.createdCount} new` : ""}
                 </span>
@@ -487,7 +487,7 @@ function ReviewRow({
             )}
           </div>
           {line.draft.packText ? (
-            <p className="mt-0.5 font-mono text-[10px] text-muted">
+            <p className="mt-0.5 font-mono text-micro text-muted">
               Invoice: {line.draft.packText}
             </p>
           ) : null}
@@ -501,7 +501,7 @@ function ReviewRow({
               type="button"
               onClick={() => onChange({ action: mode })}
               className={cx(
-                "rounded-[7px] px-2.5 py-1 text-[11px] font-bold capitalize transition",
+                "rounded-[7px] px-2.5 py-1 text-eyebrow font-bold capitalize transition",
                 line.action === mode
                   ? "bg-surface-elevated text-ink shadow-sm"
                   : "text-label hover:text-ink",

@@ -22,7 +22,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
     <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
       <p className={eyebrow}>{label}</p>
       <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">{value}</p>
-      {sub ? <p className="mt-1 text-[10px] font-semibold text-muted">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-micro font-semibold text-muted">{sub}</p> : null}
     </div>
   );
 }
@@ -36,7 +36,7 @@ function BarRow({ label, value, max, display }: { label: string; value: number; 
       <span className="h-3 flex-1 overflow-hidden rounded-pill bg-line">
         <span className="block h-full rounded-pill bg-[var(--color-accent)]" style={{ width: `${pct}%` }} />
       </span>
-      <span className="w-16 shrink-0 text-right font-mono text-[11px] text-muted">{display}</span>
+      <span className="w-16 shrink-0 text-right font-mono text-eyebrow text-muted">{display}</span>
     </div>
   );
 }
@@ -140,7 +140,7 @@ export default async function PlatformStatsPage() {
       <li key={id} className="flex items-center justify-between gap-3 border-b border-line/60 py-2 last:border-0">
         <span className="min-w-0">
           <span className="block truncate text-sm font-bold text-ink">{who}</span>
-          <span className="font-mono text-[10px] text-muted">
+          <span className="font-mono text-micro text-muted">
             {venue} · {agg.orders} order{agg.orders === 1 ? "" : "s"}
           </span>
         </span>

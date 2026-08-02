@@ -107,7 +107,7 @@ export default async function AdminSupportPage() {
                     {ticket.status}
                   </StatusBadge>
                 </div>
-                <span className="font-mono text-[11px] text-muted">
+                <span className="font-mono text-eyebrow text-muted">
                   {fmtWhen(ticket.createdAt)} · {ticket.foundryTicketId}
                 </span>
               </div>

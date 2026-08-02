@@ -155,7 +155,7 @@ export function StationsForm({ defaults }: { defaults: Defaults }) {
       {onNameScreen && rows[nameIndex] ? (
         <fieldset className="space-y-4">
           <legend className="space-y-1">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+            <p className="font-mono text-micro font-bold uppercase tracking-wider text-label">
               Station {nameIndex + 1} of {count}
             </p>
             <h2 className="font-display text-xl font-semibold tracking-tight text-ink">

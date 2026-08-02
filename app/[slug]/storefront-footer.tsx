@@ -57,7 +57,7 @@ export function StorefrontFooter({
       {faqs.length > 0 ? (
         <div className="border-b border-line">
           <div className="mx-auto max-w-[1440px] 2xl:max-w-[1680px] px-6 py-12">
-            <h2 className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+            <h2 className="font-mono text-micro font-bold uppercase tracking-wider text-label">
               Frequently asked
             </h2>
             <div className="mt-4 grid gap-x-10 gap-y-1 md:grid-cols-2">
@@ -110,7 +110,7 @@ export function StorefrontFooter({
         {/* Opening hours */}
         {hasHours ? (
           <div className="min-w-0">
-            <h2 className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+            <h2 className="font-mono text-micro font-bold uppercase tracking-wider text-label">
               Opening hours
             </h2>
             <dl className="mt-3 space-y-1.5 text-sm">
@@ -137,7 +137,7 @@ export function StorefrontFooter({
         {/* Location + contact */}
         {hasAddress || venue.phone ? (
           <div className="min-w-0">
-            <h2 className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+            <h2 className="font-mono text-micro font-bold uppercase tracking-wider text-label">
               Find us
             </h2>
             {hasAddress ? (
@@ -203,7 +203,7 @@ function SocialRow({ venue }: { venue: PublicVenue }) {
 
   return (
     <div className="mt-4">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+      <p className="font-mono text-micro font-bold uppercase tracking-wider text-label">
         Follow us
       </p>
       <div className="mt-2 flex flex-wrap gap-2">

@@ -104,7 +104,7 @@ export function TicketDrawer({
 
           {order.notes ? (
             <div className="mt-3 rounded-control border-2 border-accent/50 bg-accent/10 px-3 py-2">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-ink">
+              <p className="text-eyebrow font-bold uppercase tracking-wide text-ink">
                 Notes
               </p>
               <p className="mt-0.5 whitespace-pre-wrap break-words text-base font-semibold text-ink">

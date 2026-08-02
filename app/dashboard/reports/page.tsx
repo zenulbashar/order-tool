@@ -22,7 +22,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
     <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
       <p className={eyebrow}>{label}</p>
       <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">{value}</p>
-      {sub ? <p className="mt-1 text-[10px] font-semibold text-muted">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-micro font-semibold text-muted">{sub}</p> : null}
     </div>
   );
 }
@@ -51,7 +51,7 @@ function BarRow({
           style={{ width: `${pct}%` }}
         />
       </span>
-      <span className="w-16 shrink-0 text-right font-mono text-[11px] text-muted">
+      <span className="w-16 shrink-0 text-right font-mono text-eyebrow text-muted">
         {display}
       </span>
     </div>

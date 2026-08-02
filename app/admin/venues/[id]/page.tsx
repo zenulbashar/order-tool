@@ -119,7 +119,7 @@ export default async function AdminVenuePage({ params }: Params) {
                       </span>
                     ) : null}
                   </span>
-                  <span className="font-mono text-[10px] text-muted">{item.categoryName}</span>
+                  <span className="font-mono text-micro text-muted">{item.categoryName}</span>
                 </span>
                 <form action={setVenueItemPrice} className="flex items-center gap-2">
                   <input type="hidden" name="venueId" value={venue.id} />

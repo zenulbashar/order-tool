@@ -35,7 +35,7 @@ function Kpi({
       <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
         {value}
       </p>
-      {sub ? <p className="mt-1 text-[10px] font-semibold text-muted">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-micro font-semibold text-muted">{sub}</p> : null}
     </div>
   );
 }

@@ -407,7 +407,7 @@ export function StudioClient({
               <button type="button" onClick={printArtwork} className={cx(popBtn, "text-ink hover:bg-hover-secondary")}>
                 Print / PDF
               </button>
-              <p className="px-3 pb-1 pt-1.5 text-[11px] text-muted">
+              <p className="px-3 pb-1 pt-1.5 text-eyebrow text-muted">
                 Exports at the exact pixel size. Print → choose &ldquo;Save as
                 PDF&rdquo;.
               </p>
@@ -421,7 +421,7 @@ export function StudioClient({
             </summary>
             <div className="absolute right-0 z-raised mt-2 w-72 space-y-2 rounded-card border border-line bg-surface-elevated p-3 shadow-card">
               <label className="block">
-                <span className="mb-1 block text-[11px] text-muted">
+                <span className="mb-1 block text-eyebrow text-muted">
                   Caption (shared with the image)
                 </span>
                 <textarea
@@ -446,11 +446,11 @@ export function StudioClient({
                 </div>
               </div>
               {shareMsg ? (
-                <p className="text-[11px] font-medium text-success-deep" role="status">
+                <p className="text-eyebrow font-medium text-success-deep" role="status">
                   {shareMsg}
                 </p>
               ) : (
-                <p className="text-[11px] text-muted">
+                <p className="text-eyebrow text-muted">
                   On a phone this posts straight to Instagram, Facebook and more.
                 </p>
               )}
@@ -554,7 +554,7 @@ export function StudioClient({
                       <span className="flex h-6 items-center justify-center">
                         <AspectGlyph width={p.width} height={p.height} />
                       </span>
-                      <span className="text-center text-[10px] font-semibold leading-tight text-ink">
+                      <span className="text-center text-micro font-semibold leading-tight text-ink">
                         {p.short}
                       </span>
                     </button>
@@ -572,11 +572,11 @@ export function StudioClient({
                   label={photoPending ? "Loading photos…" : "Show item photos"}
                 />
                 {photoError ? (
-                  <p className="text-[11px] text-[var(--color-warm)]" role="alert">
+                  <p className="text-eyebrow text-[var(--color-warm)]" role="alert">
                     {photoError}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-muted">
+                  <p className="text-eyebrow text-muted">
                     Adds a thumbnail beside each item that has a photo. Best on
                     larger sizes.
                   </p>
@@ -621,7 +621,7 @@ export function StudioClient({
                     );
                   })}
                 </div>
-                <p className="mt-2 text-[11px] text-muted">
+                <p className="mt-2 text-eyebrow text-muted">
                   Built from your live menu. Long menus auto-fit across columns;
                   only if they still won&apos;t fit does a small &ldquo;+ N
                   more&rdquo; appear.

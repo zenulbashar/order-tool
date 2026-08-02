@@ -51,10 +51,10 @@ export function ShopGrid({ products }: { products: ShopProduct[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search products…"
-            className="w-full rounded-full border border-[var(--mkt-line-strong)] bg-surface-elevated py-2 pl-9 pr-4 text-sm text-forest outline-none transition placeholder:text-[var(--mkt-sand-deep)] focus:border-[var(--color-accent)]"
+            className="w-full rounded-full border border-[var(--mkt-line-strong)] bg-surface-elevated py-2 pl-9 pr-4 text-base sm:text-sm text-forest outline-none transition placeholder:text-[var(--mkt-sand-deep)] focus:border-[var(--color-accent)]"
           />
         </label>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--mkt-sand-deep)]">
+        <span className="font-mono text-eyebrow font-bold uppercase tracking-[0.14em] text-[var(--mkt-sand-deep)]">
           {visible.length} product{visible.length === 1 ? "" : "s"}
         </span>
       </div>

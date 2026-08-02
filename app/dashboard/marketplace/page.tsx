@@ -116,7 +116,7 @@ export default async function MarketplacePage({
                     <StatusBadge tone={STATUS_TONE[order.status]}>
                       {order.status}
                     </StatusBadge>
-                    <span className="font-mono text-[11px] text-muted">
+                    <span className="font-mono text-eyebrow text-muted">
                       {order.createdAt.toLocaleDateString("en-AU", {
                         day: "numeric",
                         month: "short",

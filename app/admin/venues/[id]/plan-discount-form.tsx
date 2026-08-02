@@ -80,7 +80,7 @@ export function PlanDiscountForm({
         </Button>
       </div>
       {!hasSubscription ? (
-        <p className="mt-2 text-[11px] text-warm-deep">
+        <p className="mt-2 text-eyebrow text-warm-deep">
           No active subscription — the discount is saved but only applies once the
           venue is on a paid plan.
         </p>
