@@ -1,7 +1,11 @@
 import Link from "next/link";
 
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import {
+  hasVenuePermission,
+  requireUser,
+  requireVenue,
+} from "@/lib/tenant";
 
 import { LaunchRoster } from "./launch-roster";
 
@@ -34,6 +38,9 @@ const VALUE_CARDS = [
 export default async function AppsPage() {
   const user = await requireUser();
   const venue = await requireVenue();
+  // Billing is owner-only, so a manager reaching this page would bounce off
+  // the CTA below. Show it only to someone who can act on it.
+  const canBill = await hasVenuePermission(venue.id, "billing:manage");
   const ownerName = (user.name ?? venue.name).split(" ")[0];
 
   return (
@@ -144,12 +151,14 @@ export default async function AppsPage() {
             Roster bills as a line item on your prompt2eat invoice — one charge,
             one receipt.
           </p>
-          <Link
-            href="/dashboard/billing"
-            className="shrink-0 text-[11px] font-bold text-surface hover:opacity-80"
-          >
-            Open Billing →
-          </Link>
+          {canBill ? (
+            <Link
+              href="/dashboard/billing"
+              className="shrink-0 text-[11px] font-bold text-surface hover:opacity-80"
+            >
+              Open Billing →
+            </Link>
+          ) : null}
         </div>
       </section>
     </main>

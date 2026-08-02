@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { permissionsFor, type Permission } from "@/lib/authz";
+
 /**
  * Permission-gate coverage (F4 / M5).
  *
@@ -274,6 +276,89 @@ describe("permission gates on dashboard server actions", () => {
         `about — add them to VENUE_RESOLVERS or GATES:\n` +
         missing.map((m) => `  ${m}`).join("\n"),
     ).toEqual([]);
+  });
+
+  /** Every dashboard page.tsx that gates on a permission, as href -> permission. */
+  function gatedPages(): Map<string, string> {
+    const out = new Map<string, string>();
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) {
+          walk(full);
+        } else if (entry === "page.tsx") {
+          const match = /requireVenuePermission\(\s*"([^"]+)"/.exec(code(full));
+          if (!match) continue;
+          const href = full
+            .replace(process.cwd() + "/app", "")
+            .replace(/\/page\.tsx$/, "");
+          out.set(href, match[1]);
+        }
+      }
+    };
+    walk(join(process.cwd(), "app", "dashboard"));
+    return out;
+  }
+
+  it("hides sidebar links whose page the viewer cannot open", () => {
+    // Presentation, not access control — but drift here is still a bug in both
+    // directions: an unannotated link sends a kitchen login to
+    // /dashboard?denied=1, and an entry annotated with the WRONG permission
+    // hides a page from someone entitled to it. Derived from the pages, so a
+    // newly gated page with a stale nav entry fails without anyone remembering
+    // to update a list.
+    const sidebar = code(join(process.cwd(), "app/dashboard/sidebar.tsx"));
+    const nav = new Map<string, string | null>();
+    // Nav leaves are flat object literals, so a brace-free match is exact.
+    for (const m of sidebar.matchAll(/\{[^{}]*?href:\s*"([^"]+)"[^{}]*?\}/g)) {
+      const perm = /permission:\s*"([^"]+)"/.exec(m[0]);
+      nav.set(m[1], perm ? perm[1] : null);
+    }
+
+    const mismatches: string[] = [];
+    for (const [href, permission] of gatedPages()) {
+      if (!nav.has(href)) continue; // simply not linked from the sidebar
+      if (nav.get(href) !== permission) {
+        mismatches.push(
+          `${href}: page requires "${permission}", sidebar entry says ` +
+            `${nav.get(href) ? `"${nav.get(href)}"` : "no permission"}`,
+        );
+      }
+    }
+    expect(mismatches, mismatches.join("\n")).toEqual([]);
+  });
+
+  it("gates the money and PII read surfaces", () => {
+    // The last piece of S6's root cause: the permission model was enforced on
+    // writes and not on reads, so a kitchen login could read revenue, the diner
+    // directory, payout state and promo codes. reports:view and orders:view
+    // were declared in lib/authz.ts and enforced nowhere.
+    const expected: Record<string, string> = {
+      "/dashboard/reports": "reports:view",
+      "/dashboard/customers": "reports:view",
+      "/dashboard/billing": "billing:manage",
+      "/dashboard/payments": "billing:manage",
+      "/dashboard/discounts": "promotions:manage",
+      "/dashboard/gift-cards": "giftcards:manage",
+    };
+    const actual = gatedPages();
+    for (const [href, permission] of Object.entries(expected)) {
+      expect(actual.get(href), `${href} must gate on ${permission}`).toBe(
+        permission,
+      );
+    }
+  });
+
+  it("leaves the orders board readable by kitchen staff", () => {
+    // The counterweight. Staff hold only orders:view/orders:manage, and the
+    // whole point of the role is to run the pass — so gating the board itself
+    // on anything they lack would lock them out of their own job. Pinned so a
+    // future tightening pass has to make that decision deliberately.
+    const board = code(join(process.cwd(), "app/dashboard/orders/page.tsx"));
+    const gate = /requireVenuePermission\(\s*"([^"]+)"/.exec(board)?.[1];
+    if (gate) {
+      expect(permissionsFor(["staff"]).has(gate as Permission), gate).toBe(true);
+    }
   });
 
   it("requires every exemption to carry a reason", () => {

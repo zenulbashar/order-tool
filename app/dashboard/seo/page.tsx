@@ -7,7 +7,11 @@ import { PageHeader } from "@/app/_components/page-header";
 import { FEATURES, hasFeature } from "@/lib/billing/plans";
 import { getVenuePlan } from "@/lib/billing/queries";
 import { isSearchConsoleConfigured } from "@/lib/search-console";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import {
+  hasVenuePermission,
+  requireUser,
+  requireVenue,
+} from "@/lib/tenant";
 
 import { AuditPanel } from "./_components/audit-panel";
 import { ScoreRing } from "./_components/score-viz";
@@ -42,6 +46,9 @@ const dateFormat = new Intl.DateTimeFormat("en-AU", {
 export default async function SeoPage() {
   await requireUser();
   const venue = await requireVenue();
+  // Billing is owner-only, so a manager reaching this page would bounce off
+  // the CTA below. Show it only to someone who can act on it.
+  const canBill = await hasVenuePermission(venue.id, "billing:manage");
   const plan = await getVenuePlan(venue.id);
   const entitled = plan !== null && hasFeature({ plan }, FEATURES.SEO_AEO);
 
@@ -78,12 +85,18 @@ export default async function SeoPage() {
                 plan (and free during your trial).
               </p>
             </div>
-            <Link
-              href="/dashboard/billing"
-              className={buttonStyles("primary", "md")}
-            >
-              Upgrade to Scale
-            </Link>
+            {canBill ? (
+              <Link
+                href="/dashboard/billing"
+                className={buttonStyles("primary", "md")}
+              >
+                Upgrade to Scale
+              </Link>
+            ) : (
+              <p className="text-sm font-medium text-muted">
+                Ask an owner to upgrade to Scale.
+              </p>
+            )}
           </div>
         </div>
       </>

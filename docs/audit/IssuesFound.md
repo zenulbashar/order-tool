@@ -25,6 +25,7 @@ Status is tracked in IssuesResolved.md / RemainingRecommendations.md.
 | S4 | High | Checkout / discounts | The PaymentIntent re-price used a Stripe idempotency key keyed to the **target amount**. Composable discounts revisit a total, so the key was reused; Stripe **replayed** instead of erroring, leaving the charge and the order row disagreeing — silently, and in **both** directions (an honest diner toggling points could be over-charged). Nothing downstream compared them. | ✅ Fixed |
 | S5 | High | Onboarding | All five onboarding server actions gated on `requireVenue()` — membership, which never consults role — while the dashboard gates the same writes on `settings:manage`; the step routes also rendered for a fully live venue. A `staff` login could null every menu item's station routing, or stamp `onboarding_completed_at` and push a half-configured venue live. | ✅ Fixed |
 | S6 | High | Gift cards | The gift-card page gated on membership while all three mutating actions beside it required `giftcards:manage`. It lists full, unmasked bearer codes; redemption authorises on the code alone, so a `staff` login could drain the venue's stored value as an ordinary diner. | ✅ Fixed |
+| S7 | Medium | Dashboard reads | Every dashboard page gated on bare `requireVenue()` (membership, never role), so a `staff` login could read 30-day revenue and GST, the diner directory (names, phones, lifetime spend — real PII), payout and invoice state, and promo codes. The *writes* on those pages were correctly gated; only the reads were not, and `reports:view` was declared but enforced nowhere. | ✅ Fixed |
 
 **Verdict (2026-07):** tenant isolation, webhook signature verification, the money
 path, customer-identity firewall, CSRF/XSS/SQLi, secrets, and uploads were all
@@ -34,9 +35,15 @@ audited and found **correctly enforced**. No Critical/High security issues.
 pass — S4–S6 above are all High, and all three sat in code the first pass had
 read and approved. Each is a control that exists and is correct in one place and
 is simply absent in a neighbouring place reaching the same state. All are fixed
-and pinned by mutation-tested harnesses; two further candidates were investigated
-and deliberately **dropped** (host-header injection, dashboard read gates) with
-reasons recorded in SecurityReview-2026-08.md. Full method and findings there.
+and pinned by mutation-tested harnesses.
+
+S7 was a sub-threshold candidate from the same pass (7/10, below that report's
+bar) and was fixed in a follow-up rather than left in the backlog — dropping a
+finding from a *report* and declining to *fix* it are separate decisions. One
+candidate remains deliberately dropped: host-header injection in `getBaseUrl`,
+not exploitable on the only documented deploy target, with the reasoning and the
+hardening step recorded in SecurityReview-2026-08.md and
+RemainingRecommendations.md. Full method and findings there.
 
 ## Accessibility (WCAG 2.2 AA)
 

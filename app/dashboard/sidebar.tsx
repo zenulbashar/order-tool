@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 
 import { cx } from "@/app/_components/cx";
 import { BrandMark, Wordmark } from "@/app/_components/wordmark";
+import type { Permission } from "@/lib/authz";
 
 import { signOutOwner } from "./actions";
 import { setSidebarCollapsed, useSidebarCollapsed } from "./sidebar-preference";
@@ -21,6 +22,16 @@ type NavLeaf = {
   external?: boolean;
   /** Optional live count pill (e.g. active orders); hidden when 0. */
   badge?: number;
+  /**
+   * Hide this entry unless the viewer holds the permission its PAGE requires.
+   *
+   * Presentation only — the page's own requireVenuePermission is the control,
+   * and it has to be, because a link is not an access check and the URL is
+   * typeable. This exists so a kitchen login doesn't stare at six entries that
+   * all bounce to /dashboard?denied=1. Leave undefined for anything every
+   * member may open.
+   */
+  permission?: Permission;
 };
 
 /** A standalone top-level link (no children). */
@@ -67,8 +78,16 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
       items: [
         { label: "Live orders", href: "/dashboard/orders", badge: activeOrderCount },
         { label: "Tables & QR codes", href: "/dashboard/tables" },
-        { label: "Sales reports", href: "/dashboard/reports" },
-        { label: "Customers", href: "/dashboard/customers" },
+        {
+          label: "Sales reports",
+          href: "/dashboard/reports",
+          permission: "reports:view",
+        },
+        {
+          label: "Customers",
+          href: "/dashboard/customers",
+          permission: "reports:view",
+        },
       ],
     },
     {
@@ -101,8 +120,16 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
         { label: "Opening hours & location", href: "/dashboard/settings/hours" },
         { label: "Tax (GST)", href: "/dashboard/settings/tax" },
         { label: "Prep stations", href: "/dashboard/settings/stations" },
-        { label: "Staff & roles", href: "/dashboard/settings/staff" },
-        { label: "Activity", href: "/dashboard/settings/activity" },
+        {
+          label: "Staff & roles",
+          href: "/dashboard/settings/staff",
+          permission: "staff:manage",
+        },
+        {
+          label: "Activity",
+          href: "/dashboard/settings/activity",
+          permission: "settings:manage",
+        },
         { label: "Order notifications", href: "/dashboard/settings/notifications" },
       ],
     },
@@ -112,10 +139,26 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
       label: "Payments & billing",
       icon: <IconPayments />,
       items: [
-        { label: "Payments & payouts", href: "/dashboard/payments" },
-        { label: "Discount codes", href: "/dashboard/discounts" },
-        { label: "Gift cards", href: "/dashboard/gift-cards" },
-        { label: "Plan & billing", href: "/dashboard/billing" },
+        {
+          label: "Payments & payouts",
+          href: "/dashboard/payments",
+          permission: "billing:manage",
+        },
+        {
+          label: "Discount codes",
+          href: "/dashboard/discounts",
+          permission: "promotions:manage",
+        },
+        {
+          label: "Gift cards",
+          href: "/dashboard/gift-cards",
+          permission: "giftcards:manage",
+        },
+        {
+          label: "Plan & billing",
+          href: "/dashboard/billing",
+          permission: "billing:manage",
+        },
       ],
     },
     {
@@ -138,6 +181,31 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
   ];
 }
 
+/**
+ * Drop entries the viewer cannot open, and any category left empty by that.
+ *
+ * Presentation only — see NavLeaf.permission. An entry with no `permission` is
+ * always kept, so this can only ever hide a link whose page would have bounced
+ * the viewer anyway.
+ */
+function visibleEntries(
+  entries: NavEntry[],
+  held: ReadonlySet<Permission>,
+): NavEntry[] {
+  const allowed = (leaf: NavLeaf) =>
+    !leaf.permission || held.has(leaf.permission);
+  const out: NavEntry[] = [];
+  for (const entry of entries) {
+    if (entry.kind === "link") {
+      if (allowed(entry)) out.push(entry);
+      continue;
+    }
+    const items = entry.items.filter(allowed);
+    if (items.length > 0) out.push({ ...entry, items });
+  }
+  return out;
+}
+
 const GROUPS_KEY = "p2e:sidebar:groups";
 
 const PLAN_LABEL: Record<string, string> = {
@@ -158,6 +226,7 @@ export function Sidebar({
   hasMultiple,
   activeOrderCount,
   brandColor,
+  permissions,
 }: {
   venues: { id: string; name: string }[];
   currentId: string;
@@ -169,6 +238,8 @@ export function Sidebar({
   hasMultiple: boolean;
   activeOrderCount: number;
   brandColor: string;
+  /** The viewer's permissions at this venue, resolved server-side. */
+  permissions: Permission[];
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -210,7 +281,10 @@ export function Sidebar({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [collapsed]);
 
-  const entries = navEntries(currentSlug, activeOrderCount);
+  const entries = visibleEntries(
+    navEntries(currentSlug, activeOrderCount),
+    new Set(permissions),
+  );
   const ownerLabel = userName ?? userEmail ?? "Owner";
 
   function leafActive(item: NavLeaf): boolean {

@@ -5,7 +5,7 @@ import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { orders, promotions } from "@/lib/db/schema";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
 import { setOwnerDiscountActive } from "./actions";
@@ -22,8 +22,10 @@ function valueLabel(type: "percent" | "amount", value: number): string {
 }
 
 export default async function DiscountsPage() {
-  await requireUser();
-  const venue = await requireVenue();
+  // Gated on promotions:manage, not bare membership. Promo codes and their redemption stats. The codes are shareable, so listing them is close to issuing them.
+  // The matching sidebar entry is hidden for viewers without it, but this
+  // gate is the control — the URL is typeable.
+  const venue = await requireVenuePermission("promotions:manage");
 
   const promos = await db
     .select({

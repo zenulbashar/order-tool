@@ -1,7 +1,7 @@
 import { Button } from "@/app/_components/button";
 import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
 import { connectStripe, refreshStripeStatus } from "./actions";
@@ -59,8 +59,10 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
 }
 
 export default async function PaymentsPage({ searchParams }: PaymentsParams) {
-  await requireUser();
-  const venue = await requireVenue();
+  // Gated on billing:manage, not bare membership. Stripe Connect and payout status: where the venue's money lands.
+  // The matching sidebar entry is hidden for viewers without it, but this
+  // gate is the control — the URL is typeable.
+  const venue = await requireVenuePermission("billing:manage");
   const sp = await searchParams;
 
   // On return from Stripe-hosted onboarding, refresh the live account status
