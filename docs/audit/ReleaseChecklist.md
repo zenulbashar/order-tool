@@ -47,7 +47,19 @@ runtime environment / human sign-off.
 - ⬜ DB query plans + latency under realistic row counts (orders board, reports)
 
 ## Data / migrations
-- ✅ CI applies additive-only migrations to prod on merge to `main`
+- ⚠️ **CI does not sequence the migration with the deploy — check this every
+  release.** The old ✅ here read as "handled automatically", which is precisely
+  the assumption that opens the window. Vercel deploys on push to `main`;
+  `migrate-prod` waits behind `needs: [build, e2e]` *and* a human-approved
+  `production` gate. So new code runs against the old schema for as long as the
+  approval sits unclicked. See `docs/ops/Migrations.md` → "Adding a column the
+  new code immediately reads" for the three orderings that avoid it.
+- ⬜ **Pending: `0063_discount_revision.sql`.** Its reader is already on `main`
+  — `applyOrderDiscounts` writes `orders.discount_revision` on every checkout
+  re-price. Until the column exists in prod, every query naming it fails
+  `42703 undefined_column`, and *every* promo, bank saving, loyalty redemption
+  and gift card silently stops applying. Confirm it is applied before (or with)
+  the next production deploy.
 - ⬜ Destructive migrations (if any) run manually + backed up first
 - ⬜ Confirm no pending un-generated schema drift (`db:generate` clean)
 
