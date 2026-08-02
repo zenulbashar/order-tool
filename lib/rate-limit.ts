@@ -67,6 +67,15 @@ const CONFIG = {
   // spammed from one IP. Shared by the customer magic-link and owner sign-in.
   authEmail: { limit: 5, window: "15 m", prefix: "rl:auth:email" },
   authIp: { limit: 30, window: "1 h", prefix: "rl:auth:ip" },
+  // The SAME two dimensions again, applied at the magic-link send itself
+  // (lib/auth-send-limit.ts, called from sendVerificationRequest) so a direct
+  // POST to /api/auth/signin/resend cannot walk past the form's gate — audit S2.
+  // Deliberately LOOSER than the pair above: the form path consumes a token from
+  // both pairs per attempt, so the strict gate trips first and the owner gets the
+  // friendly inline error instead of an Auth.js error redirect. These bite only
+  // on the bypass path. Separate prefixes keep the two counts from merging.
+  authSendEmail: { limit: 8, window: "15 m", prefix: "rl:auth:send:email" },
+  authSendIp: { limit: 45, window: "1 h", prefix: "rl:auth:send:ip" },
   // AI (cost-protection — each call is real Anthropic spend). Keyed on venue.
   aiImport: { limit: 10, window: "1 h", prefix: "rl:ai:import" }, // vision (costliest)
   aiCopy: { limit: 30, window: "1 h", prefix: "rl:ai:copy" }, // descriptions (cheap)

@@ -1,10 +1,14 @@
+import { headers } from "next/headers";
+
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import NextAuth from "next-auth";
 import Resend from "next-auth/providers/resend";
 
 import { renderSignInEmail } from "@/lib/auth-email";
+import { guardSignInSend } from "@/lib/auth-send-limit";
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
+import { clientIpFromHeaders } from "@/lib/rate-limit";
 import { normalizeEmail } from "@/lib/validation";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -29,6 +33,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // lazily here (same contract as lib/customer/email.ts), so build/typecheck
       // run with none present.
       async sendVerificationRequest({ identifier, url }) {
+        // Every path that mails a link lands here — the sign-in form action, a
+        // direct POST to /api/auth/signin/resend, and anything Auth.js adds
+        // later — so this is where the limit has to be to actually hold (audit
+        // S2). The form's own limiter stays: it trips first and gives a friendly
+        // inline error, while this is the backstop for callers that skip it.
+        // Throws on limit, which aborts the send. Fails OPEN on limiter trouble.
+        await guardSignInSend(identifier, clientIpFromHeaders(await headers()));
+
         const apiKey = process.env.RESEND_API_KEY;
         const from = process.env.EMAIL_FROM;
         if (!apiKey || !from) {

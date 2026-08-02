@@ -11,10 +11,16 @@ export type OwnerSignInState = { error: string | null };
 /**
  * Owner magic-link sign-in, wrapped with the SAME auth limiters as the customer
  * flow (per-IP + per-email) so the owner inbox and sign-in probing get the same
- * app-level protection. This is the wrappable trigger; a direct POST to the
- * Auth.js /api/auth/signin/resend route bypasses it and is the edge's job
- * (Cloudflare / Vercel) by design — lib/auth.ts is intentionally left untouched
- * so the owner-auth / customer-identity firewall stays stable.
+ * app-level protection.
+ *
+ * This limiter is the UX gate, not the whole control. A direct POST to the
+ * Auth.js /api/auth/signin/resend route skips this action entirely, and an
+ * earlier revision of this comment called that "the edge's job by design" — it
+ * left inbox-flooding dependent on edge configuration this repo neither owns nor
+ * asserts. Audit S2. The send itself is now limited in lib/auth.ts's
+ * sendVerificationRequest (see lib/auth-send-limit.ts), on separate, looser
+ * buckets so THIS gate still trips first and the owner gets the inline error
+ * below rather than an Auth.js error redirect.
  *
  * On limit we return an error for the form's error slot. Otherwise signIn runs
  * exactly as the previous inline action did — it performs the redirect by
