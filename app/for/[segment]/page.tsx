@@ -58,7 +58,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
   });
 
   return (
-    <div className="min-h-dvh bg-[#FFFDF8] text-[#16241C]">
+    <div className="min-h-dvh bg-surface-elevated text-forest">
       <script
         type="application/ld+json"
         // Safe: serializeJsonLd escapes "<" so no value can break out of the tag.
@@ -70,11 +70,11 @@ export default async function SegmentPage({ params }: SegmentParams) {
         <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
           <Link href="/" className="flex items-center gap-2">
             <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
-            <Wordmark className="text-[21px] text-[#F7F3EA]" />
+            <Wordmark className="text-[21px] text-surface" />
           </Link>
           <Link
             href="/signin"
-            className="ml-auto rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-[#16241C] transition hover:-translate-y-0.5"
+            className="ml-auto rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-forest transition hover:-translate-y-0.5"
           >
             Start free
           </Link>
@@ -82,7 +82,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
       </header>
 
       {/* Hero */}
-      <section className="bg-[radial-gradient(110%_90%_at_80%_-10%,#1D4636,#143228_40%,#0F281E_72%)] text-[#F7F3EA]">
+      <section className="bg-[radial-gradient(110%_90%_at_80%_-10%,#1D4636,#143228_40%,#0F281E_72%)] text-surface">
         <div className={`${CONTAINER} py-[clamp(56px,8vw,104px)]`}>
           <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-accent)]">
             {segment.eyebrow}
@@ -95,7 +95,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
           </p>
           <Link
             href="/signin"
-            className="mt-8 inline-block rounded-xl bg-[var(--color-accent)] px-6 py-3 font-bold text-[#16241C] transition hover:-translate-y-0.5"
+            className="mt-8 inline-block rounded-xl bg-[var(--color-accent)] px-6 py-3 font-bold text-forest transition hover:-translate-y-0.5"
           >
             Start free for 30 days →
           </Link>
@@ -112,7 +112,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
             {segment.painPoints.map((point) => (
               <div
                 key={point.title}
-                className="rounded-[18px] border border-[#EDE4D2] bg-[#FFFDF8] p-6"
+                className="rounded-[18px] border border-[#EDE4D2] bg-surface-elevated p-6"
               >
                 <p className="font-display text-lg font-extrabold">{point.title}</p>
                 <p className="mt-2 text-[15px] leading-[1.6] text-[#5C6B5E]">
@@ -172,7 +172,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
 
         {/* CTA */}
         <section className="mt-16 rounded-[22px] bg-[radial-gradient(120%_140%_at_85%_0%,#F6C258,#F4B43C_45%,#E79A24)] p-8">
-          <p className="font-display text-[clamp(22px,3vw,30px)] font-extrabold tracking-[-0.02em] text-[#16241C]">
+          <p className="font-display text-[clamp(22px,3vw,30px)] font-extrabold tracking-[-0.02em] text-forest">
             Live in an afternoon.
           </p>
           <p className="mt-2 max-w-[48ch] text-[15px] font-medium text-[#3A2A08]">
@@ -181,7 +181,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
           </p>
           <Link
             href="/signin"
-            className="mt-5 inline-block rounded-xl bg-[#16241C] px-6 py-3 font-bold text-[#F7F3EA] transition hover:-translate-y-0.5"
+            className="mt-5 inline-block rounded-xl bg-forest px-6 py-3 font-bold text-surface transition hover:-translate-y-0.5"
           >
             Start free →
           </Link>
@@ -198,7 +198,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
                 <li key={other.slug}>
                   <Link
                     href={`/for/${other.slug}`}
-                    className="font-bold text-[#16241C] underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 hover:opacity-80"
+                    className="font-bold text-forest underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 hover:opacity-80"
                   >
                     {other.eyebrow.replace(/^For /, "")}
                   </Link>
@@ -212,7 +212,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
       <footer className="border-t border-[#EDE4D2] py-8">
         <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 text-sm text-[#7C8579]`}>
           <span>© 2026 Prompt2Eat. All rights reserved.</span>
-          <Link href="/" className="font-semibold text-[#16241C] hover:underline">
+          <Link href="/" className="font-semibold text-forest hover:underline">
             prompt2eat.com
           </Link>
         </div>
