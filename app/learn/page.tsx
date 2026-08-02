@@ -28,7 +28,7 @@ export default function LearnIndexPage() {
       />
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
+        <span className="font-mono text-eyebrow font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
           Guides
         </span>
         <h1 className="mt-3 max-w-[640px] font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.05] tracking-[-0.03em]">
@@ -46,7 +46,7 @@ export default function LearnIndexPage() {
               href={`/learn/${article.slug}`}
               className="group flex flex-col rounded-[22px] border border-[var(--mkt-line)] bg-surface-elevated p-6 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-24px_rgba(20,30,25,0.35)]"
             >
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
+              <span className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
                 {article.eyebrow}
               </span>
               <h2 className="mt-2 font-display text-[19px] font-extrabold tracking-[-0.015em]">

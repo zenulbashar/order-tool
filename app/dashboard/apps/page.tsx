@@ -49,7 +49,7 @@ export default async function AppsPage() {
         title="Apps"
         description={venue.name}
         action={
-          <span className="rounded-pill bg-sand px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted">
+          <span className="rounded-pill bg-sand px-2.5 py-1 font-mono text-micro font-bold uppercase tracking-wider text-muted">
             Zale suite
           </span>
         }
@@ -147,14 +147,14 @@ export default async function AppsPage() {
           <span aria-hidden="true" className="shrink-0 text-[13px] text-concierge-mint">
             ℹ
           </span>
-          <p className="flex-1 text-[11px] leading-relaxed text-concierge-sage">
+          <p className="flex-1 text-eyebrow leading-relaxed text-concierge-sage">
             Roster bills as a line item on your prompt2eat invoice — one charge,
             one receipt.
           </p>
           {canBill ? (
             <Link
               href="/dashboard/billing"
-              className="shrink-0 text-[11px] font-bold text-surface hover:opacity-80"
+              className="shrink-0 text-eyebrow font-bold text-surface hover:opacity-80"
             >
               Open Billing →
             </Link>

@@ -65,7 +65,7 @@ export default async function SeoPage() {
               className: "flex flex-col items-center gap-5 text-center",
             })}
           >
-            <span className="rounded-sm bg-accent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest">
+            <span className="rounded-sm bg-accent px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wide text-forest">
               Scale plan
             </span>
             <div aria-hidden="true" className="pointer-events-none select-none">
@@ -153,7 +153,7 @@ export default async function SeoPage() {
                     className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-surface-elevated px-4 py-2.5"
                   >
                     <span className="flex items-center gap-3">
-                      <span className="w-10 font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+                      <span className="w-10 font-mono text-micro font-bold uppercase tracking-wider text-label">
                         {run.kind}
                       </span>
                       <span className="font-display text-sm font-extrabold text-ink">

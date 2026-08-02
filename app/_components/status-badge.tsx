@@ -50,7 +50,7 @@ export function StatusBadge({ tone, children, className }: StatusBadgeProps) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-sm px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide",
+        "inline-flex items-center rounded-sm px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wide",
         toneStyles[tone],
         className,
       )}

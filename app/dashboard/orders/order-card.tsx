@@ -178,7 +178,7 @@ export function OrderCard({
           can never inject markup, and visually loud so the kitchen sees it. */}
       {order.notes ? (
         <div className="mt-3 rounded-control border border-accent/40 bg-accent/10 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink">
+          <p className="text-eyebrow font-semibold uppercase tracking-wide text-ink">
             Notes
           </p>
           <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink">
@@ -239,7 +239,7 @@ function DocketItems({ items }: { items: KitchenOrderItem[] }) {
   return (
     <div className="mt-3 border-t border-line">
       {split ? (
-        <p className="pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
+        <p className="pt-2 text-micro font-semibold uppercase tracking-wide text-muted">
           Kitchen
         </p>
       ) : null}
@@ -256,7 +256,7 @@ function DocketItems({ items }: { items: KitchenOrderItem[] }) {
       {counter.length > 0 ? (
         <>
           {split ? (
-            <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted">
+            <p className="pt-1 text-micro font-semibold uppercase tracking-wide text-muted">
               Front counter · Drinks
             </p>
           ) : null}

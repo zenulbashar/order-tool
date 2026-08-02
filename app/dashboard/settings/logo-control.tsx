@@ -139,7 +139,7 @@ function UploadForm({
             />
           </label>
           {hasFile ? (
-            <p className="max-w-28 truncate text-[11px] text-muted">{fileName}</p>
+            <p className="max-w-28 truncate text-eyebrow text-muted">{fileName}</p>
           ) : null}
         </div>
       ) : empty ? (
@@ -149,7 +149,7 @@ function UploadForm({
               {hasFile ? fileName : "Upload logo"}
             </span>
             {hasFile ? (
-              <span className="text-[11px] text-muted">Click Upload to save</span>
+              <span className="text-eyebrow text-muted">Click Upload to save</span>
             ) : null}
             <input
               type="file"

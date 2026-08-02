@@ -61,7 +61,7 @@ export function PackagingDocket({
       <p className="text-center text-sm font-bold uppercase tracking-wide">
         {venueName}
       </p>
-      <p className="text-center text-[11px] font-bold uppercase tracking-widest">
+      <p className="text-center text-eyebrow font-bold uppercase tracking-widest">
         Packaging
       </p>
 
@@ -70,7 +70,7 @@ export function PackagingDocket({
           ORDER {order.dailyNumber}
         </p>
       ) : null}
-      <p className="text-center text-[11px]">
+      <p className="text-center text-eyebrow">
         {formatVenueTime(order.createdAt, timezone)}
       </p>
 
@@ -83,12 +83,12 @@ export function PackagingDocket({
             Table {order.tableLabel ?? "—"}
           </p>
         ) : null}
-        <p className="text-[11px] font-bold uppercase">{order.customerName}</p>
+        <p className="text-eyebrow font-bold uppercase">{order.customerName}</p>
       </div>
 
       {order.notes ? (
         <div className="mt-2 border-2 border-black px-2 py-1">
-          <p className="text-[11px] font-bold uppercase">Notes</p>
+          <p className="text-eyebrow font-bold uppercase">Notes</p>
           <p className="break-words whitespace-pre-wrap font-bold">
             {order.notes}
           </p>
@@ -98,7 +98,7 @@ export function PackagingDocket({
       <div className="mt-2 border-t border-dashed border-black pt-1">
         {groups.map((group) => (
           <div key={group.key} className="mt-1.5 first:mt-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest">
+            <p className="text-micro font-bold uppercase tracking-widest">
               {group.heading}
             </p>
             <ul>
@@ -129,7 +129,7 @@ export function PackagingDocket({
         <span>{totalPieces}</span>
       </div>
 
-      <p className="mt-2 text-center text-[11px]">Check the bag ✓</p>
+      <p className="mt-2 text-center text-eyebrow">Check the bag ✓</p>
     </div>
   );
 }

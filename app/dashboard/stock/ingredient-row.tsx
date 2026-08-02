@@ -83,7 +83,7 @@ export function IngredientRow({
           </span>
         ) : null}
       </span>
-      <span className="font-mono text-[11px] text-muted">{ingredient.unit}</span>
+      <span className="font-mono text-eyebrow text-muted">{ingredient.unit}</span>
       <span className="text-xs text-muted">
         {ingredient.packSize != null && ingredient.packCostCents != null
           ? `${ingredient.packSize} ${ingredient.unit} · $${formatCents(ingredient.packCostCents)}`
@@ -99,7 +99,7 @@ export function IngredientRow({
             </span>
           </span>
         ) : (
-          <span className="font-mono text-[10px] font-bold uppercase text-warm-deep">
+          <span className="font-mono text-micro font-bold uppercase text-warm-deep">
             Uncosted
           </span>
         )}
@@ -112,7 +112,7 @@ export function IngredientRow({
       {/* On hand — from the ledger. Null = never counted ("not tracked"). */}
       <span className="flex items-center gap-1.5">
         {ingredient.onHandQty == null ? (
-          <span className="font-mono text-[10px] text-label">Not tracked</span>
+          <span className="font-mono text-micro text-label">Not tracked</span>
         ) : (
           <span className="font-display text-[13px] font-extrabold text-ink">
             {formatQty(ingredient.onHandQty)}
@@ -191,7 +191,7 @@ function StockAdjustForm({
       <input type="hidden" name="id" value={ingredient.id} />
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-bold text-ink">{ingredient.name}</span>
-        <span className="font-mono text-[11px] text-muted">
+        <span className="font-mono text-eyebrow text-muted">
           On hand:{" "}
           {ingredient.onHandQty == null
             ? "not tracked"

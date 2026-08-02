@@ -129,7 +129,7 @@ export default async function AdminShopPage({
                           />
                           <span className="truncate text-sm text-ink">{c.name}</span>
                         </span>
-                        <span className="shrink-0 font-mono text-[10px] text-muted">
+                        <span className="shrink-0 font-mono text-micro text-muted">
                           {c.count}
                         </span>
                       </label>
@@ -201,7 +201,7 @@ export default async function AdminShopPage({
                               </span>
                             ) : null}
                           </span>
-                          <span className="font-mono text-[10px] text-muted">
+                          <span className="font-mono text-micro text-muted">
                             {p.id} · cost {p.costValue > 0 ? `$${p.costValue.toFixed(2)}` : "—"} ·
                             RRP {p.rrpValue > 0 ? `$${p.rrpValue.toFixed(2)}` : "—"} · sells $
                             {(sellsCents / 100).toFixed(2)} · {p.inStock ? "in stock" : "out of stock"}

@@ -22,10 +22,10 @@ export function WizardProgress({ current }: { current: number }) {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+        <p className="font-mono text-micro font-bold uppercase tracking-wider text-label">
           {title}
         </p>
-        <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+        <p className="font-mono text-micro font-bold uppercase tracking-wider text-label">
           Step {current} / {TOTAL_STEPS}
         </p>
       </div>

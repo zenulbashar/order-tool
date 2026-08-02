@@ -115,7 +115,7 @@ export default async function DiscountsPage() {
                       <p className="mt-1 truncate text-sm font-medium text-ink">
                         {p.name}
                       </p>
-                      <p className="font-mono text-[11px] text-muted">
+                      <p className="font-mono text-eyebrow text-muted">
                         {valueLabel(p.type, p.value)}
                         {p.minBasketCents > 0
                           ? ` · min $${formatCents(p.minBasketCents)}`
@@ -138,7 +138,7 @@ export default async function DiscountsPage() {
                       <p className="font-display text-sm font-extrabold text-ink">
                         {u.redemptions} used
                       </p>
-                      <p className="font-mono text-[10px] text-muted">
+                      <p className="font-mono text-micro text-muted">
                         ${formatCents(u.given)} given
                       </p>
                     </div>

@@ -153,7 +153,7 @@ export function SquareDetailDrawer({
                   <p className="text-xs font-bold text-ink">{row.title}</p>
                   <p
                     className={cx(
-                      "mt-0.5 truncate text-[11px]",
+                      "mt-0.5 truncate text-eyebrow",
                       row.tone === "ok" ? "text-muted" : "font-semibold text-warm-deep",
                     )}
                   >
@@ -175,7 +175,7 @@ export function SquareDetailDrawer({
               </div>
             ))
           )}
-          <p className="py-1 text-center text-[11px] text-label">
+          <p className="py-1 text-center text-eyebrow text-label">
             Failed orders retry automatically with increasing delays for up to
             12 hours.
           </p>

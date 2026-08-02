@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Spinner } from "@/app/_components/spinner";
 import { useDialog } from "@/app/_components/use-dialog";
+import {
+  IconChat,
+  IconMonitor,
+  IconReceipt,
+  IconThumbDown,
+  IconThumbUp,
+} from "@/app/_components/icons";
 
 /**
  * Owner support chat (docs/ai-support-chat-plan.md §4 P2) — the Synergy-style
@@ -22,10 +29,10 @@ import { useDialog } from "@/app/_components/use-dialog";
 
 type Department = "tech" | "sales" | "billing";
 
-const DEPARTMENTS: { id: Department; label: string; icon: string }[] = [
-  { id: "tech", label: "Tech Support", icon: "🖥️" },
-  { id: "sales", label: "Sales Enquiry", icon: "💬" },
-  { id: "billing", label: "Billing Enquiry", icon: "🧾" },
+const DEPARTMENTS: { id: Department; label: string; icon: ReactNode }[] = [
+  { id: "tech", label: "Tech Support", icon: <IconMonitor /> },
+  { id: "sales", label: "Sales Enquiry", icon: <IconChat /> },
+  { id: "billing", label: "Billing Enquiry", icon: <IconReceipt /> },
 ];
 
 const BAD_REASONS = [
@@ -332,7 +339,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
                     <SparkleIcon />
                   </span>
                   Support
-                  <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest">
+                  <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-micro font-bold uppercase tracking-wide text-forest">
                     AI
                   </span>
                 </h2>
@@ -397,7 +404,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
                         onClick={() => setDepartment(option.id)}
                         className="flex items-center gap-2 rounded-full border border-concierge-pill-border bg-concierge-pill-bg px-4 py-2.5 text-left text-sm font-medium text-concierge-ai-text transition hover:bg-concierge-ai-bg"
                       >
-                        <span aria-hidden="true">{option.icon}</span>
+                        {option.icon}
                         {option.label}
                       </button>
                     ))}
@@ -447,7 +454,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
                         key={index}
                         className="rounded-card border border-concierge-ai-border bg-concierge-ai-bg px-4 py-3"
                       >
-                        <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-concierge-mint">
+                        <p className="font-mono text-eyebrow font-bold uppercase tracking-wide text-concierge-mint">
                           ● Ticket raised
                         </p>
                         <p className="mt-1 text-sm text-concierge-ai-text">
@@ -507,7 +514,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
                     maxLength={2000}
                     placeholder="Type your message…"
                     aria-label="Message support"
-                    className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-base sm:text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
                   />
                   <button
                     type="submit"
@@ -585,20 +592,21 @@ function FeedbackStep({
       <div className="mt-2 flex gap-2">
         {(
           [
-            { id: "good", label: "👍 Good" },
-            { id: "bad", label: "👎 Bad" },
+            { id: "good", label: "Good", icon: <IconThumbUp /> },
+            { id: "bad", label: "Bad", icon: <IconThumbDown /> },
           ] as const
         ).map((option) => (
           <button
             key={option.id}
             type="button"
             onClick={() => setRating(option.id)}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
               rating === option.id
                 ? "border-accent bg-accent text-forest"
                 : "border-concierge-pill-border bg-concierge-pill-bg text-concierge-ai-text hover:bg-concierge-ai-bg"
             }`}
           >
+            {option.icon}
             {option.label}
           </button>
         ))}
@@ -630,7 +638,7 @@ function FeedbackStep({
           maxLength={1000}
           rows={2}
           placeholder="Anything else? (optional)"
-          className="mt-3 w-full rounded-control border border-concierge-ai-border bg-concierge-ai-bg px-3 py-2 text-sm text-concierge-ai-text placeholder:text-concierge-input focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="mt-3 w-full rounded-control border border-concierge-ai-border bg-concierge-ai-bg px-3 py-2 text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
         />
       ) : null}
 

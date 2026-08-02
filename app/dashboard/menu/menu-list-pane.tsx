@@ -120,7 +120,7 @@ export function MenuListPane({
                         Hidden
                       </span>
                     ) : null}
-                    <span className="ml-auto shrink-0 font-mono text-[10px] font-bold text-label">
+                    <span className="ml-auto shrink-0 font-mono text-micro font-bold text-label">
                       {categoryItems.length}
                     </span>
                   </button>

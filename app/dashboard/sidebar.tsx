@@ -414,7 +414,7 @@ export function Sidebar({
             </span>
             <span
               className={cx(
-                "shrink-0 rounded-sm bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest",
+                "shrink-0 rounded-sm bg-accent px-1.5 py-0.5 font-mono text-micro font-bold uppercase tracking-wide text-forest",
                 collapsed && "lg:hidden",
               )}
             >
@@ -531,7 +531,7 @@ export function Sidebar({
                     {!isOpen && groupBadge > 0 ? (
                       <span
                         aria-hidden="true"
-                        className="min-w-5 shrink-0 rounded-pill bg-accent px-1.5 text-center font-mono text-[10px] font-bold leading-5 text-forest"
+                        className="min-w-5 shrink-0 rounded-pill bg-accent px-1.5 text-center font-mono text-micro font-bold leading-5 text-forest"
                       >
                         {groupBadge}
                       </span>
@@ -572,7 +572,7 @@ export function Sidebar({
                                 <span
                                   aria-hidden="true"
                                   className={cx(
-                                    "min-w-5 shrink-0 rounded-pill px-1.5 text-center font-mono text-[10px] font-bold leading-5",
+                                    "min-w-5 shrink-0 rounded-pill px-1.5 text-center font-mono text-micro font-bold leading-5",
                                     active
                                       ? "bg-forest text-sidebar-ink"
                                       : "bg-accent text-forest",

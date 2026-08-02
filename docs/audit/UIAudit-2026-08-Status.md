@@ -29,16 +29,16 @@ than re-done.
 | P1-9 | P1 | Account nav: 36px targets, no scroll affordance | ✅ Fixed |
 | P1-10 | P1 | Tables board unusable at 360–390px | ✅ Fixed |
 | P1-11 | P1 | Kitchen fullscreen hides all notifications | ✅ Fixed |
-| P2-1 | P2 | 362 instances of 9–11px type | ⬜ PR6 |
-| P2-2 | P2 | Emoji used as UI iconography | ⬜ PR6 |
+| P2-1 | P2 | 362 instances of 9–11px type | ✅ Fixed |
+| P2-2 | P2 | Emoji used as UI iconography | ✅ Fixed |
 | P2-3 | P2 | Unify the sticky offsets | ✅ Fixed |
-| P2-4 | P2 | `AnnouncementBar` gutter double the diner surface | ⬜ PR6 |
-| P2-5 | P2 | `useDialog` scroll lock doesn't hold on iOS | ⬜ PR6 |
-| P2-6 | P2 | Chat inputs override the global focus ring | ⬜ PR6 |
-| P2-7 | P2 | Checkout container 900px vs storefront 1440px | ⬜ PR6 |
-| P2-8 | P2 | Nested `min-h-dvh` on sign-in | ⬜ PR6 |
-| P2-9 | P2 | Three dead social "links" in the marketing footer | ⬜ PR6 |
-| P2-10 | P2 | Logo upload bypasses the brand-contrast gate | ⬜ PR6 |
+| P2-4 | P2 | `AnnouncementBar` gutter double the diner surface | ✅ Fixed |
+| P2-5 | P2 | `useDialog` scroll lock doesn't hold on iOS | ✅ Fixed |
+| P2-6 | P2 | Chat inputs override the global focus ring | ✅ Fixed |
+| P2-7 | P2 | Checkout container 900px vs storefront 1440px | ✅ Fixed |
+| P2-8 | P2 | Nested `min-h-dvh` on sign-in | ✅ Fixed |
+| P2-9 | P2 | Three dead social "links" in the marketing footer | ✅ Fixed |
+| P2-10 | P2 | Logo upload bypasses the brand-contrast gate | ✅ Fixed |
 
 ## Corrections to the audit
 
@@ -81,3 +81,40 @@ strings generated real utilities for code that was never applied, including a
 by its missing fallbacks. `@source not "../docs"` in `globals.css` fixes it
 (~4KB). Dead CSS that looks live is worse than none: the next person greps the
 bundle, finds the class, and believes it is in use.
+
+## P2-10 was pointing at the wrong pairing — and the real defect is worse
+
+The finding says `uploadVenueLogo` writes a brand colour "the settings form would
+have rejected". Tracing what each value actually renders as says otherwise:
+
+- `brandTextColor` overrides **`--color-ink`** (`app/[slug]/brand-style.ts`) — it
+  is the venue's BODY TEXT on the cream page, not the label on a brand fill.
+- the label on a brand fill is `--brand-contrast`, which `readableOn()` derives,
+  so that pairing is safe by construction.
+
+So `updateBrandTheme` was gating body text against the **brand** — a surface text
+is never painted on. That inversion waved through precisely the worst case. With
+the schema's default brand `#111827`, a near-white body text scores:
+
+| Pairing | Ratio | |
+| --- | --- | --- |
+| text vs brand — what the gate measured | **16.22:1** | passes AA comfortably |
+| text vs cream page — what the diner sees | **1.01:1** | invisible |
+
+The gate now measures the text colour against both diner page surfaces and takes
+the worse. The logo path is gated too — the derived colour becomes `--action`,
+which IS painted as a foreground, and the only guard there was a luminance band
+that is not a contrast check against anything.
+
+## Deliberately left
+
+- **`text-[8px]` (29) and `text-[13px]` (24)** — outside the finding's 9–11px
+  range and not part of the micro scale it defines.
+- **The `0063_discount_revision` migration** could be made tolerant of a missing
+  column (option 3 in `docs/ops/Migrations.md`). Not done: adding a fallback to
+  the money path to work around one deploy-sequencing decision is the wrong
+  trade. It is flagged in the release checklist instead.
+- **The "↻ Reorder" amber CTA** in the account order history, carried over from
+  design-audit D1 as a judgement call. Resolved as legitimate: `globals.css`
+  names the account "YOUR USUAL" hero as one of the two sanctioned forest-dark
+  AI surfaces, alongside the concierge panel. Amber belongs there.

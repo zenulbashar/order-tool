@@ -84,7 +84,7 @@ export function AuditPanel({
           </h2>
           <p className="mt-0.5 text-xs text-muted">{PANEL_INTRO[kind]}</p>
           {latest ? (
-            <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-wider text-label">
+            <p className="mt-1 font-mono text-micro font-bold uppercase tracking-wider text-label">
               Last run {dateFormat.format(latest.createdAt)} ·{" "}
               {latest.model ? "AI + checks" : "checks only"}
             </p>
@@ -126,7 +126,7 @@ export function AuditPanel({
           </div>
 
           <div className={cardStyles({ className: "p-4" })}>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+            <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-muted">
               Breakdown
             </p>
             <div className="mt-3">
@@ -145,7 +145,7 @@ export function AuditPanel({
 
           {latest.recommendations.length > 0 ? (
             <div className={cardStyles({ className: "p-4" })}>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+              <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-muted">
                 Recommendations
               </p>
               <ul className="mt-2 space-y-2">

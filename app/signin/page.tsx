@@ -53,7 +53,10 @@ export default async function SignInPage() {
       </aside>
 
       {/* Form panel — phone-first, the priority surface. */}
-      <section className="flex min-h-dvh flex-col bg-surface">
+      {/* lg:min-h-0 — nested inside the min-h-dvh grid row above, so if the form
+          column ever exceeds the viewport the brand aside would not match its
+          height (UI audit P2-8). */}
+      <section className="flex min-h-dvh flex-col bg-surface lg:min-h-0">
         {/* Compact brand header — mobile only, since the brand panel is hidden. */}
         <div className="flex items-center gap-2 bg-forest-deep px-6 py-4 text-surface lg:hidden">
           <BrandMark className="h-6 w-6 shrink-0" />

@@ -44,7 +44,7 @@ export function OrderTicket({
       <p className="mt-1 text-center text-2xl font-bold tracking-wider">
         {orderReference(order.publicToken)}
       </p>
-      <p className="text-center text-[11px]">
+      <p className="text-center text-eyebrow">
         {formatVenueTime(order.createdAt, timezone)}
       </p>
       {order.scheduledFor ? (
@@ -74,7 +74,7 @@ export function OrderTicket({
           (React-escaped); break long words so it never overflows the 72mm. */}
       {order.notes ? (
         <div className="mt-2 border-2 border-black px-2 py-1">
-          <p className="text-[11px] font-bold uppercase">Notes</p>
+          <p className="text-eyebrow font-bold uppercase">Notes</p>
           <p className="break-words whitespace-pre-wrap font-bold">
             {order.notes}
           </p>
@@ -88,7 +88,7 @@ export function OrderTicket({
         <span>${formatCents(order.totalCents)}</span>
       </div>
 
-      <p className="mt-3 text-center text-[11px]">Thank you</p>
+      <p className="mt-3 text-center text-eyebrow">Thank you</p>
     </div>
   );
 }
@@ -136,7 +136,7 @@ function TicketDocket({ items }: { items: KitchenOrderItem[] }) {
         </ul>
       ) : null}
       {split ? (
-        <div className="my-1.5 border-t-2 border-dotted border-black pt-1 text-center text-[10px] font-bold uppercase tracking-widest">
+        <div className="my-1.5 border-t-2 border-dotted border-black pt-1 text-center text-micro font-bold uppercase tracking-widest">
           Front counter · Drinks
         </div>
       ) : null}

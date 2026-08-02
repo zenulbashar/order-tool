@@ -35,6 +35,32 @@ function tsxFiles(dir: string): string[] {
 
 const rel = (f: string) => f.replace(ROOT + "/", "");
 
+/**
+ * Opening `<input>` / `<textarea>` tags, brace-aware.
+ *
+ * A naive `<input\b[^>]*>` stops at the FIRST `>`, and JSX attributes routinely
+ * contain one — every `onChange={(e) => …}` arrow. That truncates the tag before
+ * its className, so the check silently skipped any control with an inline
+ * handler: it reported the support widget's feedback textarea as compliant while
+ * it sat at text-sm. Depth-tracking `{}` is what makes the scan honest.
+ */
+function openingTags(src: string): { tag: string; index: number }[] {
+  const out: { tag: string; index: number }[] = [];
+  for (const m of src.matchAll(/<(input|textarea)\b/g)) {
+    let depth = 0;
+    let i = m.index! + m[0].length;
+    for (; i < src.length; i++) {
+      const ch = src[i];
+      if (ch === "{") depth++;
+      else if (ch === "}") depth--;
+      else if (ch === ">" && depth === 0) break;
+    }
+    out.push({ tag: src.slice(m.index!, i + 1), index: m.index! });
+  }
+  return out;
+}
+
+
 describe("iOS text-input zoom floor", () => {
   it("the shared recipe is 16px on mobile and 14px from sm up", () => {
     const cls = controlClass();
@@ -74,10 +100,8 @@ describe("iOS text-input zoom floor", () => {
 
     for (const file of tsxFiles(join(ROOT, "app"))) {
       const src = readFileSync(file, "utf8");
-      // [^>] rather than the `s` flag: the tsconfig target predates it, and a
-      // negated class already spans newlines.
-      for (const m of src.matchAll(/<(input|textarea)\b[^>]*>/g)) {
-        const tag = m[0];
+      for (const m of openingTags(src)) {
+        const tag = m.tag;
         const cls = /className="([^"]*)"/.exec(tag)?.[1];
         if (!cls) continue;
         const tokens = cls.split(/\s+/);

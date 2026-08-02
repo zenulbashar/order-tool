@@ -198,7 +198,7 @@ export function ItemCard({
         onClick={handleAdd}
         aria-label={addLabel}
         className={cx(
-          "absolute bottom-2.5 right-2.5 z-raised hidden items-center gap-0.5 rounded-control-sm px-2.5 py-1 text-[11px] font-semibold text-[var(--action-contrast)] shadow-sm transition active:scale-95 lg:inline-flex",
+          "absolute bottom-2.5 right-2.5 z-raised hidden items-center gap-0.5 rounded-control-sm px-2.5 py-1 text-eyebrow font-semibold text-[var(--action-contrast)] shadow-sm transition active:scale-95 lg:inline-flex",
           justAdded && "p2e-cartpulse",
         )}
         style={{ backgroundColor: "var(--action)" }}

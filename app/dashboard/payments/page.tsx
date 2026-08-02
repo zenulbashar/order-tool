@@ -51,7 +51,7 @@ function StatusBadge({ tone, label }: { tone: BadgeTone; label: string }) {
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${classes[tone]}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 font-mono text-micro font-bold uppercase tracking-wider ${classes[tone]}`}
     >
       {label}
     </span>
@@ -201,7 +201,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 <p className="mt-1 font-display text-lg font-extrabold text-ink">
                   {payouts ? `$${formatCents(payouts.availableCents)}` : "—"}
                 </p>
-                <p className="text-[10px] text-muted">ready to pay out</p>
+                <p className="text-micro text-muted">ready to pay out</p>
               </div>
               <div>
                 <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
@@ -210,7 +210,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 <p className="mt-1 font-display text-lg font-extrabold text-ink">
                   {payouts ? `$${formatCents(payouts.pendingCents)}` : "—"}
                 </p>
-                <p className="text-[10px] text-muted">pending in Stripe</p>
+                <p className="text-micro text-muted">pending in Stripe</p>
               </div>
               <div>
                 <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
@@ -219,7 +219,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 <p className="mt-1 font-display text-lg font-extrabold text-ink">
                   ${formatCents(sales.last30Cents)}
                 </p>
-                <p className="text-[10px] text-muted">
+                <p className="text-micro text-muted">
                   {sales.count30} order{sales.count30 === 1 ? "" : "s"}
                 </p>
               </div>
@@ -253,7 +253,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                             tone={meta?.tone ?? "gray"}
                             label={meta?.label ?? p.status.replace(/_/g, " ")}
                           />
-                          <span className="font-mono text-[11px] text-muted">
+                          <span className="font-mono text-eyebrow text-muted">
                             {fmtDay(p.arrivalDate ?? p.created)}
                           </span>
                         </span>
@@ -267,7 +267,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
               </div>
             )}
 
-            <p className="mt-3 text-[11px] text-muted">
+            <p className="mt-3 text-eyebrow text-muted">
               Balance and payouts are read live from your Stripe account; sales
               are the orders confirmed on your storefront.
             </p>

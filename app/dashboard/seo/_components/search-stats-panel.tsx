@@ -27,7 +27,7 @@ function ClicksTrend({ days }: { days: SearchStats["days"] }) {
   const max = Math.max(1, ...days.map((day) => day.clicks));
   return (
     <div>
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+      <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-muted">
         Clicks by day
       </p>
       <div
@@ -112,7 +112,7 @@ export function SearchStatsPanel({
 
           {stats.topQueries.length > 0 ? (
             <div className={cardStyles({ className: "p-4" })}>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+              <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-muted">
                 What people searched to find you
               </p>
               <ul className="mt-2 divide-y divide-line/60">
@@ -124,7 +124,7 @@ export function SearchStatsPanel({
                     <span className="min-w-0 truncate text-sm text-ink">
                       {query.query}
                     </span>
-                    <span className="flex shrink-0 items-center gap-4 font-mono text-[11px] font-bold text-muted">
+                    <span className="flex shrink-0 items-center gap-4 font-mono text-eyebrow font-bold text-muted">
                       <span>{formatCount(query.clicks)} clicks</span>
                       <span>{formatCount(query.impressions)} views</span>
                       <span>#{Math.round(query.position)}</span>

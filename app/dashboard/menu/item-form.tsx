@@ -277,7 +277,7 @@ export function ItemForm({
           ) : null}
           <div className="flex shrink-0 items-center gap-2">
             <span
-              className={`font-mono text-[10px] font-bold uppercase tracking-wider ${
+              className={`font-mono text-micro font-bold uppercase tracking-wider ${
                 available ? "text-success-deep" : "text-label"
               }`}
             >

@@ -63,7 +63,7 @@ export function AdminNav({ email }: { email: string }) {
         </span>
         <span
           title={email}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] font-mono text-[10px] font-bold text-forest"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] font-mono text-micro font-bold text-forest"
         >
           {initials}
         </span>

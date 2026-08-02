@@ -55,7 +55,7 @@ export function CartRail({
               Your order
             </h2>
             {table ? (
-              <span className="rounded-pill bg-[var(--color-success)]/12 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-success-deep">
+              <span className="rounded-pill bg-[var(--color-success)]/12 px-2.5 py-1 font-mono text-micro font-bold uppercase tracking-wider text-success-deep">
                 Table {table}
               </span>
             ) : null}
@@ -88,7 +88,7 @@ export function CartRail({
                           {line.itemName}
                         </p>
                         {sub ? (
-                          <p className="mt-0.5 truncate text-[11px] text-label">
+                          <p className="mt-0.5 truncate text-eyebrow text-label">
                             {sub}
                           </p>
                         ) : null}
@@ -129,7 +129,7 @@ export function CartRail({
                     ${formatCents(subtotalCents)}
                   </span>
                 </PreCheckoutUpsell>
-                <p className="text-center text-[11px] text-label">
+                <p className="text-center text-eyebrow text-label">
                   Estimated — prices are confirmed at checkout. Secured by Stripe.
                 </p>
               </div>

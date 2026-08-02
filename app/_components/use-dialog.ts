@@ -75,8 +75,24 @@ export function useDialog<T extends HTMLElement>(
     // on close so keyboard users don't get dumped at the top of the document.
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
+    /*
+     * Scroll lock. overflow:hidden alone does not hold on iOS Safari — the page
+     * behind a fixed overlay still rubber-band scrolls (UI audit P2-5). Pinning
+     * <body> at its current offset with position:fixed is what actually stops
+     * it; the offset is restored on release so the reader is not teleported to
+     * the top when the dialog closes.
+     */
     const previousOverflow = document.body.style.overflow;
+    const previousPosition = document.body.style.position;
+    const previousTop = document.body.style.top;
+    const previousWidth = document.body.style.width;
+    const scrollY = window.scrollY;
+
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    // Without an explicit width, position:fixed collapses <body> to its content.
+    document.body.style.width = "100%";
 
     if (panel) {
       const focusables = focusableWithin(panel);
@@ -127,6 +143,12 @@ export function useDialog<T extends HTMLElement>(
     return () => {
       panel?.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
+      document.body.style.position = previousPosition;
+      document.body.style.top = previousTop;
+      document.body.style.width = previousWidth;
+      // Restore the scroll offset the fixed-body trick discarded. Instant, not
+      // smooth: a closing dialog should not animate the page underneath it.
+      window.scrollTo({ top: scrollY, behavior: "instant" as ScrollBehavior });
       // Only restore if the trigger is still in the document and focusable.
       if (previouslyFocused && document.contains(previouslyFocused)) {
         previouslyFocused.focus?.();

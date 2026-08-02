@@ -227,7 +227,7 @@ export default async function IntegrationsPage({
         title="Integrations"
         description={venue.name}
         action={
-          <span className="rounded-pill bg-sand px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted">
+          <span className="rounded-pill bg-sand px-2.5 py-1 font-mono text-micro font-bold uppercase tracking-wider text-muted">
             {connectedCount} of 3 connected
           </span>
         }
@@ -285,7 +285,7 @@ export default async function IntegrationsPage({
                 {attentionCount}
               </p>
               {attentionCount > 0 ? (
-                <p className="mt-1 text-[10px] font-semibold text-[var(--color-warm-deep)]">
+                <p className="mt-1 text-micro font-semibold text-[var(--color-warm-deep)]">
                   Open the Square card review →
                 </p>
               ) : null}
@@ -297,7 +297,7 @@ export default async function IntegrationsPage({
               <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
                 {avgDelayMs === null ? "—" : delayLabel(avgDelayMs)}
               </p>
-              <p className="mt-1 text-[10px] font-semibold text-muted">
+              <p className="mt-1 text-micro font-semibold text-muted">
                 Order confirmed → in your POS
               </p>
             </div>
@@ -309,7 +309,7 @@ export default async function IntegrationsPage({
           <span aria-hidden="true" className="shrink-0 text-[13px] text-concierge-mint">
             ℹ
           </span>
-          <p className="text-[11px] leading-relaxed text-concierge-sage">
+          <p className="text-eyebrow leading-relaxed text-concierge-sage">
             Integrations mirror orders and items only. Money always settles
             through your Stripe account — and disconnecting never deletes menu
             data.

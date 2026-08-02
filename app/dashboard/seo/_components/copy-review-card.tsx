@@ -73,7 +73,7 @@ export function CopyReviewCard({
   return (
     <div className={cardStyles({ className: "p-4" })}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+        <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-muted">
           AI suggestions to review
         </p>
         {copy.assessment ? (

@@ -238,7 +238,7 @@ export function ConciergePanel({
                     <SparkleIcon />
                   </span>
                   <Wordmark glow />
-                  <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-forest">
+                  <span className="rounded-md bg-accent px-1.5 py-0.5 font-mono text-micro font-bold uppercase tracking-wide text-forest">
                     AI
                   </span>
                 </h2>
@@ -373,7 +373,7 @@ export function ConciergePanel({
               onSubmit={handleSubmit}
               className="border-t border-concierge-ai-border px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
             >
-              <p className="mb-2 font-mono text-[11px] uppercase tracking-wide text-concierge-thinking">
+              <p className="mb-2 font-mono text-eyebrow uppercase tracking-wide text-concierge-thinking">
                 Not quite?
               </p>
               <div className="flex items-center gap-2">
@@ -386,7 +386,7 @@ export function ConciergePanel({
                     asked ? "Make it cheaper…" : "What do you feel like?"
                   }
                   aria-label="Describe what you feel like eating"
-                  className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
                 />
                 <button
                   type="submit"

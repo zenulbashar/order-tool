@@ -72,3 +72,44 @@ export function meetsContrastAA(
 export function formatContrastRatio(ratio: number): string {
   return `${ratio.toFixed(1)}:1`;
 }
+
+/*
+ * The two page surfaces a diner storefront paints text on, from the @theme
+ * block in app/globals.css. Duplicated as constants rather than read from CSS
+ * because this file is pure and runs server-side at save time.
+ */
+export const SURFACE_PAGE = "#f7f3ea"; // --color-surface
+export const SURFACE_ELEVATED = "#fffdf8"; // --color-surface-elevated
+
+/**
+ * Does a venue's custom TEXT colour stay readable on the pages it renders on?
+ *
+ * This is the pairing that matters and the one nothing checked (UI audit
+ * P2-10). `brandTextColor` does NOT become the label on a brand-filled button —
+ * that is `--brand-contrast`, which `readableOn()` derives and is therefore safe
+ * by construction. It overrides `--color-ink`, the venue's BODY TEXT, which sits
+ * on the cream page and on elevated cards.
+ *
+ * The gate it replaces compared the text colour against the BRAND, which is not
+ * a surface that text is ever painted on. That inversion waved through the exact
+ * worst case: with the default navy brand (#111827), a near-white body text
+ * scores 16.2:1 against the brand and PASSES, then renders at 1.01:1 on the
+ * cream page — invisible.
+ *
+ * Returns the worst of the two surfaces, so a colour has to clear both.
+ */
+export function surfaceContrast(textColor: string): number | null {
+  const onPage = contrastRatio(textColor, SURFACE_PAGE);
+  const onElevated = contrastRatio(textColor, SURFACE_ELEVATED);
+  if (onPage === null || onElevated === null) return null;
+  return Math.min(onPage, onElevated);
+}
+
+/** Does this text colour clear AA on BOTH diner page surfaces? */
+export function meetsSurfaceContrastAA(
+  textColor: string,
+  threshold: number = WCAG_AA_NORMAL,
+): boolean {
+  const ratio = surfaceContrast(textColor);
+  return ratio !== null && ratio >= threshold;
+}

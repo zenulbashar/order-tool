@@ -142,7 +142,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                   <span className="font-display text-base font-extrabold text-ink">
                     ${formatCents(product.priceCents)}
                     {product.unitLabel ? (
-                      <span className="ml-1 font-mono text-[10px] font-normal text-muted">
+                      <span className="ml-1 font-mono text-micro font-normal text-muted">
                         {product.unitLabel}
                       </span>
                     ) : null}
@@ -189,7 +189,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                         <span className="block truncate text-sm font-medium text-ink">
                           {p.name}
                         </span>
-                        <span className="block truncate font-mono text-[10px] text-muted">
+                        <span className="block truncate font-mono text-micro text-muted">
                           {p.unitLabel ?? "each"} · ×{qty}
                         </span>
                       </span>
@@ -220,7 +220,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                 placeholder="Delivery notes (optional)"
                 className={controlClass({ padding: "px-2.5 py-2", width: "w-full", className: "mt-3 resize-none" })}
               />
-              <p className="mt-3 rounded-control bg-hover-secondary px-3 py-2 text-[11px] text-muted">
+              <p className="mt-3 rounded-control bg-hover-secondary px-3 py-2 text-eyebrow text-muted">
                 <span className="font-bold text-ink">Secure checkout.</span>{" "}
                 You&apos;ll pay by card on the next screen (Stripe). Shipping, if
                 any, is billed separately.
@@ -248,7 +248,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
           className="fixed inset-x-0 bottom-0 z-chrome flex items-center justify-between gap-3 border-t border-line bg-surface-elevated px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-4px_16px_rgba(20,30,25,0.08)] lg:hidden"
         >
           <span className="flex items-center gap-2 text-sm font-bold text-ink">
-            <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[var(--color-accent)] px-1.5 text-[11px] font-bold text-forest">
+            <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[var(--color-accent)] px-1.5 text-eyebrow font-bold text-forest">
               {itemCount}
             </span>
             View cart
@@ -293,7 +293,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                           <span className="block truncate text-sm font-semibold text-white">
                             {p.name}
                           </span>
-                          <span className="block truncate font-mono text-[10px] text-[var(--color-sidebar-muted)]">
+                          <span className="block truncate font-mono text-micro text-[var(--color-sidebar-muted)]">
                             {p.unitLabel ?? "each"} · ×{qty}
                           </span>
                         </span>
@@ -310,9 +310,9 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                   maxLength={500}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Delivery notes (optional)"
-                  className="mt-4 w-full resize-none rounded-input border border-white/15 bg-white/5 px-2.5 py-2 text-sm text-white placeholder:text-[var(--color-sidebar-muted)] focus-visible:border-[var(--color-accent)] focus-visible:outline-none"
+                  className="mt-4 w-full resize-none rounded-input border border-white/15 bg-white/5 px-2.5 py-2 text-base sm:text-sm text-white placeholder:text-[var(--color-sidebar-muted)] focus-visible:border-[var(--color-accent)] focus-visible:outline-none"
                 />
-                <p className="mt-3 rounded-control bg-white/5 px-3 py-2 text-[11px] text-[var(--color-sidebar-muted)]">
+                <p className="mt-3 rounded-control bg-white/5 px-3 py-2 text-eyebrow text-[var(--color-sidebar-muted)]">
                   <span className="font-bold text-white">Secure checkout.</span>{" "}
                   You&apos;ll pay by card on the next screen. Shipping, if any, is
                   billed separately.

@@ -70,7 +70,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
       />
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
+        <span className="font-mono text-eyebrow font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
           {article.eyebrow}
         </span>
         <h1 className="mt-3 font-display text-[clamp(28px,4vw,44px)] font-extrabold leading-[1.08] tracking-[-0.03em]">
@@ -115,7 +115,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
 
         {others.length > 0 ? (
           <nav aria-label="More guides" className="mt-12">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
+            <p className="font-mono text-micro font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
               Keep reading
             </p>
             <ul className="mt-3 space-y-2">

@@ -11,7 +11,7 @@ import { PRODUCT_GRADIENTS } from "@/app/shop/product-gradients";
  */
 
 const CONTAINER = "mx-auto w-full max-w-[1240px] px-[clamp(18px,4vw,48px)]";
-const eyebrow = "font-mono text-[11px] font-bold uppercase tracking-[0.18em]";
+const eyebrow = "font-mono text-eyebrow font-bold uppercase tracking-[0.18em]";
 
 export async function ShopTeaser() {
   const products = await getFeaturedProducts();

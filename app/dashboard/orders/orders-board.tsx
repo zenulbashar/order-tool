@@ -15,6 +15,7 @@ import {
 import { OrderCard } from "./order-card";
 import type { FulfillmentStatus, KitchenOrder } from "./queries";
 import { TicketDrawer } from "./ticket-drawer";
+import { IconBell, IconBellOff } from "@/app/_components/icons";
 
 // Order-type filter. "all" is no filter; the other two map to the orderType enum
 // (Takeaway = pickup). Pure client-side over already-fetched orders — no query.
@@ -151,7 +152,15 @@ export function OrdersBoard({
             aria-pressed={soundEnabled}
             onClick={toggleSound}
           >
-            {soundEnabled ? "🔔 Sound on" : "🔕 Sound off"}
+            {soundEnabled ? (
+              <>
+                <IconBell /> Sound on
+              </>
+            ) : (
+              <>
+                <IconBellOff /> Sound off
+              </>
+            )}
           </Button>
           <Button
             variant="secondary"
@@ -197,7 +206,7 @@ export function OrdersBoard({
                   <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-ink">
                     {column.label}
                   </h2>
-                  <span className="rounded-pill bg-sand px-2 py-0.5 font-mono text-[10px] font-bold text-muted">
+                  <span className="rounded-pill bg-sand px-2 py-0.5 font-mono text-micro font-bold text-muted">
                     {orders.length}
                   </span>
                 </div>

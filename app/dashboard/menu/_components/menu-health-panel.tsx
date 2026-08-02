@@ -196,7 +196,7 @@ function breakdownPct(
 function BreakdownCard({ report }: { report: MenuHealthReport }) {
   return (
     <div className={cardStyles({ className: "p-4" })}>
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted">
+      <p className="font-mono text-micro font-bold uppercase tracking-[0.14em] text-muted">
         Breakdown
       </p>
       <div className="mt-3 space-y-2.5">
@@ -223,7 +223,7 @@ function BreakdownCard({ report }: { report: MenuHealthReport }) {
                   className={`block h-full rounded-full ${fill}`}
                 />
               </span>
-              <span className="w-7 shrink-0 text-right font-mono text-[11px] font-bold text-muted">
+              <span className="w-7 shrink-0 text-right font-mono text-eyebrow font-bold text-muted">
                 {pct}
               </span>
             </div>
@@ -393,7 +393,7 @@ export function MenuHealthPanel({ report }: { report: MenuHealthReport }) {
                     {buckets.map((bucket) => (
                       <span
                         key={bucket.severity}
-                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${SEVERITY_PILL[bucket.severity]}`}
+                        className={`rounded-full px-2.5 py-0.5 text-micro font-bold ${SEVERITY_PILL[bucket.severity]}`}
                       >
                         {bucket.issues.length}{" "}
                         {SEVERITY_BADGE[bucket.severity].label}
