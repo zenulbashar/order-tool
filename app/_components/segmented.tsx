@@ -89,7 +89,10 @@ export function Segmented<T extends string>({
             onKeyDown={(event) => handleKeyDown(event, index)}
             onClick={() => onChange(option.value)}
             className={cx(
-              "rounded-pill px-4 py-1.5 text-sm font-medium transition",
+              // 44px touch floor on phones (UI audit P1-5). This is the Pickup / Dine-in
+              // switch on the checkout money path and the kitchen board filter —
+              // both high-frequency targets, both ~30px before this.
+              "flex min-h-11 items-center rounded-pill px-4 text-sm font-medium transition sm:min-h-9 sm:py-1.5",
               active
                 ? "bg-[var(--action)] text-[var(--action-contrast)]"
                 : "text-muted hover:text-ink",

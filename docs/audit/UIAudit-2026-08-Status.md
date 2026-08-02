@@ -10,23 +10,23 @@ than re-done.
 | RC-1 | — | No z-index scale; six components share `z-40` | ✅ Fixed |
 | RC-2 | — | `env(safe-area-inset-*)` returns 0 (no `viewportFit`) | ✅ Fixed |
 | RC-3 | — | Fixed overlays reserve no scroll space | ✅ Fixed |
-| RC-4 | — | Controls below the iOS zoom floor and touch floor | ⬜ PR2 |
+| RC-4 | — | Controls below the iOS zoom floor and touch floor | ✅ Fixed |
 | RC-5 | — | Five unrelated sticky magic numbers | ⬜ PR3 |
 | RC-6 | — | Toast system built, never mounted | ⬜ PR5 |
 | P0-1 | P0 | Support FAB overlaps the mobile nav drawer *(reported)* | ✅ Fixed |
 | P0-2 | P0 | Support FAB covers both mobile bottom action bars | ✅ Fixed |
 | P0-3 | P0 | No bottom reserve on any dashboard page | ✅ Fixed |
 | P0-4 | P0 | Safe-area insets dead | ✅ Fixed |
-| P0-5 | P0 | Every text input triggers iOS auto-zoom | ⬜ PR2 |
+| P0-5 | P0 | Every text input triggers iOS auto-zoom | ✅ Fixed |
 | P1-1 | P1 | Concierge FAB covers the storefront footer at `lg` | ✅ Fixed |
 | P1-2 | P1 | Mobile category anchors land under the sticky strip | ⬜ PR3 |
 | P1-3 | P1 | Desktop menu cards have ragged bottoms | ⬜ PR5 |
 | P1-4 | P1 | Marketing nav has no mobile treatment | ⬜ PR4 |
-| P1-5 | P1 | `Segmented` is ~30px on the checkout path | ⬜ PR2 |
+| P1-5 | P1 | `Segmented` is ~30px on the checkout path | ✅ Fixed |
 | P1-6 | P1 | `PageHeader` crushes the title on narrow phones | ⬜ PR5 |
 | P1-7 | P1 | Admin console has no mobile layout | ⬜ PR4 |
 | P1-8 | P1 | No save feedback anywhere (toasts unmounted) | ⬜ PR5 |
-| P1-9 | P1 | Account nav: 36px targets, no scroll affordance | ⬜ PR2 |
+| P1-9 | P1 | Account nav: 36px targets, no scroll affordance | ✅ Fixed |
 | P1-10 | P1 | Tables board unusable at 360–390px | ⬜ PR5 |
 | P1-11 | P1 | Kitchen fullscreen hides all notifications | ⬜ PR5 |
 | P2-1 | P2 | 362 instances of 9–11px type | ⬜ PR6 |
@@ -66,3 +66,10 @@ existing ordering.
 `<MarketingHeader>` that PR4 suggests extracting from four copies (done under
 design-audit D4), and `controlClass`'s `padding` / `width` parameters that PR2's
 diff assumes are absent.
+
+**The audit named four inputs bypassing `controlClass`; there are ten.** A check
+derived from the source — every `<input>`/`<textarea>` whose own className sets a
+size below 16px — found six more: the **sign-in email field** (the very first
+input a new owner touches), three in the admin shop overrides, and two in the
+recipe editor. One of them is `text-xs`, so a list keyed to `text-sm` would have
+missed it either way. Pinned by `test/ios-zoom-floor.test.ts`.

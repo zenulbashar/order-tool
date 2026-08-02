@@ -25,8 +25,15 @@ describe("controlClass", () => {
       "border-line",
       "bg-surface-elevated",
       "px-3",
-      "py-2",
-      "text-sm",
+      "py-2.5",
+      "sm:py-2",
+      // 16px on mobile, 14px from sm up — the iOS auto-zoom floor (UI audit
+      // P0-5). A bare text-sm here is the regression: it would silently put the
+      // whole checkout back to zooming on focus.
+      "text-base",
+      "sm:text-sm",
+      "min-h-11",
+      "sm:min-h-0",
       "text-ink",
       "shadow-sm",
       "placeholder:text-muted",
@@ -47,7 +54,12 @@ describe("controlClass", () => {
     expect(has(cls, "px-2")).toBe(true);
     expect(has(cls, "py-1")).toBe(true);
     expect(has(cls, "px-3"), "default px-3 must not survive").toBe(false);
-    expect(has(cls, "py-2"), "default py-2 must not survive").toBe(false);
+    expect(has(cls, "py-2.5"), "default py-2.5 must not survive").toBe(false);
+    expect(has(cls, "sm:py-2"), "default sm:py-2 must not survive").toBe(false);
+    // The type size is NOT part of padding and must survive an override —
+    // otherwise every compact control silently reopens the iOS zoom bug.
+    expect(has(cls, "text-base")).toBe(true);
+    expect(has(cls, "sm:text-sm")).toBe(true);
   });
 
   it("REPLACES the default width, including with no width at all", () => {
@@ -81,6 +93,12 @@ describe("controlClass", () => {
       "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
     const now = controlClass({ padding: "px-2.5 py-2", width: "w-full" });
     const missing = copy.split(/\s+/).filter((t) => !has(now, t));
-    expect(missing, "adopting the recipe must not drop any class").toEqual([]);
+    // text-sm is the ONE deliberate exception: it became `text-base sm:text-sm`
+    // so mobile clears the 16px iOS floor. Renders identically from 640px up,
+    // which is every viewport the copies were designed against.
+    expect(missing, "adopting the recipe must not drop any class").toEqual([
+      "text-sm",
+    ]);
+    expect(has(now, "sm:text-sm"), "…and text-sm survives above sm").toBe(true);
   });
 });

@@ -513,7 +513,7 @@ export function Landing() {
                   required
                   placeholder="you@venue.com"
                   aria-label="Email address"
-                  className="min-w-0 flex-1 rounded-xl border border-forest/20 bg-white/70 px-4 py-3 text-sm text-forest placeholder:text-forest/50 focus-visible:outline-2 focus-visible:outline-[var(--color-forest)]"
+                  className="min-w-0 flex-1 rounded-xl border border-forest/20 bg-white/70 px-4 py-3 text-base sm:text-sm text-forest placeholder:text-forest/50 focus-visible:outline-2 focus-visible:outline-[var(--color-forest)]"
                 />
                 <button
                   type="submit"

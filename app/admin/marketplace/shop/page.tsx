@@ -91,7 +91,7 @@ export default async function AdminShopPage({
                     step="0.1"
                     min="0"
                     defaultValue={(cfg.markupBps / 100).toString()}
-                    className="mx-2 w-24 rounded-control border border-line-strong px-2 py-1 text-sm text-ink"
+                    className="mx-2 w-24 rounded-control border border-line-strong px-2 py-1 text-base sm:text-sm text-ink"
                   />
                   % on top of your cost
                 </label>
@@ -160,7 +160,7 @@ export default async function AdminShopPage({
                 name="q"
                 defaultValue={q}
                 placeholder="Search by name, code, or category…"
-                className="w-full max-w-md rounded-control border border-line-strong px-3 py-1.5 text-sm text-ink"
+                className="w-full max-w-md rounded-control border border-line-strong px-3 py-1.5 text-base sm:text-sm text-ink"
               />
               <button
                 type="submit"
@@ -234,7 +234,7 @@ export default async function AdminShopPage({
                                   : ""
                               }
                               placeholder="feed"
-                              className="w-24 rounded-control border border-line-strong px-2 py-1 text-xs text-ink"
+                              className="w-24 rounded-control border border-line-strong px-2 py-1 text-base sm:text-xs text-ink"
                             />
                           </label>
                           <button
