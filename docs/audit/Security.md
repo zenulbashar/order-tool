@@ -76,7 +76,7 @@ other limiter here. See `lib/auth-send-limit.ts`; the guard, its two dimensions,
 its hashed key, and the fact that `lib/auth.ts` calls it BEFORE sending are all
 pinned by mutation-tested assertions.
 
-### S3 — Left-most `X-Forwarded-For` trust — **Recommended**
+### S3 — Left-most `X-Forwarded-For` trust — **Fixed**
 `clientIpFromHeaders` (`lib/rate-limit.ts`) takes the left-most XFF entry, which
 is attacker-prependable on platforms that append rather than overwrite it →
 per-IP limit evasion (checkout floods, concierge/AI cost abuse). Deployment-
@@ -84,6 +84,17 @@ dependent and fail-open behind the edge. Fix: derive the client IP from a
 proxy-controlled header (e.g. `x-vercel-forwarded-for`) or the right-most hop
 after a known trusted-proxy count. **Do not change blindly** — the correct source
 depends on the deploy target; verify against the hosting platform first.
+
+**Fixed (2026-08).** The deploy target was established during the 2026-08 review
+(Vercel only — `vercel.json`, no Dockerfile, no self-host docs), which is what
+made this safe to act on. `clientIpFromHeaders` now reads most-specific-first:
+`x-vercel-forwarded-for` → `x-real-ip` → left-most `x-forwarded-for` →
+`cf-connecting-ip`. The first two are set by the edge from the connecting socket
+and are not derived from anything the client sent; XFF is kept only for local
+development and non-Vercel hosts, where neither exists — so the reorder is safe
+on any host and changes nothing off-platform. A blank header now counts as absent
+rather than short-circuiting the ladder into a single shared bucket. Ordering and
+fallbacks are unit-tested and mutation-verified.
 
 ## Not covered here
 Dependency CVE scan, live pen-test, and secret-scanning of history are out of

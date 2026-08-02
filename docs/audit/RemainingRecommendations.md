@@ -44,10 +44,13 @@ Ordered by priority. Nothing here is Critical.
 
 ## Medium priority
 
-5. **`X-Forwarded-For` source (S3).** Switch `clientIpFromHeaders` to a
-   proxy-controlled header for the deploy target (e.g. `x-vercel-forwarded-for`).
-   Verify against the platform first — changing it blindly can make limiting
-   worse.
+5. **`X-Forwarded-For` source (S3) — ✅ done.** The platform question this
+   entry told us to answer first was settled by the 2026-08 review: Vercel is the
+   only deploy target the repo documents. `clientIpFromHeaders` now prefers the
+   edge-set `x-vercel-forwarded-for` / `x-real-ip` and keeps left-most XFF only as
+   the off-platform fallback — so the spoofable header is no longer the primary
+   source, and behaviour off Vercel is unchanged because those headers do not
+   exist there. Not a blind change: the reorder cannot regress any host.
 
 6. **Design-system consolidation (D2–D5) — D3 done, D5 partial, D2/D4 open.**
    The two groups whose visual equivalence can be PROVEN were done; the rest
