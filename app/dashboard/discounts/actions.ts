@@ -9,10 +9,9 @@ import { db } from "@/lib/db";
 import { promotions, promotionVenues } from "@/lib/db/schema";
 import { requireVenuePermission } from "@/lib/tenant";
 
-export type DiscountState = { error?: string; success?: boolean };
+import { parseDiscountForm } from "./parse";
 
-// Codes are stored uppercased; letters + digits only, no spaces.
-const CODE_RE = /^[A-Z0-9]{3,24}$/;
+export type DiscountState = { error?: string; success?: boolean };
 
 /**
  * Create an owner-managed, diner-redeemable discount CODE for the current venue.
@@ -31,61 +30,19 @@ export async function createOwnerDiscount(
   }
   const venue = await requireVenuePermission("promotions:manage");
 
-  const name = String(formData.get("name") ?? "").trim();
-  const code = String(formData.get("code") ?? "").trim().toUpperCase();
-  const type = formData.get("type") === "amount" ? "amount" : "percent";
-  const rawValue = Number(String(formData.get("value") ?? "").trim());
-  const minBasketRaw = String(formData.get("minBasket") ?? "").trim();
-  const minBasketDollars = minBasketRaw === "" ? 0 : Number(minBasketRaw);
-  const audience = formData.get("audience") === "new" ? "new" : "all";
-  const endsAtRaw = String(formData.get("endsAt") ?? "").trim();
-
-  if (name.length === 0 || name.length > 80) {
-    return { error: "Enter a name (up to 80 characters)." };
-  }
-  if (!CODE_RE.test(code)) {
-    return { error: "Code must be 3–24 letters or numbers, no spaces." };
-  }
-  if (!Number.isFinite(rawValue) || rawValue <= 0) {
-    return { error: "Enter a discount value above 0." };
-  }
-  if (type === "percent" && rawValue > 100) {
-    return { error: "A percentage can’t be over 100." };
-  }
-  const value = type === "percent" ? Math.round(rawValue) : Math.round(rawValue * 100);
-  if (value <= 0) {
-    // e.g. $0.004 → 0 cents; catch it here rather than tripping the DB
-    // value>0 check (which the generic catch would mislabel as a dup code).
-    return { error: "Enter a discount value above 0." };
-  }
-  if (!Number.isFinite(minBasketDollars) || minBasketDollars < 0) {
-    return { error: "Minimum spend can’t be negative." };
-  }
-  const minBasketCents = Math.round(minBasketDollars * 100);
-  let endsAt: Date | null = null;
-  if (endsAtRaw) {
-    const parsed = new Date(endsAtRaw);
-    if (Number.isNaN(parsed.getTime())) {
-      return { error: "Enter a valid end date." };
-    }
-    endsAt = parsed;
-  }
+  const parsed = parseDiscountForm(formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const input = parsed.value;
 
   try {
     await db.transaction(async (tx) => {
       const [promo] = await tx
         .insert(promotions)
         .values({
-          name,
-          code,
-          type,
-          value,
-          minBasketCents,
-          endsAt,
+          ...input,
           fundingSource: "merchant",
           platformFundedPercent: 0,
           scope: "selected",
-          audience,
           ownerVenueId: venue.id,
           isActive: true,
         })
@@ -97,6 +54,59 @@ export async function createOwnerDiscount(
   } catch {
     // The partial unique index (owner_venue_id, code) rejects a duplicate.
     return { error: "That code is already in use. Try another." };
+  }
+
+  revalidatePath("/dashboard/discounts");
+  return { success: true };
+}
+
+/**
+ * Edit one of the current venue's own discount codes (audit R3 — a value-bearing
+ * entity that could be created and paused but never corrected).
+ *
+ * IDOR-safe the same way setOwnerDiscountActive is: the venue comes from the
+ * session's permission check and is part of the WHERE, so a mismatched id
+ * updates zero rows rather than another tenant's promo. Ownership is never taken
+ * from the form.
+ *
+ * The code itself is editable — a typo in the code diners have to type is the
+ * likeliest reason to want an edit at all, and redemption history hangs off
+ * orders.applied_promo_id (the id, not the code), so past orders keep reporting
+ * against it. `isActive` is deliberately NOT touched: pause/resume is its own
+ * action, and folding it in here would let a save silently un-pause a code.
+ */
+export async function updateOwnerDiscount(
+  _prev: DiscountState,
+  formData: FormData,
+): Promise<DiscountState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenuePermission("promotions:manage");
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Missing discount id." };
+
+  const parsed = parseDiscountForm(formData);
+  if (!parsed.ok) return { error: parsed.error };
+
+  let updated: { id: string }[];
+  try {
+    updated = await db
+      .update(promotions)
+      .set(parsed.value)
+      .where(and(eq(promotions.id, id), eq(promotions.ownerVenueId, venue.id)))
+      .returning({ id: promotions.id });
+  } catch {
+    // Same partial unique index as create — (owner_venue_id, code).
+    return { error: "That code is already in use. Try another." };
+  }
+
+  // Zero rows means the id isn't this venue's. Reported as not-found rather
+  // than as success, so a wrong id can't look like a saved edit.
+  if (updated.length === 0) {
+    return { error: "That code no longer exists." };
   }
 
   revalidatePath("/dashboard/discounts");
