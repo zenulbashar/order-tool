@@ -11,7 +11,7 @@ than re-done.
 | RC-2 | — | `env(safe-area-inset-*)` returns 0 (no `viewportFit`) | ✅ Fixed |
 | RC-3 | — | Fixed overlays reserve no scroll space | ✅ Fixed |
 | RC-4 | — | Controls below the iOS zoom floor and touch floor | ✅ Fixed |
-| RC-5 | — | Five unrelated sticky magic numbers | ⬜ PR3 |
+| RC-5 | — | Five unrelated sticky magic numbers | ✅ Fixed |
 | RC-6 | — | Toast system built, never mounted | ⬜ PR5 |
 | P0-1 | P0 | Support FAB overlaps the mobile nav drawer *(reported)* | ✅ Fixed |
 | P0-2 | P0 | Support FAB covers both mobile bottom action bars | ✅ Fixed |
@@ -19,19 +19,19 @@ than re-done.
 | P0-4 | P0 | Safe-area insets dead | ✅ Fixed |
 | P0-5 | P0 | Every text input triggers iOS auto-zoom | ✅ Fixed |
 | P1-1 | P1 | Concierge FAB covers the storefront footer at `lg` | ✅ Fixed |
-| P1-2 | P1 | Mobile category anchors land under the sticky strip | ⬜ PR3 |
+| P1-2 | P1 | Mobile category anchors land under the sticky strip | ✅ Fixed |
 | P1-3 | P1 | Desktop menu cards have ragged bottoms | ⬜ PR5 |
-| P1-4 | P1 | Marketing nav has no mobile treatment | ⬜ PR4 |
+| P1-4 | P1 | Marketing nav has no mobile treatment | ✅ Fixed |
 | P1-5 | P1 | `Segmented` is ~30px on the checkout path | ✅ Fixed |
 | P1-6 | P1 | `PageHeader` crushes the title on narrow phones | ⬜ PR5 |
-| P1-7 | P1 | Admin console has no mobile layout | ⬜ PR4 |
+| P1-7 | P1 | Admin console has no mobile layout | ✅ Fixed |
 | P1-8 | P1 | No save feedback anywhere (toasts unmounted) | ⬜ PR5 |
 | P1-9 | P1 | Account nav: 36px targets, no scroll affordance | ✅ Fixed |
 | P1-10 | P1 | Tables board unusable at 360–390px | ⬜ PR5 |
 | P1-11 | P1 | Kitchen fullscreen hides all notifications | ⬜ PR5 |
 | P2-1 | P2 | 362 instances of 9–11px type | ⬜ PR6 |
 | P2-2 | P2 | Emoji used as UI iconography | ⬜ PR6 |
-| P2-3 | P2 | Unify the sticky offsets | ⬜ PR3 |
+| P2-3 | P2 | Unify the sticky offsets | ✅ Fixed |
 | P2-4 | P2 | `AnnouncementBar` gutter double the diner surface | ⬜ PR6 |
 | P2-5 | P2 | `useDialog` scroll lock doesn't hold on iOS | ⬜ PR6 |
 | P2-6 | P2 | Chat inputs override the global focus ring | ⬜ PR6 |
@@ -73,3 +73,11 @@ size below 16px — found six more: the **sign-in email field** (the very first
 input a new owner touches), three in the admin shop overrides, and two in the
 recipe editor. One of them is `text-xs`, so a list keyed to `text-sm` would have
 missed it either way. Pinned by `test/ios-zoom-floor.test.ts`.
+
+**Vendoring the audit added dead CSS.** Tailwind v4 auto-detects sources from
+the project root, which includes `docs/**` — so the `diff` blocks quoting class
+strings generated real utilities for code that was never applied, including a
+`top-[calc(var(--p2e-header-h)+…)]` variant differing from the shipped one only
+by its missing fallbacks. `@source not "../docs"` in `globals.css` fixes it
+(~4KB). Dead CSS that looks live is worse than none: the next person greps the
+bundle, finds the class, and believes it is in use.

@@ -6,6 +6,7 @@ import { ConciergeDemo } from "./concierge-demo";
 import { FaqSection } from "./faq-section";
 import { RevealScript } from "./reveal-script";
 import { ShopTeaser } from "./shop-teaser";
+import { MobileNavDisclosure } from "./mobile-nav-disclosure";
 
 /**
  * prompt2eat.com marketing landing page. Diner-first (the AI concierge is the
@@ -71,18 +72,20 @@ export function Landing() {
       <RevealScript />
 
       {/* Nav */}
-      <header className="sticky top-0 z-sticky border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.82)] backdrop-blur-[14px] backdrop-saturate-150">
+      <header className="sticky top-0 z-sticky border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.82)] backdrop-blur-[14px] backdrop-saturate-150 relative">
         <nav className={`${CONTAINER} flex flex-wrap items-center gap-x-6 gap-y-2 py-3`}>
           <a href="#top" className="flex items-center gap-2">
             <Mark />
             <Wordmark className="text-[21px] text-surface" />
           </a>
-          <div className="ml-auto flex flex-wrap items-center gap-1 md:ml-4">
+          {/* Hidden below md — six links in a flex-wrap row inside a sticky
+              header wrapped to 3–4 rows at 390px (UI audit P1-4). */}
+          <div className="ml-auto hidden flex-wrap items-center gap-1 md:ml-4 md:flex">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.label}
                 href={l.href}
-                className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[var(--mkt-on-dark)] transition hover:bg-[rgba(247,243,234,0.07)] hover:text-surface"
+                className="flex min-h-11 items-center rounded-[9px] px-3 text-[13.5px] font-semibold text-[var(--mkt-on-dark)] transition hover:bg-[rgba(247,243,234,0.07)] hover:text-surface md:min-h-9"
               >
                 {l.label}
               </Link>
@@ -91,16 +94,17 @@ export function Landing() {
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link
               href="/signin"
-              className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-surface transition hover:bg-[rgba(247,243,234,0.08)]"
+              className="hidden min-h-11 items-center rounded-[9px] px-3 text-[13.5px] font-semibold text-surface transition hover:bg-[rgba(247,243,234,0.08)] sm:inline-flex md:min-h-9"
             >
               Sign in
             </Link>
             <Link
               href="/signin"
-              className="rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-forest shadow-[0_14px_30px_-12px_rgba(244,180,60,0.65)] transition hover:-translate-y-0.5"
+              className="inline-flex min-h-11 items-center rounded-[11px] bg-[var(--color-accent)] px-4 text-[13.5px] font-bold text-forest shadow-[0_14px_30px_-12px_rgba(244,180,60,0.65)] transition hover:-translate-y-0.5 md:min-h-9"
             >
               Start free
             </Link>
+            <MobileNavDisclosure links={NAV_LINKS} />
           </div>
         </nav>
       </header>

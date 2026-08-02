@@ -23,13 +23,13 @@ import { cx } from "@/app/_components/cx";
 
 /** Trailing text link — "← Back to home", "← All guides". */
 const backLink =
-  "ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold " +
-  "text-[var(--mkt-on-dark)] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface";
+  "ml-auto flex min-h-11 items-center rounded-[9px] px-3 text-[13.5px] font-semibold " +
+  "text-[var(--mkt-on-dark)] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface md:min-h-9";
 
 /** Amber "Start free" CTA. Marketing is a sanctioned amber surface. */
 const ctaLink =
-  "rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] " +
-  "font-bold text-forest transition hover:-translate-y-0.5";
+  "inline-flex min-h-11 items-center rounded-[11px] bg-[var(--color-accent)] px-4 text-[13.5px] " +
+  "font-bold text-forest transition hover:-translate-y-0.5 md:min-h-9";
 
 export type MarketingHeaderProps = {
   /** The page's container class — widths differ per route (760–1240px). */

@@ -36,13 +36,17 @@ export function AdminNav({ email }: { email: string }) {
         </span>
       </div>
 
-      <nav className="flex items-center gap-1">
+      {/* Five tabs plus brand, env pill and avatar in one flex-wrap header with
+          zero breakpoints wrapped to three rows at 390px (UI audit P1-7).
+          Scrolls horizontally on phones instead, with the scrollbar hidden —
+          shrink-0 is what stops the tabs compressing into unreadable slivers. */}
+      <nav className="-mx-1 flex w-full items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none] md:w-auto md:overflow-visible [&::-webkit-scrollbar]:hidden">
         {TABS.map((tab) => (
           <Link
             key={tab.href}
             href={tab.href}
             className={cx(
-              "rounded-control px-3 py-1.5 text-sm font-semibold transition",
+              "flex min-h-11 shrink-0 items-center rounded-control px-3 text-sm font-semibold transition sm:min-h-9",
               active(tab.href)
                 ? "bg-[var(--color-accent)] text-forest"
                 : "text-muted hover:text-ink",

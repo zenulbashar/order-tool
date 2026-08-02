@@ -45,8 +45,10 @@ export function CartRail({
       aria-label="Your order"
       className="hidden lg:block"
     >
-      {/* Sits below the sticky app bar (64px) + category strip (~56px). */}
-      <div className="sticky top-[136px] max-h-[calc(100dvh-156px)] space-y-3 overflow-y-auto pb-2">
+      {/* Sits below the sticky app bar + category strip, both MEASURED — the
+          two constants this replaced (136px / 156px) matched neither the real
+          strip nor each other, and ignored the AnnouncementBar entirely. */}
+      <div className="sticky top-[calc(var(--p2e-header-h,64px)+var(--p2e-sticky-h,56px)+16px)] max-h-[calc(100dvh-var(--p2e-header-h,64px)-var(--p2e-sticky-h,56px)-36px)] space-y-3 overflow-y-auto pb-2">
         <div className="rounded-card border border-sand bg-surface-elevated shadow-card">
           <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
             <h2 className="font-display text-lg font-semibold tracking-tight text-ink">

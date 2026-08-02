@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { readStickyMetric } from "./use-sticky-metrics";
 
 /**
  * Category nav with scroll-spy. Rendered inside the storefront's sticky header
@@ -34,10 +35,14 @@ export function CategoryNav({
           );
         if (visible[0]) setActive(visible[0].target.id);
       },
-      // Trigger when a section's top passes just below the sticky header
-      // (search box + chip row, ~109px). Keep this in step with the section
-      // scroll-mt-32 (128px) so the active chip flips as a heading clears it.
-      { rootMargin: "-120px 0px -70% 0px", threshold: 0 },
+      // Trigger when a section's top passes just below the sticky strip. Read
+      // from the SAME measured height the section anchors use, so the active
+      // chip can no longer flip a section early because two constants disagreed
+      // (UI audit P1-2). +8px keeps the flip just after the heading clears.
+      {
+        rootMargin: `-${readStickyMetric("--p2e-sticky-h", 128) + 8}px 0px -70% 0px`,
+        threshold: 0,
+      },
     );
 
     for (const category of categories) {
