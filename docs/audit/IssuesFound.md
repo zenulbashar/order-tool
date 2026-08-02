@@ -62,7 +62,7 @@ RemainingRecommendations.md. Full method and findings there.
 | # | Severity | Finding | Status |
 | --- | --- | --- | --- |
 | D1 | Medium | Firewall violation: amber (`--color-accent`, AI-only) used as a functional CTA fill in tables/promotions/marketplace; `bg-forest`/`text-white` hardcoded instead of `--action`. | ✅ Fixed (named scope) — a wider sweep is itemised in RemainingRecommendations #7 |
-| D2 | Medium | ~12 files copy-paste the `controlClass` recipe onto raw `<input>/<select>/<textarea>` instead of using `<Input>/<Select>/<Field>`. | 🔶 Recommended |
+| D2 | Medium | **21** files copy-paste the `controlClass` recipe onto raw `<input>/<select>/<textarea>`. The copies have DRIFTED: they use `px-2.5` instead of `px-3` and omit `placeholder:text-muted`, `read-only:bg-sand/40` and **both `disabled:` rules** — so those 21 controls give no visual feedback when disabled or read-only. Not just duplication. | 🔶 Recommended (needs visual review — adopting `<Input>` changes padding and adds three states) |
 | D3 | Low | `text-[9px]` micro-label string duplicated in ~20 files (no sub-`text-xs` token). | ✅ Fixed — `--text-2xs` token; 124 occurrences across 66 files replaced |
 | D4 | Low | One-off buttons re-implement `buttonStyles(...)`; hand-rolled segmented controls and page headers bypass `<Segmented>`/`<PageHeader>`; arbitrary radii (`rounded-[14px]` etc.) where tokens exist. | 🔶 Recommended |
 | D5 | Low | Shop/landing surfaces write token hex values literally. | ◑ Partial — 84 of 230 replaced (every literal that EXACTLY equals a token); the other 146 are colours the design system does not define. NB the finding's own example was wrong: `#16241C` is `--color-forest`, not `--color-ink` (`#0e1f18`). |

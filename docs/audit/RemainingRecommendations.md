@@ -77,9 +77,29 @@ Ordered by priority. Nothing here is Critical.
    `--color-sidebar-muted` exactly, but naming a marketing-page colour after the
    dashboard rail trades a literal for a misleading name.
 
-   **D2 / D4 open** — control-recipe → `<Input>/<Select>/<Field>`, and one-off
-   buttons/segmented/headers → primitives. Both change rendered markup rather
-   than just naming a constant, so both want the visual review.
+   **D2 open, and it is worse than "duplication".** `<Input>` renders exactly
+   `controlClass(...)`, so a swap *looks* mechanical — but the 21 hand-written
+   copies have drifted from the recipe they were copied from:
+
+   | | Recipe (`controlClass`) | The 21 copies |
+   | --- | --- | --- |
+   | Horizontal padding | `px-3` | `px-2.5` |
+   | Placeholder colour | `placeholder:text-muted` | *absent* |
+   | Disabled state | `disabled:cursor-not-allowed disabled:opacity-60` | *absent* |
+   | Read-only state | `read-only:bg-sand/40` | *absent* |
+
+   So those controls give **no visual feedback when disabled or read-only** —
+   a usability gap, not a tidiness one, and the more interesting half of D2.
+   Adopting `<Input>` fixes it but simultaneously changes padding and adds three
+   states, so it is a visible change on 21 surfaces and wants the review the
+   entry asks for. Note also that `<Input>` is a client component: several
+   offenders (`app/admin/**`) are server components, so a blind swap would push
+   a client boundary onto pages that do not need one. `controlClass` itself is
+   pure and server-safe, so calling it directly is the cheaper fix where the
+   markup is already correct.
+
+   **D4 open** — one-off buttons/segmented/headers → primitives. Same reasoning:
+   changes rendered markup, wants the visual review.
 
 7. **Firewall CTAs (D1) — named scope ✅ done; wider sweep itemised below.**
    Converted: admin *Create promotion* and *Save*, marketplace *Checkout* and
