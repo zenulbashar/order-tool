@@ -412,7 +412,7 @@ function PaymentForm({
               autoComplete="off"
               maxLength={24}
               aria-label="Promo code"
-              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
+              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
             />
             <button
               type="button"
@@ -455,7 +455,7 @@ function PaymentForm({
               autoComplete="off"
               maxLength={20}
               aria-label="Gift card code"
-              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
+              className="min-w-0 flex-1 rounded-input border border-line bg-surface-elevated px-3 py-2 text-sm uppercase text-ink placeholder:normal-case placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
             />
             <button
               type="button"

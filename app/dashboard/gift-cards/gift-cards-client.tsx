@@ -16,7 +16,7 @@ import {
 } from "./actions";
 
 const control =
-  "rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
+  "rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
 const microLabel =
   "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
