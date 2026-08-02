@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { controlClass } from "@/app/_components/field";
 
 import { Button } from "@/app/_components/button";
 import { formatCents } from "@/lib/validation";
@@ -12,7 +13,7 @@ import type { MarketplaceProduct } from "@/lib/db/schema";
 const CATEGORIES = ["signage", "tablet", "stand", "consumable", "banner", "other"];
 
 const control =
-  "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+  controlClass({ padding: "px-2.5 py-2", width: "w-full" });
 const microLabel =
   "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 

@@ -80,34 +80,29 @@ Ordered by priority. Nothing here is Critical.
    `--color-sidebar-muted` exactly, but naming a marketing-page colour after the
    dashboard rail trades a literal for a misleading name.
 
-   **D2 open, and it is worse than "duplication".** `<Input>` renders exactly
-   `controlClass(...)`, so a swap *looks* mechanical — but the 21 hand-written
-   copies have drifted from the recipe they were copied from:
+   **D2 ✅ done.** The 21 hand-written copies had drifted from the recipe:
+   `px-2.5` instead of `px-3`, and missing `placeholder:text-muted`,
+   `read-only:bg-sand/40` and both `disabled:` rules — so those controls gave no
+   feedback when disabled or read-only. (That half shipped separately, since
+   state-prefixed utilities cannot change the default rendering.)
 
-   | | Recipe (`controlClass`) | The 21 copies |
-   | --- | --- | --- |
-   | Horizontal padding | `px-3` | `px-2.5` |
-   | Placeholder colour | `placeholder:text-muted` | *absent* |
-   | Disabled state | `disabled:cursor-not-allowed disabled:opacity-60` | *absent* |
-   | Read-only state | `read-only:bg-sand/40` | *absent* |
+   The duplication is now gone too. `controlClass` gained `padding` and `width`
+   parameters, which is what made it adoptable without resizing anything: `cx` is
+   a plain joiner, not tailwind-merge, so passing `px-2 py-1` through `className`
+   would emit it *alongside* the default and leave stylesheet order to pick. The
+   app has three deliberate sizes (compact inline, standard, comfortable) and the
+   recipe only ever encoded one.
 
-   So those controls gave **no visual feedback when disabled or read-only** —
-   a usability gap, not a tidiness one, and the more interesting half of D2.
+   Equivalence was checked mechanically rather than by eye — every call site's
+   emitted class SET was diffed against the literal it replaced. **Nothing is
+   removed at any site.** 14 gain `placeholder:text-muted`, 3 gain that plus
+   `shadow-sm`, 1 gains `shadow-sm` — all of them the recipe's own values that the
+   copies had dropped.
 
-   **That half is now fixed** (22 control strings across 18 files): the
-   `disabled:` and `read-only:` utilities were appended directly. Those are
-   state-prefixed, so they emit `:disabled` / `:read-only` rules only and the
-   default rendering is byte-identical — the change is visible *only* in the
-   states that were previously broken. `placeholder:text-muted` was deliberately
-   NOT added: it alters a visible default and belongs with the review below.
-
-   **Still open:** the duplication itself, and the `px-2.5` / `px-3` divergence.
-   Adopting `<Input>` would resolve both but changes padding on 21 surfaces, so
-   it wants the review the entry asks for. Note also that `<Input>` is a client component: several
-   offenders (`app/admin/**`) are server components, so a blind swap would push
-   a client boundary onto pages that do not need one. `controlClass` itself is
-   pure and server-safe, so calling it directly is the cheaper fix where the
-   markup is already correct.
+   That diff also caught something a blanket swap would have broken: **8 of the
+   27 matches were `<div>`, `<li>` and `<form>` containers merely BORROWING the
+   input look**, not controls. They would have silently gained `text-sm`,
+   `text-ink` and `shadow-sm`. Left as literals on purpose.
 
    **D4 open — and the "arbitrary radii where tokens exist" half is mostly a
    false lead.** I checked it for a provable subset like D3/D5 had. There are 13

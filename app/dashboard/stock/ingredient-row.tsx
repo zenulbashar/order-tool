@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { controlClass } from "@/app/_components/field";
 
 import { Button } from "@/app/_components/button";
 import { costPerUnitCents, formatUnitCost, isLowStock } from "@/lib/stock/cost";
@@ -183,7 +184,7 @@ function StockAdjustForm({
   );
 
   const control =
-    "rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+    controlClass({ padding: "px-2.5 py-2", width: "" });
 
   return (
     <form action={adjustStock} className="space-y-3">

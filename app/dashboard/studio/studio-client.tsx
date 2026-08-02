@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { controlClass } from "@/app/_components/field";
 
 import { Button } from "@/app/_components/button";
 import { cx } from "@/app/_components/cx";
@@ -359,8 +360,7 @@ export function StudioClient({
     setTimeout(() => iframe.remove(), 1000);
   }
 
-  const controlClass =
-    "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+  const control = controlClass({ padding: "px-2.5 py-2", width: "w-full" });
   const microLabel =
     "mb-2 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
   const popBtn =
@@ -426,7 +426,7 @@ export function StudioClient({
                   value={caption}
                   placeholder={suggestedCaption}
                   onChange={(event) => setCaption(event.target.value)}
-                  className={cx(controlClass, "resize-none")}
+                  className={cx(control, "resize-none")}
                 />
               </label>
               <div className="grid grid-cols-1 gap-1.5">
@@ -475,7 +475,7 @@ export function StudioClient({
                   maxLength={160}
                   onChange={(event) => setOccasion(event.target.value)}
                   placeholder="Occasion or theme — e.g. weekend brunch, 20% off pastries"
-                  className={cx(controlClass, "resize-none")}
+                  className={cx(control, "resize-none")}
                 />
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-2xs uppercase tracking-wider text-muted">
@@ -504,7 +504,7 @@ export function StudioClient({
                   value={headline}
                   maxLength={80}
                   onChange={(event) => setHeadline(event.target.value)}
-                  className={controlClass}
+                  className={control}
                 />
               </label>
               <label className="block">
@@ -513,7 +513,7 @@ export function StudioClient({
                   value={subtext}
                   maxLength={120}
                   onChange={(event) => setSubtext(event.target.value)}
-                  className={controlClass}
+                  className={control}
                 />
               </label>
               <label className="block">
@@ -523,7 +523,7 @@ export function StudioClient({
                   maxLength={24}
                   onChange={(event) => setOfferText(event.target.value)}
                   placeholder="e.g. 2 FOR 1"
-                  className={controlClass}
+                  className={control}
                 />
               </label>
               {hasLogo ? (

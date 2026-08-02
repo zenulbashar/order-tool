@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { controlClass } from "@/app/_components/field";
 
 import { Button } from "@/app/_components/button";
 
@@ -11,7 +12,7 @@ const initialState: VenueSettingsState = {};
 const microLabel =
   "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const inputClass =
-  "w-full rounded-input border border-line bg-surface-elevated px-3 py-2.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+  controlClass({ padding: "px-3 py-2.5", width: "w-full" });
 
 type TaxSettings = { enabled: boolean; ratePercent: string; label: string };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { controlClass } from "@/app/_components/field";
 
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
@@ -19,7 +20,7 @@ const microLabel =
 // Compact time input on the foundation focus recipe (amber focus-visible border
 // + subtle ring), matching every other control — but not w-full (stays compact).
 const timeClass =
-  "rounded-input border border-line bg-surface-elevated px-2 py-1.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+  controlClass({ padding: "px-2 py-1.5", width: "" });
 
 type VenueDetails = {
   streetAddress: string | null;

@@ -1,4 +1,5 @@
 import { Checkbox } from "@/app/_components/selection-controls";
+import { controlClass } from "@/app/_components/field";
 import { formatCents } from "@/lib/validation";
 
 import type { Ingredient } from "@/lib/db/schema";
@@ -6,7 +7,7 @@ import type { Ingredient } from "@/lib/db/schema";
 const label =
   "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const control =
-  "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none";
+  controlClass({ padding: "px-2.5 py-2", width: "w-full" });
 
 /**
  * The ingredient field set (name, unit, pack size, pack cost, yield, supplier,

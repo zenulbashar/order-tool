@@ -10,10 +10,25 @@ import { cx } from "./cx";
  */
 export function controlClass(opts?: {
   invalid?: boolean;
+  /**
+   * Padding utilities. Defaults to the standard field size.
+   *
+   * Overridable because `cx` is a plain joiner, not tailwind-merge: passing
+   * `px-2 py-1` through `className` would emit BOTH it and the default and leave
+   * stylesheet order to decide. Making padding and width parameters is what lets
+   * the controls that hand-rolled this recipe adopt it with ZERO visual change
+   * (audit D2) — the app has three deliberate sizes (compact inline, standard,
+   * comfortable) and the recipe only ever encoded one.
+   */
+  padding?: string;
+  /** Width utility. Defaults to full-width; same override reason as padding. */
+  width?: string;
   className?: string;
 }): string {
   return cx(
-    "w-full rounded-input border bg-surface-elevated px-3 py-2 text-sm text-ink shadow-sm",
+    opts?.width ?? "w-full",
+    "rounded-input border bg-surface-elevated text-sm text-ink shadow-sm",
+    opts?.padding ?? "px-3 py-2",
     "placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-60",
     "read-only:bg-sand/40 focus-visible:outline-none",
     // Focus = amber border + subtle amber glow (export); the invalid state keeps
