@@ -109,8 +109,29 @@ Ordered by priority. Nothing here is Critical.
    pure and server-safe, so calling it directly is the cheaper fix where the
    markup is already correct.
 
-   **D4 open** — one-off buttons/segmented/headers → primitives. Same reasoning:
-   changes rendered markup, wants the visual review.
+   **D4 open — and the "arbitrary radii where tokens exist" half is mostly a
+   false lead.** I checked it for a provable subset like D3/D5 had. There are 13
+   distinct arbitrary radii in use (3, 5, 7, 8, 10, 14, 15, 18, 22, 32, 35, 44px
+   …) and only five have a token with the same VALUE:
+
+   | Literal | Same-value token | Fits the element? |
+   | --- | --- | --- |
+   | `rounded-[6px]` | `--radius-sm` | ✅ neutral name — **converted** |
+   | `rounded-[9px]` | `--radius-control-sm` | ✘ used on badges, not small buttons |
+   | `rounded-[11px]` | `--radius-control` | ✘ used on 40px icon tiles |
+   | `rounded-[12px]` | `--radius-input` | ✘ used on a storefront footer block |
+   | `rounded-[13px]` | `--radius-control-lg` | ✘ used on cards |
+
+   The radius tokens are named for CONTROL ROLES (control / control-sm /
+   control-lg / input / card), so using them on a badge or an icon tile trades an
+   honest literal for a misleading name — the same trap as `--color-sidebar-muted`
+   on a marketing page in D5. So this is not a rename: the scale is
+   under-specified for the shapes actually in use, and deciding what it should be
+   is design work.
+
+   The rest of D4 — one-off buttons re-implementing `buttonStyles`, hand-rolled
+   segmented controls and page headers — changes rendered markup and wants the
+   visual review, exactly as the entry says.
 
 7. **Firewall CTAs (D1) — named scope ✅ done; wider sweep itemised below.**
    Converted: admin *Create promotion* and *Save*, marketplace *Checkout* and

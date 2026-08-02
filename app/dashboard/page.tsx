@@ -538,7 +538,7 @@ export default async function DashboardPage() {
                       </span>
                       <span
                         className={cx(
-                          "shrink-0 rounded-[6px] px-2 py-0.5 text-[10px] font-bold",
+                          "shrink-0 rounded-sm px-2 py-0.5 text-[10px] font-bold",
                           liveBadge[order.fulfillmentStatus] ?? "bg-sand text-muted",
                         )}
                       >
