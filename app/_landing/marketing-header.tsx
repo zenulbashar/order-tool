@@ -24,7 +24,7 @@ import { cx } from "@/app/_components/cx";
 /** Trailing text link — "← Back to home", "← All guides". */
 const backLink =
   "ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold " +
-  "text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface";
+  "text-[var(--mkt-on-dark)] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface";
 
 /** Amber "Start free" CTA. Marketing is a sanctioned amber surface. */
 const ctaLink =

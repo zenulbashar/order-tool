@@ -131,6 +131,52 @@
   --brand-contrast: var(--color-surface-elevated);
 }
 
+
+/*
+ * Marketing palette (audit D5).
+ *
+ * The landing, /learn, /shop and /for routes are a separate visual surface
+ * from the owner console and the diner storefront — a dark forest bar over
+ * cream, with its own sage and amber ramps. Its colours were written as raw
+ * hexes at 146 sites across 12 files, two of them in BOTH cases (#C9D4CB and
+ * #c9d4cb are the same colour typed twice), which is drift in its purest form.
+ *
+ * Defined here as plain custom properties rather than @theme tokens on
+ * purpose. @theme would generate bg-/text-/border-/ring-/divide- utilities for
+ * all 23 across the whole app, and these are not app colours — they belong to
+ * one surface. Referenced as text-[var(--mkt-muted)], the same mechanism
+ * --diner-tint above already uses.
+ *
+ * Names describe the ROLE on this surface, never another surface's component:
+ * the audit twice found that borrowing a name like --color-sidebar-muted for a
+ * marketing page trades an honest literal for a misleading one.
+ */
+:root {
+  --mkt-line: #ede4d2; /* hairline border on cream (16 border- / 1 divide- use) */
+  --mkt-line-strong: #e0d6c1; /* stronger hairline — card + button outlines */
+  --mkt-eyebrow: #856819; /* amber-on-cream eyebrow/label text */
+  --mkt-amber-ink: #3a2a08; /* dark ink for text ON an amber fill */
+  --mkt-amber-deep: #e79a24; /* amber ramp — darkest stop */
+  --mkt-amber-light: #d8b26a; /* amber ramp — lightest stop */
+  --mkt-amber-mid: #b07f2e; /* amber ramp — mid stop */
+  --mkt-cream: #f6f0e2; /* tinted cream panel */
+  --mkt-cream-soft: #fbf6ec; /* softest cream wash */
+  --mkt-sand-deep: #a99a78; /* deep sand — shop card meta */
+  --mkt-forest-darkest: #0c1c15; /* darkest forest — hero gradient base */
+  --mkt-forest-deeper: #0f281e; /* deep forest — dark bar background */
+  --mkt-forest-deep: #143228; /* mid-dark forest */
+  --mkt-forest-soft: #3c4a3e; /* softened forest — body copy on cream */
+  --mkt-sage-deep: #5a6e60; /* deep sage */
+  --mkt-sage: #5c6b5e; /* sage body text on cream */
+  --mkt-muted: #6e756b; /* muted body text on cream */
+  --mkt-muted-warm: #7c8579; /* warmer muted text on cream */
+  --mkt-on-dark-sage: #7e9486; /* sage text on the dark forest bar */
+  --mkt-on-dark-sage-bright: #7fa890; /* brighter sage on dark */
+  --mkt-on-dark-dim: #8a9384; /* dimmest readable text on dark */
+  --mkt-on-dark-muted: #9fb0a2; /* muted text on dark */
+  --mkt-on-dark: #c9d4cb; /* near-cream text on the dark forest bar */
+}
+
 [data-domain="diner"] {
   --action: var(--brand);
   --action-contrast: var(--brand-contrast);

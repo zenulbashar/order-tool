@@ -6,22 +6,23 @@ import { describe, expect, it } from "vitest";
 /**
  * Literal hexes that duplicate a design token (audit D5).
  *
- * D5 found 230 literal hex utilities across the shop and landing surfaces. 84 of
- * them — every literal that EXACTLY equalled a token's value — were replaced
- * with the token. The other 146 span 56 colours the design system does not
- * define at all, so they cannot be "converted"; that half needs new tokens or a
- * decision to fold them into existing ones, which is design work.
+ * D5 found literal hex utilities across the shop and landing surfaces. They came
+ * off in three passes: 84 that exactly equalled an existing token, 27 more in
+ * route groups the finding's scope had missed (/for, /learn), and finally the
+ * 146 that had no token at all — which turned out not to need a design decision
+ * so much as the observation that they are ONE palette. The marketing routes are
+ * a distinct surface, and their colours are now named `--mkt-*` in globals.css.
  *
- * This test guards the half that IS decidable: once a colour has a token, a
- * literal spelling of the same value must not come back. It says nothing about
- * the 146 — an undefined colour is allowed to stay a literal, because a literal
- * is the honest representation of a colour with no name.
- *
- * DERIVED from globals.css, so adding a token automatically extends the rule to
- * it. That matters more than it sounds: the usual way this regresses is someone
- * defining a token and then pasting the hex anyway, and an enumerated list of
- * "banned hexes" would never cover the token that didn't exist when it was
+ * The rule: a literal hex may not spell out a colour something already names.
+ * DERIVED from globals.css, so adding a name extends the rule automatically —
+ * which is the case that matters, because the usual regression is someone
+ * defining a colour and pasting the hex anyway, and any hand-written list of
+ * banned hexes would miss precisely the name that didn't exist when it was
  * written.
+ *
+ * What stays literal is genuinely one-off: ~29 single-use colours, most of them
+ * gradient stops inside one marketing animation. A colour used once has no
+ * shared meaning to name, and inventing a name would be worse than the literal.
  *
  * On globals.css the naive parse silently returns the WRONG block twice over:
  * `indexOf("@theme")` hits the file's doc comment eight lines above the real
@@ -85,6 +86,18 @@ for (const [, name, hex] of themeBlock(CSS).matchAll(
   TOKENS.set(key, [...(TOKENS.get(key) ?? []), name]);
 }
 
+/**
+ * The marketing palette (`--mkt-*`) lives outside @theme — deliberately, so it
+ * generates no app-wide utilities — but it names colours just as bindingly. It
+ * covers the shared marketing surface: /learn, /shop, /for and the landing page.
+ */
+for (const [, name, hex] of CSS.matchAll(
+  /(--mkt-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})\s*;/g,
+)) {
+  const key = hex.slice(1).toLowerCase();
+  TOKENS.set(key, [...(TOKENS.get(key) ?? []), name]);
+}
+
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
@@ -114,9 +127,13 @@ describe("no literal hex duplicates a design token", () => {
     expect(TOKENS.get("f7f3ea")).toContain("--color-surface");
     expect(TOKENS.get("fffdf8")).toContain("--color-surface-elevated");
 
-    // The carve-out itself: #7fa890 and #3a2a08 are named ONLY by domain tokens.
-    expect(TOKENS.get("7fa890")).toBeUndefined();
-    expect(TOKENS.get("3a2a08")).toBeUndefined();
+    // The marketing palette is picked up too, and it RESOLVES the old carve-out:
+    // #7fa890 and #3a2a08 were previously named only by --color-concierge-* /
+    // --color-sidebar-* and so were left literal. They now have honest,
+    // surface-appropriate names and are covered by the rule like everything else.
+    expect(TOKENS.get("7fa890")).toContain("--mkt-on-dark-sage-bright");
+    expect(TOKENS.get("3a2a08")).toContain("--mkt-amber-ink");
+    expect(TOKENS.get("ede4d2")).toContain("--mkt-line");
   });
 
   it("no Tailwind arbitrary value spells out a token's hex", () => {

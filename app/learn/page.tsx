@@ -28,13 +28,13 @@ export default function LearnIndexPage() {
       />
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
           Guides
         </span>
         <h1 className="mt-3 max-w-[640px] font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.05] tracking-[-0.03em]">
           Running a venue, explained plainly.
         </h1>
-        <p className="mt-4 max-w-[560px] text-[16px] leading-[1.6] text-[#5C6B5E]">
+        <p className="mt-4 max-w-[560px] text-[16px] leading-[1.6] text-[var(--mkt-sage)]">
           Short, honest reads on how AI ordering, QR menus, payments, and
           kitchen printing actually work — grounded in how Prompt2Eat is built.
         </p>
@@ -44,15 +44,15 @@ export default function LearnIndexPage() {
             <Link
               key={article.slug}
               href={`/learn/${article.slug}`}
-              className="group flex flex-col rounded-[22px] border border-[#EDE4D2] bg-surface-elevated p-6 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-24px_rgba(20,30,25,0.35)]"
+              className="group flex flex-col rounded-[22px] border border-[var(--mkt-line)] bg-surface-elevated p-6 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-24px_rgba(20,30,25,0.35)]"
             >
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#856819]">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
                 {article.eyebrow}
               </span>
               <h2 className="mt-2 font-display text-[19px] font-extrabold tracking-[-0.015em]">
                 {article.title}
               </h2>
-              <p className="mt-2 text-[14.5px] leading-[1.55] text-[#5C6B5E]">
+              <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--mkt-sage)]">
                 {article.description}
               </p>
               <span className="mt-4 text-sm font-bold text-forest">
@@ -68,7 +68,7 @@ export default function LearnIndexPage() {
           ))}
         </div>
 
-        <p className="mt-12 text-sm text-[#5A6E60]">
+        <p className="mt-12 text-sm text-[var(--mkt-sage-deep)]">
           Quick answers instead?{" "}
           <Link
             href="/#faq"
@@ -79,8 +79,8 @@ export default function LearnIndexPage() {
         </p>
       </main>
 
-      <footer className="border-t border-[#EDE4D2] py-8">
-        <div className={`${CONTAINER} text-sm text-[#5A6E60]`}>
+      <footer className="border-t border-[var(--mkt-line)] py-8">
+        <div className={`${CONTAINER} text-sm text-[var(--mkt-sage-deep)]`}>
           © 2026 Prompt2Eat. All rights reserved.
         </div>
       </footer>
