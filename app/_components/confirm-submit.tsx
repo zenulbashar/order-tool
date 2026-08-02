@@ -13,10 +13,13 @@ import { Button } from "@/app/_components/button";
 export function ConfirmSubmit({
   message,
   className,
+  disabled,
   children,
 }: {
   message: string;
   className?: string;
+  /** For forms that disable their controls while an action is in flight. */
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -25,6 +28,7 @@ export function ConfirmSubmit({
       variant="destructive"
       size="sm"
       className={className}
+      disabled={disabled}
       onClick={(event) => {
         if (!window.confirm(message)) {
           event.preventDefault();

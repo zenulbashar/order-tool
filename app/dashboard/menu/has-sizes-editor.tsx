@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 
-import { Button } from "@/app/_components/button";
 import { Checkbox } from "@/app/_components/selection-controls";
 import { formatCents } from "@/lib/validation";
 
@@ -127,9 +127,18 @@ export function HasSizesEditor({
                         className="border-t border-line pt-3"
                       >
                         <input type="hidden" name="id" value={variant.id} />
-                        <Button type="submit" variant="destructive" size="sm">
+                        {/*
+                          Confirmed, not just destructively styled (audit
+                          R1/R2). deleteVariant removes a PRICED row, and this
+                          sits one click inside a <details> beside the edit
+                          form — R1 fixed four buttons of this class and this
+                          fifth was missed.
+                        */}
+                        <ConfirmSubmit
+                          message={`Delete the "${variant.name}" size? This removes its price and cannot be undone.`}
+                        >
                           Delete size
-                        </Button>
+                        </ConfirmSubmit>
                       </form>
                     </div>
                   </details>
