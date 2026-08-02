@@ -49,7 +49,7 @@ function StatusBadge({ status }: { status: TableStatus }) {
   return (
     <span
       className={cx(
-        "shrink-0 rounded-pill px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider",
+        "shrink-0 rounded-pill px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider",
         s.cls,
       )}
     >
@@ -322,7 +322,7 @@ export function TablesBoard({
           {/* Detail pane — table tent */}
           {selected ? (
             <aside className="lg:sticky lg:top-6 lg:self-start">
-              <p className="mb-2 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="mb-2 font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 Table tent · {selected.label}
               </p>
               <TableTent
@@ -350,7 +350,7 @@ export function TablesBoard({
 
               {selected.session ? (
                 <div className="mt-3 rounded-card border border-line bg-surface-elevated p-3 shadow-sm">
-                  <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                  <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                     Current session
                   </p>
                   <div className="mt-1.5 flex items-center justify-between gap-2">

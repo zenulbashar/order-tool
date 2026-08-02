@@ -26,7 +26,7 @@ function deriveCode(name: string): string {
 }
 
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 /**
  * The onboarding "Stations" step, presented one question at a time:

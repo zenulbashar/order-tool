@@ -38,7 +38,7 @@ export function VariantForm({
       )}
 
       <label className="block">
-        <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+        <span className="mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label">
           Name
         </span>
         <Input
@@ -54,7 +54,7 @@ export function VariantForm({
       {/* Absolute price (this size's own price), required — mirrors the item
           price field, not the modifier option's optional delta. */}
       <label className="block">
-        <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+        <span className="mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label">
           Price (dollars)
         </span>
         <Input

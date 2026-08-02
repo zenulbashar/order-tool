@@ -93,7 +93,7 @@ function SubscriptionCard({ overview }: { overview: BillingOverview }) {
         </div>
         {overview.nextChargeAt ? (
           <div className="text-right">
-            <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
               Next charge
             </p>
             <p className="mt-0.5 text-xs font-bold text-ink">
@@ -126,7 +126,7 @@ function SubscriptionCard({ overview }: { overview: BillingOverview }) {
               <p className="font-display text-sm font-extrabold text-ink">
                 ${formatCents(line.amountCents)}
               </p>
-              <p className="font-mono text-[9px] uppercase text-label">
+              <p className="font-mono text-2xs uppercase text-label">
                 /{overview.interval === "annual" ? "yr" : "mo"}
               </p>
             </div>
@@ -136,7 +136,7 @@ function SubscriptionCard({ overview }: { overview: BillingOverview }) {
 
       <div className="flex items-center gap-3 border-t border-line bg-hover-secondary px-5 py-4">
         <div className="flex-1">
-          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
             One total · billed {cadence}
           </p>
           {overview.interval === "annual" ? (

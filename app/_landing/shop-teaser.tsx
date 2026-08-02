@@ -22,7 +22,7 @@ export async function ShopTeaser() {
   const products = await getFeaturedProducts();
 
   return (
-    <section id="shop" className="bg-[#FFFDF8] py-[clamp(72px,10vw,120px)]">
+    <section id="shop" className="bg-surface-elevated py-[clamp(72px,10vw,120px)]">
       <div className={CONTAINER}>
         <div className="flex flex-wrap items-end justify-between gap-4" data-reveal>
           <div className="max-w-[560px]">
@@ -37,7 +37,7 @@ export async function ShopTeaser() {
           </div>
           <Link
             href="/shop"
-            className="rounded-xl border border-[#E0D6C1] px-5 py-2.5 text-sm font-bold text-[#16241C] transition hover:bg-[#F6F0E2]"
+            className="rounded-xl border border-[#E0D6C1] px-5 py-2.5 text-sm font-bold text-forest transition hover:bg-[#F6F0E2]"
           >
             Browse the shop →
           </Link>
@@ -49,7 +49,7 @@ export async function ShopTeaser() {
               href="/shop"
               data-reveal
               data-delay={i * 70}
-              className="group overflow-hidden rounded-[22px] border border-[#EDE4D2] bg-[#FFFDF8] shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
+              className="group overflow-hidden rounded-[22px] border border-[#EDE4D2] bg-surface-elevated shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
             >
               <span className="relative flex aspect-[4/3] items-center justify-center overflow-hidden">
                 {p.imageUrl ? (
@@ -62,17 +62,17 @@ export async function ShopTeaser() {
                   />
                 ) : (
                   <span className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`}>
-                    <span className={`${eyebrow} text-[9px] text-white/70`}>Product shot</span>
+                    <span className={`${eyebrow} text-2xs text-white/70`}>Product shot</span>
                   </span>
                 )}
                 {p.inStock ? (
-                  <span className="absolute left-2 top-2 rounded-full bg-[var(--color-accent)] px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#16241C]">
+                  <span className="absolute left-2 top-2 rounded-full bg-[var(--color-accent)] px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-forest">
                     In stock
                   </span>
                 ) : null}
               </span>
               <span className="block p-4">
-                <span className={`${eyebrow} text-[9px] text-[#A99A78]`}>
+                <span className={`${eyebrow} text-2xs text-[#A99A78]`}>
                   {p.subcategory ?? p.category}
                 </span>
                 <span className="mt-1 flex items-center justify-between gap-3">

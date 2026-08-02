@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Venue · admin" };
 
-const eyebrow = "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+const eyebrow = "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -112,7 +112,7 @@ export default async function AdminVenuePage({ params }: Params) {
                   <span className="block truncate text-sm font-bold text-ink">
                     {item.name}
                     {!item.isAvailable ? (
-                      <span className="ml-2 font-mono text-[9px] font-bold uppercase text-muted">
+                      <span className="ml-2 font-mono text-2xs font-bold uppercase text-muted">
                         hidden
                       </span>
                     ) : null}

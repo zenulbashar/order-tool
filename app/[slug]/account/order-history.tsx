@@ -134,7 +134,7 @@ export function OrderHistory({
         </section>
       ) : (
         <section className="px-5 pb-10 pt-3">
-          <h2 className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <h2 className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Earlier
           </h2>
           <ul className="mt-2 space-y-2.5 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">

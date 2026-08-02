@@ -38,6 +38,14 @@
   --color-sidebar: #0f241b; /* rail ground */
   --color-sidebar-ink: #c3d3c8; /* nav label / primary text on the rail */
   --color-sidebar-muted: #7fa890; /* group headers / secondary text */
+  /* Micro-label size (audit D3). Tailwind's scale bottoms out at text-xs (12px),
+     so the 9px mono eyebrow/label used across the owner surfaces had no token and
+     was written as the arbitrary value `text-[9px]` in 66 files. Deliberately NOT
+     paired with a --text-2xs--line-height: the arbitrary value never set one, so
+     adding one here would change layout rather than just naming a constant.
+     Other sub-xs sizes (8/10/11/13/15px) are still arbitrary — turning those into
+     a scale is a design decision, not a rename. See RemainingRecommendations. */
+  --text-2xs: 9px;
   /* Radius scale (export: pill 999 / card 16 / control 11 / small 6). Only
      --radius-sm overrides a Tailwind default; rounded-sm is unused, so no diff. */
   --radius-pill: 999px;

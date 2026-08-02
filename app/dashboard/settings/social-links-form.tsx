@@ -10,7 +10,7 @@ import { updateSocialLinks, type VenueSettingsState } from "./actions";
 const initialState: VenueSettingsState = {};
 
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 export type SocialLinks = {
   instagramUrl: string | null;

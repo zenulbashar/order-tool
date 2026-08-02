@@ -62,7 +62,7 @@ const NAV_LINKS = [
 
 export function Landing() {
   return (
-    <div className="bg-[#FFFDF8] text-[#16241C]" id="top">
+    <div className="bg-surface-elevated text-forest" id="top">
       <style>{CSS}</style>
       <noscript>
         {/* Keep everything visible without JS. */}
@@ -75,14 +75,14 @@ export function Landing() {
         <nav className={`${CONTAINER} flex flex-wrap items-center gap-x-6 gap-y-2 py-3`}>
           <a href="#top" className="flex items-center gap-2">
             <Mark />
-            <Wordmark className="text-[21px] text-[#F7F3EA]" />
+            <Wordmark className="text-[21px] text-surface" />
           </a>
           <div className="ml-auto flex flex-wrap items-center gap-1 md:ml-4">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.label}
                 href={l.href}
-                className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.07)] hover:text-[#F7F3EA]"
+                className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.07)] hover:text-surface"
               >
                 {l.label}
               </Link>
@@ -91,13 +91,13 @@ export function Landing() {
           <div className="ml-auto flex items-center gap-2 md:ml-0">
             <Link
               href="/signin"
-              className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#F7F3EA] transition hover:bg-[rgba(247,243,234,0.08)]"
+              className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-surface transition hover:bg-[rgba(247,243,234,0.08)]"
             >
               Sign in
             </Link>
             <Link
               href="/signin"
-              className="rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-[#16241C] shadow-[0_14px_30px_-12px_rgba(244,180,60,0.65)] transition hover:-translate-y-0.5"
+              className="rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-forest shadow-[0_14px_30px_-12px_rgba(244,180,60,0.65)] transition hover:-translate-y-0.5"
             >
               Start free
             </Link>
@@ -120,10 +120,10 @@ export function Landing() {
         >
           <div className="flex-1 basis-[420px]" data-reveal>
             <span className={`${eyebrow} inline-flex items-center gap-2 rounded-full border border-[rgba(244,180,60,0.28)] bg-[rgba(247,243,234,0.06)] px-3 py-1.5 text-[10.5px] text-[var(--color-accent)]`}>
-              <span className="h-1.5 w-1.5 rounded-full bg-[#3FA66A] [animation:p2e-pulse_2s_ease-in-out_infinite]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-success [animation:p2e-pulse_2s_ease-in-out_infinite]" />
               AI Concierge · now live
             </span>
-            <h1 className="mt-5 font-display text-[clamp(40px,6.2vw,74px)] font-extrabold leading-[0.98] tracking-[-0.035em] text-[#F7F3EA]">
+            <h1 className="mt-5 font-display text-[clamp(40px,6.2vw,74px)] font-extrabold leading-[0.98] tracking-[-0.035em] text-surface">
               Just say what
               <br />
               you&rsquo;re hungry for.
@@ -137,13 +137,13 @@ export function Landing() {
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
                 href="/signin"
-                className="rounded-xl bg-[var(--color-accent)] px-[26px] py-[15px] font-bold text-[#16241C] shadow-[0_14px_30px_-12px_rgba(244,180,60,0.65)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-12px_rgba(244,180,60,0.8)]"
+                className="rounded-xl bg-[var(--color-accent)] px-[26px] py-[15px] font-bold text-forest shadow-[0_14px_30px_-12px_rgba(244,180,60,0.65)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-12px_rgba(244,180,60,0.8)]"
               >
                 Start free →
               </Link>
               <a
                 href="#concierge"
-                className="rounded-xl border border-[rgba(247,243,234,0.18)] bg-[rgba(247,243,234,0.06)] px-[26px] py-[15px] font-bold text-[#F7F3EA] transition hover:bg-[rgba(247,243,234,0.1)]"
+                className="rounded-xl border border-[rgba(247,243,234,0.18)] bg-[rgba(247,243,234,0.06)] px-[26px] py-[15px] font-bold text-surface transition hover:bg-[rgba(247,243,234,0.1)]"
               >
                 See it order for you
               </a>
@@ -185,14 +185,14 @@ export function Landing() {
               {c.label}
             </span>
           ))}
-          <span className="rounded-full bg-[var(--color-accent)] px-3.5 py-1.5 text-[13px] font-bold text-[#16241C]">
+          <span className="rounded-full bg-[var(--color-accent)] px-3.5 py-1.5 text-[13px] font-bold text-forest">
             No app needed
           </span>
         </div>
       </section>
 
       {/* Concierge deep-dive */}
-      <section id="concierge" className="bg-gradient-to-b from-[#FFFDF8] to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
+      <section id="concierge" className="bg-gradient-to-b from-surface-elevated to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="mx-auto max-w-[640px] text-center" data-reveal>
             <span className={`${eyebrow} text-[var(--color-accent-ink,#856819)] text-[#856819]`}>
@@ -216,18 +216,18 @@ export function Landing() {
               body="Something light, no nuts, under $20. The concierge understands plain requests, respects allergies and budgets, and replies in seconds. No scrolling, no guessing."
               pills={[
                 { label: "Dairy-free aware", cls: "bg-[#e7f4ea] text-[#2f7a4f]" },
-                { label: "Budget-smart", cls: "bg-[#fbf0d8] text-[#b07f1e]" },
+                { label: "Budget-smart", cls: "bg-[#fbf0d8] text-accent-deep" },
                 { label: "Allergen-safe", cls: "bg-[#eef0ea] text-[#5d655b]" },
               ]}
               visual={
                 <div className="rounded-[22px] border border-[#EDE4D2] bg-white p-5 shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
                   <div className="flex justify-end">
-                    <span className="max-w-[80%] rounded-[16px_16px_5px_16px] bg-gradient-to-br from-[#f4b43c] to-[#e79a24] px-3.5 py-2 text-sm font-medium text-[#16241c]">
+                    <span className="max-w-[80%] rounded-[16px_16px_5px_16px] bg-gradient-to-br from-accent to-[#e79a24] px-3.5 py-2 text-sm font-medium text-forest">
                       Warming, veggie, about $18
                     </span>
                   </div>
                   <div className="mt-2.5 flex justify-start">
-                    <span className="max-w-[85%] rounded-[16px_16px_16px_5px] bg-[#F6F0E2] px-3.5 py-2 text-sm text-[#16241c]">
+                    <span className="max-w-[85%] rounded-[16px_16px_16px_5px] bg-[#F6F0E2] px-3.5 py-2 text-sm text-forest">
                       The mushroom orzo fits perfectly, $17 and fully
                       vegetarian. Want a soup with it?
                     </span>
@@ -241,7 +241,7 @@ export function Landing() {
               title="Order from the assistant they already use."
               body="Prompt2Eat plugs into Google Gemini, so a diner can order from your venue without opening anything new. They ask Gemini, it places the order, your kitchen gets the ticket."
               visual={
-                <div className="rounded-[22px] bg-gradient-to-br from-[#143228] to-[#0f281e] p-5 text-[#F7F3EA] shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]">
+                <div className="rounded-[22px] bg-gradient-to-br from-[#143228] to-[#0f281e] p-5 text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]">
                   <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 text-xs font-semibold">
                     <span className="h-3 w-3 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
                     Gemini
@@ -249,7 +249,7 @@ export function Landing() {
                   <p className="mt-3 rounded-[14px] bg-white/10 px-3.5 py-2 text-sm">
                     Order my usual from Maple &amp; Thyme for table 12.
                   </p>
-                  <p className="mt-2 inline-flex items-center gap-2 rounded-[14px] bg-[var(--color-accent)] px-3.5 py-2 text-sm font-semibold text-[#16241c]">
+                  <p className="mt-2 inline-flex items-center gap-2 rounded-[14px] bg-[var(--color-accent)] px-3.5 py-2 text-sm font-semibold text-forest">
                     ✓ Placed. The kitchen has it.
                   </p>
                 </div>
@@ -262,11 +262,11 @@ export function Landing() {
               body="One code per table. Guests order and pay without waving anyone down, so your staff spend their time on service instead of taking orders."
               visual={
                 <div className="rounded-[22px] border border-[#EDE4D2] bg-white p-6 text-center shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
-                  <div className="mx-auto grid w-32 grid-cols-5 gap-1 rounded-2xl bg-[#16241C] p-3">
+                  <div className="mx-auto grid w-32 grid-cols-5 gap-1 rounded-2xl bg-forest p-3">
                     {QR_PATTERN.map((on, i) => (
                       <span
                         key={i}
-                        className={`aspect-square rounded-[3px] ${on ? "bg-[var(--color-accent)]" : "bg-[#F7F3EA]/15"}`}
+                        className={`aspect-square rounded-[3px] ${on ? "bg-[var(--color-accent)]" : "bg-surface/15"}`}
                       />
                     ))}
                   </div>
@@ -285,16 +285,16 @@ export function Landing() {
                   <div className="flex items-center gap-3 rounded-2xl bg-[#F6F0E2] p-3">
                     <span className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#d8b26a] to-[#b07f2e]" />
                     <span className="flex-1">
-                      <span className={`${eyebrow} block text-[9px] text-[#8A9384]`}>Your usual</span>
+                      <span className={`${eyebrow} block text-2xs text-[#8A9384]`}>Your usual</span>
                       <span className="block text-sm font-bold">Wild Mushroom Orzo</span>
                     </span>
-                    <span className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-[#16241c]">
+                    <span className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-forest">
                       Reorder
                     </span>
                   </div>
                   <div className="mt-2.5 flex items-center gap-2 rounded-2xl border border-dashed border-[#E0D6C1] p-3 text-sm text-[#6E756B]">
-                    <span className={`${eyebrow} text-[9px] text-[var(--color-accent)]`}>Smart upsell</span>
-                    Add miso soup? <span className="ml-auto font-bold text-[#16241c]">+$4</span>
+                    <span className={`${eyebrow} text-2xs text-[var(--color-accent)]`}>Smart upsell</span>
+                    Add miso soup? <span className="ml-auto font-bold text-forest">+$4</span>
                   </div>
                 </div>
               }
@@ -304,12 +304,12 @@ export function Landing() {
       </section>
 
       {/* How it works */}
-      <section className="relative bg-[#16241C] py-[clamp(72px,10vw,120px)]">
+      <section className="relative bg-forest py-[clamp(72px,10vw,120px)]">
         <span className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(244,180,60,0.12),transparent)]" />
         <div className={`${CONTAINER} relative`}>
           <div className="text-center" data-reveal>
             <span className={`${eyebrow} text-[var(--color-accent)]`}>How it works</span>
-            <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em] text-[#F7F3EA]">
+            <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em] text-surface">
               Scan. Chat. Eat.
             </h2>
           </div>
@@ -323,7 +323,7 @@ export function Landing() {
                 <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-[18px] bg-[rgba(247,243,234,0.06)] font-display text-2xl font-extrabold text-[var(--color-accent)]">
                   {s.n}
                 </span>
-                <h3 className="mt-4 font-display text-[clamp(20px,3vw,26px)] font-extrabold text-[#F7F3EA]">
+                <h3 className="mt-4 font-display text-[clamp(20px,3vw,26px)] font-extrabold text-surface">
                   {s.t}
                 </h3>
                 <p className="mx-auto mt-2 max-w-[280px] text-[15px] leading-[1.55] text-[#9FB0A2]">
@@ -336,7 +336,7 @@ export function Landing() {
       </section>
 
       {/* For Restaurants */}
-      <section id="restaurants" className="bg-gradient-to-b from-[#FBF6EC] to-[#FFFDF8] py-[clamp(72px,10vw,128px)]">
+      <section id="restaurants" className="bg-gradient-to-b from-[#FBF6EC] to-surface-elevated py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="max-w-[680px]" data-reveal>
             <span className={`${eyebrow} text-[#856819]`}>For restaurants</span>
@@ -356,7 +356,7 @@ export function Landing() {
                 key={f.title}
                 data-reveal
                 data-delay={(i % 3) * 60}
-                className="rounded-[22px] border border-[#EDE4D2] bg-[#FFFDF8] p-5 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
+                className="rounded-[22px] border border-[#EDE4D2] bg-surface-elevated p-5 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
               >
                 <BentoIcon d={f.d} />
                 <h3 className="mt-3.5 font-display text-base font-extrabold tracking-[-0.015em]">
@@ -368,7 +368,7 @@ export function Landing() {
             {/* Payments spotlight */}
             <div
               data-reveal
-              className="rounded-[22px] bg-gradient-to-br from-[#143228] to-[#0f281e] p-5 text-[#F7F3EA] shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
+              className="rounded-[22px] bg-gradient-to-br from-[#143228] to-[#0f281e] p-5 text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/8">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F4B43C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -399,7 +399,7 @@ export function Landing() {
         <div className={`${CONTAINER} relative`}>
           <div className="text-center" data-reveal>
             <span className={`${eyebrow} text-[var(--color-accent)]`}>Why Prompt2Eat</span>
-            <h2 className="mx-auto mt-3 max-w-[18ch] font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em] text-[#F7F3EA]">
+            <h2 className="mx-auto mt-3 max-w-[18ch] font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em] text-surface">
               One system, from craving to kitchen.
             </h2>
           </div>
@@ -424,7 +424,7 @@ export function Landing() {
                 data-delay={i * 80}
                 className="rounded-[22px] border border-[rgba(247,243,234,0.1)] bg-[rgba(247,243,234,0.05)] p-6"
               >
-                <p className="font-display text-lg font-extrabold text-[#F7F3EA]">
+                <p className="font-display text-lg font-extrabold text-surface">
                   {feature.t}
                 </p>
                 <p className="mt-2 text-base leading-[1.55] text-[#C9D4CB]">
@@ -437,7 +437,7 @@ export function Landing() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="bg-gradient-to-b from-[#FFFDF8] to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
+      <section id="pricing" className="bg-gradient-to-b from-surface-elevated to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="text-center" data-reveal>
             <span className={`${eyebrow} text-[#856819]`}>Pricing</span>
@@ -457,12 +457,12 @@ export function Landing() {
                 data-delay={i * 70}
                 className={`flex flex-col rounded-[22px] p-6 ${
                   tier.featured
-                    ? "relative border-2 border-[var(--color-accent)] bg-gradient-to-br from-[#143228] to-[#0f281e] text-[#F7F3EA] shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
-                    : "border border-[#EDE4D2] bg-[#FFFDF8]"
+                    ? "relative border-2 border-[var(--color-accent)] bg-gradient-to-br from-[#143228] to-[#0f281e] text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
+                    : "border border-[#EDE4D2] bg-surface-elevated"
                 }`}
               >
                 {tier.featured ? (
-                  <span className="absolute -top-3 left-6 rounded-full bg-[var(--color-accent)] px-3 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#16241C]">
+                  <span className="absolute -top-3 left-6 rounded-full bg-[var(--color-accent)] px-3 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-forest">
                     Most popular
                   </span>
                 ) : null}
@@ -479,8 +479,8 @@ export function Landing() {
                   href="/signin"
                   className={`mt-auto rounded-xl px-4 py-3 text-center text-sm font-bold transition ${
                     tier.featured
-                      ? "bg-[var(--color-accent)] text-[#16241C] hover:opacity-90"
-                      : "border border-[#16241C] text-[#16241C] hover:bg-[#16241C] hover:text-[#F7F3EA]"
+                      ? "bg-[var(--color-accent)] text-forest hover:opacity-90"
+                      : "border border-forest text-forest hover:bg-forest hover:text-surface"
                   }`}
                 >
                   {tier.cta}
@@ -495,8 +495,8 @@ export function Landing() {
       <FaqSection />
 
       {/* Final CTA */}
-      <section id="cta" className="bg-[#FFFDF8] px-[clamp(18px,4vw,48px)] py-[clamp(48px,7vw,96px)]">
-        <div className="relative mx-auto max-w-[1080px] overflow-hidden rounded-[32px] bg-[radial-gradient(120%_140%_at_85%_0%,#F6C258,#F4B43C_45%,#E79A24)] px-[clamp(28px,6vw,72px)] py-[clamp(48px,7vw,80px)] text-[#16241C]">
+      <section id="cta" className="bg-surface-elevated px-[clamp(18px,4vw,48px)] py-[clamp(48px,7vw,96px)]">
+        <div className="relative mx-auto max-w-[1080px] overflow-hidden rounded-[32px] bg-[radial-gradient(120%_140%_at_85%_0%,#F6C258,#F4B43C_45%,#E79A24)] px-[clamp(28px,6vw,72px)] py-[clamp(48px,7vw,80px)] text-forest">
             <span className="pointer-events-none absolute -bottom-16 -left-10 h-64 w-64 rounded-full bg-[#0f281e]/15 blur-2xl" />
             <div className="relative max-w-[560px]" data-reveal>
               <h2 className="font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
@@ -513,16 +513,16 @@ export function Landing() {
                   required
                   placeholder="you@venue.com"
                   aria-label="Email address"
-                  className="min-w-0 flex-1 rounded-xl border border-[#16241C]/20 bg-white/70 px-4 py-3 text-sm text-[#16241C] placeholder:text-[#16241C]/50 focus-visible:outline-2 focus-visible:outline-[#16241C]"
+                  className="min-w-0 flex-1 rounded-xl border border-forest/20 bg-white/70 px-4 py-3 text-sm text-forest placeholder:text-forest/50 focus-visible:outline-2 focus-visible:outline-[#16241C]"
                 />
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#16241C] px-5 py-3 text-sm font-bold text-[#F7F3EA] transition hover:opacity-90"
+                  className="rounded-xl bg-forest px-5 py-3 text-sm font-bold text-surface transition hover:opacity-90"
                 >
                   Start free →
                 </button>
               </form>
-              <p className="mt-3 text-[13px] text-[#16241C]/70">
+              <p className="mt-3 text-[13px] text-forest/70">
                 30-day trial. No credit card. Cancel anytime.
               </p>
             </div>
@@ -538,7 +538,7 @@ export function Landing() {
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2">
                 <Mark />
-                <Wordmark className="text-lg text-[#F7F3EA]" />
+                <Wordmark className="text-lg text-surface" />
               </div>
               <p className="mt-3 max-w-[280px] text-sm text-[#7FA890]">
                 The AI-native way to order. Built for hospitality, loved by
@@ -591,7 +591,7 @@ export function Landing() {
                       {"href" in l && l.href ? (
                         <Link
                           href={l.href}
-                          className="text-[#C9D4CB] transition hover:text-[#F7F3EA]"
+                          className="text-[#C9D4CB] transition hover:text-surface"
                         >
                           {l.label}
                         </Link>

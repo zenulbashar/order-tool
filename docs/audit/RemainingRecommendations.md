@@ -49,10 +49,37 @@ Ordered by priority. Nothing here is Critical.
    Verify against the platform first — changing it blindly can make limiting
    worse.
 
-6. **Design-system consolidation (D2–D5).** One focused PR per group, each with a
-   visual review: control-recipe → primitives; `text-[9px]` → a scale token;
-   one-off buttons/segmented/headers → primitives; shop/landing literal hex →
-   tokens. Fully specified in DesignSystemCompliance.md.
+6. **Design-system consolidation (D2–D5) — D3 done, D5 partial, D2/D4 open.**
+   The two groups whose visual equivalence can be PROVEN were done; the rest
+   still wants the per-group PR with a visual review the original entry asks for.
+
+   **D3 ✅** — added `--text-2xs: 9px` and replaced all 124 `text-[9px]` across 66
+   files. Provably identical: Tailwind emits font-size only unless a paired
+   `--text-2xs--line-height` is declared, and deliberately none was, so nothing
+   moves. The wider family (8/10/11/13/15px, ~375 occurrences) is left alone —
+   turning those into a scale is a design decision, not a rename.
+
+   **D5 ◑** — replaced 84 of 230 literal-hex utilities in shop/landing: every
+   literal that EXACTLY equals a token (`#16241c`→forest, `#f7f3ea`→surface,
+   `#fffdf8`→surface-elevated, `#3fa66a`→success, plus accent/accent-deep).
+   Verified safe rather than assumed: those tokens are only overridden under
+   `[data-domain="diner"]` and `.admin-dark`, and shop/landing sit in neither
+   scope, so they always resolve to the light values the literals hard-coded.
+
+   Two things the original entry got wrong, both worth knowing before the next
+   pass. Its example mapping is **incorrect** — `#16241C` is `--color-forest`;
+   `--color-ink` is `#0e1f18`, so following it literally would have darkened text
+   across both surfaces. And this is not simple laziness: the remaining **146
+   occurrences span 56 distinct colours that the design system does not define at
+   all** (`#9fb0a2`, `#856819`, `#ede4d2`, …). Those cannot be "converted" — they
+   need either new tokens or a decision to fold them into existing ones, which is
+   a design call. Three more were skipped on purpose: `#7fa890` matches
+   `--color-sidebar-muted` exactly, but naming a marketing-page colour after the
+   dashboard rail trades a literal for a misleading name.
+
+   **D2 / D4 open** — control-recipe → `<Input>/<Select>/<Field>`, and one-off
+   buttons/segmented/headers → primitives. Both change rendered markup rather
+   than just naming a constant, so both want the visual review.
 
 7. **Firewall CTAs (D1) — named scope ✅ done; wider sweep itemised below.**
    Converted: admin *Create promotion* and *Save*, marketplace *Checkout* and

@@ -141,7 +141,7 @@ function optionRowClass(selected: boolean): string {
 // Space Mono constraint hint on a group legend; warm (semantic "required"),
 // not the brand accent, when the group must be answered.
 function hintClass(required: boolean): string {
-  return `font-mono text-[9px] font-bold uppercase tracking-wider ${
+  return `font-mono text-2xs font-bold uppercase tracking-wider ${
     required ? "text-[var(--color-warm)]" : "text-muted"
   }`;
 }

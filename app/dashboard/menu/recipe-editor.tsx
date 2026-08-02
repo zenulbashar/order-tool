@@ -84,7 +84,7 @@ export function RecipeEditor({
   return (
     <div className="grid gap-4 lg:grid-cols-[1.3fr_300px]">
       <div className="space-y-2">
-        <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+        <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
           Recipe · per serve
         </p>
 
@@ -165,7 +165,7 @@ export function RecipeEditor({
         {addable.length > 0 ? <AddRecipeLine itemId={itemId} options={addable} /> : null}
 
         <div className="mt-1 flex items-center justify-between rounded-input bg-hover-secondary px-3 py-2.5">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <span className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Dish cost · {cost.lineCount} {cost.lineCount === 1 ? "line" : "lines"}
           </span>
           <span className="font-display text-[15px] font-extrabold text-ink">
@@ -184,7 +184,7 @@ export function RecipeEditor({
       {/* Dish economics panel. */}
       <div className="space-y-3">
         <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-card">
-          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Dish economics
           </p>
           <div className="mt-3 flex items-baseline justify-between">
@@ -203,7 +203,7 @@ export function RecipeEditor({
           {margin && marginPct !== null ? (
             <div className="mt-4">
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <span className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Margin
                 </span>
                 <span
@@ -249,7 +249,7 @@ export function RecipeEditor({
           {variants.length > 0 ? (
             <>
               <div className="my-3 h-px bg-line" />
-              <p className="mb-2 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="mb-2 font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 By size
               </p>
               <ul className="space-y-1">

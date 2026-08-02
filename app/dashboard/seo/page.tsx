@@ -70,7 +70,7 @@ export default async function SeoPage() {
             </span>
             <div aria-hidden="true" className="pointer-events-none select-none">
               <ScoreRing score={86} band="good" />
-              <p className="mt-1 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="mt-1 font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 Sample score
               </p>
             </div>

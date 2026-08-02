@@ -200,7 +200,7 @@ function StockAdjustForm({
 
       <div className="flex flex-wrap items-end gap-2">
         <label className="block">
-          <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <span className="mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Action
           </span>
           <select
@@ -217,7 +217,7 @@ function StockAdjustForm({
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <span className="mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label">
             {selMode === "set" ? `New count (${ingredient.unit})` : `Qty (${ingredient.unit})`}
           </span>
           <input
@@ -229,7 +229,7 @@ function StockAdjustForm({
           />
         </label>
         <label className="block min-w-[10rem] flex-1">
-          <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <span className="mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Note (optional)
           </span>
           <input

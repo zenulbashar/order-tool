@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Marketplace admin" };
 
-const eyebrow = "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+const eyebrow = "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 const STATUS_TONE = {
   requested: "processing",

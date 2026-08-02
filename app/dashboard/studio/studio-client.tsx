@@ -362,7 +362,7 @@ export function StudioClient({
   const controlClass =
     "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-2 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
   const microLabel =
-    "mb-2 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+    "mb-2 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
   const popBtn =
     "w-full justify-start rounded-control px-3 py-2 text-left text-sm font-semibold transition disabled:opacity-50";
 
@@ -465,7 +465,7 @@ export function StudioClient({
               <div className="space-y-2 rounded-card border border-accent/40 bg-accent/10 p-3">
                 <div className="flex items-center gap-1.5">
                   <span aria-hidden="true" className="text-accent-deep">✦</span>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-accent-deep">
+                  <span className="font-mono text-2xs font-bold uppercase tracking-wider text-accent-deep">
                     Generate with AI
                   </span>
                 </div>
@@ -478,7 +478,7 @@ export function StudioClient({
                   className={cx(controlClass, "resize-none")}
                 />
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                  <span className="font-mono text-2xs uppercase tracking-wider text-muted">
                     Writes headline · subtext · offer
                   </span>
                   <button
@@ -586,7 +586,7 @@ export function StudioClient({
               <div className="border-t border-line pt-4">
                 <div className="mb-2 flex items-center justify-between">
                   <span className={cx(microLabel, "mb-0")}>Categories</span>
-                  <span className="font-mono text-[9px] font-bold text-label">
+                  <span className="font-mono text-2xs font-bold text-label">
                     {includedCats.size}/{menuData.categories.length}
                   </span>
                 </div>
@@ -631,7 +631,7 @@ export function StudioClient({
         {/* Live preview (above the controls on mobile). */}
         <div className="order-1 min-w-0 lg:order-2">
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            <span className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
               {preset.short} · {preset.width} × {preset.height} px
             </span>
           </div>

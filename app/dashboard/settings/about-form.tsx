@@ -10,7 +10,7 @@ import { updateStorefrontAbout, type VenueSettingsState } from "./actions";
 const initialState: VenueSettingsState = {};
 
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 /** The short welcome blurb under the venue name on the storefront. */
 export function AboutForm({

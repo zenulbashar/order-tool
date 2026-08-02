@@ -194,7 +194,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
             Square is connected — choose which location this venue mirrors to.
           </p>
           <label className="block">
-            <span className="mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            <span className="mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label">
               Location mapping
             </span>
             <Select name="locationId" required defaultValue="">
@@ -217,7 +217,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
       {data.state === "connected" || data.state === "paused" ? (
         <>
           <div>
-            <p className="mb-1.5 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            <p className="mb-1.5 font-mono text-2xs font-bold uppercase tracking-wider text-label">
               Location mapping
             </p>
             <div className="flex items-center gap-2 rounded-[10px] border border-line px-2.5 py-2">

@@ -73,7 +73,7 @@ export function SearchEmptyState({
 
       {categories.length > 0 ? (
         <div className="mt-2 w-full max-w-sm">
-          <p className="text-left font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <p className="text-left font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Maybe try
           </p>
           <div className="mt-2 flex flex-wrap gap-2">

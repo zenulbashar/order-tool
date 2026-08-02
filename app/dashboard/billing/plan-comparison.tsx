@@ -95,7 +95,7 @@ export function PlanComparison({
                   {col.name}
                 </p>
                 {isCurrent ? (
-                  <span className="mt-1 inline-flex items-center rounded-full bg-[var(--color-success)]/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-success-deep">
+                  <span className="mt-1 inline-flex items-center rounded-full bg-[var(--color-success)]/15 px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-success-deep">
                     Current
                   </span>
                 ) : (

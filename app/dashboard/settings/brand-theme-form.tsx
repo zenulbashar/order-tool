@@ -11,7 +11,7 @@ const initialState: VenueSettingsState = {};
 
 // Space Mono micro-eyebrow, matching the menu editor's field labels.
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 // Preset brand-colour swatches (design export). Literal hex — these are colour
 // samples, not UI chrome. The native picker stays the full-spectrum custom entry.

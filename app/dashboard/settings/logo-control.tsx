@@ -27,7 +27,7 @@ const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB
 
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const initialState: LogoState = {};
 
 export function LogoControl({ logoUrl }: { logoUrl: string | null }) {

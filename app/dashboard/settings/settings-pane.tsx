@@ -43,7 +43,7 @@ export function StorefrontHint({
 }) {
   return (
     <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-sm">
-      <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+      <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
         Where it shows
       </p>
       <p className="mt-1.5 text-sm leading-relaxed text-muted">{where}</p>

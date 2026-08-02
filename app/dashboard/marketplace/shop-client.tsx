@@ -122,7 +122,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                 />
               ) : (
                 <div className="flex h-32 w-full items-center justify-center bg-[repeating-linear-gradient(135deg,#efe6d2_0_11px,#f6efe1_11px_22px)]">
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                  <span className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                     {CATEGORY_LABEL[product.category] ?? product.category}
                   </span>
                 </div>
@@ -162,7 +162,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
               Your cart
             </p>
             {itemCount > 0 ? (
-              <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <span className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 {itemCount} {itemCount === 1 ? "item" : "items"}
               </span>
             ) : null}
@@ -266,7 +266,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
             >
               <span aria-hidden="true">‹</span> Your cart
             </button>
-            <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-[var(--color-sidebar-muted)]">
+            <span className="font-mono text-2xs font-bold uppercase tracking-wider text-[var(--color-sidebar-muted)]">
               {itemCount} {itemCount === 1 ? "item" : "items"}
             </span>
           </div>

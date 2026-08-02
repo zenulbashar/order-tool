@@ -7,7 +7,7 @@ import { buildPickupSlots, type SchedulingConfig } from "@/lib/schedule";
 
 // Space Mono section eyebrow, matching the reconciled diner surfaces.
 const sectionLabel =
-  "block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 /** "14:30" -> "2:30 PM" for display only (the value stays 24h "HH:MM"). */
 function formatTimeLabel(time: string): string {

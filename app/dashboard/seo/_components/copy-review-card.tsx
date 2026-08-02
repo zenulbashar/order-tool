@@ -93,7 +93,7 @@ export function CopyReviewCard({
           {proposed ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-md border border-line bg-sand/40 p-3">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Current description
                 </p>
                 <p className="mt-1.5 text-sm text-ink">
@@ -103,7 +103,7 @@ export function CopyReviewCard({
                 </p>
               </div>
               <div className="rounded-md border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 p-3">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-success-deep">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-success-deep">
                   Suggested description
                 </p>
                 <p className="mt-1.5 text-sm text-ink">{proposed}</p>
@@ -113,7 +113,7 @@ export function CopyReviewCard({
 
           {copy.metaDescription ? (
             <div className="rounded-md border border-line bg-sand/40 p-3">
-              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 Suggested search snippet ({copy.metaDescription.length} chars)
               </p>
               <p className="mt-1.5 text-sm text-ink">{copy.metaDescription}</p>
@@ -156,7 +156,7 @@ export function CopyReviewCard({
         <div className="mt-4 space-y-4">
           {copy.qa && copy.qa.length > 0 ? (
             <div>
-              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 Can an AI assistant answer…
               </p>
               <ul className="mt-2 space-y-2">
@@ -191,7 +191,7 @@ export function CopyReviewCard({
           {copy.suggestedFaqs && copy.suggestedFaqs.length > 0 ? (
             <div>
               <div className="flex items-center justify-between gap-2">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Suggested FAQs
                 </p>
                 <CopyTextButton

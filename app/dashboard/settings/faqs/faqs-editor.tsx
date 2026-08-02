@@ -16,7 +16,7 @@ import {
 type Row = FaqRow & { key: number };
 
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 /**
  * Owner editor for storefront FAQs. Manages a small list of question/answer
@@ -115,7 +115,7 @@ export function FaqsEditor({ initial }: { initial: FaqRow[] }) {
         {rows.map((row, index) => (
           <li key={row.key} className="rounded-card border border-line p-4">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <span className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 FAQ {index + 1}
               </span>
               <button

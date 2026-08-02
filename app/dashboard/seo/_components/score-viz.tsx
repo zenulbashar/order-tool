@@ -61,7 +61,7 @@ export function ScoreRing({ score, band }: { score: number; band: SeoAuditBand }
           {score}
         </span>
         <span
-          className={`mt-1 font-mono text-[9px] font-bold uppercase tracking-[0.12em] ${BAND_TEXT[band]}`}
+          className={`mt-1 font-mono text-2xs font-bold uppercase tracking-[0.12em] ${BAND_TEXT[band]}`}
         >
           {BAND_CAPTION[band]}
         </span>
@@ -88,7 +88,7 @@ export function BandScale() {
           className="bg-[var(--color-success)]"
         />
       </div>
-      <div className="mt-1.5 flex justify-between font-mono text-[9px] font-bold tracking-[0.08em]">
+      <div className="mt-1.5 flex justify-between font-mono text-2xs font-bold tracking-[0.08em]">
         <span className="text-[var(--color-warm)]">POOR 0–{SEO_OK_SCORE - 1}</span>
         <span className="text-accent-deep">
           OK {SEO_OK_SCORE}–{SEO_GOOD_SCORE - 1}
