@@ -81,11 +81,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       {/* Viewport — top-right on desktop, full-width top on mobile. Above the
-          sidebar (z-50) and diner chrome; never prints. */}
+          sidebar (z-modal) and diner chrome; never prints. */}
       <div
         role="region"
         aria-label="Notifications"
-        className="pointer-events-none fixed inset-x-4 top-4 z-[100] flex flex-col items-end gap-2 print:hidden sm:inset-x-auto sm:right-4"
+        className="pointer-events-none fixed inset-x-4 top-4 z-toast flex flex-col items-end gap-2 print:hidden sm:inset-x-auto sm:right-4"
       >
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} dismiss={dismiss} />

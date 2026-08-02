@@ -106,7 +106,7 @@ export function SquareCard({ data }: { data: SquareCardData }) {
 
       {/* Overflow menu (design: Pause / Re-map / Disconnect) */}
       {menuOpen ? (
-        <div className="absolute right-3 top-11 z-10 w-48 rounded-input border border-line bg-surface-elevated p-1 shadow-lift">
+        <div className="absolute right-3 top-11 z-raised w-48 rounded-input border border-line bg-surface-elevated p-1 shadow-lift">
           <form action={setSquareMirroring}>
             {data.state === "paused" ? (
               <input type="hidden" name="enable" value="on" />

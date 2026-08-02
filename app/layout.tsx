@@ -86,6 +86,15 @@ export const metadata: Metadata = {
 // theme-color drives the mobile browser chrome + PWA splash (forest ink).
 export const viewport: Viewport = {
   themeColor: "#16241C",
+  /*
+   * Without this, iOS Safari and WKWebView report 0px for every
+   * env(safe-area-inset-*) — which silently disabled the insets two files
+   * ALREADY wrote (marketplace/shop-client.tsx and studio/studio-client.tsx).
+   * That code was dead, so every fixed bottom layer sat under the home
+   * indicator, and worse in the Capacitor owner app where ios.contentInset
+   * insets the scroll view but not fixed-position elements (UI audit RC-2).
+   */
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

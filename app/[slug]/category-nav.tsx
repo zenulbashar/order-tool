@@ -185,7 +185,7 @@ function ArrowButton({
 }) {
   return (
     <div
-      className={`pointer-events-none absolute inset-y-0 z-10 flex items-center ${
+      className={`pointer-events-none absolute inset-y-0 z-raised flex items-center ${
         side === "left"
           ? "left-0 bg-gradient-to-r from-surface via-surface to-transparent pr-8"
           : "right-0 bg-gradient-to-l from-surface via-surface to-transparent pl-8"

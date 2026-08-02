@@ -367,7 +367,10 @@ export function StudioClient({
     "w-full justify-start rounded-control px-3 py-2 text-left text-sm font-semibold transition disabled:opacity-50";
 
   return (
-    <section className="px-5 py-6 pb-24 lg:pb-6">
+    <section
+      className="px-5 py-6 pb-24 lg:pb-6 lg:[--p2e-bottom-bar-h:0px]"
+      style={{ "--p2e-bottom-bar-h": "72px" } as React.CSSProperties}
+    >
       {/* Toolbar — mode tabs (left), Download + Publish actions (right). */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
@@ -394,7 +397,7 @@ export function StudioClient({
             <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-control border border-line-strong bg-surface-elevated px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-hover-secondary [&::-webkit-details-marker]:hidden">
               <span aria-hidden="true">↓</span> Download
             </summary>
-            <div className="absolute right-0 z-20 mt-2 w-56 space-y-1 rounded-card border border-line bg-surface-elevated p-2 shadow-card">
+            <div className="absolute right-0 z-raised mt-2 w-56 space-y-1 rounded-card border border-line bg-surface-elevated p-2 shadow-card">
               <button type="button" onClick={downloadPng} disabled={busy} className={cx(popBtn, "text-ink hover:bg-hover-secondary")}>
                 PNG image
               </button>
@@ -416,7 +419,7 @@ export function StudioClient({
             <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-control bg-forest px-3.5 py-2 text-sm font-semibold text-white transition hover:opacity-90 [&::-webkit-details-marker]:hidden">
               Publish <span aria-hidden="true" className="text-[var(--color-accent)]">→</span>
             </summary>
-            <div className="absolute right-0 z-20 mt-2 w-72 space-y-2 rounded-card border border-line bg-surface-elevated p-3 shadow-card">
+            <div className="absolute right-0 z-raised mt-2 w-72 space-y-2 rounded-card border border-line bg-surface-elevated p-3 shadow-card">
               <label className="block">
                 <span className="mb-1 block text-[11px] text-muted">
                   Caption (shared with the image)
@@ -658,7 +661,7 @@ export function StudioClient({
 
       {/* Mobile action bar (design: Studio bottom bar). Desktop keeps the header
           Download/Publish disclosures above. */}
-      <div className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t border-line bg-surface px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-chrome flex gap-2 border-t border-line bg-surface px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 lg:hidden">
         <button
           type="button"
           onClick={downloadPng}

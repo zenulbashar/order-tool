@@ -70,7 +70,7 @@ export function VenueSwitcher({
         </svg>
       </summary>
 
-      <div className="absolute left-0 z-10 mt-2 w-64 overflow-hidden rounded-card border border-line bg-surface-elevated shadow-lg">
+      <div className="absolute left-0 z-raised mt-2 w-64 overflow-hidden rounded-card border border-line bg-surface-elevated shadow-lg">
         <p className="px-3 pt-3 pb-1 text-xs font-medium uppercase tracking-wide text-muted">
           Your locations
         </p>

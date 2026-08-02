@@ -55,7 +55,7 @@ export function ConciergeLauncher({
       <button
         type="button"
         onClick={onOpenConcierge}
-        className={`fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-pill py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lift ${
+        className={`fixed bottom-6 right-6 z-chrome hidden items-center gap-2 rounded-pill py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lift ${
           panelOpen ? "" : "lg:flex"
         }`}
         style={{ background: "linear-gradient(110deg,#13301f,#1d4a35)" }}

@@ -62,7 +62,7 @@ export function ItemModifierSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+      className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label={item.name}
@@ -141,7 +141,7 @@ export function ItemModifierSheet({
           ) : null}
         </div>
 
-        <div className="space-y-3 border-t border-sand px-5 py-4">
+        <div className="space-y-3 border-t border-sand px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-ink">Quantity</span>
             <QuantityStepper

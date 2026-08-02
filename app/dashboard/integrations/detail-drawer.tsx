@@ -52,7 +52,7 @@ export function SquareDetailDrawer({
   const panelRef = useDialog<HTMLElement>(() => router.push(closeHref));
 
   return (
-    <div className="fixed inset-0 z-40">
+    <div className="fixed inset-0 z-scrim">
       <Link
         href={closeHref}
         aria-label="Close Square activity"

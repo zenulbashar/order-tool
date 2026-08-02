@@ -78,7 +78,7 @@ export function MultiItemPicker({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+      className="fixed inset-0 z-modal flex items-end justify-center bg-black/40 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="Review and add suggestions"
@@ -124,7 +124,7 @@ export function MultiItemPicker({
           </p>
         </div>
 
-        <div className="border-t border-sand px-5 py-4">
+        <div className="border-t border-sand px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={handleAddAll}

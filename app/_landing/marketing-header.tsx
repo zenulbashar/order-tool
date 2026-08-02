@@ -42,7 +42,7 @@ export type MarketingHeaderProps = {
 
 export function MarketingHeader({ container, back, cta }: MarketingHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
+    <header className="sticky top-0 z-sticky border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
       <nav className={cx(container, "flex items-center gap-4 py-3")}>
         <Link href="/" className="flex items-center gap-2">
           <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />

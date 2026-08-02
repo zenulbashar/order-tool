@@ -45,6 +45,26 @@ type Phase = "chat" | "feedback" | "ended";
 /** Resume window for the locally-cached conversation (industry-standard ~1h). */
 const RESUME_MS = 60 * 60 * 1000;
 
+/**
+ * The FAB's offset, in one place because three separate things push it up
+ * (UI audit P0-1 / P0-2 / P0-4):
+ *
+ *  - the iOS home indicator, via env(safe-area-inset-bottom) — live only now
+ *    that the root layout sets viewportFit: "cover";
+ *  - any page-level mobile bottom bar, which declares its own height in
+ *    --p2e-bottom-bar-h. Marketplace and Studio both render one, and the FAB
+ *    used to land on the right-hand end of it — exactly where the primary
+ *    action sits. On a 390px phone it covered ~40% of the bar.
+ *
+ * `bottom` is inline rather than a Tailwind class because the calc() has to
+ * read a variable set by an ancestor at runtime.
+ */
+const FAB_STYLE: React.CSSProperties = {
+  background: "linear-gradient(110deg,#13301f,#1d4a35)",
+  bottom:
+    "calc(1.5rem + env(safe-area-inset-bottom) + var(--p2e-bottom-bar-h, 0px))",
+};
+
 type StoredState = {
   conversationId: string | null;
   department: Department;
@@ -271,8 +291,8 @@ export function SupportWidget({ venueId }: { venueId: string }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-pill py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lift print:hidden"
-          style={{ background: "linear-gradient(110deg,#13301f,#1d4a35)" }}
+          className="fixed right-6 z-chrome flex items-center gap-2 rounded-pill py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lift [body[data-nav-open]_&]:hidden print:hidden"
+          style={FAB_STYLE}
         >
           <span className="flex h-[30px] w-[30px] items-center justify-center rounded-pill bg-accent/20 text-accent">
             <SparkleIcon />
@@ -283,7 +303,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
 
       {open ? (
         <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center lg:items-end lg:justify-end lg:bg-black/15 lg:p-6 print:hidden"
+          className="fixed inset-0 z-scrim flex items-end justify-center bg-black/40 sm:items-center lg:items-end lg:justify-end lg:bg-black/15 lg:p-6 print:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Support"
@@ -477,7 +497,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
                   event.preventDefault();
                   void send(input);
                 }}
-                className="border-t border-concierge-ai-border px-5 py-4"
+                className="border-t border-concierge-ai-border px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
               >
                 <div className="flex items-center gap-2">
                   <input
