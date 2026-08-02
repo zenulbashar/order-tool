@@ -36,16 +36,63 @@ describe("renderOrderEmail", () => {
     );
   });
 
-  it("shows the subtotal + discount breakdown when discounted", () => {
-    const html = renderOrderEmail({
+  /**
+   * Audit C5: the itemised rows carry FULL prices, so a discounted order used to
+   * show lines that visibly summed to more than the stated Total. The breakdown
+   * is what makes them reconcile — so the tests assert the arithmetic, not just
+   * that the words "Subtotal" and "Discount" appear.
+   */
+  it("shows a subtotal + discount breakdown that reconciles to the total", () => {
+    const { html } = renderOrderEmail({
       ...base,
       subtotalCents: 4000,
       discountCents: 800,
       totalCents: 3200,
-    }).html;
-    expect(html).toContain("Subtotal");
+    });
+
+    // The three figures must actually add up: 40.00 − 8.00 = 32.00.
     expect(html).toContain("$40.00");
-    expect(html).toContain("Discount");
+    expect(html).toContain("$8.00");
+    expect(html).toContain("$32.00");
+    // And the line items must reconcile to the subtotal, not to the total.
+    const itemSum = base.items.reduce((n, i) => n + i.lineTotalCents, 0);
+    expect(itemSum + 800).toBe(4000);
+  });
+
+  it("carries the same breakdown in the plain-text part", () => {
+    // Plain text is what a screen reader or a text-only client renders; a
+    // breakdown present in one part and missing from the other still leaves a
+    // receipt whose rows do not add up.
+    const { text } = renderOrderEmail({
+      ...base,
+      subtotalCents: 4000,
+      discountCents: 800,
+      totalCents: 3200,
+    });
+    expect(text).toContain("Subtotal: $40.00");
+    expect(text).toContain("Discount: -$8.00");
+    expect(text).toContain("Total: $32.00");
+  });
+
+  it("derives the subtotal when a caller passes a discount without one", () => {
+    // Defaulting the subtotal to the total would print Subtotal $32.00,
+    // Discount −$8.00, Total $32.00 — a breakdown that contradicts itself.
+    const { html, text } = renderOrderEmail({
+      ...base,
+      discountCents: 800,
+      totalCents: 3200,
+    });
+    expect(text).toContain("Subtotal: $40.00");
+    expect(text).toContain("Total: $32.00");
+    expect(html).toContain("$40.00");
+  });
+
+  it("shows no breakdown at all when nothing was discounted", () => {
+    // An undiscounted receipt should stay a plain item list + Total.
+    const { html, text } = renderOrderEmail(base);
+    expect(html).not.toContain("Subtotal");
+    expect(html).not.toContain("Discount");
+    expect(text).not.toContain("Subtotal:");
   });
 
   it("HTML-escapes the venue name and URL", () => {

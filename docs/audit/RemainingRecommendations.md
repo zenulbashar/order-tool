@@ -89,8 +89,17 @@ Ordered by priority. Nothing here is Critical.
 
 ## Low priority
 
-11. **Discounted receipt email (C5).** Add a subtotal + discount breakdown to
-    `order-email.ts` so the line items reconcile to the Total.
+11. **Discounted receipt email (C5) — ✅ done.** The Subtotal + Discount
+    breakdown had in fact shipped with the customer-email work, and
+    `lib/customer/notify.ts` was already passing both figures — the finding was
+    stale rather than open. What was genuinely missing was the assertion: the
+    test checked only that the words "Subtotal" and "Discount" appeared, so a
+    wrong figure, or a breakdown present in the HTML but absent from the
+    plain-text part, would have passed. The tests now assert the arithmetic in
+    both parts, and one real defect was fixed alongside them — a caller passing
+    `discountCents` without `subtotalCents` rendered "Subtotal $32.00 / Discount
+    −$8.00 / Total $32.00", a breakdown that contradicts itself. The subtotal is
+    now derived so the three figures always reconcile.
 
 12. **Tables empty state (R4).** Add a first-run empty message.
 

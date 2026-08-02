@@ -52,7 +52,12 @@ export function renderOrderEmail(opts: {
   // itemised rows (full price) reconcile to the Total. Without it the lines
   // visibly sum to more than the stated Total.
   const discountCents = opts.discountCents ?? 0;
-  const subtotalCents = opts.subtotalCents ?? totalCents;
+  // DERIVE rather than default to totalCents. A caller that passes a discount
+  // but no subtotal would otherwise render "Subtotal $32.00 / Discount −$8.00 /
+  // Total $32.00" — a breakdown that visibly does not add up, which is worse
+  // than the missing-discount-line problem this block exists to fix. Deriving
+  // keeps the three figures reconciling whatever the caller supplies.
+  const subtotalCents = opts.subtotalCents ?? totalCents + discountCents;
   const hasDiscount = discountCents > 0;
   const collect = orderType === "dine_in" ? "" : " to collect";
   const eyebrow = event === "confirmed" ? "Order confirmed" : "Order ready";
