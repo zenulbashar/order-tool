@@ -35,13 +35,13 @@ export default async function ShopPage() {
 
       <main className={`${CONTAINER} py-[clamp(40px,6vw,80px)]`}>
         <div className="max-w-[640px]">
-          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">
+          <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
             The shop
           </span>
           <h1 className="mt-3 font-display text-[clamp(32px,5vw,56px)] font-extrabold leading-[1.02] tracking-[-0.03em]">
             Everything your venue needs.
           </h1>
-          <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
+          <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[var(--mkt-muted)]">
             Screens, laptops, network gear, security cameras, and the rest of
             the hardware it takes to open your doors. Ordered from the same
             place you run Prompt2Eat, and shipped to your door.
@@ -53,8 +53,8 @@ export default async function ShopPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[#EDE4D2] py-8">
-        <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 text-sm text-[#7C8579]`}>
+      <footer className="border-t border-[var(--mkt-line)] py-8">
+        <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--mkt-muted-warm)]`}>
           <span>© 2026 Prompt2Eat. All rights reserved.</span>
           <Link href="/" className="font-semibold text-forest hover:underline">
             prompt2eat.com

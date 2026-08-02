@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getFeaturedProducts } from "@/lib/shop/feed";
+import { PRODUCT_GRADIENTS } from "@/app/shop/product-gradients";
 
 /**
  * Homepage shop teaser. Shows the three cheapest hospitality picks straight from
@@ -12,12 +13,6 @@ import { getFeaturedProducts } from "@/lib/shop/feed";
 const CONTAINER = "mx-auto w-full max-w-[1240px] px-[clamp(18px,4vw,48px)]";
 const eyebrow = "font-mono text-[11px] font-bold uppercase tracking-[0.18em]";
 
-const GRADIENTS = [
-  "from-[#e7d3a3] to-[#c9a35e]",
-  "from-[#cdb98f] to-[#8a6f3f]",
-  "from-[#d9c39a] to-[#a8824c]",
-];
-
 export async function ShopTeaser() {
   const products = await getFeaturedProducts();
 
@@ -26,18 +21,18 @@ export async function ShopTeaser() {
       <div className={CONTAINER}>
         <div className="flex flex-wrap items-end justify-between gap-4" data-reveal>
           <div className="max-w-[560px]">
-            <span className={`${eyebrow} text-[#856819]`}>The shop</span>
+            <span className={`${eyebrow} text-[var(--mkt-eyebrow)]`}>The shop</span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
               Everything your venue needs.
             </h2>
-            <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
+            <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[var(--mkt-muted)]">
               Screens, laptops, mini PCs, and the rest of the hardware it takes
               to open your doors. Ordered from the same place you run Prompt2Eat.
             </p>
           </div>
           <Link
             href="/shop"
-            className="rounded-xl border border-[#E0D6C1] px-5 py-2.5 text-sm font-bold text-forest transition hover:bg-[#F6F0E2]"
+            className="rounded-xl border border-[var(--mkt-line-strong)] px-5 py-2.5 text-sm font-bold text-forest transition hover:bg-[var(--mkt-cream)]"
           >
             Browse the shop →
           </Link>
@@ -49,7 +44,7 @@ export async function ShopTeaser() {
               href="/shop"
               data-reveal
               data-delay={i * 70}
-              className="group overflow-hidden rounded-[22px] border border-[#EDE4D2] bg-surface-elevated shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
+              className="group overflow-hidden rounded-[22px] border border-[var(--mkt-line)] bg-surface-elevated shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
             >
               <span className="relative flex aspect-[4/3] items-center justify-center overflow-hidden">
                 {p.imageUrl ? (
@@ -61,7 +56,7 @@ export async function ShopTeaser() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]}`}>
+                  <span className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${PRODUCT_GRADIENTS[i % PRODUCT_GRADIENTS.length]}`}>
                     <span className={`${eyebrow} text-2xs text-white/70`}>Product shot</span>
                   </span>
                 )}
@@ -72,7 +67,7 @@ export async function ShopTeaser() {
                 ) : null}
               </span>
               <span className="block p-4">
-                <span className={`${eyebrow} text-2xs text-[#A99A78]`}>
+                <span className={`${eyebrow} text-2xs text-[var(--mkt-sand-deep)]`}>
                   {p.subcategory ?? p.category}
                 </span>
                 <span className="mt-1 flex items-center justify-between gap-3">

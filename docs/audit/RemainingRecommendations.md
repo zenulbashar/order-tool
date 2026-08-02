@@ -93,6 +93,38 @@ Ordered by priority. Nothing here is Critical.
    that raises the question of why the sidebar is involved. So a colour counts as
    NAMED only when some token names it without claiming a domain.
 
+   **D5 third pass ✅ — the "146 undefined colours" were one palette.** The
+   previous entry called them undefinable without a design decision. That framing
+   was wrong, and the counting shows why: **23 of them appear in 2+ FILES**, and
+   the whole set belongs to a single surface — the landing page, `/learn`,
+   `/shop` and `/for` share a dark-forest-over-cream look with its own sage and
+   amber ramps, distinct from both the owner console and the diner storefront.
+   Two were even written in both cases (`#C9D4CB` and `#c9d4cb`), which is drift
+   with nothing left to hide behind.
+
+   So they are named — 23 `--mkt-*` properties, **131 occurrences converted**.
+   Defined as plain custom properties in `:root`, NOT as `@theme` tokens: `@theme`
+   would generate `bg-`/`text-`/`border-`/`ring-`/`divide-` utilities for all 23
+   across the entire app, and these are not app colours. Referenced as
+   `text-[var(--mkt-muted)]`, the same mechanism `--diner-tint` already uses.
+   Verified in the built CSS: all 23 defined, all 23 referenced, and the emitted
+   rules are real (`border-color:var(--mkt-line)`).
+
+   Names describe the ROLE on that surface (`--mkt-line`, `--mkt-eyebrow`,
+   `--mkt-on-dark`), never another surface's component. That also **resolves the
+   old carve-out**: `#7fa890` and `#3a2a08` were left literal because their only
+   names were `--color-sidebar-muted` and `--color-concierge-amber-ink`, which
+   would have been misleading on a marketing page. They now have honest names.
+
+   Separately, the shop product gradients were a copy-pasted array in two files
+   that had **already drifted** — five entries in `shop-grid.tsx`, three in
+   `_landing/shop-teaser.tsx`. One `PRODUCT_GRADIENTS`; identical output, because
+   both index `i % length` and the teaser renders exactly three products.
+
+   **What stays literal: 29 colours, each used once**, almost all gradient stops
+   inside `concierge-demo.tsx`'s animation. A colour used once has no shared
+   meaning to name, and inventing one would be worse than the literal.
+
    Two things the original entry got wrong, both worth knowing before the next
    pass. Its example mapping is **incorrect** — `#16241C` is `--color-forest`;
    `--color-ink` is `#0e1f18`, so following it literally would have darkened text

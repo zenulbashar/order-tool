@@ -70,13 +70,13 @@ export default async function ArticlePage({ params }: ArticleParams) {
       />
 
       <main className={`${CONTAINER} py-[clamp(48px,7vw,88px)]`}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
           {article.eyebrow}
         </span>
         <h1 className="mt-3 font-display text-[clamp(28px,4vw,44px)] font-extrabold leading-[1.08] tracking-[-0.03em]">
           {article.title}
         </h1>
-        <p className="mt-4 text-[17px] leading-[1.6] text-[#5C6B5E]">
+        <p className="mt-4 text-[17px] leading-[1.6] text-[var(--mkt-sage)]">
           {article.description}
         </p>
 
@@ -88,7 +88,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
             {section.paragraphs.map((paragraph) => (
               <p
                 key={paragraph.slice(0, 40)}
-                className="mt-4 text-[16px] leading-[1.7] text-[#3C4A3E]"
+                className="mt-4 text-[16px] leading-[1.7] text-[var(--mkt-forest-soft)]"
               >
                 {paragraph}
               </p>
@@ -101,7 +101,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
           <p className="font-display text-[22px] font-extrabold tracking-[-0.02em]">
             See it on your own menu.
           </p>
-          <p className="mt-1.5 text-[15px] font-medium text-[#3A2A08]">
+          <p className="mt-1.5 text-[15px] font-medium text-[var(--mkt-amber-ink)]">
             Free for 30 days — import your menu from a photo and go live in
             minutes.
           </p>
@@ -115,7 +115,7 @@ export default async function ArticlePage({ params }: ArticleParams) {
 
         {others.length > 0 ? (
           <nav aria-label="More guides" className="mt-12">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#856819]">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
               Keep reading
             </p>
             <ul className="mt-3 space-y-2">
@@ -134,8 +134,8 @@ export default async function ArticlePage({ params }: ArticleParams) {
         ) : null}
       </main>
 
-      <footer className="border-t border-[#EDE4D2] py-8">
-        <div className={`${CONTAINER} text-sm text-[#5A6E60]`}>
+      <footer className="border-t border-[var(--mkt-line)] py-8">
+        <div className={`${CONTAINER} text-sm text-[var(--mkt-sage-deep)]`}>
           © 2026 Prompt2Eat. All rights reserved.
         </div>
       </footer>

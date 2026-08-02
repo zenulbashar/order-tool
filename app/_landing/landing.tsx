@@ -82,7 +82,7 @@ export function Landing() {
               <Link
                 key={l.label}
                 href={l.href}
-                className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.07)] hover:text-surface"
+                className="rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[var(--mkt-on-dark)] transition hover:bg-[rgba(247,243,234,0.07)] hover:text-surface"
               >
                 {l.label}
               </Link>
@@ -113,7 +113,7 @@ export function Landing() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_78%_-8%,#1D4636,#143228_38%,#0F281E_70%,#0C1C15)]">
         <span className="pointer-events-none absolute -right-24 -top-32 h-96 w-96 rounded-full bg-[var(--color-accent)]/20 blur-3xl [animation:p2e-aurora_18s_ease-in-out_infinite]" />
-        <span className="pointer-events-none absolute -left-24 top-40 h-80 w-80 rounded-full bg-[#7FA890]/16 blur-3xl [animation:p2e-aurora_22s_ease-in-out_infinite]" />
+        <span className="pointer-events-none absolute -left-24 top-40 h-80 w-80 rounded-full bg-[var(--mkt-on-dark-sage-bright)]/16 blur-3xl [animation:p2e-aurora_22s_ease-in-out_infinite]" />
         <div className="pointer-events-none absolute inset-0 opacity-50 [background-image:radial-gradient(rgba(247,243,234,0.05)_1px,transparent_1px)] [background-size:26px_26px]" />
         <div
           className={`${CONTAINER} relative flex flex-wrap items-center gap-[clamp(36px,5vw,72px)] py-[clamp(48px,7vw,88px)]`}
@@ -148,13 +148,13 @@ export function Landing() {
                 See it order for you
               </a>
             </div>
-            <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[#9FB0A2]">
-              <span className={`${eyebrow} text-[10px] text-[#7E9486]`}>Order with</span>
+            <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[var(--mkt-on-dark-muted)]">
+              <span className={`${eyebrow} text-[10px] text-[var(--mkt-on-dark-sage)]`}>Order with</span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-3 w-3 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
                 Google Gemini
               </span>
-              <span className="text-[#7E9486]">·</span>
+              <span className="text-[var(--mkt-on-dark-sage)]">·</span>
               <span> Pay · G Pay · PayTo</span>
             </p>
           </div>
@@ -165,9 +165,9 @@ export function Landing() {
       </section>
 
       {/* Trust strip */}
-      <section className="bg-[#0C1C15] py-6">
+      <section className="bg-[var(--mkt-forest-darkest)] py-6">
         <div className={`${CONTAINER} flex flex-wrap items-center justify-center gap-x-4 gap-y-3`}>
-          <span className={`${eyebrow} text-[10.5px] text-[#7E9486]`}>
+          <span className={`${eyebrow} text-[10.5px] text-[var(--mkt-on-dark-sage)]`}>
             Works everywhere you already are
           </span>
           {[
@@ -177,7 +177,7 @@ export function Landing() {
           ].map((c) => (
             <span
               key={c.label}
-              className="inline-flex items-center gap-2 rounded-full border border-[rgba(247,243,234,0.1)] bg-[rgba(247,243,234,0.05)] px-3.5 py-1.5 text-[13px] font-semibold text-[#C9D4CB]"
+              className="inline-flex items-center gap-2 rounded-full border border-[rgba(247,243,234,0.1)] bg-[rgba(247,243,234,0.05)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--mkt-on-dark)]"
             >
               {c.dot ? (
                 <span className="h-2.5 w-2.5 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
@@ -192,16 +192,16 @@ export function Landing() {
       </section>
 
       {/* Concierge deep-dive */}
-      <section id="concierge" className="bg-gradient-to-b from-surface-elevated to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
+      <section id="concierge" className="bg-gradient-to-b from-surface-elevated to-[var(--mkt-cream-soft)] py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="mx-auto max-w-[640px] text-center" data-reveal>
-            <span className={`${eyebrow} text-[var(--color-accent-ink,#856819)] text-[#856819]`}>
+            <span className={`${eyebrow} text-[var(--color-accent-ink,#856819)] text-[var(--mkt-eyebrow)]`}>
               The concierge
             </span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
               Ordering, reinvented by AI.
             </h2>
-            <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
+            <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[var(--mkt-muted)]">
               The concierge reads your whole menu and answers like a waiter who
               knows every dish. Diners get to the right meal faster, and they
               tend to add a little more along the way.
@@ -220,14 +220,14 @@ export function Landing() {
                 { label: "Allergen-safe", cls: "bg-[#eef0ea] text-[#5d655b]" },
               ]}
               visual={
-                <div className="rounded-[22px] border border-[#EDE4D2] bg-white p-5 shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
+                <div className="rounded-[22px] border border-[var(--mkt-line)] bg-white p-5 shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
                   <div className="flex justify-end">
-                    <span className="max-w-[80%] rounded-[16px_16px_5px_16px] bg-gradient-to-br from-accent to-[#e79a24] px-3.5 py-2 text-sm font-medium text-forest">
+                    <span className="max-w-[80%] rounded-[16px_16px_5px_16px] bg-gradient-to-br from-accent to-[var(--mkt-amber-deep)] px-3.5 py-2 text-sm font-medium text-forest">
                       Warming, veggie, about $18
                     </span>
                   </div>
                   <div className="mt-2.5 flex justify-start">
-                    <span className="max-w-[85%] rounded-[16px_16px_16px_5px] bg-[#F6F0E2] px-3.5 py-2 text-sm text-forest">
+                    <span className="max-w-[85%] rounded-[16px_16px_16px_5px] bg-[var(--mkt-cream)] px-3.5 py-2 text-sm text-forest">
                       The mushroom orzo fits perfectly, $17 and fully
                       vegetarian. Want a soup with it?
                     </span>
@@ -241,7 +241,7 @@ export function Landing() {
               title="Order from the assistant they already use."
               body="Prompt2Eat plugs into Google Gemini, so a diner can order from your venue without opening anything new. They ask Gemini, it places the order, your kitchen gets the ticket."
               visual={
-                <div className="rounded-[22px] bg-gradient-to-br from-[#143228] to-[#0f281e] p-5 text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]">
+                <div className="rounded-[22px] bg-gradient-to-br from-[var(--mkt-forest-deep)] to-[var(--mkt-forest-deeper)] p-5 text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]">
                   <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 text-xs font-semibold">
                     <span className="h-3 w-3 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
                     Gemini
@@ -261,7 +261,7 @@ export function Landing() {
               title="Scan the table. Order and pay from the seat."
               body="One code per table. Guests order and pay without waving anyone down, so your staff spend their time on service instead of taking orders."
               visual={
-                <div className="rounded-[22px] border border-[#EDE4D2] bg-white p-6 text-center shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
+                <div className="rounded-[22px] border border-[var(--mkt-line)] bg-white p-6 text-center shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
                   <div className="mx-auto grid w-32 grid-cols-5 gap-1 rounded-2xl bg-forest p-3">
                     {QR_PATTERN.map((on, i) => (
                       <span
@@ -271,7 +271,7 @@ export function Landing() {
                     ))}
                   </div>
                   <p className="mt-3 font-display text-lg font-extrabold">Table 12</p>
-                  <p className={`${eyebrow} text-[10px] text-[#8A9384]`}>Scan to order</p>
+                  <p className={`${eyebrow} text-[10px] text-[var(--mkt-on-dark-dim)]`}>Scan to order</p>
                 </div>
               }
             />
@@ -281,18 +281,18 @@ export function Landing() {
               title="Turn first-timers into regulars."
               body="Regulars reorder their favourite in a tap. Smart suggestions add the side or drink that pairs, which lifts the average order without any pressure. That is how a busy night becomes a bigger night."
               visual={
-                <div className="rounded-[22px] border border-[#EDE4D2] bg-white p-5 shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
-                  <div className="flex items-center gap-3 rounded-2xl bg-[#F6F0E2] p-3">
-                    <span className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#d8b26a] to-[#b07f2e]" />
+                <div className="rounded-[22px] border border-[var(--mkt-line)] bg-white p-5 shadow-[0_30px_56px_-28px_rgba(20,30,25,0.22)]">
+                  <div className="flex items-center gap-3 rounded-2xl bg-[var(--mkt-cream)] p-3">
+                    <span className="h-10 w-10 rounded-lg bg-gradient-to-br from-[var(--mkt-amber-light)] to-[var(--mkt-amber-mid)]" />
                     <span className="flex-1">
-                      <span className={`${eyebrow} block text-2xs text-[#8A9384]`}>Your usual</span>
+                      <span className={`${eyebrow} block text-2xs text-[var(--mkt-on-dark-dim)]`}>Your usual</span>
                       <span className="block text-sm font-bold">Wild Mushroom Orzo</span>
                     </span>
                     <span className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-forest">
                       Reorder
                     </span>
                   </div>
-                  <div className="mt-2.5 flex items-center gap-2 rounded-2xl border border-dashed border-[#E0D6C1] p-3 text-sm text-[#6E756B]">
+                  <div className="mt-2.5 flex items-center gap-2 rounded-2xl border border-dashed border-[var(--mkt-line-strong)] p-3 text-sm text-[var(--mkt-muted)]">
                     <span className={`${eyebrow} text-2xs text-[var(--color-accent)]`}>Smart upsell</span>
                     Add miso soup? <span className="ml-auto font-bold text-forest">+$4</span>
                   </div>
@@ -326,7 +326,7 @@ export function Landing() {
                 <h3 className="mt-4 font-display text-[clamp(20px,3vw,26px)] font-extrabold text-surface">
                   {s.t}
                 </h3>
-                <p className="mx-auto mt-2 max-w-[280px] text-[15px] leading-[1.55] text-[#9FB0A2]">
+                <p className="mx-auto mt-2 max-w-[280px] text-[15px] leading-[1.55] text-[var(--mkt-on-dark-muted)]">
                   {s.b}
                 </p>
               </div>
@@ -336,14 +336,14 @@ export function Landing() {
       </section>
 
       {/* For Restaurants */}
-      <section id="restaurants" className="bg-gradient-to-b from-[#FBF6EC] to-surface-elevated py-[clamp(72px,10vw,128px)]">
+      <section id="restaurants" className="bg-gradient-to-b from-[var(--mkt-cream-soft)] to-surface-elevated py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="max-w-[680px]" data-reveal>
-            <span className={`${eyebrow} text-[#856819]`}>For restaurants</span>
+            <span className={`${eyebrow} text-[var(--mkt-eyebrow)]`}>For restaurants</span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
               One platform to run the whole venue.
             </h2>
-            <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[#6E756B]">
+            <p className="mt-4 text-[clamp(16px,1.7vw,20px)] leading-[1.55] text-[var(--mkt-muted)]">
               Ordering is where it starts. The rest of the venue runs here too.
               Your menu, your kitchen screen, your payments, your marketing, and
               your numbers, all in one place. Bigger baskets, faster tables, and
@@ -356,19 +356,19 @@ export function Landing() {
                 key={f.title}
                 data-reveal
                 data-delay={(i % 3) * 60}
-                className="rounded-[22px] border border-[#EDE4D2] bg-surface-elevated p-5 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
+                className="rounded-[22px] border border-[var(--mkt-line)] bg-surface-elevated p-5 shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]"
               >
                 <BentoIcon d={f.d} />
                 <h3 className="mt-3.5 font-display text-base font-extrabold tracking-[-0.015em]">
                   {f.title}
                 </h3>
-                <p className="mt-1 text-[13.5px] leading-[1.5] text-[#7C8579]">{f.body}</p>
+                <p className="mt-1 text-[13.5px] leading-[1.5] text-[var(--mkt-muted-warm)]">{f.body}</p>
               </div>
             ))}
             {/* Payments spotlight */}
             <div
               data-reveal
-              className="rounded-[22px] bg-gradient-to-br from-[#143228] to-[#0f281e] p-5 text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
+              className="rounded-[22px] bg-gradient-to-br from-[var(--mkt-forest-deep)] to-[var(--mkt-forest-deeper)] p-5 text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/8">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F4B43C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -379,7 +379,7 @@ export function Landing() {
               <h3 className="mt-3.5 font-display text-base font-extrabold tracking-[-0.015em]">
                 Card, wallet, and pay by bank
               </h3>
-              <p className="mt-1 text-[13.5px] leading-[1.5] text-[#9FB0A2]">
+              <p className="mt-1 text-[13.5px] leading-[1.5] text-[var(--mkt-on-dark-muted)]">
                 Card, Apple Pay, Google Pay, and PayTo, settled straight to your
                 account. Connect Square if you already run one.
               </p>
@@ -394,7 +394,7 @@ export function Landing() {
       {/* Why Prompt2Eat — real product capabilities. Deliberately NOT
           fabricated metrics or invented testimonials: those get added only
           when there are real numbers and consenting customers to cite. */}
-      <section className="relative bg-gradient-to-b from-[#0F281E] to-[#0C1C15] py-[clamp(72px,10vw,120px)]">
+      <section className="relative bg-gradient-to-b from-[var(--mkt-forest-deeper)] to-[var(--mkt-forest-darkest)] py-[clamp(72px,10vw,120px)]">
         <span className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(244,180,60,0.1),transparent)]" />
         <div className={`${CONTAINER} relative`}>
           <div className="text-center" data-reveal>
@@ -427,7 +427,7 @@ export function Landing() {
                 <p className="font-display text-lg font-extrabold text-surface">
                   {feature.t}
                 </p>
-                <p className="mt-2 text-base leading-[1.55] text-[#C9D4CB]">
+                <p className="mt-2 text-base leading-[1.55] text-[var(--mkt-on-dark)]">
                   {feature.d}
                 </p>
               </div>
@@ -437,10 +437,10 @@ export function Landing() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="bg-gradient-to-b from-surface-elevated to-[#FBF6EC] py-[clamp(72px,10vw,128px)]">
+      <section id="pricing" className="bg-gradient-to-b from-surface-elevated to-[var(--mkt-cream-soft)] py-[clamp(72px,10vw,128px)]">
         <div className={CONTAINER}>
           <div className="text-center" data-reveal>
-            <span className={`${eyebrow} text-[#856819]`}>Pricing</span>
+            <span className={`${eyebrow} text-[var(--mkt-eyebrow)]`}>Pricing</span>
             <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em]">
               Free for 30 days. No card.
             </h2>
@@ -457,8 +457,8 @@ export function Landing() {
                 data-delay={i * 70}
                 className={`flex flex-col rounded-[22px] p-6 ${
                   tier.featured
-                    ? "relative border-2 border-[var(--color-accent)] bg-gradient-to-br from-[#143228] to-[#0f281e] text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
-                    : "border border-[#EDE4D2] bg-surface-elevated"
+                    ? "relative border-2 border-[var(--color-accent)] bg-gradient-to-br from-[var(--mkt-forest-deep)] to-[var(--mkt-forest-deeper)] text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]"
+                    : "border border-[var(--mkt-line)] bg-surface-elevated"
                 }`}
               >
                 {tier.featured ? (
@@ -466,14 +466,14 @@ export function Landing() {
                     Most popular
                   </span>
                 ) : null}
-                <span className={`${eyebrow} text-[10px] ${tier.featured ? "text-[#9FB0A2]" : "text-[#856819]"}`}>
+                <span className={`${eyebrow} text-[10px] ${tier.featured ? "text-[var(--mkt-on-dark-muted)]" : "text-[var(--mkt-eyebrow)]"}`}>
                   {tier.name}
                 </span>
                 <p className="mt-3">
                   <span className={`font-display text-[44px] font-extrabold tracking-[-0.03em] ${tier.featured ? "text-[var(--color-accent)]" : ""}`}>
                     {tier.price}
                   </span>{" "}
-                  <span className={tier.featured ? "text-[#9FB0A2]" : "text-[#7C8579]"}>{tier.note}</span>
+                  <span className={tier.featured ? "text-[var(--mkt-on-dark-muted)]" : "text-[var(--mkt-muted-warm)]"}>{tier.note}</span>
                 </p>
                 <Link
                   href="/signin"
@@ -497,7 +497,7 @@ export function Landing() {
       {/* Final CTA */}
       <section id="cta" className="bg-surface-elevated px-[clamp(18px,4vw,48px)] py-[clamp(48px,7vw,96px)]">
         <div className="relative mx-auto max-w-[1080px] overflow-hidden rounded-[32px] bg-[radial-gradient(120%_140%_at_85%_0%,#F6C258,#F4B43C_45%,#E79A24)] px-[clamp(28px,6vw,72px)] py-[clamp(48px,7vw,80px)] text-forest">
-            <span className="pointer-events-none absolute -bottom-16 -left-10 h-64 w-64 rounded-full bg-[#0f281e]/15 blur-2xl" />
+            <span className="pointer-events-none absolute -bottom-16 -left-10 h-64 w-64 rounded-full bg-[var(--mkt-forest-deeper)]/15 blur-2xl" />
             <div className="relative max-w-[560px]" data-reveal>
               <h2 className="font-display text-[clamp(30px,4.4vw,52px)] font-extrabold leading-[1.03] tracking-[-0.03em]">
                 Start free. Your menu is live in minutes.
@@ -532,7 +532,7 @@ export function Landing() {
       {/* Footer */}
       </main>
 
-      <footer className="bg-[#0C1C15] py-14 text-[#C9D4CB]">
+      <footer className="bg-[var(--mkt-forest-darkest)] py-14 text-[var(--mkt-on-dark)]">
         <div className={CONTAINER}>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
             <div className="lg:col-span-2">
@@ -540,7 +540,7 @@ export function Landing() {
                 <Mark />
                 <Wordmark className="text-lg text-surface" />
               </div>
-              <p className="mt-3 max-w-[280px] text-sm text-[#7FA890]">
+              <p className="mt-3 max-w-[280px] text-sm text-[var(--mkt-on-dark-sage-bright)]">
                 The AI-native way to order. Built for hospitality, loved by
                 diners.
               </p>
@@ -584,19 +584,19 @@ export function Landing() {
               },
             ].map((col) => (
               <div key={col.h}>
-                <p className={`${eyebrow} text-[10px] text-[#7E9486]`}>{col.h}</p>
+                <p className={`${eyebrow} text-[10px] text-[var(--mkt-on-dark-sage)]`}>{col.h}</p>
                 <ul className="mt-3 space-y-2 text-sm font-medium">
                   {col.links.map((l) => (
                     <li key={l.label}>
                       {"href" in l && l.href ? (
                         <Link
                           href={l.href}
-                          className="text-[#C9D4CB] transition hover:text-surface"
+                          className="text-[var(--mkt-on-dark)] transition hover:text-surface"
                         >
                           {l.label}
                         </Link>
                       ) : (
-                        <span className="cursor-default text-[#C9D4CB]">{l.label}</span>
+                        <span className="cursor-default text-[var(--mkt-on-dark)]">{l.label}</span>
                       )}
                     </li>
                   ))}
@@ -604,7 +604,7 @@ export function Landing() {
               </div>
             ))}
           </div>
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(247,243,234,0.08)] pt-6 text-sm text-[#7FA890]">
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(247,243,234,0.08)] pt-6 text-sm text-[var(--mkt-on-dark-sage-bright)]">
             <span>© 2026 Prompt2Eat. All rights reserved.</span>
             <span className="flex gap-4">
               <span>X</span>
@@ -644,13 +644,13 @@ function FeatureRow({
   return (
     <div className="grid items-center gap-[clamp(28px,4vw,64px)] lg:grid-cols-2" data-reveal>
       <div className={flip ? "lg:order-2" : ""}>
-        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[#856819]">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
           {eb}
         </span>
         <h3 className="mt-2.5 font-display text-[clamp(24px,3vw,34px)] font-extrabold leading-[1.08] tracking-[-0.02em]">
           {title}
         </h3>
-        <p className="mt-3 max-w-[440px] text-[15px] leading-[1.6] text-[#6E756B]">{body}</p>
+        <p className="mt-3 max-w-[440px] text-[15px] leading-[1.6] text-[var(--mkt-muted)]">{body}</p>
         {pills ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {pills.map((p) => (

@@ -77,7 +77,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
           <h1 className="mt-3 max-w-[18ch] font-display text-[clamp(30px,5vw,56px)] font-extrabold leading-[1.04] tracking-[-0.03em]">
             {segment.heading}
           </h1>
-          <p className="mt-5 max-w-[52ch] text-[clamp(16px,1.8vw,20px)] leading-[1.55] text-[#C9D4CB]">
+          <p className="mt-5 max-w-[52ch] text-[clamp(16px,1.8vw,20px)] leading-[1.55] text-[var(--mkt-on-dark)]">
             {segment.intro}
           </p>
           <Link
@@ -99,10 +99,10 @@ export default async function SegmentPage({ params }: SegmentParams) {
             {segment.painPoints.map((point) => (
               <div
                 key={point.title}
-                className="rounded-[18px] border border-[#EDE4D2] bg-surface-elevated p-6"
+                className="rounded-[18px] border border-[var(--mkt-line)] bg-surface-elevated p-6"
               >
                 <p className="font-display text-lg font-extrabold">{point.title}</p>
-                <p className="mt-2 text-[15px] leading-[1.6] text-[#5C6B5E]">
+                <p className="mt-2 text-[15px] leading-[1.6] text-[var(--mkt-sage)]">
                   {point.body}
                 </p>
               </div>
@@ -119,12 +119,12 @@ export default async function SegmentPage({ params }: SegmentParams) {
             {segment.features.map((feature) => (
               <div
                 key={feature.title}
-                className="rounded-[18px] border border-[#EDE4D2] bg-white p-6"
+                className="rounded-[18px] border border-[var(--mkt-line)] bg-white p-6"
               >
                 <p className="font-display text-lg font-extrabold">
                   {feature.title}
                 </p>
-                <p className="mt-2 text-[15px] leading-[1.6] text-[#3C4A3E]">
+                <p className="mt-2 text-[15px] leading-[1.6] text-[var(--mkt-forest-soft)]">
                   {feature.body}
                 </p>
               </div>
@@ -137,19 +137,19 @@ export default async function SegmentPage({ params }: SegmentParams) {
           <h2 className="font-display text-[clamp(24px,3.2vw,36px)] font-extrabold tracking-[-0.02em]">
             Questions
           </h2>
-          <div className="mt-6 divide-y divide-[#EDE4D2] border-y border-[#EDE4D2]">
+          <div className="mt-6 divide-y divide-[var(--mkt-line)] border-y border-[var(--mkt-line)]">
             {segment.faqs.map((faq) => (
               <details key={faq.question} className="group py-4">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-lg font-bold [&::-webkit-details-marker]:hidden">
                   {faq.question}
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-[#856819] transition group-open:rotate-45"
+                    className="shrink-0 text-[var(--mkt-eyebrow)] transition group-open:rotate-45"
                   >
                     +
                   </span>
                 </summary>
-                <p className="mt-3 text-[15px] leading-[1.7] text-[#3C4A3E]">
+                <p className="mt-3 text-[15px] leading-[1.7] text-[var(--mkt-forest-soft)]">
                   {faq.answer}
                 </p>
               </details>
@@ -162,7 +162,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
           <p className="font-display text-[clamp(22px,3vw,30px)] font-extrabold tracking-[-0.02em] text-forest">
             Live in an afternoon.
           </p>
-          <p className="mt-2 max-w-[48ch] text-[15px] font-medium text-[#3A2A08]">
+          <p className="mt-2 max-w-[48ch] text-[15px] font-medium text-[var(--mkt-amber-ink)]">
             Import your menu from a photo, set your brand, connect payments, and
             open your storefront. Free for 30 days, no card to start.
           </p>
@@ -176,7 +176,7 @@ export default async function SegmentPage({ params }: SegmentParams) {
 
         {/* Cross-links to the other audiences (internal linking). */}
         <nav aria-label="Other venue types" className="mt-14">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#856819]">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-eyebrow)]">
             Prompt2Eat for
           </p>
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[15px]">
@@ -196,8 +196,8 @@ export default async function SegmentPage({ params }: SegmentParams) {
         </nav>
       </main>
 
-      <footer className="border-t border-[#EDE4D2] py-8">
-        <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 text-sm text-[#7C8579]`}>
+      <footer className="border-t border-[var(--mkt-line)] py-8">
+        <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--mkt-muted-warm)]`}>
           <span>© 2026 Prompt2Eat. All rights reserved.</span>
           <Link href="/" className="font-semibold text-forest hover:underline">
             prompt2eat.com

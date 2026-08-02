@@ -29,7 +29,7 @@ const SCRIPTS: Script[] = [
     reply:
       "Three warming vegetarian picks under $18. The mushroom orzo is our most-loved right now.",
     dishes: [
-      { name: "Wild Mushroom Orzo", tag: "Vegetarian", price: "$17", grad: "from-[#d8b26a] to-[#b07f2e]" },
+      { name: "Wild Mushroom Orzo", tag: "Vegetarian", price: "$17", grad: "from-[var(--mkt-amber-light)] to-[var(--mkt-amber-mid)]" },
       { name: "Pumpkin Dahl", tag: "Vegan · warming", price: "$16", grad: "from-[#e0a24a] to-[#c9772b]" },
       { name: "Roast Cauli Bowl", tag: "Veg · hearty", price: "$18", grad: "from-[#cdae74] to-[#8a6a34]" },
     ],
@@ -201,11 +201,11 @@ export function ConciergeDemo() {
   return (
     <div className="mx-auto w-full max-w-[388px]">
       {/* Phone */}
-      <div className="rounded-[44px] bg-[#0C1C15] p-2.5 shadow-[0_40px_80px_-34px_rgba(13,29,22,0.75),0_0_0_1px_rgba(244,180,60,0.08)]">
-        <div className="relative flex aspect-[9/18.6] flex-col overflow-hidden rounded-[35px] bg-gradient-to-b from-[#0f281e] to-[#0c1c15]">
+      <div className="rounded-[44px] bg-[var(--mkt-forest-darkest)] p-2.5 shadow-[0_40px_80px_-34px_rgba(13,29,22,0.75),0_0_0_1px_rgba(244,180,60,0.08)]">
+        <div className="relative flex aspect-[9/18.6] flex-col overflow-hidden rounded-[35px] bg-gradient-to-b from-[var(--mkt-forest-deeper)] to-[var(--mkt-forest-darkest)]">
           {/* Header */}
-          <div className="relative shrink-0 bg-gradient-to-b from-[#143228] to-[#0f281e] px-4 pb-3 pt-3">
-            <div className="mb-2 flex justify-between font-mono text-[10px] text-[#9fb0a2]">
+          <div className="relative shrink-0 bg-gradient-to-b from-[var(--mkt-forest-deep)] to-[var(--mkt-forest-deeper)] px-4 pb-3 pt-3">
+            <div className="mb-2 flex justify-between font-mono text-[10px] text-[var(--mkt-on-dark-muted)]">
               <span>9:41</span>
               <span>▚▚ 5G</span>
             </div>
@@ -215,12 +215,12 @@ export function ConciergeDemo() {
                 <p className="truncate font-display text-sm font-extrabold text-surface">
                   Maple &amp; Thyme
                 </p>
-                <p className="flex items-center gap-1.5 text-[11px] text-[#9fb0a2]">
+                <p className="flex items-center gap-1.5 text-[11px] text-[var(--mkt-on-dark-muted)]">
                   <span className="h-1.5 w-1.5 rounded-full bg-success [animation:p2e-pulse_2s_ease-in-out_infinite]" />
                   AI Concierge · online
                 </p>
               </div>
-              <span className="ml-auto rounded-full bg-[var(--color-accent)]/90 px-2 py-0.5 font-mono text-2xs font-bold text-[#0c1c15]">
+              <span className="ml-auto rounded-full bg-[var(--color-accent)]/90 px-2 py-0.5 font-mono text-2xs font-bold text-[var(--mkt-forest-darkest)]">
                 TABLE 12
               </span>
             </div>
@@ -234,7 +234,7 @@ export function ConciergeDemo() {
             {started ? (
               <Bubble side="right">{script.prompt}</Bubble>
             ) : (
-              <p className="m-auto text-center text-xs text-[#9fb0a2]">
+              <p className="m-auto text-center text-xs text-[var(--mkt-on-dark-muted)]">
                 Starting a conversation…
               </p>
             )}
@@ -274,7 +274,7 @@ export function ConciergeDemo() {
                         <span className="block truncate font-display text-[13px] font-extrabold text-surface">
                           {dish.name}
                         </span>
-                        <span className="block truncate text-[11px] text-[#9fb0a2]">
+                        <span className="block truncate text-[11px] text-[var(--mkt-on-dark-muted)]">
                           {dish.tag}
                         </span>
                       </span>
@@ -302,14 +302,14 @@ export function ConciergeDemo() {
                     className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
                       answered
                         ? "bg-success/20 text-[#8fe0ac]"
-                        : "bg-[var(--color-accent)] text-[#0c1c15]"
+                        : "bg-[var(--color-accent)] text-[var(--mkt-forest-darkest)]"
                     }`}
                   >
                     {answered ? "✓ " : ""}
                     {script.yes}
                   </span>
                   {!answered ? (
-                    <span className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-[#c9d4cb]">
+                    <span className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-semibold text-[var(--mkt-on-dark)]">
                       No thanks
                     </span>
                   ) : null}
@@ -324,8 +324,8 @@ export function ConciergeDemo() {
               showCart ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
             }`}
           >
-            <div className="m-2.5 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#143228] to-[#0f281e] p-2.5 shadow-lg">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] font-display text-sm font-extrabold text-[#0c1c15] [animation:p2e-pop_.4s_ease-out]">
+            <div className="m-2.5 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[var(--mkt-forest-deep)] to-[var(--mkt-forest-deeper)] p-2.5 shadow-lg">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] font-display text-sm font-extrabold text-[var(--mkt-forest-darkest)] [animation:p2e-pop_.4s_ease-out]">
                 {showCart ? "2" : "1"}
               </span>
               <span className="flex-1 text-sm font-semibold text-surface">
@@ -341,7 +341,7 @@ export function ConciergeDemo() {
 
       {/* Try-it chips */}
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#9fb0a2]">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mkt-on-dark-muted)]">
           Try it
         </span>
         {SCRIPTS.map((s, i) => (
@@ -351,8 +351,8 @@ export function ConciergeDemo() {
             onClick={() => dispatch({ type: "run", scriptIndex: i })}
             className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
               state.scriptIndex === i && started
-                ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[#0c1c15]"
-                : "border-white/15 text-[#c9d4cb] hover:bg-white/5"
+                ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--mkt-forest-darkest)]"
+                : "border-white/15 text-[var(--mkt-on-dark)] hover:bg-white/5"
             }`}
           >
             {s.label}
@@ -375,7 +375,7 @@ function Bubble({
       <div
         className={`max-w-[80%] px-3 py-2 text-[13px] leading-snug [animation:p2e-msg-in_.34s_ease-out_both] ${
           side === "right"
-            ? "rounded-[16px_16px_5px_16px] bg-gradient-to-br from-accent to-[#e79a24] font-medium text-forest"
+            ? "rounded-[16px_16px_5px_16px] bg-gradient-to-br from-accent to-[var(--mkt-amber-deep)] font-medium text-forest"
             : "rounded-[16px_16px_16px_5px] bg-white/95 text-forest"
         }`}
       >
@@ -392,7 +392,7 @@ function TypingDots() {
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="h-1.5 w-1.5 rounded-full bg-[#8a9384] [animation:p2e-think_1s_ease-in-out_infinite]"
+            className="h-1.5 w-1.5 rounded-full bg-[var(--mkt-on-dark-dim)] [animation:p2e-think_1s_ease-in-out_infinite]"
             style={{ animationDelay: `${i * 0.15}s` }}
           />
         ))}

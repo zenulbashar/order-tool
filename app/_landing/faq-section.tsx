@@ -16,11 +16,11 @@ export function FaqSection() {
   return (
     <section
       id="faq"
-      className="bg-gradient-to-b from-[#FBF6EC] to-surface-elevated py-[clamp(72px,10vw,128px)]"
+      className="bg-gradient-to-b from-[var(--mkt-cream-soft)] to-surface-elevated py-[clamp(72px,10vw,128px)]"
     >
       <div className="mx-auto w-full max-w-[840px] px-[clamp(18px,4vw,48px)]">
         <div className="text-center" data-reveal>
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#856819]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--mkt-eyebrow)]">
             FAQ
           </span>
           <h2 className="mt-3 font-display text-[clamp(30px,4.4vw,52px)] font-extrabold tracking-[-0.03em]">
@@ -34,18 +34,18 @@ export function FaqSection() {
               key={item.question}
               data-reveal
               data-delay={Math.min(i, 6) * 40}
-              className="group rounded-[18px] border border-[#EDE4D2] bg-surface-elevated px-5 shadow-[0_1px_3px_rgba(20,30,25,0.04)] open:shadow-[0_14px_30px_-18px_rgba(20,30,25,0.25)]"
+              className="group rounded-[18px] border border-[var(--mkt-line)] bg-surface-elevated px-5 shadow-[0_1px_3px_rgba(20,30,25,0.04)] open:shadow-[0_14px_30px_-18px_rgba(20,30,25,0.25)]"
             >
               <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-4 py-4 font-display text-[16.5px] font-bold tracking-[-0.01em] text-forest [&::-webkit-details-marker]:hidden">
                 {item.question}
                 <span
                   aria-hidden="true"
-                  className="shrink-0 text-[#856819] transition-transform group-open:rotate-45"
+                  className="shrink-0 text-[var(--mkt-eyebrow)] transition-transform group-open:rotate-45"
                 >
                   ＋
                 </span>
               </summary>
-              <p className="pb-5 text-[15px] leading-[1.65] text-[#5C6B5E]">
+              <p className="pb-5 text-[15px] leading-[1.65] text-[var(--mkt-sage)]">
                 {item.answer}
               </p>
             </details>
