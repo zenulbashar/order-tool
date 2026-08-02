@@ -24,7 +24,9 @@ export default async function AdminLayout({
   const { email } = await requirePlatformAdmin();
 
   return (
-    <div className="admin-dark min-h-screen bg-surface text-ink">
+    // min-h-dvh, not min-h-screen: the rest of the app already uses dvh, and
+    // 100vh produces the classic jump under mobile browser chrome (UI audit P1-7).
+    <div className="admin-dark min-h-dvh bg-surface text-ink">
       <AdminNav email={email} />
       {children}
     </div>
