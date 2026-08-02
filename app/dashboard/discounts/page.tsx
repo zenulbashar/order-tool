@@ -156,6 +156,21 @@ export default async function DiscountsPage() {
                         {p.isActive ? "Pause" : "Resume"}
                       </button>
                     </form>
+
+                    {/*
+                      Edit path (audit R3). <details> rather than dialog state:
+                      the row is a server component, the editor is only wanted
+                      occasionally, and a disclosure keeps it keyboard-reachable
+                      and open-able without JavaScript.
+                    */}
+                    <details className="w-full">
+                      <summary className="inline-flex cursor-pointer list-none rounded-control border border-line-strong bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-hover-secondary">
+                        Edit
+                      </summary>
+                      <div className="mt-4 border-t border-line pt-4">
+                        <DiscountForm discount={p} />
+                      </div>
+                    </details>
                   </li>
                 );
               })}

@@ -242,9 +242,55 @@ Ordered by priority. Nothing here is Critical.
    dialog cannot ship without them — which matters more than the eighth, since the
    ninth is the one nobody remembers to check.
 
-9. **Removal-policy convergence (R3).** Pick one policy (recommend archive +
-   confirm everywhere) and add edit paths for value-bearing entities. Product
-   decision.
+9. **Removal-policy convergence (R3) — the edit-path half is ✅ done; the
+   policy half is still a product decision.**
+
+   R3 bundled two different kinds of problem, and only one of them needed a
+   product call.
+
+   **"Some value-bearing entities have no edit path" was a plain gap.** An
+   inventory of all 24 `app/dashboard/**/actions.ts` files found exactly one:
+   owner **discount codes** could be created and paused, never corrected. So a
+   wrong percentage or a typo in the code diners have to type could only be
+   abandoned — leaving a dead row and holding that code string hostage to the
+   partial unique index on `(owner_venue_id, code)`. Everything else with value
+   attached already had one (menu items, tables, stations, ingredients, staff
+   roles; gift cards have top-up + void, which is correct for a bearer
+   instrument).
+
+   `updateOwnerDiscount` closes it. Three things worth knowing about the shape:
+
+   - The validation is now a shared `parse.ts`, not a second copy. Every money
+     rule (percent ≤ 100, value > 0 *after* cents rounding, non-negative minimum
+     spend) has one implementation and one test. Copying them was the obvious
+     move and is exactly the failure this audit keeps finding — S5, S6 and D2 are
+     all "correct here, absent in the neighbouring place reaching the same
+     state".
+   - The **code itself is editable**, deliberately. A typo in the string diners
+     type is the likeliest reason to want an edit at all, and redemption history
+     hangs off `orders.applied_promo_id` — the id, not the code — so past orders
+     keep reporting against it.
+   - `isActive` is deliberately NOT written by the update. Pause/resume is its
+     own action; folding it in would let a save silently un-pause a code.
+
+   Both actions' ownership controls are pinned by
+   `test/discount-actions-scoping.test.ts`, because **neither is type-enforced**.
+   Verified directly rather than assumed: adding an unknown field to the object
+   spread into drizzle's `.values()` raises *no* tsc error — the same gap as
+   `.set()` being all-optional, which is what let S4's bug survive a green suite.
+   So the tests assert that update carries the session's venue in its WHERE and
+   that create FORCES `fundingSource: "merchant"`, `platformFundedPercent: 0`,
+   `scope: "selected"` and the session's `ownerVenueId` against a form that tries
+   to claim platform funding. Five mutations verified, each failing only its own
+   test.
+
+   **Still open: the policy itself.** Soft-toggle (discounts, promotions,
+   products) vs hard-delete (tables, stations, ingredients, library images) vs
+   void (gift cards). Recommendation unchanged — archive + confirm everywhere,
+   with void kept for gift cards because a bearer instrument genuinely differs
+   from a config row. But converging it changes what an owner's "Delete" button
+   does to data they can currently destroy, and that is a product call, not a
+   refactor to slip in unannounced.
 
 10. **Dashboard read surfaces gated on membership — ✅ done for the money and
     PII pages.** Investigated during the 2026-08 security review and scored
