@@ -31,7 +31,7 @@ export function AdminNav({ email }: { email: string }) {
       <div className="flex items-center gap-2">
         <BrandMark className="h-6 w-6 shrink-0" />
         <Wordmark className="text-base text-ink" />
-        <span className="rounded-[5px] bg-[var(--color-accent)] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-forest">
+        <span className="rounded-[5px] bg-[var(--color-accent)] px-1.5 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-forest">
           Ops
         </span>
       </div>
@@ -54,7 +54,7 @@ export function AdminNav({ email }: { email: string }) {
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
-        <span className="rounded-full border border-line-strong px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted">
+        <span className="rounded-full border border-line-strong px-2.5 py-1 font-mono text-2xs font-bold uppercase tracking-wider text-muted">
           Prod
         </span>
         <span

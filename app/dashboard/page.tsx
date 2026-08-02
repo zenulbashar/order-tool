@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
 /* -------------------------------------------------------------------------- */
 
 const eyebrow =
-  "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const cardBox =
   "rounded-card border border-line bg-surface-elevated p-4 shadow-card";
 
@@ -432,7 +432,7 @@ export default async function DashboardPage() {
                           style={{ height: `${heightPct}%` }}
                         >
                           {isToday && weekRevenue[i] > 0 ? (
-                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[5px] bg-[var(--color-accent)] px-1.5 py-0.5 font-mono text-[9px] font-bold text-forest">
+                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[5px] bg-[var(--color-accent)] px-1.5 py-0.5 font-mono text-2xs font-bold text-forest">
                               {compactDollars(weekRevenue[i])}
                             </span>
                           ) : null}

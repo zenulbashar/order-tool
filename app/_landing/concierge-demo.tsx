@@ -212,15 +212,15 @@ export function ConciergeDemo() {
             <div className="flex items-center gap-2.5">
               <Mark />
               <div className="min-w-0">
-                <p className="truncate font-display text-sm font-extrabold text-[#f7f3ea]">
+                <p className="truncate font-display text-sm font-extrabold text-surface">
                   Maple &amp; Thyme
                 </p>
                 <p className="flex items-center gap-1.5 text-[11px] text-[#9fb0a2]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#3fa66a] [animation:p2e-pulse_2s_ease-in-out_infinite]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-success [animation:p2e-pulse_2s_ease-in-out_infinite]" />
                   AI Concierge · online
                 </p>
               </div>
-              <span className="ml-auto rounded-full bg-[var(--color-accent)]/90 px-2 py-0.5 font-mono text-[9px] font-bold text-[#0c1c15]">
+              <span className="ml-auto rounded-full bg-[var(--color-accent)]/90 px-2 py-0.5 font-mono text-2xs font-bold text-[#0c1c15]">
                 TABLE 12
               </span>
             </div>
@@ -262,7 +262,7 @@ export function ConciergeDemo() {
                       key={dish.name}
                       className={`flex items-center gap-2.5 rounded-xl border p-2 transition [animation:p2e-msg-in_.34s_ease-out_both] ${
                         isPicked
-                          ? "border-[#3fa66a] bg-[#3fa66a]/12"
+                          ? "border-success bg-success/12"
                           : "border-white/10 bg-white/5"
                       }`}
                       style={{ animationDelay: `${i * 0.3}s` }}
@@ -271,7 +271,7 @@ export function ConciergeDemo() {
                         className={`h-12 w-12 shrink-0 rounded-lg bg-gradient-to-br ${dish.grad}`}
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-display text-[13px] font-extrabold text-[#f7f3ea]">
+                        <span className="block truncate font-display text-[13px] font-extrabold text-surface">
                           {dish.name}
                         </span>
                         <span className="block truncate text-[11px] text-[#9fb0a2]">
@@ -280,11 +280,11 @@ export function ConciergeDemo() {
                       </span>
                       <span className="shrink-0 text-right">
                         {isPicked ? (
-                          <span className="mb-0.5 block font-mono text-[8px] font-bold text-[#3fa66a]">
+                          <span className="mb-0.5 block font-mono text-[8px] font-bold text-success">
                             ✓ PICKED
                           </span>
                         ) : null}
-                        <span className="font-display text-sm font-extrabold text-[#f7f3ea]">
+                        <span className="font-display text-sm font-extrabold text-surface">
                           {dish.price}
                         </span>
                       </span>
@@ -301,7 +301,7 @@ export function ConciergeDemo() {
                   <span
                     className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
                       answered
-                        ? "bg-[#3fa66a]/20 text-[#8fe0ac]"
+                        ? "bg-success/20 text-[#8fe0ac]"
                         : "bg-[var(--color-accent)] text-[#0c1c15]"
                     }`}
                   >
@@ -328,7 +328,7 @@ export function ConciergeDemo() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] font-display text-sm font-extrabold text-[#0c1c15] [animation:p2e-pop_.4s_ease-out]">
                 {showCart ? "2" : "1"}
               </span>
-              <span className="flex-1 text-sm font-semibold text-[#f7f3ea]">
+              <span className="flex-1 text-sm font-semibold text-surface">
                 View order
               </span>
               <span className="font-display text-base font-extrabold text-[var(--color-accent)]">
@@ -375,8 +375,8 @@ function Bubble({
       <div
         className={`max-w-[80%] px-3 py-2 text-[13px] leading-snug [animation:p2e-msg-in_.34s_ease-out_both] ${
           side === "right"
-            ? "rounded-[16px_16px_5px_16px] bg-gradient-to-br from-[#f4b43c] to-[#e79a24] font-medium text-[#16241c]"
-            : "rounded-[16px_16px_16px_5px] bg-white/95 text-[#16241c]"
+            ? "rounded-[16px_16px_5px_16px] bg-gradient-to-br from-accent to-[#e79a24] font-medium text-forest"
+            : "rounded-[16px_16px_16px_5px] bg-white/95 text-forest"
         }`}
       >
         {children}

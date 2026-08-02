@@ -195,7 +195,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Available
                 </p>
                 <p className="mt-1 font-display text-lg font-extrabold text-ink">
@@ -204,7 +204,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 <p className="text-[10px] text-muted">ready to pay out</p>
               </div>
               <div>
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   On the way
                 </p>
                 <p className="mt-1 font-display text-lg font-extrabold text-ink">
@@ -213,7 +213,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 <p className="text-[10px] text-muted">pending in Stripe</p>
               </div>
               <div>
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Sales · 30d
                 </p>
                 <p className="mt-1 font-display text-lg font-extrabold text-ink">
@@ -237,7 +237,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
               </p>
             ) : (
               <div className="mt-3 border-t border-line pt-3">
-                <p className="mb-2 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="mb-2 font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Recent payouts
                 </p>
                 <ul className="space-y-1.5">
@@ -330,7 +330,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
                 { k: "Chargebacks", v: "None" },
               ].map((s) => (
                 <div key={s.k}>
-                  <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                  <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                     {s.k}
                   </p>
                   <p className="mt-1 text-sm font-bold text-ink">{s.v}</p>

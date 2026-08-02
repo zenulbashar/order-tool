@@ -34,7 +34,7 @@ function Kpi({
 }) {
   return (
     <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
-      <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+      <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
         {label}
       </p>
       <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
@@ -242,10 +242,10 @@ export default async function StockOverviewPage() {
             {/* Needs attention — low / out of stock, most urgent first. */}
             <div className="overflow-hidden rounded-card border border-line bg-surface-elevated shadow-card">
               <div className="flex items-center justify-between border-b border-line bg-hover-secondary px-4 py-2.5">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Needs attention
                 </p>
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Days of cover
                 </p>
               </div>
@@ -309,7 +309,7 @@ export default async function StockOverviewPage() {
                     (h) => (
                       <span
                         key={h}
-                        className="font-mono text-[9px] font-bold uppercase tracking-wider text-label last:text-right"
+                        className="font-mono text-2xs font-bold uppercase tracking-wider text-label last:text-right"
                       >
                         {h}
                       </span>
@@ -345,7 +345,7 @@ export default async function StockOverviewPage() {
             {/* Recent ledger activity. */}
             {recent.length > 0 ? (
               <div className="rounded-card border border-line bg-surface-elevated p-4 shadow-card">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+                <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                   Recent activity
                 </p>
                 <ul className="mt-3 space-y-2">

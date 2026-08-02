@@ -105,7 +105,7 @@ export function ItemModifierSheet({
                   return (
                     <li
                       key={tag}
-                      className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                      className={`rounded px-1.5 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider ${
                         plant
                           ? "bg-[var(--color-success)]/12 text-success-deep"
                           : "bg-sand text-muted"

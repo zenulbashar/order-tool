@@ -102,7 +102,7 @@ export default async function MarketplacePage({
 
       {orders.length > 0 ? (
         <section className="px-5 pb-10">
-          <p className="mb-2 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <p className="mb-2 font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Your orders
           </p>
           <div className="overflow-hidden rounded-card border border-line bg-surface-elevated shadow-card">

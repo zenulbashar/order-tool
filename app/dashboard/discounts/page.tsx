@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Discounts" };
 
 const eyebrow =
-  "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 function valueLabel(type: "percent" | "amount", value: number): string {
   return type === "percent" ? `${value}% off` : `$${formatCents(value)} off`;
@@ -102,7 +102,7 @@ export default async function DiscountsPage() {
                           {p.code}
                         </span>
                         <span
-                          className={`rounded-pill px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                          className={`rounded-pill px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider ${
                             p.isActive
                               ? "bg-[var(--color-success)]/15 text-success-deep"
                               : "bg-line text-muted"

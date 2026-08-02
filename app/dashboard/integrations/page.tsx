@@ -270,7 +270,7 @@ export default async function IntegrationsPage({
         {state === "connected" || attentionCount > 0 ? (
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
-              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 Mirrored · 24h
               </p>
               <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
@@ -278,7 +278,7 @@ export default async function IntegrationsPage({
               </p>
             </div>
             <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
-              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 Need attention
               </p>
               <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
@@ -291,7 +291,7 @@ export default async function IntegrationsPage({
               ) : null}
             </div>
             <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
-              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+              <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
                 Avg mirror delay
               </p>
               <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">

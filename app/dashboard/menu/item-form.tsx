@@ -23,7 +23,7 @@ import { suggestItemTags } from "./tag-actions";
 // export). Applied to a <span> inside each wrapping <label> so implicit label
 // association is preserved.
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 // Sanctioned AI affordance on owner chrome — amber product signature (NOT
 // var(--action)). Now the export's inline sparkle "Generate with AI" text link
@@ -339,7 +339,7 @@ export function ItemForm({
           guarantees — the storefront shows the same disclaimer to customers. */}
       <fieldset className="space-y-2">
         <legend className="flex w-full items-center justify-between gap-2">
-          <span className="block font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <span className="block font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Dietary tags <span className="normal-case text-muted">(optional)</span>
           </span>
           <button

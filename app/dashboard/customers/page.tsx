@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Customers" };
 
 const eyebrow =
-  "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
-const th = "px-4 py-2.5 text-left font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "font-mono text-2xs font-bold uppercase tracking-wider text-label";
+const th = "px-4 py-2.5 text-left font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const thRight = `${th} text-right`;
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {

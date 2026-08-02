@@ -24,24 +24,24 @@ export default async function ShopPage() {
   const { products } = await getShopProducts();
 
   return (
-    <div className="min-h-dvh bg-[#FFFDF8] text-[#16241C]">
+    <div className="min-h-dvh bg-surface-elevated text-forest">
       <ShopJsonLd products={products} />
       {/* Slim nav */}
       <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.92)] backdrop-blur-[14px]">
         <nav className={`${CONTAINER} flex items-center gap-4 py-3`}>
           <Link href="/" className="flex items-center gap-2">
             <BrandMark className="h-[30px] w-[30px] shrink-0 rounded-lg" />
-            <Wordmark className="text-[21px] text-[#F7F3EA]" />
+            <Wordmark className="text-[21px] text-surface" />
           </Link>
           <Link
             href="/"
-            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-[#F7F3EA]"
+            className="ml-auto rounded-[9px] px-3 py-1.5 text-[13.5px] font-semibold text-[#C9D4CB] transition hover:bg-[rgba(247,243,234,0.08)] hover:text-surface"
           >
             ← Back to home
           </Link>
           <Link
             href="/signin"
-            className="rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-[#16241C] transition hover:-translate-y-0.5"
+            className="rounded-[11px] bg-[var(--color-accent)] px-4 py-1.5 text-[13.5px] font-bold text-forest transition hover:-translate-y-0.5"
           >
             Start free
           </Link>
@@ -71,7 +71,7 @@ export default async function ShopPage() {
       <footer className="border-t border-[#EDE4D2] py-8">
         <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-3 text-sm text-[#7C8579]`}>
           <span>© 2026 Prompt2Eat. All rights reserved.</span>
-          <Link href="/" className="font-semibold text-[#16241C] hover:underline">
+          <Link href="/" className="font-semibold text-forest hover:underline">
             prompt2eat.com
           </Link>
         </div>

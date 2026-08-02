@@ -12,7 +12,7 @@ const GRADIENTS = [
   "from-[#cbb587] to-[#7f6534]",
 ];
 
-const eyebrow = "font-mono text-[9px] font-bold uppercase tracking-[0.16em]";
+const eyebrow = "font-mono text-2xs font-bold uppercase tracking-[0.16em]";
 
 export function ShopGrid({ products }: { products: ShopProduct[] }) {
   const categories = useMemo(
@@ -56,7 +56,7 @@ export function ShopGrid({ products }: { products: ShopProduct[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search products…"
-            className="w-full rounded-full border border-[#E0D6C1] bg-[#FFFDF8] py-2 pl-9 pr-4 text-sm text-[#16241C] outline-none transition placeholder:text-[#A99A78] focus:border-[var(--color-accent)]"
+            className="w-full rounded-full border border-[#E0D6C1] bg-surface-elevated py-2 pl-9 pr-4 text-sm text-forest outline-none transition placeholder:text-[#A99A78] focus:border-[var(--color-accent)]"
           />
         </label>
         <span className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[#A99A78]">
@@ -72,8 +72,8 @@ export function ShopGrid({ products }: { products: ShopProduct[] }) {
             onClick={() => setCat(c)}
             className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition ${
               cat === c
-                ? "bg-[var(--color-accent)] text-[#16241C]"
-                : "border border-[#E0D6C1] bg-[#FFFDF8] text-[#4A5248] hover:bg-[#F6F0E2]"
+                ? "bg-[var(--color-accent)] text-forest"
+                : "border border-[#E0D6C1] bg-surface-elevated text-[#4A5248] hover:bg-[#F6F0E2]"
             }`}
           >
             {c}
@@ -114,7 +114,7 @@ function Card({ product, grad }: { product: ShopProduct; grad: string }) {
           </span>
         )}
         {product.badge ? (
-          <span className="absolute left-2 top-2 rounded-full bg-[var(--color-accent)] px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#16241C]">
+          <span className="absolute left-2 top-2 rounded-full bg-[var(--color-accent)] px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-forest">
             {product.badge}
           </span>
         ) : null}
@@ -123,14 +123,14 @@ function Card({ product, grad }: { product: ShopProduct; grad: string }) {
         <span className={`${eyebrow} text-[#A99A78]`}>
           {product.subcategory ?? product.category}
         </span>
-        <span className="mt-1 block font-display text-[15.5px] font-extrabold leading-snug tracking-[-0.015em] text-[#16241C]">
+        <span className="mt-1 block font-display text-[15.5px] font-extrabold leading-snug tracking-[-0.015em] text-forest">
           {product.name}
         </span>
         <span className="mt-2 flex items-center justify-between">
-          <span className="font-display text-lg font-extrabold text-[#16241C]">
+          <span className="font-display text-lg font-extrabold text-forest">
             {product.price || "See price"}
           </span>
-          <span className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-[#16241C] transition group-hover:bg-[#EAA62B]">
+          <span className="rounded-lg bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-forest transition group-hover:bg-[#EAA62B]">
             {product.link ? "View" : "＋ Add"}
           </span>
         </span>
@@ -139,7 +139,7 @@ function Card({ product, grad }: { product: ShopProduct; grad: string }) {
   );
 
   const cls =
-    "group flex flex-col overflow-hidden rounded-[22px] border border-[#EDE4D2] bg-[#FFFDF8] shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]";
+    "group flex flex-col overflow-hidden rounded-[22px] border border-[#EDE4D2] bg-surface-elevated shadow-[0_1px_3px_rgba(20,30,25,0.04)] transition hover:-translate-y-1 hover:shadow-[0_24px_46px_-24px_rgba(20,30,25,0.3)]";
 
   return product.link ? (
     <a href={product.link} target="_blank" rel="noopener noreferrer" className={cls}>

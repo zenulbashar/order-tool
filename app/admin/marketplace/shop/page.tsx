@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Shop admin" };
 
-const eyebrow = "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+const eyebrow = "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const PRODUCT_LIMIT = 60;
 
 export default async function AdminShopPage({

@@ -27,7 +27,7 @@ const ORDER_WINDOW_DAYS = 30;
 const AUDIT_LIMIT = 20;
 
 const eyebrow =
-  "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 function timeAgo(from: Date, now: number): string {
   const mins = Math.floor((now - from.getTime()) / 60_000);

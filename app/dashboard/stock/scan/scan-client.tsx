@@ -25,7 +25,7 @@ import {
 const aiButtonClass =
   "rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-forest transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
 const aiBadgeClass =
-  "inline-flex items-center gap-1 rounded-pill bg-[var(--color-accent)]/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-accent-deep";
+  "inline-flex items-center gap-1 rounded-pill bg-[var(--color-accent)]/15 px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-accent-deep";
 
 const MAX_IMAGES = 3;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -310,7 +310,7 @@ export function ScanClient({ recentScans }: { recentScans: RecentScan[] }) {
 
       {recentScans.length > 0 ? (
         <div className="rounded-card border border-line bg-surface-elevated p-5 shadow-card">
-          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+          <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
             Recent scans
           </p>
           <ul className="mt-3 space-y-2">
@@ -450,7 +450,7 @@ function ReviewRow({
   const inputClass =
     "w-full rounded-input border border-line bg-surface-elevated px-2.5 py-1.5 text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
   const microLabel =
-    "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+    "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
   return (
     <li
@@ -476,11 +476,11 @@ function ReviewRow({
               />
             )}
             {matched ? (
-              <span className="shrink-0 rounded-pill bg-[var(--color-success)]/12 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-success-deep">
+              <span className="shrink-0 rounded-pill bg-[var(--color-success)]/12 px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-success-deep">
                 Matched
               </span>
             ) : (
-              <span className="shrink-0 rounded-pill bg-[var(--color-accent)]/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-accent-deep">
+              <span className="shrink-0 rounded-pill bg-[var(--color-accent)]/15 px-2 py-0.5 font-mono text-2xs font-bold uppercase tracking-wider text-accent-deep">
                 New
               </span>
             )}
@@ -577,7 +577,7 @@ function ReviewRow({
 
           {/* was → now cost per unit. */}
           <div className="pb-1.5 text-right">
-            <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+            <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
               Cost / unit
             </p>
             <p className="mt-0.5 text-sm">
@@ -671,7 +671,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
-      <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+      <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
         {label}
       </p>
       <p

@@ -63,9 +63,9 @@ RemainingRecommendations.md. Full method and findings there.
 | --- | --- | --- | --- |
 | D1 | Medium | Firewall violation: amber (`--color-accent`, AI-only) used as a functional CTA fill in tables/promotions/marketplace; `bg-forest`/`text-white` hardcoded instead of `--action`. | ✅ Fixed (named scope) — a wider sweep is itemised in RemainingRecommendations #7 |
 | D2 | Medium | ~12 files copy-paste the `controlClass` recipe onto raw `<input>/<select>/<textarea>` instead of using `<Input>/<Select>/<Field>`. | 🔶 Recommended |
-| D3 | Low | `text-[9px]` micro-label string duplicated in ~20 files (no sub-`text-xs` token). | 🔶 Recommended |
+| D3 | Low | `text-[9px]` micro-label string duplicated in ~20 files (no sub-`text-xs` token). | ✅ Fixed — `--text-2xs` token; 124 occurrences across 66 files replaced |
 | D4 | Low | One-off buttons re-implement `buttonStyles(...)`; hand-rolled segmented controls and page headers bypass `<Segmented>`/`<PageHeader>`; arbitrary radii (`rounded-[14px]` etc.) where tokens exist. | 🔶 Recommended |
-| D5 | Low | Shop/landing surfaces write token hex values literally (`text-[#16241C]` → `text-ink`). | 🔶 Recommended |
+| D5 | Low | Shop/landing surfaces write token hex values literally. | ◑ Partial — 84 of 230 replaced (every literal that EXACTLY equals a token); the other 146 are colours the design system does not define. NB the finding's own example was wrong: `#16241C` is `--color-forest`, not `--color-ink` (`#0e1f18`). |
 
 ## CRUD consistency
 

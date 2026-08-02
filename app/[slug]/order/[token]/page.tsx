@@ -218,7 +218,7 @@ function OrderTracker({
                 {step.label}
               </span>
               {step.state === "active" ? (
-                <span className="font-mono text-[9px] uppercase tracking-wide text-accent-deep">
+                <span className="font-mono text-2xs uppercase tracking-wide text-accent-deep">
                   now
                 </span>
               ) : null}

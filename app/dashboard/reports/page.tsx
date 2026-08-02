@@ -15,7 +15,7 @@ const WINDOW_DAYS = 30;
 const TREND_DAYS = 14;
 
 const eyebrow =
-  "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (

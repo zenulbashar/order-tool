@@ -30,7 +30,7 @@ function Kpi({
 }) {
   return (
     <div className="rounded-[14px] border border-line bg-surface-elevated p-4 shadow-card">
-      <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+      <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
         {label}
       </p>
       <p className="mt-1.5 font-display text-2xl font-extrabold text-ink">
@@ -193,7 +193,7 @@ export default async function StockPage() {
                 (heading, i) => (
                   <span
                     key={heading || i}
-                    className="font-mono text-[9px] font-bold uppercase tracking-wider text-label"
+                    className="font-mono text-2xs font-bold uppercase tracking-wider text-label"
                   >
                     {heading}
                   </span>

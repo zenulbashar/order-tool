@@ -73,7 +73,7 @@ export function SquareDetailDrawer({
             <h2 className="font-display text-base font-extrabold tracking-tight text-ink">
               Square
             </h2>
-            <p className="mt-0.5 truncate font-mono text-[9px] font-semibold uppercase tracking-wide text-label">
+            <p className="mt-0.5 truncate font-mono text-2xs font-semibold uppercase tracking-wide text-label">
               {mappingLabel}
             </p>
           </div>
@@ -87,12 +87,12 @@ export function SquareDetailDrawer({
         </header>
 
         <div className="flex shrink-0 flex-wrap gap-1.5 px-5 pt-3">
-          <span className="rounded-[6px] bg-sand px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wide text-muted">
+          <span className="rounded-[6px] bg-sand px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide text-muted">
             {stats.mirrored24h} mirrored · 24h
           </span>
           <span
             className={cx(
-              "rounded-[6px] px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wide",
+              "rounded-[6px] px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide",
               stats.attention > 0
                 ? "bg-[var(--color-warm)]/10 text-warm-deep"
                 : "bg-sand text-muted",
@@ -101,13 +101,13 @@ export function SquareDetailDrawer({
             {stats.attention} need attention
           </span>
           {stats.avgDelayLabel ? (
-            <span className="rounded-[6px] bg-sand px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wide text-muted">
+            <span className="rounded-[6px] bg-sand px-2 py-1 font-mono text-2xs font-bold uppercase tracking-wide text-muted">
               Avg delay {stats.avgDelayLabel}
             </span>
           ) : null}
         </div>
 
-        <p className="shrink-0 px-5 pt-3 font-mono text-[9px] font-bold uppercase tracking-wider text-label">
+        <p className="shrink-0 px-5 pt-3 font-mono text-2xs font-bold uppercase tracking-wider text-label">
           Activity
         </p>
 
@@ -168,7 +168,7 @@ export function SquareDetailDrawer({
                     </Button>
                   </form>
                 ) : (
-                  <span className="shrink-0 font-mono text-[9px] font-bold uppercase text-label">
+                  <span className="shrink-0 font-mono text-2xs font-bold uppercase text-label">
                     {row.agoLabel}
                   </span>
                 )}

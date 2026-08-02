@@ -9,7 +9,7 @@ import { createOwnerDiscount, type DiscountState } from "./actions";
 const initialState: DiscountState = {};
 
 const microLabel =
-  "mb-1 block font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "mb-1 block font-mono text-2xs font-bold uppercase tracking-wider text-label";
 const inputClass =
   "w-full rounded-input border border-line bg-surface-elevated px-3 py-2.5 text-sm text-ink shadow-sm focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none";
 

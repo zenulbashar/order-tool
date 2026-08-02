@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Support · admin" };
 
 const eyebrow =
-  "font-mono text-[9px] font-bold uppercase tracking-wider text-label";
+  "font-mono text-2xs font-bold uppercase tracking-wider text-label";
 
 const DEPARTMENT_LABEL: Record<string, string> = {
   tech: "Tech Support",
