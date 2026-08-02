@@ -10,6 +10,10 @@ import {
   recipeLines,
   stockMovements,
 } from "@/lib/db/schema";
+import {
+  consumptionByIngredient,
+  sumQuantityByMenuItem,
+} from "@/lib/stock/depletion-plan";
 import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
 /**
@@ -59,14 +63,7 @@ export async function applyDepletionForOrder(
     .from(orderItems)
     .where(eq(orderItems.orderId, orderId));
 
-  const qtyByMenuItem = new Map<string, number>();
-  for (const line of lines) {
-    if (!line.menuItemId) continue;
-    qtyByMenuItem.set(
-      line.menuItemId,
-      (qtyByMenuItem.get(line.menuItemId) ?? 0) + line.quantity,
-    );
-  }
+  const qtyByMenuItem = sumQuantityByMenuItem(lines);
   if (qtyByMenuItem.size === 0) return 0;
 
   // Recipes for those items, venue-scoped (a forged order can't reach another
@@ -86,17 +83,9 @@ export async function applyDepletionForOrder(
     );
   if (recipes.length === 0) return 0;
 
-  // Sum consumption per ingredient across every ordered serving.
-  const consumedByIngredient = new Map<string, number>();
-  for (const recipe of recipes) {
-    const servings = qtyByMenuItem.get(recipe.menuItemId) ?? 0;
-    const amount = servings * recipe.qty;
-    if (amount <= 0) continue;
-    consumedByIngredient.set(
-      recipe.ingredientId,
-      (consumedByIngredient.get(recipe.ingredientId) ?? 0) + amount,
-    );
-  }
+  // Sum consumption per ingredient across every ordered serving. Extracted to
+  // lib/stock/depletion-plan.ts so the arithmetic is testable without a DB.
+  const consumedByIngredient = consumptionByIngredient(qtyByMenuItem, recipes);
   if (consumedByIngredient.size === 0) return 0;
 
   const rows = [...consumedByIngredient.entries()].map(

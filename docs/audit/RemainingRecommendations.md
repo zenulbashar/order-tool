@@ -103,13 +103,30 @@ Ordered by priority. Nothing here is Critical.
 
 12. **Tables empty state (R4).** Add a first-run empty message.
 
-13. **Automated tests — remaining gaps.** No longer "no unit tests": the suite is
-    269 tests across 31 files, and the money path (including the discount
-    re-price call site), refunds, authz, invitations, tenant scoping and both
-    webhook contracts are covered. The gap that remains is **loyalty**
-    (`lib/loyalty/*` has no direct unit tests — earn/redeem are exercised only
-    through the webhook handler's mocks) and the stock depletion path. See
-    TechnicalDebt.md.
+13. **Automated tests — ✅ the flagged gaps are closed.** The suite is 312 tests
+    across 36 files. The two gaps this item named are now covered:
+
+    - **Loyalty.** `earnedPointsFor` is unit-tested directly: whole-dollar
+      flooring (and that it floors the DOLLARS, not the final points — 250c at
+      rate 3 is 6, not 7), the zero/negative subtotal and rate guards, and
+      linearity, so the ledger cannot drift from the subtotal. Earning is
+      re-derived by the cron sweep for any order the webhook missed, so
+      determinism is load-bearing rather than cosmetic.
+    - **Stock depletion.** The arithmetic was reachable only through two DB
+      round-trips and a transaction, so it was extracted VERBATIM to
+      `lib/stock/depletion-plan.ts` — the same move `lib/payments/line-plan.ts`
+      made for the checkout recompute. Both summations are covered: quantity per
+      menu item (several order lines share one item when variants differ) and
+      consumption per ingredient (several dishes share an ingredient). Both
+      under-deplete *silently* when wrong, which is why they earn tests.
+
+    **Still uncovered, deliberately:** the DB-bound halves —
+    `earnPointsForOrder` / `redeemPointsForOrder` / `applyDepletionForOrder` and
+    their cron sweeps. Their idempotency rests on unique indexes and
+    `ON CONFLICT DO NOTHING`, which a mock cannot honestly exercise: a test
+    against a fake would assert the mock's behaviour, not Postgres's. Those want
+    an integration test against a real database, which belongs with the staging
+    items at the top of this file.
 
 14. **Owners with 2+ venues cannot add another — ✅ fixed.** Found while
     reviewing the 2026-08 security fixes; pre-existing and unrelated to them.
