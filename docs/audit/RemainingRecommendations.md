@@ -111,19 +111,21 @@ Ordered by priority. Nothing here is Critical.
     through the webhook handler's mocks) and the stock depletion path. See
     TechnicalDebt.md.
 
-14. **Owners with 2+ venues cannot add another.** Found while reviewing the
-    2026-08 security fixes; pre-existing and unrelated to them (`main` behaves
-    identically), so recorded rather than fixed here. `app/dashboard/sidebar.tsx`
-    renders the "＋ Add location" link — the one that points at
-    `/onboarding/details`, which actually creates a venue — only when the owner
-    has a single venue (`hasMultiple ? null : …`). Everyone else gets
-    `app/dashboard/venue-switcher.tsx`'s "＋ Add another location", which points
-    at `/onboarding`, and that redirects to `/dashboard` whenever the selected
-    venue is complete (`app/onboarding/page.tsx`). So a two-venue owner has no
-    working path to a third. Fix: point the switcher link at
-    `/onboarding/details` too, or drop the `hasMultiple` condition on the sidebar
-    link. Worth confirming the intended multi-location product story first —
-    this may be a deliberate cap that outgrew its comment.
+14. **Owners with 2+ venues cannot add another — ✅ fixed.** Found while
+    reviewing the 2026-08 security fixes; pre-existing and unrelated to them.
+    `app/dashboard/venue-switcher.tsx`'s "＋ Add another location" pointed at
+    `/onboarding`, which is the RESUME router — it sends a venue whose onboarding
+    is complete straight to `/dashboard`. Since that link only appears once an
+    owner already has a venue, and that venue is normally live, an owner with two
+    locations simply bounced and had no path to a third. The sidebar's
+    single-venue "Add location" pointed at `/onboarding/details` all along, so
+    the two affordances disagreed.
+
+    Checked before changing it that this was a bug rather than a deliberate cap:
+    there is no plan-based location limit anywhere in the codebase, and the
+    switcher's own label promises the capability. The fix is the one-line href;
+    `test/navigation-links.test.ts` now fails any add-a-location link pointing at
+    the resume router, with the reason in the message.
 
 ## Out of static scope (need a runtime environment)
 
