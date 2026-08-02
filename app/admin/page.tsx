@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { and, count, desc, eq, gt, sql } from "drizzle-orm";
 
+import { buttonStyles } from "@/app/_components/button-variants";
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
 import {
@@ -312,10 +313,7 @@ export default async function AdminConsolePage() {
                 </span>
               </label>
             ))}
-            <button
-              type="submit"
-              className="rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-forest transition hover:opacity-90"
-            >
+            <button type="submit" className={buttonStyles("primary", "md")}>
               Save
             </button>
           </form>

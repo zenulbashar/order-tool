@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 
 import { readableOn } from "@/app/_components/brand-contrast";
+import { Button } from "@/app/_components/button";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { cx } from "@/app/_components/cx";
 import { formatCents } from "@/lib/validation";
@@ -331,13 +332,13 @@ export function TablesBoard({
                 brandColor={brandColor}
               />
               <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
                   onClick={() => printOne(selected.id)}
-                  className="flex-1 rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-forest transition hover:opacity-90"
+                  className="flex-1"
                 >
                   <span aria-hidden>🖨</span> Print
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={() => download(selected)}

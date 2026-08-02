@@ -61,7 +61,7 @@ RemainingRecommendations.md. Full method and findings there.
 
 | # | Severity | Finding | Status |
 | --- | --- | --- | --- |
-| D1 | Medium | Firewall violation: amber (`--color-accent`, AI-only) used as a functional CTA fill in tables/promotions/marketplace; `bg-forest`/`text-white` hardcoded instead of `--action`. | ◑ Partial (Add-table fixed) |
+| D1 | Medium | Firewall violation: amber (`--color-accent`, AI-only) used as a functional CTA fill in tables/promotions/marketplace; `bg-forest`/`text-white` hardcoded instead of `--action`. | ✅ Fixed (named scope) — a wider sweep is itemised in RemainingRecommendations #7 |
 | D2 | Medium | ~12 files copy-paste the `controlClass` recipe onto raw `<input>/<select>/<textarea>` instead of using `<Input>/<Select>/<Field>`. | 🔶 Recommended |
 | D3 | Low | `text-[9px]` micro-label string duplicated in ~20 files (no sub-`text-xs` token). | 🔶 Recommended |
 | D4 | Low | One-off buttons re-implement `buttonStyles(...)`; hand-rolled segmented controls and page headers bypass `<Segmented>`/`<PageHeader>`; arbitrary radii (`rounded-[14px]` etc.) where tokens exist. | 🔶 Recommended |
@@ -74,6 +74,6 @@ RemainingRecommendations.md. Full method and findings there.
 | R1 | High | Four destructive owner actions had **no confirmation**: delete table, delete station, void gift card, delete library image. | ✅ Fixed |
 | R2 | Medium | Destructive controls styled ad-hoc instead of the `destructive` Button variant. | ✅ Fixed (same 4) |
 | R3 | Medium | No consistent removal policy across entities: soft-toggle (discounts/promotions/products) vs hard-delete (tables/stations) vs void (gift cards); some value-bearing entities have no edit path. | 🔶 Recommended |
-| R4 | Low | Tables board has no explanatory empty state (auto-opens the add card instead). | 🔶 Recommended |
+| R4 | Low | Tables board has no explanatory empty state (auto-opens the add card instead). | ✅ Fixed — "No tables yet" card; the add form renders inline beside it, not over it |
 
 Empty/loading/error states were otherwise found **consistent** across owner lists.
