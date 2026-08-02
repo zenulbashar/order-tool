@@ -243,6 +243,19 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  /*
+   * Publish the drawer state on <body> so the support FAB can hide itself while
+   * the nav is open (UI audit P0-1). Belt-and-braces on top of the z-scale fix:
+   * the FAB is z-chrome and the scrim z-scrim, so it is already behind — but a
+   * FAB dimmed under a scrim still reads as a live control, and it was the one
+   * the owner reported. An attribute rather than lifted state keeps the two
+   * components independent.
+   */
+  useEffect(() => {
+    document.body.toggleAttribute("data-nav-open", open);
+    return () => document.body.removeAttribute("data-nav-open");
+  }, [open]);
   // Desktop-only collapse preference (per-device, localStorage). Drives ONLY
   // lg:-prefixed classes below; the mobile drawer (`open`) ignores it entirely.
   const collapsed = useSidebarCollapsed();
@@ -324,7 +337,7 @@ export function Sidebar({
   return (
     <>
       {/* Mobile header — logo + hamburger. Hidden on desktop and in print. */}
-      <div className="sticky top-0 z-30 flex items-center justify-between bg-sidebar px-4 py-3 text-sidebar-ink lg:hidden print:hidden">
+      <div className="sticky top-0 z-chrome flex items-center justify-between bg-sidebar px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-sidebar-ink lg:hidden print:hidden">
         <Brand />
         <button
           type="button"
@@ -340,7 +353,7 @@ export function Sidebar({
       {/* Drawer scrim (mobile only). */}
       {open ? (
         <div
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-scrim bg-black/40 lg:hidden"
           aria-hidden="true"
           onClick={() => setOpen(false)}
         />
@@ -350,7 +363,7 @@ export function Sidebar({
           print:hidden so the orders ticket / tables QR sheet print clean. */}
       <aside
         className={cx(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto bg-sidebar text-sidebar-ink transition-[transform,width] motion-reduce:transition-none print:hidden",
+          "fixed inset-y-0 left-0 z-modal flex w-64 flex-col overflow-y-auto bg-sidebar text-sidebar-ink transition-[transform,width] motion-reduce:transition-none print:hidden",
           "lg:sticky lg:top-0 lg:z-auto lg:h-dvh lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed && "lg:w-[76px]",

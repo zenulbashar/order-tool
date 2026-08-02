@@ -27,8 +27,21 @@ export function controlClass(opts?: {
 }): string {
   return cx(
     opts?.width ?? "w-full",
-    "rounded-input border bg-surface-elevated text-sm text-ink shadow-sm",
-    opts?.padding ?? "px-3 py-2",
+    /*
+     * 16px on mobile, 14px from sm up (UI audit P0-5 / RC-4).
+     *
+     * iOS Safari zooms the whole viewport when a focused input is under 16px,
+     * and does not zoom back. This recipe backs every form in the product —
+     * including the entire checkout — so tapping the Name field left the diner
+     * in a scaled, horizontally-scrolled layout for the rest of the money path.
+     *
+     * min-h-11 is the 44px touch floor `Button` already meets; both revert at
+     * sm (640px — above every phone, below every tablet) so desktop density is
+     * untouched.
+     */
+    "text-base sm:text-sm min-h-11 sm:min-h-0",
+    "rounded-input border bg-surface-elevated text-ink shadow-sm",
+    opts?.padding ?? "px-3 py-2.5 sm:py-2",
     "placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-60",
     "read-only:bg-sand/40 focus-visible:outline-none",
     // Focus = amber border + subtle amber glow (export); the invalid state keeps

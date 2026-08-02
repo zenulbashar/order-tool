@@ -34,7 +34,7 @@ export function TicketDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/40 print:hidden"
+      className="fixed inset-0 z-modal flex justify-end bg-black/40 print:hidden"
       role="dialog"
       aria-modal="true"
       aria-label={`Order ${orderReference(order.publicToken)}`}
@@ -138,7 +138,7 @@ export function TicketDrawer({
         </div>
 
         {/* Actions — same status controls + print as the card. */}
-        <div className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t border-line bg-surface px-5 py-4">
+        <div className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t border-line bg-surface px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <OrderStatusControls
             orderId={order.id}
             status={order.fulfillmentStatus}

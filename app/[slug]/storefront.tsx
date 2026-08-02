@@ -268,7 +268,10 @@ function StorefrontInner({
       <div
         style={brandStyle}
         data-domain="diner"
-        className="min-h-dvh bg-surface pb-24 lg:pb-0"
+        /* The reserve must SURVIVE at lg: the concierge FAB is fixed there
+           too, and lg:pb-0 left it sitting permanently over the last row of
+           the footer and the bottom of the sticky cart rail (UI audit P1-1). */
+        className="min-h-dvh bg-surface pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-24"
       >
         {/* Owner promo bar — very top, scrolls away, dismissible. */}
         <AnnouncementBar slug={venue.slug} text={venue.announcement} />
@@ -276,7 +279,7 @@ function StorefrontInner({
         {/* ============ Desktop app bar (lg+) — centered brand logo, search on
             the right (big-brand hospitality pattern). Sticky so the logo stays a
             one-click "home" (scroll to top) while browsing. ============ */}
-        <div className="hidden border-b border-sand bg-surface-elevated lg:sticky lg:top-0 lg:z-30 lg:block">
+        <div className="hidden border-b border-sand bg-surface-elevated lg:sticky lg:top-0 lg:z-chrome lg:block">
           <div className="relative mx-auto flex h-16 max-w-[1440px] 2xl:max-w-[1680px] items-center justify-between px-6">
             {/* Left: venue name (kept small — the hero carries the identity). */}
             <span className="max-w-[280px] truncate text-sm font-semibold text-ink">
@@ -502,7 +505,7 @@ function StorefrontInner({
 
         {/* ============ Sticky category / search strip (MENU view) ============ */}
         {!isLanding && menu.length > 0 ? (
-          <div className="sticky top-0 z-20 border-b border-sand bg-surface/95 backdrop-blur lg:top-16 lg:bg-surface-elevated/95">
+          <div className="sticky top-0 z-sticky border-b border-sand bg-surface/95 backdrop-blur lg:top-16 lg:bg-surface-elevated/95">
             {/* Mobile: search + dietary chips + disclaimer + pill nav (unchanged) */}
             <div className="lg:hidden">
               <div className="space-y-2 px-5 pb-3 pt-3">
@@ -581,9 +584,9 @@ function StorefrontInner({
                         aria-hidden="true"
                         tabIndex={-1}
                         onClick={() => setDietaryOpen(false)}
-                        className="fixed inset-0 z-20 cursor-default"
+                        className="fixed inset-0 z-sticky cursor-default"
                       />
-                      <div className="absolute right-0 top-full z-30 mt-2 w-72 space-y-3 rounded-card border border-sand bg-surface-elevated p-3 shadow-card">
+                      <div className="absolute right-0 top-full z-chrome mt-2 w-72 space-y-3 rounded-card border border-sand bg-surface-elevated p-3 shadow-card">
                         <DietaryFilter
                           available={availableTags}
                           selected={activeTags}

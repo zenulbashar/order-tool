@@ -84,7 +84,7 @@ export function MenuSearch({
               }
             }}
             placeholder="Search the menu"
-            className="w-full rounded-pill border border-sand bg-surface-elevated py-2.5 pl-9 pr-9 text-sm text-ink shadow-sm outline-none placeholder:text-muted"
+            className="w-full rounded-pill border border-sand bg-surface-elevated py-2.5 pl-9 pr-9 text-base sm:text-sm text-ink shadow-sm outline-none placeholder:text-muted"
             style={
               focused
                 ? {

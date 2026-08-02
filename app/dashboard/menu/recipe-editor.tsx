@@ -120,7 +120,7 @@ export function RecipeEditor({
                       inputMode="decimal"
                       defaultValue={line.qty}
                       aria-label={`Quantity of ${line.ingredientName}`}
-                      className="w-14 rounded-md border border-line bg-surface-elevated px-2 py-1 text-center text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
+                      className="w-14 rounded-md border border-line bg-surface-elevated px-2 py-1 text-center text-base sm:text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
                     />
                     <span className="w-8 font-mono text-[10px] text-muted">
                       {line.unit}
@@ -325,7 +325,7 @@ function AddRecipeLine({
         required
         placeholder="Qty"
         aria-label="Quantity"
-        className="w-16 rounded-md border border-line bg-surface-elevated px-2 py-1 text-center text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
+        className="w-16 rounded-md border border-line bg-surface-elevated px-2 py-1 text-center text-base sm:text-sm text-ink focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-sand/40 focus-visible:outline-none"
       />
       <select
         name="ingredientId"

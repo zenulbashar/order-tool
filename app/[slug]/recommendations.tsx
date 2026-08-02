@@ -277,7 +277,7 @@ export function PreCheckoutUpsell({
       </button>
       {open ? (
         <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center"
+          className="fixed inset-0 z-popover flex items-end justify-center bg-black/40 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-label="Anything else before you checkout?"

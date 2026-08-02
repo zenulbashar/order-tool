@@ -71,7 +71,7 @@ export function Landing() {
       <RevealScript />
 
       {/* Nav */}
-      <header className="sticky top-0 z-50 border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.82)] backdrop-blur-[14px] backdrop-saturate-150">
+      <header className="sticky top-0 z-sticky border-b border-[rgba(247,243,234,0.08)] bg-[rgba(15,36,27,0.82)] backdrop-blur-[14px] backdrop-saturate-150">
         <nav className={`${CONTAINER} flex flex-wrap items-center gap-x-6 gap-y-2 py-3`}>
           <a href="#top" className="flex items-center gap-2">
             <Mark />
@@ -513,7 +513,7 @@ export function Landing() {
                   required
                   placeholder="you@venue.com"
                   aria-label="Email address"
-                  className="min-w-0 flex-1 rounded-xl border border-forest/20 bg-white/70 px-4 py-3 text-sm text-forest placeholder:text-forest/50 focus-visible:outline-2 focus-visible:outline-[var(--color-forest)]"
+                  className="min-w-0 flex-1 rounded-xl border border-forest/20 bg-white/70 px-4 py-3 text-base sm:text-sm text-forest placeholder:text-forest/50 focus-visible:outline-2 focus-visible:outline-[var(--color-forest)]"
                 />
                 <button
                   type="submit"

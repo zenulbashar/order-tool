@@ -85,7 +85,10 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
   const itemCount = lines.reduce((sum, [, qty]) => sum + qty, 0);
 
   return (
-    <section className="grid gap-6 px-5 py-8 lg:grid-cols-[1fr_320px]">
+    <section
+      className="grid gap-6 px-5 py-8 lg:grid-cols-[1fr_320px] lg:[--p2e-bottom-bar-h:0px]"
+      style={{ "--p2e-bottom-bar-h": "72px" } as React.CSSProperties}
+    >
       <div className="space-y-4">
         {/* Category pills */}
         <div className="flex flex-wrap gap-2">
@@ -242,7 +245,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
         <button
           type="button"
           onClick={() => setCartOpen(true)}
-          className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-line bg-surface-elevated px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-4px_16px_rgba(20,30,25,0.08)] lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-chrome flex items-center justify-between gap-3 border-t border-line bg-surface-elevated px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-4px_16px_rgba(20,30,25,0.08)] lg:hidden"
         >
           <span className="flex items-center gap-2 text-sm font-bold text-ink">
             <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[var(--color-accent)] px-1.5 text-[11px] font-bold text-forest">
@@ -258,7 +261,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
 
       {/* Mobile: full-screen dark cart (P2E-Shop shop-mobile-cart). */}
       {cartOpen ? (
-        <div className="fixed inset-0 z-50 flex flex-col bg-forest-deep text-white lg:hidden">
+        <div className="fixed inset-0 z-modal flex flex-col bg-forest-deep text-white lg:hidden">
           <div className="flex items-center justify-between px-5 pb-3 pt-[calc(env(safe-area-inset-top)+14px)]">
             <button
               type="button"

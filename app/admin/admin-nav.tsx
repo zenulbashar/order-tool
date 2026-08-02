@@ -27,7 +27,7 @@ export function AdminNav({ email }: { email: string }) {
   const initials = email.slice(0, 2).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface px-5 py-3">
+    <header className="sticky top-0 z-sticky flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface px-5 py-3">
       <div className="flex items-center gap-2">
         <BrandMark className="h-6 w-6 shrink-0" />
         <Wordmark className="text-base text-ink" />

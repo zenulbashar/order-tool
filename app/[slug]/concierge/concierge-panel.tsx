@@ -32,7 +32,7 @@ import {
  *
  * Conversation state is ephemeral and lives here: the client resends a short,
  * capped history each turn so "make it cheaper" works, with nothing persisted.
- * The panel stays mounted under the modifier sheet (z-40 vs z-50) so the diner
+ * The panel stays mounted under the modifier sheet (z-scrim vs z-modal) so the diner
  * can add several proposed items in turn.
  */
 
@@ -204,7 +204,7 @@ export function ConciergePanel({
       {open ? (
         <>
         <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center lg:items-end lg:justify-end lg:bg-black/15 lg:p-6"
+          className="fixed inset-0 z-scrim flex items-end justify-center bg-black/40 sm:items-center lg:items-end lg:justify-end lg:bg-black/15 lg:p-6"
           role="dialog"
           aria-modal="true"
           aria-label="Prompt2Eat"
@@ -371,7 +371,7 @@ export function ConciergePanel({
 
             <form
               onSubmit={handleSubmit}
-              className="border-t border-concierge-ai-border px-5 py-4"
+              className="border-t border-concierge-ai-border px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
             >
               <p className="mb-2 font-mono text-[11px] uppercase tracking-wide text-concierge-thinking">
                 Not quite?
@@ -386,7 +386,7 @@ export function ConciergePanel({
                     asked ? "Make it cheaper…" : "What do you feel like?"
                   }
                   aria-label="Describe what you feel like eating"
-                  className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-sm text-concierge-ai-text placeholder:text-concierge-input focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <button
                   type="submit"
@@ -401,7 +401,7 @@ export function ConciergePanel({
           </div>
         </div>
 
-        {/* Multi-item picker (z-50) sits above this panel (z-40). It is the only
+        {/* Multi-item picker (z-modal) sits above this panel (z-scrim). It is the only
             bulk add path and writes the cart solely through addItem, after every
             required choice is made. */}
         {pickerOpen ? (

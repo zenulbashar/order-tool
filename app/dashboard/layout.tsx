@@ -72,9 +72,19 @@ export default async function DashboardLayout({
         brandColor={current.brandColor}
         permissions={permissions}
       />
-      <main id="main-content" className="min-w-0 flex-1 overflow-y-auto">
+      {/*
+        Bottom reserve for the support FAB (UI audit P0-3). It is ~46px tall at
+        bottom-6, so without this ~70px of the bottom-right of EVERY dashboard
+        page is permanently occluded — the last table row, the last card in a
+        grid, the footer of a long form. print:pb-0 because the FAB is
+        print:hidden and the reserve would otherwise leave a blank strip.
+      */}
+      <main
+        id="main-content"
+        className="min-w-0 flex-1 overflow-y-auto pb-24 lg:pb-20 print:pb-0"
+      >
         {impersonating ? (
-          <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-[var(--color-warm)] px-5 py-2 text-sm text-white print:hidden">
+          <div className="sticky top-0 z-chrome flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-[var(--color-warm)] px-5 py-2 text-sm text-white print:hidden">
             <p className="min-w-0">
               <span className="font-semibold">Viewing as {impersonating.name}</span>
               <span className="text-white/80">

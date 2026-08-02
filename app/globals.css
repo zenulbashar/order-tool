@@ -89,6 +89,32 @@
   --color-concierge-card-border: color-mix(in srgb, #f4b43c 25%, transparent);
   --color-concierge-pill-bg: color-mix(in srgb, #fff 8%, transparent);
   --color-concierge-pill-border: color-mix(in srgb, #fff 12%, transparent);
+
+  /*
+   * Layering scale (UI audit RC-1). Every fixed / sticky / absolute layer picks
+   * a NAME, never a number.
+   *
+   * The bug this exists to prevent: twelve hand-picked z values had SIX
+   * components sharing z-40 — both FABs, both panels, the sidebar scrim, the
+   * integrations drawer and two mobile bottom bars. Equal z resolves by DOM
+   * order, and <SupportWidget> renders last in the dashboard layout, so the
+   * support FAB painted over the open nav drawer and over the primary action of
+   * both bottom bars.
+   *
+   * The namespace is --z-index-*, not --z-*: Tailwind v4 keys the z-* utilities
+   * off `--z-index`, so `--z-raised: 10` would define a variable that generates
+   * NO utility, and `z-raised` would silently emit nothing — leaving every layer
+   * at z-index:auto, which is worse than the ties it replaced. Verified against
+   * the built CSS, not assumed.
+   */
+  --z-index-raised: 10; /* controls layered on a card (item-card add pill)   */
+  --z-index-sticky: 20; /* in-page sticky headers (category strip, admin nav)*/
+  --z-index-chrome: 30; /* app bars, cart bar, FABs, impersonation banner    */
+  --z-index-scrim: 50; /* modal + drawer backdrops                          */
+  --z-index-modal: 60; /* dialog panels, sheets, the nav drawer itself      */
+  --z-index-popover: 70; /* menus anchored inside a modal                     */
+  --z-index-toast: 100; /* notifications                                     */
+  --z-index-skip: 110; /* skip link — always first and always on top        */
 }
 
 @theme inline {
