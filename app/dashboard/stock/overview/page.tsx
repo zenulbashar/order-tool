@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
 
-import { PageHeader } from "@/app/_components/page-header";
+import { StockHeader, StockNav } from "../stock-chrome";
 import { cx } from "@/app/_components/cx";
 import { db } from "@/lib/db";
 import { ingredients, stockMovements } from "@/lib/db/schema";
@@ -164,44 +164,11 @@ export default async function StockOverviewPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1600px]">
-      <PageHeader
-        title="Stock"
-        description={venue.name}
-        action={
-          <Link
-            href="/dashboard/stock/scan"
-            className="inline-flex items-center gap-1.5 rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-forest transition hover:opacity-90"
-          >
-            <span aria-hidden="true">✦</span> Scan invoice
-          </Link>
-        }
-      />
+      <StockHeader venueName={venue.name} />
 
       <section className="space-y-4 px-5 py-8">
         {/* Tab bar — Overview is live here; Ingredients + Invoices link out. */}
-        <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
-          <span className="rounded-[7px] bg-surface-elevated px-3 py-1.5 text-xs font-bold text-ink shadow-sm">
-            Overview
-          </span>
-          <Link
-            href="/dashboard/stock"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Ingredients
-          </Link>
-          <Link
-            href="/dashboard/stock/scan"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Invoices
-          </Link>
-          <Link
-            href="/dashboard/stock/suggestions"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Suggestions
-          </Link>
-        </div>
+        <StockNav current="overview" />
 
         {!hasLedger ? (
           <div className="rounded-card border border-dashed border-line p-8 text-center">

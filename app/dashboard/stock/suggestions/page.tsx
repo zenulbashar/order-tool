@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { denseButtonStyles } from "@/app/_components/button-variants";
 
-import { PageHeader } from "@/app/_components/page-header";
+import { StockHeader, StockNav } from "../stock-chrome";
 import { cx } from "@/app/_components/cx";
 import { buildSuggestions, type Severity } from "@/lib/nudges";
 import { requireUser, requireVenue } from "@/lib/tenant";
@@ -30,43 +31,10 @@ export default async function SuggestionsPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1600px]">
-      <PageHeader
-        title="Stock"
-        description={venue.name}
-        action={
-          <Link
-            href="/dashboard/stock/scan"
-            className="inline-flex items-center gap-1.5 rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-forest transition hover:opacity-90"
-          >
-            <span aria-hidden="true">✦</span> Scan invoice
-          </Link>
-        }
-      />
+      <StockHeader venueName={venue.name} />
 
       <section className="space-y-4 px-5 py-8">
-        <div className="inline-flex gap-1 rounded-[10px] bg-sand p-1">
-          <Link
-            href="/dashboard/stock/overview"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Overview
-          </Link>
-          <Link
-            href="/dashboard/stock"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Ingredients
-          </Link>
-          <Link
-            href="/dashboard/stock/scan"
-            className="rounded-[7px] px-3 py-1.5 text-xs font-semibold text-label transition hover:text-ink"
-          >
-            Invoices
-          </Link>
-          <span className="rounded-[7px] bg-surface-elevated px-3 py-1.5 text-xs font-bold text-ink shadow-sm">
-            Suggestions
-          </span>
-        </div>
+        <StockNav current="suggestions" />
 
         <div>
           <h2 className="font-display text-lg font-extrabold text-ink">
@@ -112,7 +80,7 @@ export default async function SuggestionsPage() {
                 <div className="flex shrink-0 items-center gap-2">
                   <Link
                     href={s.href}
-                    className="rounded-control border border-line-strong px-3 py-1.5 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+                    className={denseButtonStyles()}
                   >
                     {s.actionLabel} →
                   </Link>

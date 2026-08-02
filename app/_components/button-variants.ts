@@ -46,6 +46,80 @@ const variantStyles: Record<ButtonVariant, string> = {
     "bg-[var(--color-warm-deep)] text-white hover:-translate-y-px hover:brightness-90 hover:shadow-lift-danger focus-visible:shadow-[var(--focus-ring-danger)]",
 };
 
+/**
+ * Circular icon-only button — quantity steppers, close affordances. 44px by
+ * default, which is the touch-target floor for a control with no text label to
+ * widen it (audit D4; three hand-written copies).
+ *
+ * Icon buttons cannot go through `buttonStyles`: it has no square size, and its
+ * `px-*` sizing would stretch a glyph-only button into a lozenge.
+ */
+export function iconButtonStyles(opts?: {
+  /** 44px (default) or the 40px used inside dense drawers. */
+  size?: "md" | "sm";
+  className?: string;
+}): string {
+  return cx(
+    "flex items-center justify-center rounded-pill",
+    opts?.size === "sm" ? "h-10 w-10" : "h-11 w-11",
+    "text-muted transition hover:bg-sand hover:text-ink",
+    opts?.className,
+  );
+}
+
+/**
+ * Ink-filled pill for confirm-style submits that are deliberately NOT the
+ * page's var(--action) colour — refund confirmation, staff invite send. The ink
+ * fill reads as "commit this" without competing with the surface's own accent.
+ */
+export const inkPillStyles =
+  "rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-surface " +
+  "transition disabled:opacity-60";
+
+/**
+ * The dense row-action button used in admin tables and dense owner lists
+ * ("Pause", "Edit", "View venue", "Mark done"). Eleven copies of this had been
+ * written by hand and two had already DRIFTED to `font-semibold` (audit D4).
+ *
+ * Deliberately NOT a `buttonStyles` size. buttonStyles sizes by HEIGHT — the
+ * smallest is `h-9` (36px), to hold the touch-target floor for a standalone
+ * control. These sit inline in table rows at roughly 26px and are secondary to a
+ * row that is itself the target; adopting `h-9` would grow every admin table row
+ * by ~10px. Encoding that as a fake buttonStyles size would misrepresent the
+ * constraint, so it is its own recipe with its own reason.
+ */
+export function denseButtonStyles(opts?: {
+  /** Outline (default) or a filled var(--action) button. */
+  variant?: "outline" | "solid";
+  /** sm = px-3 py-1.5 (default); xs = px-2.5 py-1 for the densest tables. */
+  size?: "xs" | "sm";
+  /**
+   * Padding override, REPLACING the size's. Same reason `controlClass` has one:
+   * `cx` is a plain joiner, not tailwind-merge, so passing padding through
+   * `className` emits it alongside the size's and leaves stylesheet order to
+   * pick a winner. One call site wants px-3 py-1 — neither size's pair.
+   */
+  padding?: string;
+  /** Adds bg-surface-elevated, for rows that sit on a tinted background. */
+  elevated?: boolean;
+  /** Adds inline-flex + gap, for buttons carrying a leading glyph. */
+  withIcon?: boolean;
+  className?: string;
+}): string {
+  const solid = opts?.variant === "solid";
+  return cx(
+    opts?.withIcon ? "inline-flex items-center gap-1.5" : null,
+    "rounded-control",
+    opts?.padding ?? (opts?.size === "xs" ? "px-2.5 py-1" : "px-3 py-1.5"),
+    "text-xs font-bold transition",
+    solid
+      ? "bg-[var(--action)] text-white hover:opacity-90"
+      : "border border-line-strong text-ink hover:bg-hover-secondary",
+    !solid && opts?.elevated ? "bg-surface-elevated" : null,
+    opts?.className,
+  );
+}
+
 /** Build the class string for a button-styled element. */
 export function buttonStyles(
   variant: ButtonVariant = "secondary",

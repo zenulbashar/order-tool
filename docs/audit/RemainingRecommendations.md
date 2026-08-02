@@ -172,24 +172,56 @@ Ordered by priority. Nothing here is Critical.
    fixed inside `<Segmented>` itself. Visual delta: the track becomes a pill and
    the active segment takes the `var(--action)` fill instead of white-on-sand.
 
-   **D4 buttons — open, and now measured rather than asserted.** A script
-   extracted all 90 `<button>` / `<Link>` class literals in `app/` and diffed each
-   as a SET against all 24 `buttonStyles(variant, size, {pill})` combinations. The
-   CLOSEST match differs by **14 utilities**; there is no zero-visual-change
-   subset anywhere in the range, so the D2 treatment does not transfer.
+   **D4 buttons ✅ — the finding was aimed slightly wrong, and measuring it
+   found the real problem.**
 
-   The reason is structural, not laziness. `buttonStyles` sizes by HEIGHT
-   (`h-9`/`h-11`/`h-12`) and sets `font-medium`; the call sites size by PADDING
-   (`py-1.5`/`py-2`/`py-2.5`) and use `font-bold` or `font-semibold`. Every
-   conversion therefore changes both geometry and weight. Several of the matches
-   aren't `buttonStyles` candidates at all — `cart-review.tsx:75` (`h-11 w-11`),
-   `order-card.tsx:121` (`h-6 w-6`) and `storefront.tsx:380` (`h-10 w-10`) are
-   square ICON buttons, and the recipe has no icon size.
+   First measurement: all 90 `<button>` / `<Link>` class literals in `app/`,
+   diffed as SETS against all 24 `buttonStyles(variant, size, {pill})`
+   combinations. The CLOSEST differs by **14 utilities**. So "one-off buttons
+   re-implement `buttonStyles`" is not literally true — almost none of them is a
+   near-miss of it, and a sweep onto it would have been a restyle, not a
+   deduplication. `buttonStyles` sizes by HEIGHT (`h-9`/`h-11`/`h-12`) to hold
+   the touch-target floor; the call sites size by PADDING and sit inline in rows
+   that are themselves the target.
 
-   So this is the same shape as the radii above and the containers in D2: the
-   recipe is under-specified for what the app actually renders. Closing it means
-   deciding whether `buttonStyles` should grow a padding-based size and an icon
-   variant — design work, not a rename.
+   Second measurement, which found the actual harm: **38 of the 90 were exact
+   duplicates of another literal** — 13 clusters, the largest repeated **nine**
+   times. And the drift the finding predicts had already happened: two members of
+   one cluster were `font-semibold` while the other four were `font-bold`.
+
+   All 13 clusters are gone, by the mechanism that fits each:
+
+   - **Shared chrome components** where the duplication was a whole page header
+     or nav, not a button: `<StockHeader>` / `<StockNav>` (3 stock hub pages, 12
+     literals) and `<MarketingHeader>` (4 marketing routes, ~10 literals).
+   - **Shared recipes** for genuinely app-wide patterns: `denseButtonStyles`
+     (13 sites — admin row actions), `iconButtonStyles` (3), `inkPillStyles` (2).
+   - **Flow-local consts** where the pattern belongs to one surface and naming it
+     globally would add design-system vocabulary for a single flow:
+     `wizardSubmitButton`, plus file-local consts in `payment-step.tsx` and
+     `staff-manager.tsx`.
+
+   Every conversion was set-diffed first. Eleven of thirteen `denseButtonStyles`
+   sites are **set-identical**; the two exceptions are exactly the drifted copies
+   converging back to `font-bold`.
+
+   `denseButtonStyles` is deliberately not a `buttonStyles` size, and the
+   docblock says why: adopting `h-9` would grow every admin table row by ~10px.
+   A test asserts the two stay distinct, so a future height-free `buttonStyles`
+   size doesn't silently make the separate recipe redundant without anyone
+   noticing.
+
+   **The ~50 singletons are deliberately untouched.** A button written once is
+   not duplication, and most of them are marketing or storefront buttons whose
+   look is a deliberate distinction from the owner design system. What is now
+   enforced is the rule, not the inventory: `test/button-literal-drift.test.ts`
+   fails if ANY button class literal appears twice, whichever one it is.
+
+   One thing observed and NOT changed, because it is a design call rather than a
+   duplication: the stock tab bar advertises "Invoices" as a peer tab, but
+   `/dashboard/stock/scan` renders a back-link detail header with no tab bar, so
+   the tabs vanish on arrival. Extracting `<StockNav>` makes adding it a one-line
+   change if that is wanted.
 
 7. **Firewall CTAs (D1) — named scope ✅ done; wider sweep itemised below.**
    Converted: admin *Create promotion* and *Save*, marketplace *Checkout* and

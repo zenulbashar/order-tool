@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { inkPillStyles } from "@/app/_components/button-variants";
 
 import { formatCents } from "@/lib/validation";
 
@@ -125,7 +126,7 @@ export function RefundControl({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-pill bg-ink px-4 py-2 text-sm font-semibold text-surface transition disabled:opacity-60"
+          className={inkPillStyles}
         >
           {pending ? "Refunding…" : "Confirm refund"}
         </button>

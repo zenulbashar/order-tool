@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { denseButtonStyles } from "@/app/_components/button-variants";
 import Link from "next/link";
 import { asc, desc, eq, ne } from "drizzle-orm";
 
@@ -144,7 +145,7 @@ export default async function AdminMarketplacePage() {
                       <input type="hidden" name="status" value={next.value} />
                       <button
                         type="submit"
-                        className="rounded-control border border-line-strong px-2.5 py-1 text-xs font-bold text-ink transition hover:bg-hover-secondary"
+                        className={denseButtonStyles({ size: "xs" })}
                       >
                         {next.label}
                       </button>

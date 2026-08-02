@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { denseButtonStyles } from "@/app/_components/button-variants";
 import { desc, eq } from "drizzle-orm";
 
 import { StatusBadge } from "@/app/_components/status-badge";
@@ -131,7 +132,7 @@ export default async function AdminSupportPage() {
                   <input type="hidden" name="ticketId" value={ticket.id} />
                   <button
                     type="submit"
-                    className="rounded-control border border-line-strong bg-surface-elevated px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-hover-secondary"
+                    className={denseButtonStyles({ elevated: true })}
                   >
                     Mark closed
                   </button>

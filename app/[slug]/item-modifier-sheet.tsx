@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/app/_components/button";
+import { iconButtonStyles } from "@/app/_components/button-variants";
 import { useDialog } from "@/app/_components/use-dialog";
 import { dietaryTagLabel, formatCents } from "@/lib/validation";
 
@@ -122,7 +123,7 @@ export function ItemModifierSheet({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill text-muted hover:bg-sand hover:text-ink"
+            className={iconButtonStyles({ className: "shrink-0" })}
           >
             ✕
           </button>
