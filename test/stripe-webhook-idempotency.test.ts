@@ -35,7 +35,7 @@ vi.mock("@/lib/stripe", () => ({
 
 /** Rows the guarded confirm UPDATE returns: 1 row = real transition, 0 = replay. */
 const dbState = vi.hoisted(() => ({
-  confirmRows: [] as { id: string }[],
+  confirmRows: [] as { id: string; totalCents: number }[],
   updates: [] as Record<string, unknown>[],
   failOnUpdate: false,
 }));
@@ -49,9 +49,32 @@ const db = vi.hoisted(() => ({
         }
         dbState.updates.push(values);
         const rows = dbState.confirmRows;
+        // Honour the PROJECTION rather than echoing confirmRows verbatim. Each
+        // requested drizzle column is mapped to the row field its snake_case
+        // name implies, so selecting the WRONG column is visible here. It would
+        // otherwise be invisible everywhere: total_cents and discount_cents are
+        // both integers, so tsc accepts the swap, and a mock that ignores its
+        // argument would keep every assertion green while production compared
+        // the charge against the discount and alerted on every order.
+        const camel = (s: string) =>
+          s.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase());
+        const project = (cols?: Record<string, { name?: string }>) =>
+          cols
+            ? rows.map((row) =>
+                Object.fromEntries(
+                  Object.entries(cols).map(([alias, col]) => [
+                    alias,
+                    (row as unknown as Record<string, unknown>)[
+                      camel(col?.name ?? alias)
+                    ],
+                  ]),
+                ),
+              )
+            : rows;
         // Awaitable directly (payment_failed) and via .returning() (succeeded).
         return Object.assign(Promise.resolve(rows), {
-          returning: () => Promise.resolve(rows),
+          returning: (cols?: Record<string, { name?: string }>) =>
+            Promise.resolve(project(cols)),
         });
       }),
     })),
@@ -75,6 +98,15 @@ const sideEffects = vi.hoisted(() => ({
     vi.fn<(error: unknown, options: { context: string }) => Promise<void>>(
       async () => undefined,
     ),
+  reportChargeAmountMismatch:
+    vi.fn<
+      (facts: {
+        orderId: string;
+        paymentIntentId: string;
+        chargedCents: number;
+        orderTotalCents: number;
+      }) => Promise<void>
+    >(async () => undefined),
 }));
 vi.mock("@/lib/integrations/dispatch", () => ({
   enqueueJobsForOrder: sideEffects.enqueueJobsForOrder,
@@ -99,7 +131,10 @@ vi.mock("@/lib/loyalty/redeem", () => ({
 vi.mock("@/lib/giftcards/redeem", () => ({
   redeemGiftCardForOrder: sideEffects.redeemGiftCardForOrder,
 }));
-vi.mock("@/lib/observability", () => ({ reportError: sideEffects.reportError }));
+vi.mock("@/lib/observability", () => ({
+  reportError: sideEffects.reportError,
+  reportChargeAmountMismatch: sideEffects.reportChargeAmountMismatch,
+}));
 
 // Imported after the mocks are registered.
 const { POST } = await import("@/app/api/stripe/webhook/route");
@@ -116,10 +151,12 @@ const VALUE_MOVING = [
   ["customer notification", sideEffects.notifyCustomerOrder],
 ] as const;
 
-function succeededEvent(id = PI_ID) {
+const ORDER_TOTAL_CENTS = 1800;
+
+function succeededEvent(id = PI_ID, amountReceived = ORDER_TOTAL_CENTS) {
   return {
     type: "payment_intent.succeeded",
-    data: { object: { id } },
+    data: { object: { id, amount_received: amountReceived } },
   };
 }
 
@@ -143,7 +180,7 @@ const savedSecret = process.env.STRIPE_WEBHOOK_SECRET;
 beforeEach(() => {
   vi.clearAllMocks();
   after.pending.length = 0;
-  dbState.confirmRows = [{ id: "order-1" }];
+  dbState.confirmRows = [{ id: "order-1", totalCents: ORDER_TOTAL_CENTS }];
   dbState.updates = [];
   dbState.failOnUpdate = false;
   process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
@@ -284,6 +321,87 @@ describe("other event types", () => {
 
     expect(response.status).toBe(200);
     expect(db.update).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The charge-vs-order backstop. A discount-idempotency defect let the
+ * PaymentIntent and the order row hold DIFFERENT amounts, and nothing anywhere
+ * compared them — the handler confirmed on PaymentIntent id alone. This pins the
+ * comparison to the real handler, not just to the pure builder.
+ */
+describe("charge amount reconciliation", () => {
+  it("says nothing when Stripe took exactly what the order says", async () => {
+    await deliver();
+    // The reporter is called; it is the BUILDER that decides equal = silent, and
+    // that decision is covered in lib/observability.test.ts. Assert the literal
+    // amounts, not that the two fields equal each other — the latter would pass
+    // even if the handler read the same column into both.
+    expect(sideEffects.reportChargeAmountMismatch).toHaveBeenCalledTimes(1);
+    const [facts] = sideEffects.reportChargeAmountMismatch.mock.calls[0];
+    expect(facts.chargedCents).toBe(ORDER_TOTAL_CENTS);
+    expect(facts.orderTotalCents).toBe(ORDER_TOTAL_CENTS);
+  });
+
+  it("hands the reporter both amounts when they disagree", async () => {
+    // The exploit's end state: PI left at 1300 while the order row says 1800.
+    constructEvent.mockImplementation(() => succeededEvent(PI_ID, 1300));
+
+    const response = await deliver();
+
+    // Still confirmed — the money already moved, so the kitchen is not blocked.
+    expect(response.status).toBe(200);
+    expect(dbState.updates).toEqual([{ status: "confirmed" }]);
+
+    expect(sideEffects.reportChargeAmountMismatch).toHaveBeenCalledTimes(1);
+    const [facts] = sideEffects.reportChargeAmountMismatch.mock.calls[0];
+    expect(facts).toEqual({
+      orderId: "order-1",
+      paymentIntentId: PI_ID,
+      chargedCents: 1300,
+      orderTotalCents: ORDER_TOTAL_CENTS,
+    });
+  });
+
+  it("does not re-check on a replay, so a retry can't re-alert", async () => {
+    dbState.confirmRows = [];
+    constructEvent.mockImplementation(() => succeededEvent(PI_ID, 1300));
+
+    await deliver();
+
+    expect(sideEffects.reportChargeAmountMismatch).not.toHaveBeenCalled();
+  });
+
+  it("never fails the webhook when the reporter throws", async () => {
+    // Stripe must still get its 200: an observability fault cannot become a
+    // retry storm on the money path.
+    sideEffects.reportChargeAmountMismatch.mockRejectedValueOnce(
+      new Error("sentry down"),
+    );
+
+    const response = await deliver();
+
+    expect(response.status).toBe(200);
+  });
+
+  it("never fails the webhook when after() itself cannot schedule", async () => {
+    // after() throws SYNCHRONOUSLY when waitUntil is unavailable, and this
+    // block runs before every value-moving side effect. Uncaught, that would
+    // 500 a webhook whose confirm had already committed — and Stripe's retry
+    // would find the order confirmed, so `confirmed` would be empty and the
+    // customer notification and new-order push would be skipped for good
+    // (neither is re-derived by the cron sweep). A diagnostic must never cost
+    // an order its receipt.
+    after.mockImplementationOnce(() => {
+      throw new Error("`waitUntil` is not available in this environment");
+    });
+
+    const response = await deliver();
+
+    expect(response.status).toBe(200);
+    for (const [name, effect] of VALUE_MOVING) {
+      expect(effect, `${name} must still fire`).toHaveBeenCalledTimes(1);
+    }
   });
 });
 

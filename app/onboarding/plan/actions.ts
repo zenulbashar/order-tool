@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 /**
  * Onboarding Step 5 — advance past plan selection to the go-live step.
@@ -18,8 +18,7 @@ import { requireUser, requireVenue } from "@/lib/tenant";
  * forward. onboarding_completed_at is NOT touched here (that is the go-live step).
  */
 export async function advanceToLiveStep(): Promise<void> {
-  await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireWizardVenue();
 
   await db
     .update(venues)

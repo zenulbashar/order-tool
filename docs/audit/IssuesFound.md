@@ -22,10 +22,21 @@ Status is tracked in IssuesResolved.md / RemainingRecommendations.md.
 | S1 | Low | Admin action | `setVenueItemPrice` UPDATE was scoped to `itemId` only (venue checked *after* the write, gating just the audit row) despite a comment claiming otherwise — a mismatched id edited the wrong tenant and skipped the audit entry. | ✅ Fixed |
 | S2 | Low–Med | Auth | Owner magic-link is rate-limited in the sign-in **action**, but the underlying NextAuth Resend provider is reachable directly at `POST /api/auth/signin/resend`, bypassing the app limiter (relies on edge rules). | 🔶 Recommended |
 | S3 | Low | Rate-limit | `clientIpFromHeaders` trusts the **left-most** `X-Forwarded-For`, which is attacker-prependable on some platforms → per-IP limit evasion. Deployment-dependent. | 🔶 Recommended |
+| S4 | High | Checkout / discounts | The PaymentIntent re-price used a Stripe idempotency key keyed to the **target amount**. Composable discounts revisit a total, so the key was reused; Stripe **replayed** instead of erroring, leaving the charge and the order row disagreeing — silently, and in **both** directions (an honest diner toggling points could be over-charged). Nothing downstream compared them. | ✅ Fixed |
+| S5 | High | Onboarding | All five onboarding server actions gated on `requireVenue()` — membership, which never consults role — while the dashboard gates the same writes on `settings:manage`; the step routes also rendered for a fully live venue. A `staff` login could null every menu item's station routing, or stamp `onboarding_completed_at` and push a half-configured venue live. | ✅ Fixed |
+| S6 | High | Gift cards | The gift-card page gated on membership while all three mutating actions beside it required `giftcards:manage`. It lists full, unmasked bearer codes; redemption authorises on the code alone, so a `staff` login could drain the venue's stored value as an ordinary diner. | ✅ Fixed |
 
-**Verdict:** tenant isolation, webhook signature verification, the money path,
-customer-identity firewall, CSRF/XSS/SQLi, secrets, and uploads were all audited
-and found **correctly enforced**. No Critical/High security issues.
+**Verdict (2026-07):** tenant isolation, webhook signature verification, the money
+path, customer-identity firewall, CSRF/XSS/SQLi, secrets, and uploads were all
+audited and found **correctly enforced**. No Critical/High security issues.
+
+**Verdict (2026-08 re-audit):** that claim did not survive an adversarial second
+pass — S4–S6 above are all High, and all three sat in code the first pass had
+read and approved. Each is a control that exists and is correct in one place and
+is simply absent in a neighbouring place reaching the same state. All are fixed
+and pinned by mutation-tested harnesses; two further candidates were investigated
+and deliberately **dropped** (host-header injection, dashboard read gates) with
+reasons recorded in SecurityReview-2026-08.md. Full method and findings there.
 
 ## Accessibility (WCAG 2.2 AA)
 

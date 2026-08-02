@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 /**
  * Onboarding final step (go live) — finish onboarding.
@@ -18,8 +18,11 @@ import { requireUser, requireVenue } from "@/lib/tenant";
  * re-stamps a venue that is already live.
  */
 export async function finishOnboarding(): Promise<void> {
-  await requireUser();
-  const venue = await requireVenue();
+  // Going live is what makes placeOrder start accepting real money, so it is a
+  // settings capability — not something venue membership alone confers. An
+  // already-live venue short-circuits to the dashboard, which is where this
+  // redirected anyway, so the user-visible outcome is unchanged.
+  const venue = await requireWizardVenue();
 
   await db
     .update(venues)

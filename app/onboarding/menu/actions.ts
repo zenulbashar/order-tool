@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 /**
  * Onboarding Step 3 — advance past the menu-import step.
@@ -18,8 +18,7 @@ import { requireUser, requireVenue } from "@/lib/tenant";
  * along. onboarding_completed_at is NOT touched here (that is the final step).
  */
 export async function completeMenuStep(): Promise<void> {
-  await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireWizardVenue();
 
   await db
     .update(venues)

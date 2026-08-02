@@ -1249,6 +1249,21 @@ export const orders = pgTable(
     // owes the venue for a co-/platform-funded promo, reconciled out of band —
     // it does NOT change the charge or the application fee.
     platformFundedCents: integer("platform_funded_cents").notNull().default(0),
+    // Monotonic count of how many times applyOrderDiscounts has re-priced this
+    // order. Its ONLY job is to make the PaymentIntent update's Stripe
+    // idempotency key identify a state TRANSITION rather than a target amount.
+    //
+    // Keying on the amount was a live money bug. Discounts are composable, so
+    // the same total is reachable more than once (bank saving -> gift card ->
+    // gift card cleared lands back on the first total), and the second call
+    // reused a burnt key. Because the request body was byte-identical, Stripe
+    // REPLAYED the cached response instead of erroring: no update ran, yet the
+    // order row had already been written in the same transaction, and the 200
+    // meant nothing rolled back. Charge and order then disagreed silently — in
+    // both directions, so an honest diner toggling points could be overcharged.
+    // A counter stays unique across an A->B->A->B oscillation; a from/to pair
+    // does not. Inert to money itself: nothing prices off this column.
+    discountRevision: integer("discount_revision").notNull().default(0),
     // Stripe PaymentIntent backing this order (direct charge on the venue's
     // connected account). Set server-side after the order row is written; the
     // webhook resolves orders to confirm/fail by THIS id only — never a

@@ -2,7 +2,7 @@ import { asc } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { venueStations } from "@/lib/db/schema";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import { requireWizardVenue, scopedToVenue } from "@/lib/tenant";
 
 import { WizardProgress } from "../_components/wizard-progress";
 import { StationsForm } from "./stations-form";
@@ -11,9 +11,10 @@ import { StationsForm } from "./stations-form";
 export const dynamic = "force-dynamic";
 
 export default async function StationsStepPage() {
-  await requireUser();
-  // No venue -> requireVenue redirects to /onboarding, which routes to Step 1.
-  const venue = await requireVenue();
+  // No venue -> redirects to /onboarding, which routes to Step 1. Already live
+  // -> back to the dashboard: the form below submits a REPLACE-SET, which is
+  // only safe while no item→station assignments exist yet.
+  const venue = await requireWizardVenue();
 
   const saved = await db
     .select({

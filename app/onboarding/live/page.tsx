@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { getTablesForVenue } from "@/app/dashboard/tables/queries";
 import { tableDeepLink, tableQrSvg } from "@/lib/qr";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 import { getBaseUrl } from "@/lib/url";
 
 import { WizardProgress } from "../_components/wizard-progress";
@@ -13,9 +13,9 @@ import { CopyLink } from "./copy-link";
 export const dynamic = "force-dynamic";
 
 export default async function LiveStepPage() {
-  await requireUser();
-  // No venue -> requireVenue redirects to /onboarding, which routes to Step 1.
-  const venue = await requireVenue();
+  // No venue -> redirects to /onboarding, which routes to Step 1. Already live
+  // -> back to the dashboard, so Back after finishing doesn't re-show this.
+  const venue = await requireWizardVenue();
 
   const [tables, baseUrl] = await Promise.all([
     getTablesForVenue(venue.id),

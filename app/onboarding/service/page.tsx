@@ -1,4 +1,4 @@
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireWizardVenue } from "@/lib/tenant";
 
 import { WizardProgress } from "../_components/wizard-progress";
 import { ServiceForm } from "./service-form";
@@ -7,9 +7,9 @@ import { ServiceForm } from "./service-form";
 export const dynamic = "force-dynamic";
 
 export default async function ServiceStepPage() {
-  await requireUser();
-  // No venue -> requireVenue redirects to /onboarding, which routes to Step 1.
-  const venue = await requireVenue();
+  // No venue -> redirects to /onboarding, which routes to Step 1. Already live
+  // -> back to the dashboard; setup is done and Settings owns these fields now.
+  const venue = await requireWizardVenue();
 
   return (
     <div className="space-y-6">
