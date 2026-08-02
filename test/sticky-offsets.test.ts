@@ -27,6 +27,14 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = process.cwd();
 const DINER = join(ROOT, "app", "[slug]");
+/*
+  The publisher moved to app/_components when the dashboard needed it too
+  (R2-1: the support FAB is a sibling of <main>, so its bottom-bar height has to
+  be published globally, not set on the page). This test pins the DINER
+  consumers, so it reads the hook by path — kept here as one constant rather
+  than inline, since the last move broke it.
+*/
+const HOOK = join(ROOT, "app/_components/use-sticky-metrics.ts");
 
 function tsxFiles(dir: string): string[] {
   const out: string[] = [];
@@ -66,7 +74,7 @@ describe("sticky offsets derive from one measured height", () => {
   it("something actually publishes the two metrics", () => {
     // Without a publisher every consumer silently falls back to its default and
     // the whole mechanism is decorative — the assertion below would still pass.
-    const hook = code(join(DINER, "use-sticky-metrics.ts"));
+    const hook = code(HOOK);
     expect(hook).toContain("new ResizeObserver");
     expect(hook).toContain("setProperty");
 

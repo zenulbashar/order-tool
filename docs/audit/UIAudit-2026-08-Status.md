@@ -118,3 +118,44 @@ that is not a contrast check against anything.
   design-audit D1 as a judgement call. Resolved as legitimate: `globals.css`
   names the account "YOUR USUAL" hero as one of the two sanctioned forest-dark
   AI surfaces, alongside the concierge panel. Amber belongs there.
+
+## Round 2 — four findings, all confirmed against source
+
+A re-audit at `c7e96cb` verified 24 of the 26 above as genuinely closed, and
+found **two that did not take effect** — including the originally reported bug.
+Both are the same class: the fix was written, and the CSS custom property it
+depends on never reached the element that reads it.
+
+| # | Sev | Finding | Status |
+| --- | --- | --- | --- |
+| R2-1 | **P0** | FAB still overlaps the mobile bottom bar — `--p2e-bottom-bar-h` set on a node that is not an ancestor of the FAB | ✅ Fixed |
+| R2-2 | P1 | `lg:` reset for that variable is dead — an inline style outranks it at every breakpoint | ✅ Fixed |
+| R2-3 | P1 | Toast still lands on the sticky mobile dashboard header — nothing published `--p2e-header-h` there | ✅ Fixed |
+| R2-4 | P2 | `support-widget.tsx` carried two conflicting `sm:` font sizes | ✅ Fixed |
+
+**The mistake, stated plainly.** `<SupportWidget>` is a *sibling* of `<main>` in
+`app/dashboard/layout.tsx`. The page's `<section>` — inside `<main>` — declared
+`--p2e-bottom-bar-h: 72px` with an inline style. Custom properties inherit DOWN,
+so it never arrived; `var(…, 0px)` always took the fallback and the FAB kept
+sitting on the bar it was supposed to clear. On `/dashboard/marketplace` and
+`/dashboard/studio` the reported overlap was unchanged.
+
+`--p2e-header-h` failed the same way in the other direction: only the diner
+storefront published it, so the toast viewport read `0px` on every owner page and
+landed on the sticky mobile header that its own comment cites as its reason to
+exist.
+
+Both are now measured and published on `documentElement` via `useStickyMetric`,
+which also removes two things the hard-coded version needed: the `lg:` reset (a
+`lg:hidden` bar measures 0) and the manual `0px` guess (an unmounted bar clears
+the property). The safe-area inset moved into the `var()` fallback — a measured
+bar's height already includes its own inset, so adding both double-counted the
+notch.
+
+**Why four static guards missed it.** They check that the right tokens appear in
+the right files. R2-1 and R2-3 are tree-reachability failures: the right string
+is in the right file and does nothing, because the element setting it is not an
+ancestor of the element reading it. `test/css-var-reach.test.ts` inverts that
+into something static — these metrics are PUBLISHED, never DECLARED on a
+component node; anything read must have a publisher; and a measured height is
+never added to the inset it already contains. Three mutations verified.

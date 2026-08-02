@@ -85,14 +85,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {/* Viewport — top-right on desktop, full-width top on mobile. Above the
           sidebar (z-modal) and diner chrome; never prints.
 
-          `top` clears whatever sticky header the surface publishes (0 when
-          there is none) and the notch on top of that: at a flat top-4 the
-          toasts landed ON the sticky mobile dashboard header. */}
+          `top` clears whatever sticky header the surface publishes. The notch
+          is the FALLBACK, not an addend — a published header's height already
+          includes its own safe-area padding, so adding both double-counted it
+          (R2-3, the same double-count as the support FAB). */}
       <div
         role="region"
         aria-label="Notifications"
-        className="pointer-events-none fixed inset-x-4 z-toast flex flex-col items-end gap-2 pt-[calc(1rem+env(safe-area-inset-top))] print:hidden sm:inset-x-auto sm:right-4"
-        style={{ top: "var(--p2e-header-h, 0px)" }}
+        className="pointer-events-none fixed inset-x-4 z-toast flex flex-col items-end gap-2 pt-4 print:hidden sm:inset-x-auto sm:right-4"
+        style={{ top: "var(--p2e-header-h, env(safe-area-inset-top))" }}
       >
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} dismiss={dismiss} />

@@ -58,18 +58,25 @@ const RESUME_MS = 60 * 60 * 1000;
  *
  *  - the iOS home indicator, via env(safe-area-inset-bottom) — live only now
  *    that the root layout sets viewportFit: "cover";
- *  - any page-level mobile bottom bar, which declares its own height in
- *    --p2e-bottom-bar-h. Marketplace and Studio both render one, and the FAB
- *    used to land on the right-hand end of it — exactly where the primary
- *    action sits. On a 390px phone it covered ~40% of the bar.
+ *  - any page-level mobile bottom bar, which MEASURES itself and publishes the
+ *    height on <html> via useStickyMetric("--p2e-bottom-bar-h"). Marketplace and
+ *    Studio both render one, and the FAB landed on the right-hand end of it —
+ *    exactly where the primary action sits, ~40% of the bar on a 390px phone.
  *
- * `bottom` is inline rather than a Tailwind class because the calc() has to
- * read a variable set by an ancestor at runtime.
+ * It has to be published GLOBALLY, and that is the whole lesson of R2-1: this
+ * FAB is a sibling of <main>, so the first attempt — an inline style on the
+ * page's own <section> — never inherited here, and the reported bug stayed live
+ * behind a fix that looked applied.
+ *
+ * The inset is the FALLBACK, not an addend: a measured bar's height already
+ * includes its own safe-area padding, so adding both double-counts the notch.
+ *
+ * `bottom` is inline rather than a Tailwind class because the calc() has to read
+ * a variable resolved at runtime.
  */
 const FAB_STYLE: React.CSSProperties = {
   background: "linear-gradient(110deg,#13301f,#1d4a35)",
-  bottom:
-    "calc(1.5rem + env(safe-area-inset-bottom) + var(--p2e-bottom-bar-h, 0px))",
+  bottom: "calc(1.5rem + var(--p2e-bottom-bar-h, env(safe-area-inset-bottom)))",
 };
 
 type StoredState = {
@@ -514,7 +521,7 @@ export function SupportWidget({ venueId }: { venueId: string }) {
                     maxLength={2000}
                     placeholder="Type your message…"
                     aria-label="Message support"
-                    className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-base sm:text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
+                    className="min-w-0 flex-1 rounded-full border border-concierge-ai-border bg-concierge-ai-bg px-4 py-2 font-mono text-base sm:text-sm text-concierge-ai-text placeholder:text-concierge-input focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
                   />
                   <button
                     type="submit"

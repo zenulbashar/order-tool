@@ -18,23 +18,39 @@ runtime environment / human sign-off.
   charged total (C2)
 - ⬜ Two concurrent applies of the **same gift card** never over-redeem (C3)
 - ⬜ A stocktake "set" racing an order depletion reconciles to the counted value (C4)
-- ⬜ Discounted **confirmation email** line items reconcile to the Total (C5 — not
-  yet fixed)
+- ⬜ Discounted **confirmation email** line items reconcile to the Total (C5).
+  The FIX shipped — a Subtotal + Discount breakdown renders in both the HTML
+  and plain-text parts, and the subtotal is DERIVED when a caller supplies a
+  discount without one. What is still open is seeing it in a real send.
 
 ## Security
 - ✅ Tenant isolation, webhook signatures, admin gate, money recompute verified
-- ⬜ Owner magic-link rate limiting enforced at the provider/edge (S2)
-- ⬜ Client-IP source hardened for the deploy target (S3)
+- ✅ Owner magic-link rate limiting (S2) — done IN-APP rather than at the edge.
+  `lib/auth-send-limit.ts` guards `sendVerificationRequest` in `lib/auth.ts`,
+  the one point every path that mails a link goes through, so no edge
+  dependency remains. The original wording asked for a provider/edge rule.
+- ✅ Client-IP source hardened (S3) — `clientIpFromHeaders` prefers the
+  edge-set `x-vercel-forwarded-for` / `x-real-ip`, with left-most XFF kept
+  only as the off-platform fallback.
 - ⬜ Dependency CVE scan (`npm audit` / Snyk)
 - ⬜ Secret-scan of git history; confirm no secrets in the repo
-- ⬜ `.env` completeness vs `.env.example`; production secrets set
+- ✅ `.env` completeness vs `.env.example` — the file was missing 24 keys the
+  code already read, all of which fail SILENTLY (`PLATFORM_ADMIN_EMAILS`
+  unset makes `/admin` deny everyone with no error). Now documented and
+  pinned by `test/env-example-complete.test.ts`.
+- ⬜ Production secrets actually SET in Vercel — still yours to do; the list
+  above is what to set, not proof that it is set.
 
 ## Accessibility
-- ✅ Dialog focus trap / Escape / restoration (7/8), Segmented + Field ARIA
+- ✅ Dialog focus trap / Escape / restoration (8/8), Segmented + Field ARIA
 - ⬜ Screen-reader pass (VoiceOver / NVDA / TalkBack) on the core flows
 - ⬜ Contrast sampling across representative tenant brand colours
 - ⬜ Reduced-motion verification
-- ⬜ `detail-drawer` dialog semantics (A1 remainder)
+- ✅ `detail-drawer` dialog semantics (A1 remainder) — it closes by navigation
+  rather than a callback, which is why it did not fit the hook originally; it
+  now passes `useDialog(() => router.push(closeHref))`. A1/A2 are 8/8, and
+  `test/dialog-a11y.test.ts` derives the rule so a ninth dialog cannot ship
+  without it.
 
 ## Responsive — device matrix
 - ⬜ iPhone SE / 16, Pixel, iPad Mini / Pro, Android tablet

@@ -8,6 +8,7 @@ import { cx } from "@/app/_components/cx";
 import { formatCents } from "@/lib/validation";
 
 import { checkoutMarketplaceOrder } from "./actions";
+import { useStickyMetric } from "@/app/_components/use-sticky-metrics";
 
 export type ShopProduct = {
   id: string;
@@ -34,6 +35,15 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
   const [cartOpen, setCartOpen] = useState(false);
+  /*
+    Measured and published on <html>, not declared on this section (R2-1). The
+    support FAB reading it is a SIBLING of <main>, so a value set here would
+    never inherit to it. Measuring also removes the need for a desktop reset —
+    the bar is lg:hidden, so it measures 0 — and the hook clears the property
+    when the bar unmounts, which is most of the time (it renders only with items
+    in the cart).
+  */
+  const barRef = useStickyMetric<HTMLButtonElement>("--p2e-bottom-bar-h");
 
   const byId = useMemo(
     () => new Map(products.map((p) => [p.id, p])),
@@ -85,10 +95,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
   const itemCount = lines.reduce((sum, [, qty]) => sum + qty, 0);
 
   return (
-    <section
-      className="grid gap-6 px-5 py-8 lg:grid-cols-[1fr_320px] lg:[--p2e-bottom-bar-h:0px]"
-      style={{ "--p2e-bottom-bar-h": "72px" } as React.CSSProperties}
-    >
+    <section className="grid gap-6 px-5 py-8 lg:grid-cols-[1fr_320px]">
       <div className="space-y-4">
         {/* Category pills */}
         <div className="flex flex-wrap gap-2">
@@ -244,6 +251,7 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
       {itemCount > 0 && !cartOpen ? (
         <button
           type="button"
+          ref={barRef}
           onClick={() => setCartOpen(true)}
           className="fixed inset-x-0 bottom-0 z-chrome flex items-center justify-between gap-3 border-t border-line bg-surface-elevated px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 shadow-[0_-4px_16px_rgba(20,30,25,0.08)] lg:hidden"
         >

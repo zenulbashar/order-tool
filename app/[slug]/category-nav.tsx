@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { readStickyMetric } from "./use-sticky-metrics";
+import { readStickyMetric } from "@/app/_components/use-sticky-metrics";
 
 /**
  * Category nav with scroll-spy. Rendered inside the storefront's sticky header

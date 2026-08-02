@@ -28,9 +28,30 @@ import { useEffect, useRef, type RefObject } from "react";
  *
  * Every consumer passes a fallback (`var(--p2e-sticky-h, 128px)`), so the layout
  * is still sane for the first paint before the observer fires, and on the server.
+ *
+ * PUBLISHING ON documentElement IS THE POINT, not an implementation detail.
+ * Round 2 of the audit found `--p2e-bottom-bar-h` set with an inline style on a
+ * page's own <section>, read by the support FAB — which is a SIBLING of <main>
+ * in the dashboard layout. Custom properties inherit DOWN, so the variable never
+ * arrived, `var(…, 0px)` always took the fallback, and the FAB kept sitting on
+ * the bottom bar it was meant to clear. The fix was written; it just never
+ * reached the element. Anything a FIXED layer reads has to be published here.
+ *
+ * Lives in _components rather than app/[slug] because the dashboard needs it
+ * too — it was never diner-specific.
  */
+
+/**
+ * Layer heights any fixed element may need to clear. All measured, never
+ * hard-coded: a `lg:hidden` bar measures 0 on desktop, which is why none of
+ * these needs a breakpoint reset.
+ */
+export type StickyMetric =
+  | "--p2e-sticky-h"
+  | "--p2e-header-h"
+  | "--p2e-bottom-bar-h";
 export function useStickyMetric<T extends HTMLElement>(
-  name: "--p2e-sticky-h" | "--p2e-header-h",
+  name: StickyMetric,
 ): RefObject<T | null> {
   const ref = useRef<T | null>(null);
 
@@ -69,7 +90,7 @@ export function useStickyMetric<T extends HTMLElement>(
  * in JS rather than CSS (`category-nav`'s IntersectionObserver rootMargin).
  */
 export function readStickyMetric(
-  name: "--p2e-sticky-h" | "--p2e-header-h",
+  name: StickyMetric,
   fallback: number,
 ): number {
   if (typeof document === "undefined") return fallback;

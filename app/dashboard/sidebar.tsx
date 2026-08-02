@@ -12,6 +12,7 @@ import type { Permission } from "@/lib/authz";
 import { signOutOwner } from "./actions";
 import { setSidebarCollapsed, useSidebarCollapsed } from "./sidebar-preference";
 import { VenueSwitcher } from "./venue-switcher";
+import { useStickyMetric } from "@/app/_components/use-sticky-metrics";
 
 type NavLeaf = {
   label: string;
@@ -252,6 +253,15 @@ export function Sidebar({
    * the owner reported. An attribute rather than lifted state keeps the two
    * components independent.
    */
+  /*
+    Publish the mobile header's height so the toast viewport can clear it
+    (R2-3). toast.tsx reads --p2e-header-h and its own comment says it exists
+    because toasts landed ON this header — but only the diner storefront was
+    publishing the metric, so on every owner page it resolved to the 0px
+    fallback and the bug it described was still live here.
+  */
+  const mobileHeaderRef = useStickyMetric<HTMLDivElement>("--p2e-header-h");
+
   useEffect(() => {
     document.body.toggleAttribute("data-nav-open", open);
     return () => document.body.removeAttribute("data-nav-open");
@@ -337,7 +347,10 @@ export function Sidebar({
   return (
     <>
       {/* Mobile header — logo + hamburger. Hidden on desktop and in print. */}
-      <div className="sticky top-0 z-chrome flex items-center justify-between bg-sidebar px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-sidebar-ink lg:hidden print:hidden">
+      <div
+        ref={mobileHeaderRef}
+        className="sticky top-0 z-chrome flex items-center justify-between bg-sidebar px-4 py-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-sidebar-ink lg:hidden print:hidden"
+      >
         <Brand />
         <button
           type="button"
