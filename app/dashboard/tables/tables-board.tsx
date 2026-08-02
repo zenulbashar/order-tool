@@ -230,7 +230,10 @@ export function TablesBoard({
       <section className="px-5 py-6 print:hidden">
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           {/* Card grid */}
-          <div className="grid auto-rows-min grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+          {/* One column below 420px. Two QR cards side by side at 360px gave
+              each ~150px to hold a label, a status pill, a square QR, a
+              session line and a Print control (UI audit P1-10). */}
+          <div className="grid auto-rows-min grid-cols-1 gap-4 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
             {tables.length === 0 ? (
               <div className="col-span-full rounded-card border border-dashed border-line-strong bg-surface-elevated p-8 text-center">
                 <p className="font-display text-base font-semibold text-ink">
@@ -245,24 +248,28 @@ export function TablesBoard({
             {tables.map((table) => {
               const isSelected = selected?.id === table.id;
               return (
+                /*
+                  A real <button> for selection with Print as a SIBLING, not a
+                  div[role="button"] containing a <button> (UI audit P1-10).
+                  Nested interactive controls put the outer keydown handler and
+                  the inner click in competition, and screen readers announce a
+                  button inside a button. Same shape item-card.tsx already uses.
+                */
                 <div
                   key={table.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedId(table.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setSelectedId(table.id);
-                    }
-                  }}
                   className={cx(
-                    "flex cursor-pointer flex-col rounded-card border bg-surface-elevated p-3 shadow-card transition",
+                    "relative rounded-card border bg-surface-elevated shadow-card transition",
                     isSelected
                       ? "border-[var(--color-accent)] ring-1 ring-[var(--color-accent)]"
                       : "border-line hover:border-line-strong",
                   )}
                 >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(table.id)}
+                    aria-pressed={isSelected}
+                    className="flex w-full cursor-pointer flex-col p-3 pb-10 text-left"
+                  >
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-display text-base font-extrabold text-ink">
                       {table.label}
@@ -285,21 +292,17 @@ export function TablesBoard({
                       · {sinceLabel(table.session.placedAt)}
                     </p>
                   ) : null}
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs text-muted">
-                      {table.seats != null ? `${table.seats} seats` : "—"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        printOne(table.id);
-                      }}
-                      className="text-xs font-semibold text-ink hover:underline"
-                    >
-                      Print
-                    </button>
-                  </div>
+                  <span className="mt-2 text-xs text-muted">
+                    {table.seats != null ? `${table.seats} seats` : "—"}
+                  </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => printOne(table.id)}
+                    className="absolute bottom-3 right-3 text-xs font-semibold text-ink hover:underline"
+                  >
+                    Print<span className="sr-only"> QR code for {table.label}</span>
+                  </button>
                 </div>
               );
             })}

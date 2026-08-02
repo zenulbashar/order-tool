@@ -24,6 +24,7 @@ import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
 import { SearchEmptyState } from "./search-empty-state";
 import { useStickyMetric } from "./use-sticky-metrics";
+import { ToastProvider } from "@/app/_components/toast";
 import type {
   PublicFaq,
   PublicItem,
@@ -59,6 +60,8 @@ export function Storefront({
   view?: "landing" | "menu";
 }) {
   return (
+    /* Same mount on the diner side, for add-to-cart and stale-cart feedback. */
+    <ToastProvider>
     <CartProvider slug={venue.slug} menu={menu}>
       <RecommendationsProvider menu={menu} recommendations={recommendations}>
         <StorefrontInner
@@ -71,6 +74,7 @@ export function Storefront({
         />
       </RecommendationsProvider>
     </CartProvider>
+    </ToastProvider>
   );
 }
 

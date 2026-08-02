@@ -102,19 +102,22 @@ export function OrdersBoard({
   // Fullscreen the whole board chrome (pills + scheduled + columns), so a
   // filtered/scheduled view stays visible in fullscreen. The listener keeps the
   // label in sync when the user exits with Esc rather than the button.
-  const boardRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
-    const onChange = () =>
-      setIsFullscreen(document.fullscreenElement === boardRef.current);
+    // Any fullscreen element counts, since it is now the document rather than
+    // this board. Comparing against boardRef would never match again, leaving
+    // the button label and the h-dvh class permanently stuck on "off".
+    const onChange = () => setIsFullscreen(document.fullscreenElement !== null);
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
   const toggleFullscreen = () => {
-    const el = boardRef.current;
-    if (!el) return;
     if (document.fullscreenElement) void document.exitFullscreen();
-    else void el.requestFullscreen?.();
+    // The DOCUMENT, not the board element. Toasts, the support FAB and the
+    // sidebar are all fixed on <body> and are NOT rendered inside a fullscreened
+    // subtree, so a kitchen running the board fullscreen — the intended usage —
+    // saw zero system feedback (UI audit P1-11).
+    else void document.documentElement.requestFullscreen?.();
   };
 
   const matches = (order: KitchenOrder) =>
@@ -133,10 +136,7 @@ export function OrdersBoard({
 
   return (
     // bg-surface so fullscreen shows the cream board, not a black backdrop.
-    <div
-      ref={boardRef}
-      className={cx("bg-surface", isFullscreen && "h-dvh overflow-y-auto")}
-    >
+    <div className={cx("bg-surface", isFullscreen && "h-dvh overflow-y-auto")}>
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-6">
         <Segmented
           options={FILTERS}
