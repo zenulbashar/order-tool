@@ -50,7 +50,7 @@ export function StorefrontFooter({
   return (
     <footer
       id="storefront-footer"
-      className="scroll-mt-[124px] border-t border-line bg-surface-elevated"
+      className="scroll-mt-[calc(var(--p2e-sticky-h,128px)+12px)] border-t border-line bg-surface-elevated"
     >
       {/* FAQs — visible content that mirrors the FAQPage JSON-LD emitted on the
           storefront (Google requires FAQ markup to match what's on the page). */}

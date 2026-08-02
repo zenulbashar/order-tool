@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
 /*
+ * Keep the audit trail out of the stylesheet.
+ *
+ * Tailwind v4 auto-detects sources from the project root, which includes
+ * docs/**. Those files are full of `diff` blocks quoting class strings — so
+ * vendoring the UI audit generated real utilities for code that was never
+ * applied, including a `top-[calc(var(--p2e-header-h)+…)]` variant that differs
+ * from the shipped one only by its missing fallbacks. Dead CSS that looks live
+ * is worse than no CSS: the next person greps the bundle, finds the class, and
+ * believes it is in use.
+ */
+@source not "../docs";
+
+/*
  * Prompt2Eat design tokens — FOUNDATION ONLY.
  * Colours are named by intent (not raw hex) so surfaces reference meaning;
  * pages adopt them incrementally in later per-surface PRs. Literal hex lives in

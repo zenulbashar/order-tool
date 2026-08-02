@@ -23,6 +23,7 @@ import { StorefrontFooter } from "./storefront-footer";
 import { BrandTile, StorefrontHero } from "./storefront-hero";
 import { itemSearchText, matchesQuery } from "./search";
 import { SearchEmptyState } from "./search-empty-state";
+import { useStickyMetric } from "./use-sticky-metrics";
 import type {
   PublicFaq,
   PublicItem,
@@ -115,6 +116,16 @@ function StorefrontInner({
   // exists once the full menu is back), so the target is parked in a ref and
   // the scroll — a pure DOM read/write, no state — runs after the commit.
   const pendingCategoryRef = useRef<string | null>(null);
+
+  /*
+   * Measured heights of the two sticky layers, published as CSS variables so
+   * anchors, the scroll-spy and the cart rail all derive from ONE number instead
+   * of the five unrelated constants they used to guess with (UI audit RC-5).
+   * Measuring is also what finally makes the dismissible AnnouncementBar
+   * participate — arithmetic cannot see it disappear.
+   */
+  const stickyRef = useStickyMetric<HTMLDivElement>("--p2e-sticky-h");
+  const headerRef = useStickyMetric<HTMLDivElement>("--p2e-header-h");
 
   useEffect(() => {
     if (!pendingCategoryRef.current) return;
@@ -279,7 +290,10 @@ function StorefrontInner({
         {/* ============ Desktop app bar (lg+) — centered brand logo, search on
             the right (big-brand hospitality pattern). Sticky so the logo stays a
             one-click "home" (scroll to top) while browsing. ============ */}
-        <div className="hidden border-b border-sand bg-surface-elevated lg:sticky lg:top-0 lg:z-chrome lg:block">
+        <div
+          ref={headerRef}
+          className="hidden border-b border-sand bg-surface-elevated lg:sticky lg:top-0 lg:z-chrome lg:block"
+        >
           <div className="relative mx-auto flex h-16 max-w-[1440px] 2xl:max-w-[1680px] items-center justify-between px-6">
             {/* Left: venue name (kept small — the hero carries the identity). */}
             <span className="max-w-[280px] truncate text-sm font-semibold text-ink">
@@ -505,7 +519,10 @@ function StorefrontInner({
 
         {/* ============ Sticky category / search strip (MENU view) ============ */}
         {!isLanding && menu.length > 0 ? (
-          <div className="sticky top-0 z-sticky border-b border-sand bg-surface/95 backdrop-blur lg:top-16 lg:bg-surface-elevated/95">
+          <div
+            ref={stickyRef}
+            className="sticky top-0 z-sticky border-b border-sand bg-surface/95 backdrop-blur lg:top-16 lg:bg-surface-elevated/95"
+          >
             {/* Mobile: search + dietary chips + disclaimer + pill nav (unchanged) */}
             <div className="lg:hidden">
               <div className="space-y-2 px-5 pb-3 pt-3">
@@ -606,7 +623,7 @@ function StorefrontInner({
         {!isLanding ? (
         <div
           id="menu-top"
-          className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1680px] scroll-mt-[124px] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7"
+          className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1680px] scroll-mt-[calc(var(--p2e-sticky-h,128px)+12px)] px-5 lg:grid lg:grid-cols-[1fr_336px] lg:items-start lg:gap-[30px] lg:px-6 lg:pt-7"
         >
           <div className="min-w-0">
             {/* AI ordering concierge (#12). Proposes items; tapping one routes
@@ -655,7 +672,7 @@ function StorefrontInner({
                   <section
                     key={category.id}
                     id={category.id}
-                    className="scroll-mt-32"
+                    className="scroll-mt-[calc(var(--p2e-sticky-h,128px)+12px)]"
                   >
                     <h2 className="font-display text-xl font-semibold tracking-tight text-ink lg:text-2xl">
                       {category.name}
