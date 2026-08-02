@@ -8,6 +8,7 @@ import { readableOn } from "@/app/_components/brand-contrast";
 import { Button } from "@/app/_components/button";
 import { ConfirmSubmit } from "@/app/_components/confirm-submit";
 import { cx } from "@/app/_components/cx";
+import { PageHeader } from "@/app/_components/page-header";
 import { formatCents } from "@/lib/validation";
 
 import { deleteTable } from "./actions";
@@ -186,22 +187,25 @@ export function TablesBoard({
 
   return (
     <>
-      <section className="px-5 py-6 print:hidden">
-        {/* Header */}
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink">
-              Tables
-            </h1>
-            {tables.length > 0 ? (
-              <p className="mt-0.5 text-sm text-muted">
-                <span className="text-success-deep" aria-hidden>
-                  ●
-                </span>{" "}
-                {occupied} seated · {openCount} open
-              </p>
-            ) : null}
-          </div>
+      {/*
+        <PageHeader>, not a hand-rolled title row: this was the last of the 36
+        owner pages still writing its own (audit D4). The status line is the
+        header's `description` slot and both controls its `action` slot.
+      */}
+      <PageHeader
+        className="print:hidden"
+        title="Tables"
+        description={
+          tables.length > 0 ? (
+            <>
+              <span className="text-success-deep" aria-hidden>
+                ●
+              </span>{" "}
+              {occupied} seated · {openCount} open
+            </>
+          ) : undefined
+        }
+        action={
           <div className="flex items-center gap-2">
             {tables.length > 0 ? (
               <button
@@ -220,8 +224,10 @@ export function TablesBoard({
               ＋ Add table
             </button>
           </div>
-        </div>
+        }
+      />
 
+      <section className="px-5 py-6 print:hidden">
         <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
           {/* Card grid */}
           <div className="grid auto-rows-min grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">

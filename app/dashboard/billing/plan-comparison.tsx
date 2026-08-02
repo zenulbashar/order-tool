@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/app/_components/button";
-import { cx } from "@/app/_components/cx";
+import { Segmented } from "@/app/_components/segmented";
 
 import { createBillingCheckout } from "./actions";
 
@@ -63,25 +63,24 @@ export function PlanComparison({
 
   return (
     <div>
-      {/* Interval toggle — annual billing is discounted (shown on Checkout). */}
-      <div className="mt-3 inline-flex gap-1 rounded-[10px] bg-sand p-1">
-        {(["monthly", "annual"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setInterval(value)}
-            aria-pressed={interval === value}
-            className={cx(
-              "rounded-[7px] px-3.5 py-1.5 text-xs font-bold capitalize transition",
-              interval === value
-                ? "bg-surface-elevated text-ink shadow-sm"
-                : "text-label hover:text-ink",
-            )}
-          >
-            {value === "annual" ? "Annual · save" : "Monthly"}
-          </button>
-        ))}
-      </div>
+      {/*
+        Interval toggle — annual billing is discounted (shown on Checkout).
+        <Segmented>, not a hand-rolled button row: this is a single-choice group,
+        and the copy it replaced marked each button aria-pressed, which announces
+        "pressed / not pressed" per button instead of "1 of 2 selected". The
+        shared control carries the radiogroup role model and the roving-tabindex
+        arrow keys from A4.
+      */}
+      <Segmented
+        className="mt-3"
+        label="Billing interval"
+        value={interval}
+        onChange={setInterval}
+        options={[
+          { value: "monthly", label: "Monthly" },
+          { value: "annual", label: "Annual · save" },
+        ]}
+      />
 
       <div className="mt-4 overflow-hidden rounded-card border border-line">
         {/* Header: plan names + Choose CTAs. */}

@@ -124,9 +124,48 @@ Ordered by priority. Nothing here is Critical.
    under-specified for the shapes actually in use, and deciding what it should be
    is design work.
 
-   The rest of D4 — one-off buttons re-implementing `buttonStyles`, hand-rolled
-   segmented controls and page headers — changes rendered markup and wants the
-   visual review, exactly as the entry says.
+   **D4 page headers ✅ and segmented controls ✅.** Both turned out far smaller
+   than "hand-rolled … bypass `<PageHeader>`/`<Segmented>`" suggests, once
+   counted rather than assumed.
+
+   *Page headers:* 35 of the 36 owner pages already used `<PageHeader>`. The one
+   holdout was the tables board, and it is converted — the live status line
+   (`● N seated · M open`) is the header's `description` slot and both controls
+   its `action` slot. Visual delta, small and deliberate: the title picks up the
+   shared `font-semibold` (it was `font-extrabold`) and the header gains the
+   `border-b` rule the other 35 pages have. `test/page-header-coverage.test.ts`
+   now pins the rule DERIVED — *no owner page renders its own `<h1>`* — plus the
+   converse, that `PageHeader` still emits one, so "no `<h1>` anywhere" can't be
+   satisfied by having no page heading at all. Both mutation-verified.
+
+   *Segmented controls:* the app has exactly ONE hand-rolled single-choice
+   group — the billing monthly/annual toggle. (A search for the shape finds 11
+   `aria-pressed` sites, but 8 are genuine boolean toggles, where `aria-pressed`
+   is correct, and one is a card-style radio list `<Segmented>` cannot render.)
+   Converting it fixed an accessibility defect the design finding didn't mention:
+   `aria-pressed` on a single-choice group announces "pressed / not pressed" per
+   button instead of "1 of 2 selected", which is precisely the role-model bug A4
+   fixed inside `<Segmented>` itself. Visual delta: the track becomes a pill and
+   the active segment takes the `var(--action)` fill instead of white-on-sand.
+
+   **D4 buttons — open, and now measured rather than asserted.** A script
+   extracted all 90 `<button>` / `<Link>` class literals in `app/` and diffed each
+   as a SET against all 24 `buttonStyles(variant, size, {pill})` combinations. The
+   CLOSEST match differs by **14 utilities**; there is no zero-visual-change
+   subset anywhere in the range, so the D2 treatment does not transfer.
+
+   The reason is structural, not laziness. `buttonStyles` sizes by HEIGHT
+   (`h-9`/`h-11`/`h-12`) and sets `font-medium`; the call sites size by PADDING
+   (`py-1.5`/`py-2`/`py-2.5`) and use `font-bold` or `font-semibold`. Every
+   conversion therefore changes both geometry and weight. Several of the matches
+   aren't `buttonStyles` candidates at all — `cart-review.tsx:75` (`h-11 w-11`),
+   `order-card.tsx:121` (`h-6 w-6`) and `storefront.tsx:380` (`h-10 w-10`) are
+   square ICON buttons, and the recipe has no icon size.
+
+   So this is the same shape as the radii above and the containers in D2: the
+   recipe is under-specified for what the app actually renders. Closing it means
+   deciding whether `buttonStyles` should grow a padding-based size and an icon
+   variant — design work, not a rename.
 
 7. **Firewall CTAs (D1) — named scope ✅ done; wider sweep itemised below.**
    Converted: admin *Create promotion* and *Save*, marketplace *Checkout* and
@@ -145,10 +184,18 @@ Ordered by priority. Nothing here is Critical.
    Leave them:* `menu/import`, `menu/descriptions`, `stock/scan`, `studio`, and
    the `dashboard/page.tsx` top-suggestion CTA.
 
-   *Genuinely non-AI, so still violations — but each needs a look at the rendered
-   page, which is why they are here rather than swept in blind:*
-   `dashboard/stock/page.tsx:117`, `stock/overview/page.tsx:173`,
-   `stock/suggestions/page.tsx:39`.
+   *~~Genuinely non-AI, so still violations~~ — **retracted**, this list is
+   empty.* It named `dashboard/stock/page.tsx:117`,
+   `stock/overview/page.tsx:173` and `stock/suggestions/page.tsx:39`. All three
+   are the same "✦ Scan invoice" link, and all three point at
+   `/dashboard/stock/scan` — whose own docblock reads *"The AI vision flow …
+   the ONLY AI surface in Stock, so amber is sanctioned here."* They carry the
+   ✦ spark that marks every other AI affordance in the app. They are ENTRY
+   POINTS into the sanctioned surface, so the firewall permits them.
+
+   The original classification went wrong by reading the page a link SITS ON
+   (stock, not an AI surface) rather than where it GOES. Worth remembering: for
+   a navigational CTA, the firewall question is about the destination.
 
    *Judgement call:* `app/[slug]/account/order-history.tsx:117` (the "↻ Reorder"
    button). It sits inside a concierge-styled block (`text-concierge-sage`) and
