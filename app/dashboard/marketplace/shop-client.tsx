@@ -325,16 +325,16 @@ export function ShopClient({ products }: { products: ShopProduct[] }) {
                   ${formatCents(total)}
                 </span>
               </div>
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
                 onClick={submit}
-                disabled={pending}
-                className="w-full rounded-control bg-[var(--color-accent)] px-4 py-3 text-sm font-bold text-forest transition hover:opacity-90 disabled:opacity-50"
+                loading={pending}
+                loadingLabel="Opening checkout…"
               >
-                {pending
-                  ? "Opening checkout…"
-                  : `Checkout · $${formatCents(total)} →`}
-              </button>
+                {`Checkout · $${formatCents(total)} →`}
+              </Button>
             </div>
           ) : null}
         </div>
@@ -352,13 +352,9 @@ function QtyStepper({
 }) {
   if (value === 0) {
     return (
-      <button
-        type="button"
-        onClick={() => onChange(1)}
-        className="rounded-input bg-[var(--color-accent)] px-3 py-1.5 text-xs font-bold text-forest transition hover:opacity-90"
-      >
+      <Button variant="primary" size="sm" onClick={() => onChange(1)}>
         ＋ Add
-      </button>
+      </Button>
     );
   }
   const btn =

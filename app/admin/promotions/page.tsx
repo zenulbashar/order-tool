@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { asc, desc, eq, sql } from "drizzle-orm";
 
+import { buttonStyles } from "@/app/_components/button-variants";
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
 import { orders, promotions, promotionVenues, venues } from "@/lib/db/schema";
@@ -155,10 +156,14 @@ export default async function AdminPromotionsPage() {
             </div>
           </details>
 
-          <button
-            type="submit"
-            className="rounded-control bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-forest transition hover:opacity-90"
-          >
+          {/*
+            buttonStyles, not <Button>: this is a server component, and the pure
+            recipe exists precisely so a server-rendered CTA can take the shared
+            styling without pulling the client component across the boundary.
+            Amber (--color-accent) is AI-only per the design firewall — a
+            functional CTA fills with var(--action).
+          */}
+          <button type="submit" className={buttonStyles("primary", "md")}>
             Create promotion
           </button>
         </form>

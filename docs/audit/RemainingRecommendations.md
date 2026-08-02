@@ -54,8 +54,36 @@ Ordered by priority. Nothing here is Critical.
    one-off buttons/segmented/headers → primitives; shop/landing literal hex →
    tokens. Fully specified in DesignSystemCompliance.md.
 
-7. **Firewall CTAs (D1).** Convert the remaining amber functional CTAs
-   (admin promotions, marketplace) to `<Button variant="primary">`.
+7. **Firewall CTAs (D1) — named scope ✅ done; wider sweep itemised below.**
+   Converted: admin *Create promotion* and *Save*, marketplace *Checkout* and
+   *＋ Add*, and the tables *Print* button. Server-rendered CTAs use
+   `buttonStyles("primary", "md")` — the pure recipe exists so a server component
+   can take the shared styling without pulling the client `<Button>` across the
+   boundary — and client ones use `<Button variant="primary">`, with the
+   marketplace checkout's ad-hoc pending text swapped for the primitive's
+   `loading` / `loadingLabel`.
+
+   **The audit's list was incomplete**, which a grep for CTA-shaped amber fills
+   (`rounded-control` + an accent background) makes plain. The remainder, split
+   by whether the firewall actually applies:
+
+   *Legitimately amber — these ARE the AI affordances the colour is reserved for.
+   Leave them:* `menu/import`, `menu/descriptions`, `stock/scan`, `studio`, and
+   the `dashboard/page.tsx` top-suggestion CTA.
+
+   *Genuinely non-AI, so still violations — but each needs a look at the rendered
+   page, which is why they are here rather than swept in blind:*
+   `dashboard/stock/page.tsx:117`, `stock/overview/page.tsx:173`,
+   `stock/suggestions/page.tsx:39`.
+
+   *Judgement call:* `app/[slug]/account/order-history.tsx:117` (the "↻ Reorder"
+   button). It sits inside a concierge-styled block (`text-concierge-sage`) and
+   "your usuals" is a personalisation feature, so the amber may well be
+   deliberate. Worth a decision rather than a sweep.
+
+   Not touched anywhere: amber *tints* (`bg-accent/10`) on informational
+   callouts, selection states (category chips, admin nav), badges, and data-viz
+   fills. None of those are CTA fills and the firewall does not speak to them.
 
 8. **Dialog `detail-drawer` (A1 remainder) — ✅ done.** The Square activity
    drawer closes by navigation rather than a callback, which is why it did not
@@ -109,7 +137,13 @@ Ordered by priority. Nothing here is Critical.
     −$8.00 / Total $32.00", a breakdown that contradicts itself. The subtotal is
     now derived so the three figures always reconcile.
 
-12. **Tables empty state (R4).** Add a first-run empty message.
+12. **Tables empty state (R4) — ✅ done.** `tables-board.tsx` renders a
+    "No tables yet" card explaining that a table generates the QR code diners
+    scan to order from their seat. The add form still auto-opens alongside it,
+    which was the other half of the complaint — but it renders INLINE in the card
+    grid rather than as a modal, so the explanation and the action are both
+    visible at once. That reads as the right first-run behaviour, so it was left
+    as-is deliberately rather than overlooked.
 
 13. **Automated tests — ✅ the flagged gaps are closed.** The suite is 312 tests
     across 36 files. The two gaps this item named are now covered:
