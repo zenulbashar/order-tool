@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
+import { permissionsFor } from "@/lib/authz";
 import {
   getCurrentVenue,
+  getCurrentVenueRoles,
   getImpersonatedVenue,
   getUserVenues,
   requireUser,
@@ -49,6 +51,12 @@ export default async function DashboardLayout({
   // refreshes on navigation elsewhere.
   const activeOrderCount = await getActiveOrderCount(current.id);
 
+  // Resolved here so the sidebar can hide what the viewer cannot open. This is
+  // NOT the access control — each page re-checks with requireVenuePermission,
+  // because a hidden link is not a gate and the URL is typeable. getVenueRoles
+  // is cache()'d per request, so this costs no extra query.
+  const permissions = [...permissionsFor(await getCurrentVenueRoles(current.id))];
+
   return (
     <div className="lg:flex lg:h-dvh">
       <Sidebar
@@ -62,6 +70,7 @@ export default async function DashboardLayout({
         hasMultiple={hasMultiple}
         activeOrderCount={activeOrderCount}
         brandColor={current.brandColor}
+        permissions={permissions}
       />
       <main id="main-content" className="min-w-0 flex-1 overflow-y-auto">
         {impersonating ? (

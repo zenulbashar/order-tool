@@ -44,8 +44,13 @@ findings:
   RemainingRecommendations.md, not here.
 - **Dashboard read surfaces gated on bare membership** (`/dashboard/reports`,
   `/customers`, `/billing`, `/payments`, `/discounts`). Real, but scored 7/10 —
-  below the bar for this report. It is the same root cause as S6 and is captured
+  below the bar for this report. It is the same root cause as S6 and was captured
   in RemainingRecommendations.md.
+
+  **Fixed in a follow-up (S7 below).** Dropping it from *this report* was the
+  right call at 7/10 confidence; leaving it unfixed would not have been. The two
+  decisions are separate, and conflating them is how a documented finding turns
+  into a permanent one.
 
 ## Findings
 
@@ -157,6 +162,44 @@ without the same gate on the read is decorative.
 **Fix.** The page now requires `giftcards:manage`. Codes are deliberately **not**
 masked: the page's job is "issue a card and share its code", and masking would
 break the feature rather than secure it.
+
+### S7 — Money and PII readable by any venue member — **Fixed**
+
+The sub-threshold candidate above, fixed rather than left in the backlog. S6 was
+this same defect on one page that happened to print a bearer secret; the rest of
+the class is a read-privilege problem without a secret, which is why it scored
+lower — not why it should stand.
+
+Every dashboard page gated on bare `requireVenue()`, which resolves through
+`venue_members` and never consults role. So a `staff` login — documented as "run
+the pass, nothing else" — could read:
+
+| Page | What it exposes | Now gated on |
+| --- | --- | --- |
+| `/dashboard/reports` | 30-day revenue, GST collected, top items | `reports:view` |
+| `/dashboard/customers` | Diner names, phone numbers, lifetime spend — real PII | `reports:view` |
+| `/dashboard/billing` | Plan, subscription state, Stripe invoices | `billing:manage` |
+| `/dashboard/payments` | Stripe Connect and payout status | `billing:manage` |
+| `/dashboard/discounts` | Promo codes and redemption stats | `promotions:manage` |
+
+Each page now requires the permission its OWN actions already required, which is
+where the asymmetry was: the writes were gated and the reads were not.
+`reports:view` had been declared in `lib/authz.ts` since M5 and enforced nowhere.
+
+Sidebar entries carry the same permission and are hidden when the viewer lacks
+it — presentation only, since a hidden link is not a gate and the URL is
+typeable, but a kitchen login should not face six entries that all bounce. Two
+billing CTAs on ungated pages (`/dashboard/seo`, `/dashboard/apps`) are hidden
+from anyone without `billing:manage` for the same reason; managers hold neither,
+and a dead-end upsell is a regression the gate would otherwise have introduced.
+
+**Deliberately NOT gated:** the orders board, and the ~20 operational-config
+pages (menu, stock, media, tables, seo, integrations, marketplace, apps, most of
+settings). Those are a product decision about what a kitchen login should see day
+to day, not a security fix — and gating the board itself on anything staff lack
+would lock them out of their own job. A test pins that the board stays readable
+by `staff`, so a future tightening pass has to make that call deliberately rather
+than by sweep.
 
 ## What the fixes are held to
 

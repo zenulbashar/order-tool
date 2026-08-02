@@ -8,7 +8,7 @@ import {
   getBillingOverview,
   getRosterAddonPriceCents,
 } from "@/lib/billing/overview";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
 import {
@@ -157,8 +157,10 @@ function SubscriptionCard({ overview }: { overview: BillingOverview }) {
 }
 
 export default async function BillingPage({ searchParams }: BillingParams) {
-  await requireUser();
-  const venue = await requireVenue();
+  // Gated on billing:manage, not bare membership. Plan, subscription state and Stripe invoices — the venue's commercial relationship with the platform.
+  // The matching sidebar entry is hidden for viewers without it, but this
+  // gate is the control — the URL is typeable.
+  const venue = await requireVenuePermission("billing:manage");
   const sp = await searchParams;
 
   const planLabel = PLAN_LABELS[venue.plan] ?? venue.plan;

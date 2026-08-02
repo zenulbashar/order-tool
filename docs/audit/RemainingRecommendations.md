@@ -53,21 +53,27 @@ Ordered by priority. Nothing here is Critical.
    confirm everywhere) and add edit paths for value-bearing entities. Product
    decision.
 
-10. **Dashboard read surfaces gated on membership.** Investigated during the
-    2026-08 security review and scored 7/10 — below that report's bar, but real,
-    and the same root cause as S6. Page-level `requireVenuePermission` appears on
-    only three pages — `settings/staff`, `settings/activity`, and `gift-cards`
-    as of S6. The other ~25 dashboard pages use bare `requireVenue()`; the ones
-    worth fixing first are `/dashboard/reports`, `/customers`, `/billing`,
-    `/payments` and `/discounts`, where a `staff` login can read 30-day revenue and GST, the
-    diner directory (names, phone numbers, lifetime spend — real PII), plan and
-    invoice state, and promo codes. Every *mutation* on those pages is correctly
-    gated, and no bearer secret is exposed (that was S6) — this is reads only.
-    `reports:view` and `orders:view` are declared in `lib/authz.ts` and enforced
-    nowhere. Fix: gate each page on the permission its own actions already use,
-    and hide the matching sidebar entries so a staff login doesn't get dead
-    links. Extend the `SECRET_PAGES` pin in `test/authz-coverage.test.ts` as you
-    go.
+10. **Dashboard read surfaces gated on membership — ✅ done for the money and
+    PII pages.** Investigated during the 2026-08 security review and scored
+    7/10 — below that report's bar, but real, and the same root cause as S6.
+    `/dashboard/reports`, `/customers`, `/billing`, `/payments` and `/discounts`
+    now gate on the permission their own actions already required
+    (`reports:view`, `billing:manage`, `promotions:manage`), so a `staff` login
+    can no longer read 30-day revenue and GST, the diner directory (names, phone
+    numbers, lifetime spend — real PII), payout and invoice state, or promo
+    codes. `reports:view` was declared in `lib/authz.ts` and enforced nowhere;
+    it is enforced now. Sidebar entries carry the same permission and are hidden
+    when the viewer lacks it, and `test/authz-coverage.test.ts` derives the nav
+    expectations from the pages, so the two cannot drift apart.
+
+    **Still open, deliberately:** the remaining ~20 dashboard pages (menu,
+    stock, media, tables, seo, integrations, marketplace, apps, and most of
+    settings) are still on bare `requireVenue()`. They are operational config
+    rather than money or PII, and tightening them is a product decision about
+    what a kitchen login should see day to day — not a security fix to slip in
+    unannounced. `orders:view` is still declared and unenforced for the same
+    reason: the orders board is the one page staff must keep, and a test now
+    pins that so any future tightening pass has to make that call deliberately.
 
 ## Low priority
 

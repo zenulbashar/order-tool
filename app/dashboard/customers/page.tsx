@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireVenuePermission } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
 import { CUSTOMER_TABLE_CAP, getVenueCustomers } from "./queries";
@@ -57,8 +57,10 @@ function BarRow({
  * the customers auth table, no cross-venue data). No writes, no money path.
  */
 export default async function CustomersPage() {
-  await requireUser();
-  const venue = await requireVenue();
+  // Gated on reports:view, not bare membership. The diner directory: names, phone numbers and lifetime spend. This is real PII and the sharpest read surface on the dashboard.
+  // The matching sidebar entry is hidden for viewers without it, but this
+  // gate is the control — the URL is typeable.
+  const venue = await requireVenuePermission("reports:view");
   const stats = await getVenueCustomers(venue.id);
 
   const empty = stats.totalCustomers === 0;

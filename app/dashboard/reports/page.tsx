@@ -5,7 +5,7 @@ import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { orderItems, orders } from "@/lib/db/schema";
 import { getVenuePointsOutstanding } from "@/lib/loyalty/balance";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import { requireVenuePermission, scopedToVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -66,8 +66,10 @@ function BarRow({
  * read — no money path, no writes. venue-scoped via requireVenue + scopedToVenue.
  */
 export default async function ReportsPage() {
-  await requireUser();
-  const venue = await requireVenue();
+  // Gated on reports:view, not bare membership. Thirty-day revenue, GST collected and top items — the venue's trading position. reports:view is owner+manager; a kitchen login has no business reading it.
+  // The matching sidebar entry is hidden for viewers without it, but this
+  // gate is the control — the URL is typeable.
+  const venue = await requireVenuePermission("reports:view");
 
   const now = new Date().getTime();
   const since = new Date(now - WINDOW_DAYS * 86_400_000);
