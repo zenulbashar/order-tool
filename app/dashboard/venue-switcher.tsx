@@ -104,8 +104,17 @@ export function VenueSwitcher({
             );
           })}
         </ul>
+        {/*
+          /onboarding/details, NOT /onboarding. The latter is the RESUME router:
+          it sends a venue whose onboarding is complete straight to /dashboard.
+          Since this link only appears once the owner already has a venue — and
+          that venue is normally live — pointing here at /onboarding bounced them
+          back to the dashboard, leaving an owner with two locations no way to
+          add a third. /onboarding/details is the step that actually creates one,
+          and is what the sidebar's single-venue "Add location" already uses.
+        */}
         <Link
-          href="/onboarding"
+          href="/onboarding/details"
           className="block border-t border-line px-3 py-2 text-sm font-medium text-muted transition hover:bg-sand hover:text-ink"
         >
           ＋ Add another location
