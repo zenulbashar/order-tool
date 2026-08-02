@@ -21,17 +21,26 @@ Ordered by priority. Nothing here is Critical.
    buckets keep the form's stricter gate tripping first, so the owner still gets
    the friendly inline error.
 
-4. **Pin `AUTH_URL` in production.** Investigated during the 2026-08 security
-   review and **dropped as a finding** (3/10 confidence), not as a task. Without
-   `AUTH_URL`, `getBaseUrl()` (`lib/url.ts`) derives the origin from
-   `x-forwarded-host`, and that origin builds the diner magic-link URL — whose
-   token is a pure bearer credential. It is not exploitable on Vercel, which sets
-   that header itself rather than forwarding a client copy (and the repo's own
-   Auth.js config already depends on that being true), and Vercel is the only
-   documented deploy target. But the code does not *enforce* the assumption, and
-   `.env.example` has `AUTH_URL` commented out. Fix: set it in Production, and
-   consider failing fast at startup when it is missing outside development. Revisit
-   as a real finding if the app is ever self-hosted behind a different proxy.
+4. **Pin `AUTH_URL` in production — ✅ the code no longer depends on it.**
+   Investigated during the 2026-08 security review and **dropped as a finding**
+   (3/10 confidence), not as a task: `getBaseUrl()` derived the origin from
+   `x-forwarded-host` when `AUTH_URL` was unset, and that origin builds the diner
+   magic-link, whose token is a pure bearer credential. Not exploitable on
+   Vercel, which sets that header itself — but the code did not *enforce* the
+   assumption, and `AUTH_URL` is commented out in `.env.example`.
+
+   Rather than restate the assumption or fail fast (which would take down a
+   working deployment), `lib/url.ts` now resolves through a trust ladder:
+   `AUTH_URL` → `VERCEL_PROJECT_PRODUCTION_URL` (production) → `VERCEL_URL`
+   (previews) → the request Host. Every rung above the last is an ENVIRONMENT
+   value set by project configuration, so the header is reached only where no
+   deployment env exists at all — local development, which is exactly where it is
+   needed. The ordering is unit-tested and mutation-verified.
+
+   Setting `AUTH_URL` is still recommended, but now purely so links use the
+   custom domain rather than the Vercel one — not for safety. **Still worth
+   revisiting** if the app is ever self-hosted behind a proxy that is neither
+   Vercel nor configured with `AUTH_URL`.
 
 ## Medium priority
 

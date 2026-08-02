@@ -40,8 +40,11 @@ findings:
   the repo deploys only to Vercel (`vercel.json`, no Dockerfile, no self-host
   docs), where the edge sets that header rather than passing a client copy
   through, and the repo's own Auth.js config relies on exactly that property.
-  Still worth pinning `AUTH_URL` in production as hardening — it is listed in
-  RemainingRecommendations.md, not here.
+  Dropped as a finding, but the hardening was done rather than filed and
+  forgotten: `lib/url.ts` now resolves through `AUTH_URL` →
+  `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → request Host, so every rung
+  above the last is an environment value and production never derives its origin
+  from a header. The assumption is enforced instead of documented.
 - **Dashboard read surfaces gated on bare membership** (`/dashboard/reports`,
   `/customers`, `/billing`, `/payments`, `/discounts`). Real, but scored 7/10 —
   below the bar for this report. It is the same root cause as S6 and was captured
