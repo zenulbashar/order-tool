@@ -1,6 +1,13 @@
 import Link from "next/link";
 
 import { BrandMark, Wordmark } from "@/app/_components/wordmark";
+import {
+  annualSavingPercent,
+  formatPlanAmount,
+  PUBLIC_PLANS,
+  type PublicPricing,
+} from "@/lib/billing/public-pricing";
+import type { PaidPlan } from "@/lib/billing/stripe-prices";
 
 import { ConciergeDemo } from "./concierge-demo";
 import { FaqSection } from "./faq-section";
@@ -61,7 +68,63 @@ const NAV_LINKS = [
   { label: "Guides", href: "/learn" },
 ];
 
-export function Landing() {
+/**
+ * The pricing grid. Tier NAMES and what each unlocks come from the entitlement
+ * model (lib/billing/plans.ts) — `trial` grants Scale-level access for 30 days
+ * (app/dashboard/billing/actions.ts sets trial_period_days: 30), `pro` adds the
+ * concierge and owner AI tools, `scale` adds multi-venue, custom domain and the
+ * SEO/AEO studio. AMOUNTS are never written here: they are read back from the
+ * same Stripe lookup keys checkout resolves, so this page and the charge cannot
+ * disagree. When Stripe can't be reached the card falls back to naming the tier
+ * without a number, which is the one safe thing to show.
+ */
+const PRICING_TIERS: {
+  name: string;
+  plan: PaidPlan | null;
+  blurb: string;
+  cta: string;
+  featured: boolean;
+  fallbackPrice: string;
+  fallbackNote: string;
+}[] = [
+  {
+    name: "Free trial",
+    plan: null,
+    blurb:
+      "Everything in Scale for 30 days. No card, no commitment — bring your menu across and take real orders.",
+    cta: "Start free",
+    featured: false,
+    fallbackPrice: "$0",
+    fallbackNote: "for 30 days",
+  },
+  {
+    name: "Pro",
+    plan: "pro",
+    blurb:
+      "The full ordering platform, plus the AI ordering concierge and the AI menu import and description tools.",
+    cta: "Start free trial",
+    featured: true,
+    fallbackPrice: "Pricing",
+    fallbackNote: "shown at checkout",
+  },
+  {
+    name: "Scale",
+    plan: "scale",
+    blurb:
+      "Everything in Pro, plus multiple venues, your own storefront domain, and the SEO and AEO studio.",
+    cta: "Start free trial",
+    featured: false,
+    fallbackPrice: "Pricing",
+    fallbackNote: "shown at checkout",
+  },
+];
+
+export function Landing({ pricing }: { pricing: PublicPricing }) {
+  // Every resolved tier shares a currency (they are Prices on one account), so
+  // the first one is representative; AUD is the default the platform bills in.
+  const pricingCurrency =
+    PUBLIC_PLANS.map((plan) => pricing[plan]?.currency).find(Boolean) ?? "AUD";
+
   return (
     <div className="bg-surface-elevated text-forest" id="top">
       <style>{CSS}</style>
@@ -450,11 +513,10 @@ export function Landing() {
             </h2>
           </div>
           <div className="mx-auto mt-12 grid max-w-[960px] items-stretch gap-4 sm:grid-cols-3">
-            {[
-              { name: "Starter", price: "$0", note: "to start", cta: "Start free", featured: false },
-              { name: "Growth", price: "$89", note: "per month", cta: "Start free trial", featured: true },
-              { name: "Pro", price: "Custom", note: "for groups", cta: "Talk to sales", featured: false },
-            ].map((tier, i) => (
+            {PRICING_TIERS.map((tier, i) => {
+              const price = tier.plan ? pricing[tier.plan] : undefined;
+              const saving = price ? annualSavingPercent(price) : null;
+              return (
               <div
                 key={tier.name}
                 data-reveal
@@ -475,13 +537,23 @@ export function Landing() {
                 </span>
                 <p className="mt-3">
                   <span className={`font-display text-[44px] font-extrabold tracking-[-0.03em] ${tier.featured ? "text-[var(--color-accent)]" : ""}`}>
-                    {tier.price}
+                    {price ? formatPlanAmount(price.monthlyCents, price.currency) : tier.fallbackPrice}
                   </span>{" "}
-                  <span className={tier.featured ? "text-[var(--mkt-on-dark-muted)]" : "text-[var(--mkt-muted-warm)]"}>{tier.note}</span>
+                  <span className={tier.featured ? "text-[var(--mkt-on-dark-muted)]" : "text-[var(--mkt-muted-warm)]"}>
+                    {price ? "per month" : tier.fallbackNote}
+                  </span>
                 </p>
+                <p className={`mt-3 text-sm ${tier.featured ? "text-[var(--mkt-on-dark-muted)]" : "text-[var(--mkt-muted-warm)]"}`}>
+                  {tier.blurb}
+                </p>
+                {saving !== null ? (
+                  <p className={`mt-2 text-xs font-semibold ${tier.featured ? "text-[var(--color-accent)]" : "text-[var(--mkt-eyebrow)]"}`}>
+                    Save {saving}% paying annually
+                  </p>
+                ) : null}
                 <Link
                   href="/signin"
-                  className={`mt-auto rounded-xl px-4 py-3 text-center text-sm font-bold transition ${
+                  className={`mt-6 rounded-xl px-4 py-3 text-center text-sm font-bold transition ${
                     tier.featured
                       ? "bg-[var(--color-accent)] text-forest hover:opacity-90"
                       : "border border-forest text-forest hover:bg-forest hover:text-surface"
@@ -490,8 +562,13 @@ export function Landing() {
                   {tier.cta}
                 </Link>
               </div>
-            ))}
+              );
+            })}
           </div>
+          <p className="mx-auto mt-6 max-w-[720px] text-center text-sm text-[var(--mkt-muted-warm)]">
+            Prices in {pricingCurrency}, billed through Stripe. Every plan includes the
+            storefront, menu, checkout, kitchen board and table QR codes.
+          </p>
         </div>
       </section>
 

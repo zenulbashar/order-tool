@@ -40,7 +40,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "What is PayTo pay-by-bank?",
     answer:
-      "PayTo lets a diner pay straight from their bank account: they approve the payment in their own banking app instead of typing card details. Venues can offer an optional discount for choosing it, and returning diners can save a mandate for one-tap checkout.",
+      "PayTo lets a diner pay straight from their bank account: they approve the payment in their own banking app instead of typing card details. Venues can offer an optional discount for choosing it.",
   },
   {
     question: "Does it work for dine-in, takeaway, and scheduled orders?",
@@ -154,7 +154,7 @@ export const ARTICLES: Article[] = [
     slug: "payto-pay-by-bank",
     title: "PayTo pay-by-bank for Australian venues",
     description:
-      "What PayTo means for hospitality: diners approve payment in their banking app, venues can reward it with a discount, and returning diners pay in one tap.",
+      "What PayTo means for hospitality: diners approve payment in their own banking app, and venues can reward that choice with an optional discount.",
     eyebrow: "Payments",
     sections: [
       {
@@ -167,7 +167,7 @@ export const ARTICLES: Article[] = [
       {
         heading: "Why venues offer it",
         paragraphs: [
-          "Venues can attach an optional discount to PayTo orders to steer diners toward it, and returning diners can save a mandate so future checkouts are one tap. Cards, Apple Pay, and Google Pay remain available beside it — PayTo is an additional option, not a replacement.",
+          "Venues can attach an optional discount to PayTo orders to steer diners toward it. Cards, Apple Pay, and Google Pay remain available beside it — PayTo is an additional option, not a replacement.",
         ],
       },
     ],

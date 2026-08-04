@@ -37,6 +37,15 @@ costs them. Write for that reader.
    the existing `/learn` articles — but menu and UI microcopy keeps the stricter
    no-dash house rule.)
 5. **No competitor bashing by name.** Contrast approaches, not brands.
+6. **Never claim we are commission free.** Prompt2Eat charges the venue a
+   per-order platform fee of **1.75% + $0.30** (the constants live in
+   `lib/stripe.ts`), on top of Stripe's processing. So "commission free", "no
+   commission", "zero fees" and "no per-order fee" are FALSE — do not write them,
+   in body copy, a heading, or a meta description, even when the target keyword
+   uses that phrasing. Two things ARE true and carry the same argument: there is
+   no **aggregator** commission, because you are not paying a marketplace 20–35%
+   to reach a customer who already chose you; and the **diner** is never charged a
+   per-order surcharge. Always benchmark against aggregator rates, never zero.
 
 ## Structure of a guide
 
