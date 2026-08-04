@@ -2,7 +2,7 @@
 
 Branded online ordering for hospitality venues. Multi-tenant (venue = tenant)
 with authentication, a menu catalog, a public per-venue storefront (browse +
-cart), checkout, and **online payments via Stripe Connect** (test mode).
+cart), checkout, and **online payments via Stripe Connect**.
 Kitchen display and owner order management come later.
 
 ## Stack
@@ -121,7 +121,10 @@ the order is confirmed **only** by the signature-verified webhook — never inli
 
 ## Payments (Phase 2c)
 
-Online payments use **Stripe Connect (Express)** in **test mode**. Each venue
+Online payments use **Stripe Connect (Express)**. There is no test/live flag in
+the code — the mode is whichever `STRIPE_SECRET_KEY` is configured, so a
+deployment is in test mode exactly while it holds an `sk_test_…` key (see
+"Going live" above). Each venue
 connects its **own** Stripe account and customers are charged **directly** on it
 (direct charge via the `Stripe-Account` header); the platform takes a per-order
 `application_fee_amount` computed server-side by `computeApplicationFeeCents`
@@ -139,22 +142,97 @@ connects its **own** Stripe account and customers are charged **directly** on it
   webhook — there is no inline confirmation. The webhook verifies the raw body
   against `STRIPE_WEBHOOK_SECRET` and rejects anything unverified.
 
-### Post-deploy: register the webhook (one-time)
+### Post-deploy: register the webhooks (one-time)
 
-`STRIPE_WEBHOOK_SECRET` does not exist until the endpoint is registered, and the
-webhook route **rejects** requests when it is missing (it never bypasses
-verification). After this deploys:
+There are **TWO** Stripe webhooks with **two different signing secrets** and two
+different endpoint types. Both routes **reject** requests when their secret is
+missing (neither ever bypasses verification), so nothing works until both are
+registered.
 
-1. Stripe Dashboard (**test mode**) → **Developers → Webhooks** → **Add endpoint**,
-   choosing **"Events on connected accounts"** (a **Connect** endpoint —
-   direct-charge events originate on the connected accounts).
+#### 1. ORDER webhook — a **Connect** endpoint
+
+1. Stripe Dashboard → **Developers → Webhooks** → **Add endpoint**, choosing
+   **"Events on connected accounts"** (a **Connect** endpoint — every diner
+   charge is a direct charge, so the events originate on the *connected*
+   account, not the platform).
 2. Endpoint URL: `https://prompt2eat.com/api/stripe/webhook`.
-3. Events: `payment_intent.succeeded` and `payment_intent.payment_failed`.
-4. Copy the **Signing secret** (`whsec_…`) → add it to Vercel (Production) as
+3. Events — all **four**:
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+   - `charge.refunded`
+   - `charge.refund.updated`
+4. Copy the **Signing secret** (`whsec_…`) → Vercel (Production) as
    `STRIPE_WEBHOOK_SECRET` → **redeploy** so the variable is live.
 
-`STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` (test keys) must also be set in
-Vercel (Production).
+> **Both halves of step 3 fail silently, so get them right the first time.**
+> Register a *plain account* endpoint instead of a Connect one and it receives
+> **nothing**: orders stay `pending_payment` forever, are excluded from the
+> kitchen board, and no error is raised anywhere. Omit the two `charge.*` events
+> and a refund issued from the Stripe Dashboard moves real cash while the app
+> records nothing — no `refunds` row, the order stays `confirmed`, loyalty is
+> never reversed, gift-card value is never returned, stock is never restocked,
+> and net revenue is overstated. `reconcileRefundsForPaymentIntent` has exactly
+> one caller (this webhook) and there is **no sweep** that re-derives an
+> out-of-band refund.
+
+#### 2. BILLING webhook — a **platform** endpoint
+
+Subscriptions and the hardware marketplace are charged on the PLATFORM account,
+so this one is an ordinary (non-Connect) endpoint.
+
+1. **Add endpoint**, this time WITHOUT "Events on connected accounts".
+2. Endpoint URL: `https://prompt2eat.com/api/stripe/billing-webhook`.
+3. Events — all **six**:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+4. Copy that endpoint's **own** signing secret → Vercel (Production) as
+   `STRIPE_BILLING_WEBHOOK_SECRET` → **redeploy**.
+
+> `checkout.session.completed` is the one that cannot be skipped. It is the
+> **only** writer that moves a `marketplace_orders` row out of `pending_payment`
+> — a hardware order is `mode: "payment"`, so no subscription event covers it,
+> and there is no reconciliation sweep. The subscription events are more
+> forgiving: a subscription is linked three ways (metadata `venueId`,
+> `stripeSubscriptionId`, `stripeCustomerId`), so a missed one largely self-heals.
+
+`STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` must also be set in Vercel
+(Production). Use the **test** keys while testing and the **live** keys at
+cutover — see below.
+
+### Going live (test → live cutover)
+
+The app has **no test/live mode flag**: it uses whichever keys it is given, and
+nothing rejects a test key in production. The order of operations matters.
+
+1. Activate the platform account for **live**, with **Connect Express** enabled.
+2. Create the **six live Price objects**, carrying exactly these lookup keys:
+   `pro_monthly`, `pro_annual`, `scale_monthly`, `scale_annual`,
+   `roster_monthly`, `roster_annual`. Do this **before** step 3 — the app
+   resolves prices by lookup key and a miss surfaces only as a generic
+   `?error=checkout` redirect, with nothing logged.
+3. Swap `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` to `sk_live_…` /
+   `pk_live_…` and redeploy.
+4. Re-register **both** webhooks above in **live** mode and update both secrets.
+5. **Clear the stored test-mode ids**, which are invalid under a live key:
+
+   ```
+   DATABASE_URL="<direct Neon URL>" npx tsx scripts/stripe-live-cutover.ts          # dry run
+   DATABASE_URL="<direct Neon URL>" npx tsx scripts/stripe-live-cutover.ts --apply
+   ```
+
+   Skip this and `placeOrder` passes its mirrored `stripe_charges_enabled` gate,
+   writes the order, and only then fails at `paymentIntents.create` — leaving an
+   orphan `pending_payment` row and a generic diner error. See the script's
+   header for the full reasoning.
+6. Every venue reconnects Stripe from **Dashboard → Payments** (live KYC).
+7. Prove it end to end: place one real-card minimum-value order and confirm the
+   row reaches `confirmed`, then refund it from the Stripe Dashboard and confirm
+   net revenue drops. Nothing else exercises step 4, and both halves fail
+   silently.
 
 ### Express checkout & Apple Pay domain registration (per connected account)
 
