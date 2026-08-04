@@ -64,18 +64,29 @@ runtime environment / human sign-off.
 
 ## Data / migrations
 - ⚠️ **CI does not sequence the migration with the deploy — check this every
-  release.** The old ✅ here read as "handled automatically", which is precisely
-  the assumption that opens the window. Vercel deploys on push to `main`;
-  `migrate-prod` waits behind `needs: [build, e2e]` *and* a human-approved
-  `production` gate. So new code runs against the old schema for as long as the
-  approval sits unclicked. See `docs/ops/Migrations.md` → "Adding a column the
-  new code immediately reads" for the three orderings that avoid it.
-- ⬜ **Pending: `0063_discount_revision.sql`.** Its reader is already on `main`
-  — `applyOrderDiscounts` writes `orders.discount_revision` on every checkout
-  re-price. Until the column exists in prod, every query naming it fails
-  `42703 undefined_column`, and *every* promo, bank saving, loyalty redemption
-  and gift card silently stops applying. Confirm it is applied before (or with)
-  the next production deploy.
+  release.** Vercel deploys on push to `main`; `migrate-prod` waits behind
+  `needs: [build, e2e]`, so new code runs against the old schema for the length
+  of those jobs. See `docs/ops/Migrations.md` → "Adding a column the new code
+  immediately reads" for the three orderings that avoid it.
+
+  **Correction (2026-08-03): there is no human approval gate.** This entry
+  previously said `migrate-prod` waits behind "a human-approved `production`
+  gate". `ci.yml` does declare `environment: production`, but no required
+  reviewer has been configured for it, so GitHub creates the environment with
+  **no protection rules and the job runs unblocked** — on the 0063 merge it
+  started 8 seconds after E2E finished. `ci.yml` is honest about this (the
+  comment says it is "safe and inert until then"); this checklist was not.
+  Today the only guard on an irreversible production DDL is the destructive-SQL
+  grep at `ci.yml:87-92`. Arming the real gate is two minutes in repo Settings →
+  Environments → `production` → required reviewers.
+- ✅ **`0063_discount_revision.sql` is applied.** Confirmed in CI: run **#454**
+  (PR #220, the merge that introduced it) and every run since, including **#504**
+  on `23682e1`, completed the *Migrate prod (additive only)* job's *Apply
+  additive migrations* step successfully — the latter at 2026-08-02T21:54:05Z.
+  Production schema is current through 0063. The earlier "pending" wording here
+  was stale when written, and it mattered: it described promos, bank savings,
+  loyalty redemptions and gift cards as silently broken in production when they
+  were not.
 - ⬜ Destructive migrations (if any) run manually + backed up first
 - ⬜ Confirm no pending un-generated schema drift (`db:generate` clean)
 
