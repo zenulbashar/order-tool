@@ -51,11 +51,52 @@ const CHECKOUT_CSP = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+/**
+ * Baseline security headers for EVERY route.
+ *
+ * These were previously set on `/:slug/checkout` alone, which left the owner
+ * dashboard, the admin console, every storefront and every API route with none.
+ * The sharpest gap was `Referrer-Policy`: the customer magic link lands on
+ * `/[slug]/account/verify?token=…`, and that token is a pure bearer credential.
+ * Without a policy, a browser navigating from that page to any third-party
+ * origin sends the FULL url — token included — in the `Referer` header.
+ * `strict-origin-when-cross-origin` sends only the origin cross-site.
+ *
+ * `X-Frame-Options: SAMEORIGIN` rather than `DENY`, deliberately: nothing in the
+ * app frames anything today (the only `frame-ancestors`/`X-Frame-Options` in the
+ * repo are checkout's), but a venue embedding its own menu is a plausible future,
+ * and the checkout rule below still overrides this with `DENY` where framing is
+ * an actual attack. Per the Next docs, when two rules match the same path and set
+ * the same key, the LAST one wins — so ordering here is load-bearing.
+ */
+const BASELINE_SECURITY_HEADERS = [
+  /**
+   * Two years, all subdomains. `preload` is deliberately omitted: it is an
+   * explicit submission at hstspreload.org and is slow and painful to reverse,
+   * so enrolling is the operator's call, not a side effect of this config.
+   * Vercel already sends HSTS on custom domains; setting it here makes the
+   * guarantee explicit and survives a move off Vercel.
+   */
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=63072000; includeSubDomains",
+  },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+];
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Every venue's checkout, e.g. /corner-cafe/checkout.
+        // Everything. Overridden per-route by any later matching rule.
+        source: "/:path*",
+        headers: BASELINE_SECURITY_HEADERS,
+      },
+      {
+        // Every venue's checkout, e.g. /corner-cafe/checkout. MUST stay after
+        // the baseline rule — it upgrades X-Frame-Options to DENY by overriding.
         source: "/:slug/checkout",
         headers: [
           { key: "Content-Security-Policy", value: CHECKOUT_CSP },
