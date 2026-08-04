@@ -248,10 +248,33 @@ Because every charge is a **direct charge on the venue's connected account**, th
 domain must be registered **on each connected account** — registering it only on
 the platform is not enough.
 
-This is **Stripe configuration, not code.** There is a single storefront domain
-(`prompt2eat.com`; venues are path-based, `…/<slug>`), registered **once per
-connected account**, most reliably via the API with that account's `Stripe-Account`
-header:
+**This is now automatic — no operator step.** `syncStripeAccountStatus` (which
+runs whenever the owner's Payments page loads or they refresh their Stripe status)
+registers the storefront domain on that venue's connected account as soon as the
+account reaches `charges_enabled`. See `lib/stripe/payment-method-domain.ts`.
+
+How it behaves, and why:
+
+- It runs in `after()`, so it is never in front of the page render.
+- It **never throws**. Every failure is swallowed and reported to Sentry. Apple
+  Pay simply not appearing is a soft degradation — Google Pay, Link and the card
+  form are untouched — whereas a throw would break the payments page for an owner
+  who has done nothing wrong.
+- In the steady state it costs **zero Stripe calls**: the domain it last
+  registered is stored on `venues.stripe_payment_method_domain`, so the common
+  case is a string comparison.
+- It **lists before creating**, so an account whose domain was already registered
+  by hand (the old manual step below) is detected and recorded rather than
+  re-created, which Stripe would reject.
+- It stores the DOMAIN, not a flag, so a venue later moving to a custom domain
+  re-registers instead of being wrongly treated as done.
+
+Stripe serves the Apple Pay domain-association file for domains registered this way
+when the storefront loads Stripe.js, so the app does **not** host a `.well-known`
+file.
+
+<details>
+<summary>Manual fallback (only if you need to register a domain out of band)</summary>
 
 ```ts
 await stripe.paymentMethodDomains.create(
@@ -260,17 +283,12 @@ await stripe.paymentMethodDomains.create(
 );
 ```
 
-Stripe serves the Apple Pay domain-association file for domains registered this way
-when the storefront loads Stripe.js, so the app does **not** host a `.well-known`
-file.
+Safe to run alongside the automatic path — the next sync lists the domain, finds
+it, and just records it.
+</details>
 
-**If it's skipped, nothing breaks** — the Apple Pay button just doesn't appear for
-that venue, and the customer still has Google Pay / Link / the card form. Register
-a venue's domain when you want Apple Pay live for it.
-
-> Future enhancement (not built this phase): auto-register the domain during
-> Connect onboarding once an account reaches `charges_enabled`, so operators never
-> do it by hand.
+**If registration fails for a venue, nothing breaks** — the Apple Pay button just
+doesn't appear there, and the customer still has Google Pay / Link / the card form.
 
 ## Customer accounts (#7)
 
