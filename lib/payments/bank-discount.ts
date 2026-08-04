@@ -1,10 +1,17 @@
+import { MIN_TOTAL_CENTS } from "./limits";
+
 export type PaytoDiscountMode = "off" | "flat" | "percent";
 
 /** Async bank methods eligible for the pay-by-bank saving. */
 export const BANK_METHODS = new Set(["payto", "au_becs_debit"]);
 
-/** Stripe's AUD minimum charge — keep the discounted total at or above it. */
-export const MIN_TOTAL_CENTS = 50;
+/**
+ * Stripe's AUD minimum charge — keep the discounted total at or above it.
+ * Defined in `./limits` so the plain checkout path can enforce the same floor
+ * without importing a discount module; re-exported here because existing
+ * callers import it from this file. One definition, every caller.
+ */
+export { MIN_TOTAL_CENTS };
 
 /**
  * The pay-by-bank saving for a subtotal, in cents (>= 0). PURE — used both

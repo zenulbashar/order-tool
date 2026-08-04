@@ -18,6 +18,7 @@ import {
 } from "@/lib/db/schema";
 import { reportError } from "@/lib/observability";
 import { assignDailyNumber } from "@/lib/orders/daily-number";
+import { MIN_TOTAL_CENTS } from "@/lib/payments/limits";
 import { planOrderLines } from "@/lib/payments/line-plan";
 import { getVenueTaxConfig, inclusiveTaxCents } from "@/lib/payments/tax";
 import { checkRateLimit, clientIpFromHeaders } from "@/lib/rate-limit";
@@ -27,7 +28,12 @@ import {
   getStripePublishableKey,
 } from "@/lib/stripe";
 import { scopedToVenue } from "@/lib/tenant";
-import { isReservedSlug, placeOrderSchema, type PlaceOrderInput } from "@/lib/validation";
+import {
+  formatCents,
+  isReservedSlug,
+  placeOrderSchema,
+  type PlaceOrderInput,
+} from "@/lib/validation";
 import { validateScheduledForConfig } from "@/lib/schedule";
 
 export type PlaceOrderResult =
@@ -266,6 +272,27 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   const { plan, subtotalCents } = planned;
 
   const totalCents = subtotalCents; // no tax / fees / tips this phase
+
+  // Stripe rejects a PaymentIntent below its AUD minimum. That rejection arrives
+  // AFTER the order transaction has committed (the write is step (f), the
+  // PaymentIntent is step (g)), so without this the diner gets a generic "We
+  // couldn't start payment." and the venue is left with an orphan
+  // `pending_payment` row — invisible on the kitchen board, cleared by no sweep.
+  //
+  // The DISCOUNTED path has always respected this floor: composeOrderDiscount
+  // clamps so a promo, bank saving, gift card or loyalty redemption can never
+  // push the payable total under it. The un-discounted path never checked, so a
+  // venue that priced a single item under $0.50 could accept an order that was
+  // never payable. Same constant, so the two paths cannot drift.
+  //
+  // Placed here deliberately: before ANY write, and it touches no discount
+  // logic — the money-path invariant that placeOrder stays free of
+  // promo/discount/integration concerns is unchanged.
+  if (totalCents < MIN_TOTAL_CENTS) {
+    return reject(
+      `Orders must come to at least $${formatCents(MIN_TOTAL_CENTS)}. Please add another item.`,
+    );
+  }
 
   // Additive GST capture (inclusive): a display/reporting snapshot of the GST
   // COMPONENT already contained in totalCents — NEVER added to the charge. The
