@@ -313,8 +313,22 @@ function PaymentForm({
   // connected-account clientSecret + stripeAccount). There is no second intent
   // and no second confirm path; the order is still confirmed ONLY by the
   // signature-verified webhook on payment_intent.succeeded.
-  async function confirmAgainstIntent(methodHint?: string) {
-    if (!stripe || !elements || submitting || recomputing) return;
+  async function confirmAgainstIntent(
+    methodHint?: string,
+    // Present only for a wallet confirmation. The native Apple Pay / Google Pay
+    // sheet is a MODAL owned by the browser: it stays open, spinning, until it
+    // is told the payment succeeded (by the redirect) or failed. Returning
+    // without telling it either leaves the customer staring at a stuck sheet on
+    // the highest-intent payment method there is.
+    walletEvent?: { paymentFailed: (options: { reason: "fail" }) => void },
+  ) {
+    if (!stripe || !elements || submitting || recomputing) {
+      // Most likely `recomputing`: the diner tapped Apple Pay while a promo or
+      // gift card re-price was still in flight. Previously this returned
+      // silently and the sheet hung with no terminal state.
+      walletEvent?.paymentFailed({ reason: "fail" });
+      return;
+    }
     setSubmitting(true);
     setError(null);
 
@@ -342,6 +356,9 @@ function PaymentForm({
     //    over until the webhook confirms. This is NOT a second confirm path —
     //    the single confirmPayment above already ran; we only navigate.
     if (confirmError) {
+      // Dismiss the wallet sheet too, so the error we just set is actually
+      // readable underneath it rather than hidden behind a spinning modal.
+      walletEvent?.paymentFailed({ reason: "fail" });
       setError(
         confirmError.message ??
           "We couldn't process that payment. Please check your details and try again.",
@@ -386,7 +403,11 @@ function PaymentForm({
             onReady={({ availablePaymentMethods }) =>
               setHasWallet(Boolean(availablePaymentMethods))
             }
-            onConfirm={() => confirmAgainstIntent("card")}
+            // The event is passed through, not discarded: it is the only way to
+            // give the native wallet sheet a terminal state when we cannot
+            // proceed. Apple Pay rides the card rails, so "card" stays the
+            // correct display hint for the order page's waiting copy.
+            onConfirm={(event) => confirmAgainstIntent("card", event)}
           />
           {hasWallet ? (
             <div className="flex items-center gap-3">
