@@ -191,6 +191,16 @@ export const venues = pgTable(
       .notNull()
       .default(false),
     stripeOnboardedAt: timestamp("stripe_onboarded_at", { withTimezone: true }),
+    // The storefront domain most recently registered as an Apple Pay
+    // payment_method_domain ON THIS VENUE'S CONNECTED ACCOUNT. Apple Pay on the
+    // web only renders once the domain is registered, and because every charge
+    // is a DIRECT charge on the connected account, registering it on the
+    // platform is not enough — it must be done per account.
+    //
+    // Stores the DOMAIN rather than a boolean/timestamp so a later domain change
+    // (custom-domain is a Scale feature) re-registers instead of being wrongly
+    // treated as already done. NULL = never registered.
+    stripePaymentMethodDomain: text("stripe_payment_method_domain"),
     // Structured-data / SEO inputs (Phase 6). ALL NULLABLE with no defaults: a
     // venue fills in whatever it has, and the public storefront emits schema.org
     // JSON-LD using ONLY the fields that are set (see app/[slug]/json-ld.tsx) —

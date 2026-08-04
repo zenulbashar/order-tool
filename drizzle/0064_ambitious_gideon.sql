@@ -1,0 +1,1 @@
+ALTER TABLE "venues" ADD COLUMN "stripe_payment_method_domain" text;

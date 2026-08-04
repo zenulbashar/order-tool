@@ -1,9 +1,11 @@
 import { and, count, eq, gt, inArray, sql } from "drizzle-orm";
+import { after } from "next/server";
 
 import { db } from "@/lib/db";
 import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, refunds, venues } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
+import { ensurePaymentMethodDomain } from "@/lib/stripe/payment-method-domain";
 
 export type StripeAccountStatus = {
   accountId: string;
@@ -26,7 +28,7 @@ export async function syncStripeAccountStatus(
   const chargesEnabled = account.charges_enabled ?? false;
   const detailsSubmitted = account.details_submitted ?? false;
 
-  await db
+  const [updated] = await db
     .update(venues)
     .set({
       stripeChargesEnabled: chargesEnabled,
@@ -34,7 +36,21 @@ export async function syncStripeAccountStatus(
         ? { stripeOnboardedAt: sql`COALESCE(${venues.stripeOnboardedAt}, now())` }
         : {}),
     })
-    .where(eq(venues.id, venueId));
+    .where(eq(venues.id, venueId))
+    .returning({ domain: venues.stripePaymentMethodDomain });
+
+  // Apple Pay needs the storefront domain registered on THIS connected account
+  // (direct charges originate there, so the platform's own registration does not
+  // cover it). Only meaningful once the account can actually charge.
+  //
+  // Deferred with after() so it never sits in front of the payments page render,
+  // and internally fail-safe: it swallows and reports, and in the steady state it
+  // is a string comparison with no Stripe call at all. Apple Pay not appearing is
+  // a soft degradation; a slow or broken payments page is not.
+  if (chargesEnabled) {
+    const registeredDomain = updated?.domain ?? null;
+    after(() => ensurePaymentMethodDomain(venueId, accountId, registeredDomain));
+  }
 
   return { accountId, chargesEnabled, detailsSubmitted };
 }
