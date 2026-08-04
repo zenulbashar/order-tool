@@ -1,6 +1,12 @@
 name: Audit reserved slugs
 on:
   workflow_dispatch:
+
+# This job holds PROD_DATABASE_URL and `npx`-fetches tsx at run time, so it gets
+# no repository scopes at all: the script only reads and reports, and nothing
+# here needs to write to the repo, packages, or checks.
+permissions: {}
+
 jobs:
   audit:
     runs-on: ubuntu-latest

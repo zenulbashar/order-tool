@@ -24,8 +24,15 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 
 /**
- * Injected by the platform or the mobile build — never set by hand, so they are
- * documented in prose at the foot of `.env.example` rather than as keys.
+ * Injected by the platform, the CI runner, the mobile build or the test harness
+ * — never part of a production deploy's configuration, so they are documented in
+ * prose at the foot of `.env.example` rather than as keys.
+ *
+ * Keep this list justified, not convenient: anything a deploy must SET to work
+ * belongs in `.env.example`, and the whole point of this test is that a silently
+ * degrading key never reaches production undocumented. Every entry below is
+ * either written by a platform we do not control, or read only by tooling that
+ * never runs in production.
  */
 const NOT_OURS_TO_SET = new Set([
   "NODE_ENV",
@@ -33,9 +40,18 @@ const NOT_OURS_TO_SET = new Set([
   "VERCEL_URL",
   "VERCEL_PROJECT_PRODUCTION_URL",
   "VERCEL_GIT_COMMIT_SHA",
+  // Set by Next itself to identify the running runtime ("nodejs" | "edge");
+  // instrumentation.ts branches on it. Surfaced once the scan below started
+  // reading root-level files, which is how it had gone undocumented.
+  "NEXT_RUNTIME",
   // A build-time shell export for the Capacitor wrapper (mobile/README.md),
   // not a server runtime variable.
   "P2E_APP_URL",
+  // Test harness only, read by playwright.config.ts and never by the app.
+  // `CI` is set by the runner; PLAYWRIGHT_BASE_URL points the E2E suite at an
+  // already-running server instead of letting it start one.
+  "CI",
+  "PLAYWRIGHT_BASE_URL",
 ]);
 
 function sourceFiles(dir: string): string[] {
@@ -56,6 +72,20 @@ const documented = new Set(
   [...EXAMPLE.matchAll(/^#?\s*([A-Z][A-Z0-9_]*)=/gm)].map((m) => m[1]),
 );
 
+/**
+ * Root-level `.ts` files, non-recursively — `instrumentation.ts`,
+ * `next.config.ts`, `drizzle.config.ts`. These were outside the scan, which is
+ * how `NEXT_RUNTIME` came to be read in two places and documented in none while
+ * CI stayed green. Config files are exactly where a new `process.env` read is
+ * most likely to appear and least likely to be noticed.
+ */
+function rootSourceFiles(): string[] {
+  return readdirSync(ROOT)
+    .filter((entry) => /\.ts$/.test(entry))
+    .map((entry) => join(ROOT, entry))
+    .filter((full) => statSync(full).isFile());
+}
+
 /** Keys the code reads via process.env. */
 const used = new Set<string>();
 for (const dir of ["app", "lib", "mobile", "scripts"]) {
@@ -71,6 +101,13 @@ for (const dir of ["app", "lib", "mobile", "scripts"]) {
     )) {
       used.add(key);
     }
+  }
+}
+for (const file of rootSourceFiles()) {
+  for (const [, key] of readFileSync(file, "utf8").matchAll(
+    /process\.env\.([A-Z][A-Z0-9_]*)/g,
+  )) {
+    used.add(key);
   }
 }
 

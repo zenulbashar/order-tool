@@ -1,8 +1,39 @@
-# prompt2eat — PLAN (reconciled to source, 2026-07-03)
+# prompt2eat — PLAN (HISTORICAL, 2026-07-03)
 
-> Authoritative, source-verified status of the repo. A fresh Claude Code session should be able to
-> read this file + the codebase and have a complete, correct picture. Full historical design notes
-> live in the session plan at `~/.claude/plans/cached-plotting-book.md`; this file is the ground truth.
+> # ⚠️ SUPERSEDED — do not use this file as current status.
+>
+> This was written at **PR #116**. Main is now well past **PR #244**, and the
+> 2026-08 audit programme (PRs #203–#244) changed a great deal of what is below.
+> It is kept for the design rationale and the decision history, both of which are
+> still useful. **Its status claims are not.**
+>
+> **For current status, read instead:**
+> - `docs/DEPLOYMENT-PLAN.md` — verified current state, the path to live, and the backlog
+> - `docs/audit/` — the 2026-08 audit findings and what was fixed
+> - `README.md` — setup, payments, and the Stripe cutover runbook
+>
+> **Specific claims below that are now KNOWN WRONG**, so nobody re-derives them:
+> - *"Menu editor stale-input bug … NOT YET FIXED"* — fixed in PR #117
+>   (`key={selectedItem.id}` on the detail pane).
+> - *"the order webhook now has **TWO** … `after()` blocks"* — there are **nine**
+>   `after(...)` call sites in that route today. The isolation property still
+>   holds (each is independently swallowed and cannot change the response), but
+>   the count is long stale, so do not reason from it.
+> - *"Migrations: `drizzle/0000…0033`"* — there are now **64** (0000–0063), all
+>   applied in production.
+> - *"main tip `2f9a1d6`"*, the PR list, and the branch inventory — all stale.
+> - §"DECISION REGISTER" still names a **"Premium"** tier. No such tier exists;
+>   the sellable tiers are `pro` and `scale`. This is the last mention of
+>   "Premium" anywhere in the repo.
+>
+> The **money-path invariants** in the next section are the part that has held
+> up: they were re-verified against source during the 2026-08 audit and again in
+> `docs/DEPLOYMENT-PLAN.md`. `design/CLAUDE-DESIGN-BRIEF.md` cites them, and that
+> citation is still good.
+
+> Original header, as written on 2026-07-03: "Authoritative, source-verified status of the repo. A
+> fresh Claude Code session should be able to read this file + the codebase and have a complete,
+> correct picture." That is no longer true, which is why the banner above exists.
 
 ## Repo state (verified)
 
