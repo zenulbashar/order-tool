@@ -3,6 +3,7 @@ import { formatVenueTime } from "@/lib/time";
 import { formatCents, orderReference } from "@/lib/validation";
 
 import type { KitchenOrder, KitchenOrderItem } from "./queries";
+import { taxLineText } from "./tax-line";
 
 /**
  * Print-only paper ticket for a single order, rendered entirely from the
@@ -23,10 +24,12 @@ export function OrderTicket({
   order,
   venueName,
   timezone,
+  taxLabel,
 }: {
   order: KitchenOrder;
   venueName: string;
   timezone: string;
+  taxLabel: string | null;
 }) {
   const isDineIn = order.orderType === "dine_in";
 
@@ -87,6 +90,13 @@ export function OrderTicket({
         <span>Total</span>
         <span>${formatCents(order.totalCents)}</span>
       </div>
+      {/* GST component of the total (never added to it) — printed so the paper
+          docket is enough for the shoebox, without a lookup in the dashboard. */}
+      {taxLineText(taxLabel, order.taxCents) ? (
+        <p className="text-right text-eyebrow">
+          {taxLineText(taxLabel, order.taxCents)}
+        </p>
+      ) : null}
 
       <p className="mt-3 text-center text-eyebrow">Thank you</p>
     </div>

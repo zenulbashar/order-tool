@@ -68,12 +68,14 @@ export function usePrint(): PrintContextValue {
 export function PrintProvider({
   venueName,
   timezone,
+  taxLabel,
   stations,
   stationPrintingEnabled,
   children,
 }: {
   venueName: string;
   timezone: string;
+  taxLabel: string | null;
   stations: PrintStation[];
   stationPrintingEnabled: boolean;
   children: React.ReactNode;
@@ -148,6 +150,7 @@ export function PrintProvider({
             stations={stations}
             venueName={venueName}
             timezone={timezone}
+            taxLabel={taxLabel}
           />
         </div>
       ) : null}
@@ -161,11 +164,13 @@ function StagedDocument({
   stations,
   venueName,
   timezone,
+  taxLabel,
 }: {
   staged: { order: KitchenOrder; kind: PrintKind };
   stations: PrintStation[];
   venueName: string;
   timezone: string;
+  taxLabel: string | null;
 }) {
   const { order, kind } = staged;
 
@@ -196,5 +201,12 @@ function StagedDocument({
     );
   }
 
-  return <OrderTicket order={order} venueName={venueName} timezone={timezone} />;
+  return (
+    <OrderTicket
+      order={order}
+      venueName={venueName}
+      timezone={timezone}
+      taxLabel={taxLabel}
+    />
+  );
 }
