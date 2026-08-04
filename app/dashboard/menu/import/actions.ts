@@ -10,6 +10,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { menuCategories, menuItems, menuItemVariants } from "@/lib/db/schema";
+import { normalizeMenuItemName } from "@/lib/menu/item-name";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import {
@@ -50,6 +51,11 @@ export type PublishResult =
       addedCategories: number;
       addedItems: number;
       addedSizes: number;
+      /**
+       * Draft items skipped because the venue already had an item with that
+       * name (or the draft repeated it). Original casing, for display.
+       */
+      skippedDuplicates: string[];
     }
   | { ok: false; error: string };
 
@@ -292,12 +298,71 @@ export async function publishMenu(
   let addedItems = 0;
   let addedSizes = 0;
 
+  /*
+   * Duplicate prevention. Publish is APPEND-only, so re-importing the same menu
+   * photo — or importing a menu that overlaps what is already there — used to
+   * write a second "Flat White" with no warning. lib/menu-health.ts then grades
+   * that venue-wide `duplicate_name` as a CRITICAL issue, so the product created
+   * the exact defect it penalises, at the moment a new owner is onboarding and
+   * least able to tell what went wrong.
+   *
+   * Skipped rather than blocked: a partial import still gives the owner every
+   * genuinely new item, which is what they asked for, and refusing the whole
+   * publish over one repeated name would be worse. What is NOT acceptable is
+   * skipping quietly, so the names come back in the result and the client lists
+   * them. An owner who truly wants two items with one name can still add the
+   * second by hand.
+   *
+   * Compared on the SAME normalisation menu health uses (lib/menu/item-name.ts),
+   * or the import could allow a name the health score immediately marks critical.
+   */
+  const existingRows = await db
+    .select({ name: menuItems.name })
+    .from(menuItems)
+    .where(scopedToVenue(menuItems.venueId, venue.id));
+  // Seeded with the live menu, then extended as the draft is walked, so a draft
+  // that repeats a name WITHIN ITSELF collapses to one item too.
+  const takenNames = new Set(
+    existingRows.map((row) => normalizeMenuItemName(row.name)),
+  );
+  const skippedDuplicates: string[] = [];
+
+  // Drop duplicates before the transaction opens, and drop any category left
+  // with no items — otherwise a re-import of an unchanged menu would create a
+  // full set of empty categories, which is a different mess than the one fixed.
+  const categoriesToWrite = parsed.data.categories
+    .map((category) => {
+      const items = category.items.filter((item) => {
+        const norm = normalizeMenuItemName(item.name);
+        if (takenNames.has(norm)) {
+          skippedDuplicates.push(item.name.trim());
+          return false;
+        }
+        takenNames.add(norm);
+        return true;
+      });
+      return { ...category, items };
+    })
+    .filter((category) => category.items.length > 0);
+
+  if (categoriesToWrite.length === 0) {
+    // Nothing new: still a success, just an empty one. Reported honestly so the
+    // owner understands why their menu did not change.
+    return {
+      ok: true,
+      addedCategories: 0,
+      addedItems: 0,
+      addedSizes: 0,
+      skippedDuplicates,
+    };
+  }
+
   // Multi-row write -> transaction; every statement carries venue_id. New
   // categories append after existing ones; items append within their new
   // category from sort_order 0, and a sized item's sizes from sort_order 0.
   await db.transaction(async (tx) => {
     let categorySort = await nextCategorySort(venue.id);
-    for (const category of parsed.data.categories) {
+    for (const category of categoriesToWrite) {
       const [created] = await tx
         .insert(menuCategories)
         .values({
@@ -357,5 +422,5 @@ export async function publishMenu(
 
   revalidatePath(MENU_PATH);
   revalidateStorefront(venue);
-  return { ok: true, addedCategories, addedItems, addedSizes };
+  return { ok: true, addedCategories, addedItems, addedSizes, skippedDuplicates };
 }

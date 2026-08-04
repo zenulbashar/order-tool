@@ -93,6 +93,13 @@ export function ImportClient({
   const [files, setFiles] = useState<File[]>([]);
   const [draft, setDraft] = useState<UiCategory[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Items the server refused to add because the venue already had that name.
+   * Held rather than navigated past: a silent skip would leave the owner
+   * believing their whole menu imported, and the difference only surfaces later
+   * as a missing item they swear they added.
+   */
+  const [skipped, setSkipped] = useState<string[] | null>(null);
   const [extracting, startExtract] = useTransition();
   const [publishing, startPublish] = useTransition();
 
@@ -183,6 +190,12 @@ export function ImportClient({
     startPublish(async () => {
       const result = await publishMenu(payload);
       if (result.ok) {
+        // Something was skipped: stop and show it. Continuing is one more tap,
+        // which is the right trade against silently losing items.
+        if (result.skippedDuplicates.length > 0) {
+          setSkipped(result.skippedDuplicates);
+          return;
+        }
         // Wizard usage hands navigation to a server action (advance the step +
         // redirect); the dashboard path is unchanged when onPublished is absent.
         if (onPublished) {
@@ -382,6 +395,49 @@ export function ImportClient({
     );
   }
 
+  // Stage 3: some items were already on the menu. Shown INSTEAD of navigating,
+  // because the alternative is an owner who believes everything imported and
+  // discovers the gap later as a missing item they are sure they added.
+  if (skipped) {
+    return (
+      <section className="py-8">
+        <div className="rounded-card border border-line bg-surface-elevated p-5 shadow-card">
+          <h2 className="font-display text-xl font-bold text-ink">
+            Added to your menu
+          </h2>
+          <p className="mt-2 text-sm text-ink">
+            {skipped.length === 1
+              ? "One item was already on your menu, so it was not added again:"
+              : `${skipped.length} items were already on your menu, so they were not added again:`}
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
+            {skipped.map((name, index) => (
+              <li key={`${name}-${index}`}>{name}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-muted">
+            Everything else from this import was added. If you did mean to have
+            two items with the same name, add the second one from the menu editor.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              if (onPublished) {
+                await onPublished();
+                return;
+              }
+              router.push("/dashboard/menu");
+              router.refresh();
+            }}
+            className="mt-5 rounded-control bg-ink px-4 py-2.5 text-sm font-bold text-surface transition hover:opacity-90"
+          >
+            Go to my menu
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   // Stage 2: review + correct (the gate). Nothing is written until publish.
   return (
     <section className="py-8">
@@ -392,7 +448,8 @@ export function ImportClient({
           especially any flagged below. For an item priced by size, confirm each
           size’s name and price, or untick “This item has sizes” to give it a
           single price. Nothing is added to your live menu until you choose “Add
-          these to my menu”. Re-importing later adds these again.
+          these to my menu”. An item whose name is already on your menu is
+          skipped, so re-importing will not create duplicates.
         </p>
       </div>
 
