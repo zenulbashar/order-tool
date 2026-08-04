@@ -49,11 +49,13 @@ export function OrdersBoard({
   upcomingOrders,
   completedOrders,
   timezone,
+  taxLabel,
 }: {
   makeNowOrders: KitchenOrder[];
   upcomingOrders: KitchenOrder[];
   completedOrders: KitchenOrder[];
   timezone: string;
+  taxLabel: string | null;
 }) {
   const [filter, setFilter] = useState<TypeFilter>("all");
   const soundEnabled = useSoundEnabled();
@@ -188,6 +190,7 @@ export function OrdersBoard({
                 key={order.id}
                 order={order}
                 timezone={timezone}
+                taxLabel={taxLabel}
                 onOpen={() => setActiveId(order.id)}
               />
             ))}
@@ -221,6 +224,7 @@ export function OrdersBoard({
                         key={order.id}
                         order={order}
                         timezone={timezone}
+                        taxLabel={taxLabel}
                         compact={isCompleted}
                         showElapsed={!isCompleted}
                         onOpen={
@@ -240,6 +244,7 @@ export function OrdersBoard({
         <TicketDrawer
           order={activeOrder}
           timezone={timezone}
+          taxLabel={taxLabel}
           onClose={() => setActiveId(null)}
         />
       ) : null}

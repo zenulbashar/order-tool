@@ -74,6 +74,14 @@ export type KitchenOrder = {
   status: (typeof orderStatus.enumValues)[number];
   subtotalCents: number;
   totalCents: number;
+  /**
+   * The GST COMPONENT already contained in totalCents (inclusive tax) — never an
+   * addition to it. Captured on every order since migration 0035 but, until now,
+   * surfaced only to the diner and in the 30-day report; the owner could not see
+   * the GST on an individual order, which is the figure a BAS is assembled from.
+   * 0 whenever the venue has GST turned off.
+   */
+  taxCents: number;
   // Cash already refunded on this order (sum of succeeded refunds).
   refundedCents: number;
   createdAt: Date;
@@ -139,6 +147,7 @@ export async function getVenueOrders(
       status: orders.status,
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
+      taxCents: orders.taxCents,
       // Correlated sum so one query still hydrates the whole board.
       refundedCents: sql<number>`coalesce((
         select sum(${refunds.amountCents})
@@ -193,6 +202,7 @@ export async function getRecentCompletedOrders(
       status: orders.status,
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
+      taxCents: orders.taxCents,
       refundedCents: sql<number>`coalesce((
         select sum(${refunds.amountCents})
           from ${refunds}
@@ -230,6 +240,7 @@ type OrderHeaderRow = {
   status: (typeof orderStatus.enumValues)[number];
   subtotalCents: number;
   totalCents: number;
+  taxCents: number;
   refundedCents: number;
   createdAt: Date;
   scheduledFor: Date | null;
@@ -347,6 +358,7 @@ async function hydrateKitchenOrders(
     fulfillmentStatus: order.fulfillmentStatus,
     subtotalCents: order.subtotalCents,
     totalCents: order.totalCents,
+    taxCents: order.taxCents,
     createdAt: order.createdAt,
     scheduledFor: order.scheduledFor,
     items: itemsByOrder.get(order.id) ?? [],

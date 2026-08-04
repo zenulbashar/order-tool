@@ -9,6 +9,7 @@ import { OrderStatusControls } from "./order-status-controls";
 import { PrintButton } from "./print-button";
 import { RefundControl } from "./refund-control";
 import type { KitchenOrder, KitchenOrderItem } from "./queries";
+import { taxLineText } from "./tax-line";
 
 /**
  * Focused, enlarged single-order ticket in a right-side drawer (deferred design-
@@ -21,10 +22,12 @@ import type { KitchenOrder, KitchenOrderItem } from "./queries";
 export function TicketDrawer({
   order,
   timezone,
+  taxLabel,
   onClose,
 }: {
   order: KitchenOrder;
   timezone: string;
+  taxLabel: string | null;
   onClose: () => void;
 }) {
   // Focus trap + initial focus + focus restoration + Escape + scroll lock.
@@ -123,6 +126,11 @@ export function TicketDrawer({
               ${formatCents(order.totalCents)}
             </span>
           </div>
+          {taxLineText(taxLabel, order.taxCents) ? (
+            <p className="mt-1 text-right text-xs text-muted">
+              {taxLineText(taxLabel, order.taxCents)}
+            </p>
+          ) : null}
 
           {/* Refunds (M4) — inside the scrolling body rather than the sticky
               action bar, so the money action is never adjacent to the

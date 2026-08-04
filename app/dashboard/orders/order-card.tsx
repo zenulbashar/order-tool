@@ -11,6 +11,7 @@ import type {
   KitchenOrder,
   KitchenOrderItem,
 } from "./queries";
+import { taxLineText } from "./tax-line";
 
 // Fulfillment status → StatusBadge kitchen tone + label. "completed" maps to the
 // "done" tone (muted); the others map 1:1.
@@ -35,12 +36,14 @@ const STATUS_LABEL: Record<FulfillmentStatus, string> = {
 export function OrderCard({
   order,
   timezone,
+  taxLabel,
   compact = false,
   showElapsed = false,
   onOpen,
 }: {
   order: KitchenOrder;
   timezone: string;
+  taxLabel: string | null;
   /** COMPLETED column: a compact, action-less summary (ref, done, type, items, total). */
   compact?: boolean;
   /** Show the elapsed-since-placed indicator (active board columns only; never
@@ -195,6 +198,11 @@ export function OrderCard({
           ${formatCents(order.totalCents)}
         </span>
       </div>
+      {taxLineText(taxLabel, order.taxCents) ? (
+        <p className="mt-0.5 text-right text-2xs text-muted">
+          {taxLineText(taxLabel, order.taxCents)}
+        </p>
+      ) : null}
 
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
         <OrderStatusControls orderId={order.id} status={order.fulfillmentStatus} />

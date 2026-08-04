@@ -46,10 +46,17 @@ export default async function OrdersPage() {
     .filter(isUpcoming)
     .sort((a, b) => effectiveTime(a) - effectiveTime(b));
 
+  // GST label for the owner-facing tax line, or null when the venue has GST
+  // off. Folding `taxEnabled` into null here keeps every downstream component
+  // from having to know the tax config exists — they render the line if they
+  // are given a label and the order carries a component, and otherwise do not.
+  const taxLabel = venue.taxEnabled ? venue.taxLabel : null;
+
   return (
     <PrintProvider
       venueName={venue.name}
       timezone={venue.timezone}
+      taxLabel={taxLabel}
       stations={stations}
       stationPrintingEnabled={venue.stationPrintingEnabled}
     >
@@ -70,6 +77,7 @@ export default async function OrdersPage() {
           upcomingOrders={upcomingOrders}
           completedOrders={completedOrders}
           timezone={venue.timezone}
+          taxLabel={taxLabel}
         />
       </main>
     </PrintProvider>
