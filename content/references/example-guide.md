@@ -42,8 +42,17 @@ Primary keyword for this example: **"scan to order system"** (commercial intent,
 
 ### Section 5 — heading: "What to look for in a scan-to-order system"
 > A short checklist framing (works on any phone, real payments, handles dine-in
-> and takeaway, no per-order commission) that naturally positions Prompt2Eat
-> without naming competitors.
+> and takeaway, no aggregator commission on your own customers) that naturally
+> positions Prompt2Eat without naming competitors.
+>
+> **Fee accuracy — do not get this wrong.** Prompt2Eat charges the venue a
+> per-order platform fee of **1.75% + $0.30** (`lib/stripe.ts`), on top of
+> Stripe's own processing. So "commission free", "no commission" and "no
+> per-order fee" are all FALSE and must never be written. What IS true, and is
+> the actual story: there is no *aggregator* commission — you are not paying a
+> marketplace 20–35% to reach a customer who is already yours — and the diner is
+> never charged a per-order surcharge. Compare against aggregator rates, never
+> against zero.
 
 ---
 

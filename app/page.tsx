@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { getPublicPricing } from "@/lib/billing/public-pricing";
 import { SITE_DESCRIPTION, SITE_TAGLINE } from "@/lib/seo";
 import { getCurrentVenue } from "@/lib/tenant";
 
@@ -66,10 +67,15 @@ export default async function Home({
     isMarketingHost(),
   ]);
   if (preview === "landing" || marketing) {
+    // Amounts come from Stripe (cached hourly) so the page can never advertise a
+    // price the billing system would not charge. Resolves to {} — tiers render
+    // without a number — whenever Stripe is unset or unreachable, which is also
+    // what keeps this route renderable with no environment at all in CI.
+    const pricing = await getPublicPricing();
     return (
       <>
         <MarketingJsonLd />
-        <Landing />
+        <Landing pricing={pricing} />
       </>
     );
   }

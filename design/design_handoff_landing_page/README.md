@@ -216,11 +216,23 @@ pills / chips `999px` · phone frame outer `44px`, screen `35px` · icon tiles `
 - Bg `linear-gradient(180deg,#FFFDF8,#FBF6EC)`. Centered header eyebrow "PRICING",
   H2 **"Free for 30 days. No card."**
 - 3 tier cards `grid auto-fit minmax(260px,1fr)`, `align-items:stretch`, flex-column so CTAs bottom-align:
-  - **Starter** — `$0`/mo to start · outline CTA "Start free".
-  - **Growth** (featured) — forest-gradient card, amber border, "MOST POPULAR" tab, `$89`/mo (amber),
+  - **Free trial** — `$0` for 30 days · outline CTA "Start free".
+  - **Pro** (featured) — forest-gradient card, amber border, "MOST POPULAR" tab, amount in amber,
     amber CTA "Start free trial".
-  - **Pro** — `Custom` · outline CTA "Talk to sales".
-  - Below: "See full pricing →" link.
+  - **Scale** — outline CTA "Start free trial".
+
+> **Tier names and amounts are NOT a design decision — do not restyle them back.**
+> The sellable tiers come from the billing enum (`lib/billing/plans.ts`): `pro` and
+> `scale`, with `trial` granting Scale-level access for 30 days. An earlier version of
+> this spec named the cards Starter / Growth / Pro at a hard-coded `$89`, and the built
+> page matched it — but no such tiers exist, and "Pro" meant the opposite end of the
+> range in the app, so a visitor could not buy what the page sold.
+>
+> Amounts are read at render time from the Stripe Prices behind the `pro_*` / `scale_*`
+> lookup keys (`lib/billing/public-pricing.ts`), because prices are deliberately stored
+> in Stripe rather than in code. Never write a price literal into this section. When
+> Stripe cannot be reached the card shows "Pricing / shown at checkout", which is the
+> intended fallback, not a bug.
 
 ### 10. Final CTA  (`#cta`)
 - Full-bleed padded; inner rounded panel (radius 32px) with amber radial
