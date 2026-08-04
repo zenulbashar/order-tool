@@ -1,6 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 
 import type { menuCategories, menuItems } from "@/lib/db/schema";
+import { normalizeMenuItemName } from "@/lib/menu/item-name";
 
 /* -------------------------------------------------------------------------- */
 /*  Menu health — pure, read-only computation                                  */
@@ -126,7 +127,7 @@ export function computeMenuHealth(
   );
   const itemsByNormName = new Map<string, MenuItem[]>();
   for (const item of items) {
-    const norm = item.name.trim().toLowerCase();
+    const norm = normalizeMenuItemName(item.name);
     if (norm.length === 0) continue;
     const list = itemsByNormName.get(norm) ?? [];
     list.push(item);
