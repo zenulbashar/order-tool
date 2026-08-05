@@ -46,7 +46,15 @@ export async function connectStripe(): Promise<void> {
       // next attempt reuses it instead of creating a duplicate.
       await db
         .update(venues)
-        .set({ stripeAccountId: accountId })
+        .set({
+          stripeAccountId: accountId,
+          // A payment_method_domain is registered on a CONNECTED ACCOUNT, so the
+          // recorded domain belongs to the account being replaced. The Apple Pay
+          // guard compares hostnames only, and the hostname does not change when
+          // the account does — so leaving this set would make the new account
+          // look already-registered and skip it silently, forever.
+          stripePaymentMethodDomain: null,
+        })
         .where(eq(venues.id, venue.id));
     }
 

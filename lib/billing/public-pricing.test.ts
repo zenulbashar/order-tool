@@ -35,7 +35,7 @@ describe("formatPlanAmount", () => {
 });
 
 describe("annualSavingPercent", () => {
-  const base = { monthlyCents: 10000, currency: "AUD" };
+  const base = { monthlyCents: 10000, currency: "AUD", annualCurrency: "AUD" };
 
   it("returns the rounded discount against twelve months at the monthly rate", () => {
     // 12 x $100 = $1200; $960 annual is a 20% saving.
@@ -57,7 +57,12 @@ describe("annualSavingPercent", () => {
 
   it("returns null for a zero or negative monthly price", () => {
     expect(
-      annualSavingPercent({ monthlyCents: 0, annualCents: 9600, currency: "AUD" }),
+      annualSavingPercent({
+        monthlyCents: 0,
+        annualCents: 9600,
+        currency: "AUD",
+        annualCurrency: "AUD",
+      }),
     ).toBeNull();
   });
 });
@@ -73,5 +78,32 @@ describe("PUBLIC_PLANS", () => {
       expect(PLAN_PRICE_LOOKUP_KEYS[plan].monthly).toBeTruthy();
       expect(PLAN_PRICE_LOOKUP_KEYS[plan].annual).toBeTruthy();
     }
+  });
+});
+
+describe("annualSavingPercent — currency safety", () => {
+  it("shows NO badge when the annual price is in a different currency", () => {
+    // Stripe does not force a plan's two Prices to share a currency. Comparing
+    // 149 USD against 12 x 20 AUD as bare integers would invent a discount out
+    // of an exchange rate, and the card would quote the wrong money.
+    expect(
+      annualSavingPercent({
+        monthlyCents: 2000,
+        annualCents: 14900,
+        currency: "AUD",
+        annualCurrency: "USD",
+      }),
+    ).toBeNull();
+  });
+
+  it("still computes the saving when both are the same currency", () => {
+    expect(
+      annualSavingPercent({
+        monthlyCents: 10000,
+        annualCents: 96000,
+        currency: "AUD",
+        annualCurrency: "AUD",
+      }),
+    ).toBe(20);
   });
 });

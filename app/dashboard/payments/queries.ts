@@ -6,6 +6,7 @@ import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, refunds, venues } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
 import { ensurePaymentMethodDomain } from "@/lib/stripe/payment-method-domain";
+import { getBaseUrl } from "@/lib/url";
 
 export type StripeAccountStatus = {
   accountId: string;
@@ -49,7 +50,15 @@ export async function syncStripeAccountStatus(
   // a soft degradation; a slow or broken payments page is not.
   if (chargesEnabled) {
     const registeredDomain = updated?.domain ?? null;
-    after(() => ensurePaymentMethodDomain(venueId, accountId, registeredDomain));
+    // Resolved HERE, in the request, not inside the callback: getBaseUrl() reads
+    // headers(), and Next throws E839 for a request API used inside after()
+    // unless that after() was spawned from an action. This one is spawned from a
+    // Server Component render, so reading it in the callback threw every time
+    // and was swallowed — see lib/stripe/payment-method-domain.ts.
+    const domain = new URL(await getBaseUrl()).hostname;
+    after(() =>
+      ensurePaymentMethodDomain(venueId, accountId, registeredDomain, domain),
+    );
   }
 
   return { accountId, chargesEnabled, detailsSubmitted };

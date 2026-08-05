@@ -40,6 +40,12 @@ export type PublicPlanPrice = {
   annualCents: number | null;
   /** ISO 4217, upper-cased (e.g. "AUD"). */
   currency: string;
+  /**
+   * The ANNUAL price's currency, which Stripe does not force to match the
+   * monthly one. Kept separately because the saving calculation compares the two
+   * amounts as bare integers, and that is only meaningful in a single currency.
+   */
+  annualCurrency: string | null;
 };
 
 /** Tier -> amounts. A tier is ABSENT when its monthly price can't be resolved. */
@@ -86,6 +92,10 @@ async function fetchPublicPricing(): Promise<PublicPricing> {
         annualCents:
           typeof annual?.unit_amount === "number" ? annual.unit_amount : null,
         currency: (monthly.currency || "aud").toUpperCase(),
+        annualCurrency:
+          typeof annual?.unit_amount === "number"
+            ? (annual.currency || "aud").toUpperCase()
+            : null,
       };
     }
     return pricing;
@@ -132,6 +142,11 @@ export function formatPlanAmount(cents: number, currency: string): string {
  */
 export function annualSavingPercent(price: PublicPlanPrice): number | null {
   if (price.annualCents === null || price.monthlyCents <= 0) return null;
+  // Comparing amounts across currencies would invent a discount out of an
+  // exchange rate. A misconfigured pair shows no badge rather than a wrong one.
+  if (price.annualCurrency !== null && price.annualCurrency !== price.currency) {
+    return null;
+  }
   const yearlyAtMonthlyRate = price.monthlyCents * 12;
   if (price.annualCents >= yearlyAtMonthlyRate) return null;
   const saving =
