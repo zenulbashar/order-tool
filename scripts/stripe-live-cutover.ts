@@ -55,6 +55,7 @@ async function main() {
       stripeCustomerId: venues.stripeCustomerId,
       stripeSubscriptionId: venues.stripeSubscriptionId,
       stripeChargesEnabled: venues.stripeChargesEnabled,
+      stripePaymentMethodDomain: venues.stripePaymentMethodDomain,
     })
     .from(venues)
     .where(
@@ -63,6 +64,7 @@ async function main() {
         isNotNull(venues.stripeCustomerId),
         isNotNull(venues.stripeSubscriptionId),
         eq(venues.stripeChargesEnabled, true),
+        isNotNull(venues.stripePaymentMethodDomain),
       ),
     );
 
@@ -82,6 +84,9 @@ async function main() {
       row.stripeCustomerId ? `customer=${row.stripeCustomerId}` : null,
       row.stripeSubscriptionId ? `subscription=${row.stripeSubscriptionId}` : null,
       row.stripeChargesEnabled ? "charges_enabled=true" : null,
+      row.stripePaymentMethodDomain
+        ? `apple_pay_domain=${row.stripePaymentMethodDomain}`
+        : null,
     ].filter(Boolean);
     console.log(`  - ${row.name} (/${row.slug}): ${held.join("  ")}`);
   }
@@ -101,6 +106,12 @@ async function main() {
       stripeCustomerId: null,
       stripeSubscriptionId: null,
       stripeChargesEnabled: false,
+      // Also mode-scoped in effect: it records a domain registered on a
+      // CONNECTED ACCOUNT, and that account is being cleared above. Left set,
+      // the Apple Pay guard would compare hostnames (which do not change across
+      // a key swap), match, and skip registration on the new live account
+      // forever - with no error and no Sentry event.
+      stripePaymentMethodDomain: null,
     })
     .where(
       or(
@@ -108,6 +119,7 @@ async function main() {
         isNotNull(venues.stripeCustomerId),
         isNotNull(venues.stripeSubscriptionId),
         eq(venues.stripeChargesEnabled, true),
+        isNotNull(venues.stripePaymentMethodDomain),
       ),
     )
     .returning({ id: venues.id });

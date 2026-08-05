@@ -6,7 +6,6 @@ import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
 import { reportError } from "@/lib/observability";
 import { getStripe } from "@/lib/stripe";
-import { getBaseUrl } from "@/lib/url";
 
 /**
  * Register the storefront domain as an Apple Pay `payment_method_domain` on a
@@ -36,14 +35,22 @@ import { getBaseUrl } from "@/lib/url";
  * Storing the DOMAIN rather than a boolean is what makes a later domain change
  * work: a venue moving to a custom domain (a Scale feature) re-registers, rather
  * than being wrongly treated as already done.
+ *
+ * `domain` is resolved by the CALLER and passed in — it is deliberately not read
+ * from getBaseUrl() here. getBaseUrl() calls headers(), and Next throws E839 for
+ * a request API used inside after() unless the after() was spawned from an
+ * action. This runs from a Server Component render, so reading it here threw on
+ * every call, was swallowed by the catch below, and left Apple Pay silently
+ * unregistered forever. Taking the hostname as an argument makes that class of
+ * mistake impossible rather than merely fixed.
  */
 export async function ensurePaymentMethodDomain(
   venueId: string,
   accountId: string,
   registeredDomain: string | null,
+  domain: string,
 ): Promise<void> {
   try {
-    const domain = new URL(await getBaseUrl()).hostname;
     // Steady state: already registered for this exact domain. No API call.
     if (registeredDomain === domain) return;
 

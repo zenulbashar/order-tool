@@ -100,6 +100,13 @@ export function ImportClient({
    * as a missing item they swear they added.
    */
   const [skipped, setSkipped] = useState<string[] | null>(null);
+  /**
+   * How many items actually landed. Without this the summary asserted
+   * "Everything else from this import was added" even in publishMenu's
+   * all-duplicates branch, where the transaction never opens and NOTHING is
+   * written — the exact case this screen exists to explain.
+   */
+  const [addedCount, setAddedCount] = useState(0);
   const [extracting, startExtract] = useTransition();
   const [publishing, startPublish] = useTransition();
 
@@ -193,6 +200,7 @@ export function ImportClient({
         // Something was skipped: stop and show it. Continuing is one more tap,
         // which is the right trade against silently losing items.
         if (result.skippedDuplicates.length > 0) {
+          setAddedCount(result.addedItems);
           setSkipped(result.skippedDuplicates);
           return;
         }
@@ -403,7 +411,9 @@ export function ImportClient({
       <section className="py-8">
         <div className="rounded-card border border-line bg-surface-elevated p-5 shadow-card">
           <h2 className="font-display text-xl font-bold text-ink">
-            Added to your menu
+            {addedCount === 0
+              ? "Nothing new to add"
+              : `Added ${addedCount === 1 ? "1 item" : `${addedCount} items`} to your menu`}
           </h2>
           <p className="mt-2 text-sm text-ink">
             {skipped.length === 1
@@ -416,8 +426,9 @@ export function ImportClient({
             ))}
           </ul>
           <p className="mt-3 text-xs text-muted">
-            Everything else from this import was added. If you did mean to have
-            two items with the same name, add the second one from the menu editor.
+            {addedCount === 0
+              ? "Your menu is unchanged. If you did mean to have two items with the same name, add the second one from the menu editor."
+              : "Everything else from this import was added. If you did mean to have two items with the same name, add the second one from the menu editor."}
           </p>
           <button
             type="button"
@@ -431,7 +442,9 @@ export function ImportClient({
             }}
             className="mt-5 rounded-control bg-ink px-4 py-2.5 text-sm font-bold text-surface transition hover:opacity-90"
           >
-            Go to my menu
+            {/* In the wizard this advances to the NEXT setup step, not the menu,
+                so the label must not promise a destination it does not go to. */}
+            {onPublished ? "Continue" : "Go to my menu"}
           </button>
         </div>
       </section>
