@@ -236,6 +236,29 @@ export const venues = pgTable(
     // in the existing Payment Element via automatic_payment_methods (no money-
     // path change). This column is OUR intent/copy state; Stripe's live
     // capability status is the runtime truth (mirrored like charges_enabled).
+    /*
+     * Table bookings (reservations). Mirrors the scheduled-pickup config above
+     * rather than reusing it: a venue can sensibly take orders 20 minutes ahead
+     * while only taking bookings an hour ahead, and the two features are turned
+     * on independently. Defaults are chosen so existing rows backfill to
+     * "bookings off, nothing changes".
+     *
+     * Opening hours and timezone are SHARED with ordering - a venue has one set
+     * of trading hours, and having two would be a bug factory.
+     */
+    bookingsEnabled: boolean("bookings_enabled").notNull().default(false),
+    bookingLeadMinutes: integer("booking_lead_minutes").notNull().default(60),
+    bookingMaxDaysAhead: integer("booking_max_days_ahead").notNull().default(30),
+    /** Largest party the diner form will accept. Bigger groups are told to call. */
+    bookingMaxPartySize: integer("booking_max_party_size").notNull().default(12),
+    /**
+     * How long a table is held, for the overlap/capacity check. Not shown to the
+     * diner as a hard end time - it is a seating-capacity assumption, not a
+     * promise to vacate.
+     */
+    bookingDurationMinutes: integer("booking_duration_minutes")
+      .notNull()
+      .default(90),
     paytoEnabled: boolean("payto_enabled").notNull().default(false),
     // Pay-by-bank discount steering (Track B · 3b-ii). A venue may pass a small
     // saving to customers who pay by bank (cheaper for the venue than cards).
@@ -2438,3 +2461,86 @@ export const venueFaqs = pgTable(
 );
 
 export type VenueFaq = typeof venueFaqs.$inferSelect;
+
+/* -------------------------------------------------------------------------- */
+/* Table bookings (reservations)                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Lifecycle of a booking. `confirmed` is the ENTRY state, not a later approval:
+ * a venue that publishes bookable times has already agreed to them, so making
+ * the diner wait for a human to accept would be a worse product and a worse
+ * email. The owner can still cancel.
+ *
+ * `seated` and `completed` are separated because they answer different
+ * questions - "is this party here now" drives the floor, "did they show" drives
+ * the no-show rate.
+ */
+export const bookingStatus = pgEnum("booking_status", [
+  "confirmed",
+  "seated",
+  "completed",
+  "cancelled",
+  "no_show",
+]);
+
+/**
+ * A diner's advance table booking. Venue-scoped and cascade-deleted like every
+ * other tenant row.
+ *
+ * Deliberately NOT an order: it takes no payment, touches no money path, and
+ * shares nothing with `orders` beyond the venue. Bookings and orders meet only
+ * on the floor, when a seated party orders.
+ *
+ * `bookedFor` is an absolute instant (timestamptz). The venue-local wall clock
+ * the diner picked is resolved through the venue timezone at validation time by
+ * the same helper scheduled pickup uses, so a booking cannot drift across a DST
+ * boundary - which is exactly the bug a naive "store the local string" design
+ * ships with.
+ *
+ * `publicToken` is the diner's unauthenticated handle for the booking (their
+ * confirmation link). It is a bearer credential, so it is generated with the
+ * same entropy as an order token and is the ONLY way an anonymous diner may
+ * reach a booking - never the id.
+ */
+export const bookings = pgTable(
+  "bookings",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    publicToken: text("public_token").notNull(),
+    status: bookingStatus("status").notNull().default("confirmed"),
+    /** The reservation instant, absolute. */
+    bookedFor: timestamp("booked_for", { withTimezone: true }).notNull(),
+    partySize: integer("party_size").notNull(),
+    customerName: text("customer_name").notNull(),
+    customerEmail: text("customer_email").notNull(),
+    customerPhone: text("customer_phone"),
+    /** Diner's note (allergies, occasion, seating preference). Plain text. */
+    notes: text("notes"),
+    /**
+     * Table assigned by the OWNER, after the fact. Null is the normal state -
+     * the diner never picks a table. SET NULL rather than cascade so deleting a
+     * table cannot delete a booking (and its customer's expectation with it).
+     */
+    tableId: text("table_id").references(() => venueTables.id, {
+      onDelete: "set null",
+    }),
+    /** Stamped when the owner seats the party, for no-show and dwell reporting. */
+    seatedAt: timestamp("seated_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    // The diner's link resolves on this alone, so it must be globally unique.
+    uniqueIndex("bookings_public_token_idx").on(table.publicToken),
+    // The floor view and every capacity/overlap check read a venue's bookings
+    // in time order; this covers both.
+    index("bookings_venue_booked_for_idx").on(table.venueId, table.bookedFor),
+    check("bookings_party_size_min1", sql`${table.partySize} >= 1`),
+  ],
+);
+
+export type Booking = typeof bookings.$inferSelect;

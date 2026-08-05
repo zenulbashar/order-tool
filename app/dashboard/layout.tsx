@@ -10,6 +10,7 @@ import {
 } from "@/lib/tenant";
 
 import { exitVenueImpersonation } from "../admin/actions";
+import { getUpcomingBookingCount } from "./bookings/queries";
 import { getActiveOrderCount } from "./orders/queries";
 import { PushRegistrar } from "./push-registrar";
 import { Sidebar } from "./sidebar";
@@ -52,6 +53,12 @@ export default async function DashboardLayout({
   // refreshes on navigation elsewhere.
   const activeOrderCount = await getActiveOrderCount(current.id);
 
+  // Upcoming bookings badge, on the same refresh cycle for the same reason.
+  const upcomingBookingCount = await getUpcomingBookingCount(
+    current.id,
+    new Date(),
+  );
+
   // Resolved here so the sidebar can hide what the viewer cannot open. This is
   // NOT the access control — each page re-checks with requireVenuePermission,
   // because a hidden link is not a gate and the URL is typeable. getVenueRoles
@@ -77,6 +84,7 @@ export default async function DashboardLayout({
         userEmail={user.email ?? null}
         hasMultiple={hasMultiple}
         activeOrderCount={activeOrderCount}
+        upcomingBookingCount={upcomingBookingCount}
         brandColor={current.brandColor}
         permissions={permissions}
       />

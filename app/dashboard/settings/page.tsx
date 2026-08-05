@@ -47,6 +47,11 @@ const SECTIONS: { href: string; title: string; description: string }[] = [
     description: "Address, phone, hours and pickup scheduling.",
   },
   {
+    href: "/dashboard/settings/bookings",
+    title: "Table bookings",
+    description: "Let diners reserve a table from your storefront.",
+  },
+  {
     href: "/dashboard/settings/tax",
     title: "Tax (GST)",
     description: "Show the GST portion on receipts.",

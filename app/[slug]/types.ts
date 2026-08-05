@@ -56,6 +56,14 @@ export type PublicVenue = {
   schedulingEnabled: boolean;
   schedulingLeadMinutes: number;
   schedulingMaxDaysAhead: number;
+  // Table bookings. Independent of scheduled pickup (a venue may take orders 20
+  // minutes ahead but bookings an hour ahead) but SHARING timezone +
+  // openingHours above, because a venue has one set of trading hours. The book
+  // form is offered only when bookingsEnabled && openingHours is set.
+  bookingsEnabled: boolean;
+  bookingLeadMinutes: number;
+  bookingMaxDaysAhead: number;
+  bookingMaxPartySize: number;
   // Pay-by-bank saving (Track B · 3b-ii). Display only — the checkout shows a
   // "Save $X paying by bank" callout; the discount is server-recomputed and
   // applied to the PaymentIntent at pay time, never trusted from the client.

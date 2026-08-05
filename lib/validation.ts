@@ -1070,3 +1070,75 @@ export type ConciergeInput = {
   message: string;
   history?: ConciergeTurn[];
 };
+
+/* -------------------------------------------------------------------------- */
+/* Table bookings                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A diner's booking request from the PUBLIC storefront form.
+ *
+ * SHAPE ONLY. Every bound that depends on the venue — opening hours, lead time,
+ * how far ahead, maximum party size, seating capacity — is enforced server-side
+ * in createBooking against the venue row, because this form is anonymous and
+ * nothing it sends can be trusted. What lives here is what can be judged without
+ * a database.
+ *
+ * `bookedFor` is a NAIVE venue-local wall clock ("YYYY-MM-DDTHH:MM"), the same
+ * contract as scheduledForSchema — never a UTC instant from the browser, whose
+ * timezone is not the venue's. It is resolved to an absolute instant against the
+ * venue timezone by the server.
+ *
+ * Email is REQUIRED here (unlike an order, where it is captured for receipts):
+ * the confirmation email is the booking's only artefact, so a booking without a
+ * deliverable address is a table held for someone who was never told.
+ */
+export const bookingRequestSchema = z.object({
+  slug: z.string().trim().toLowerCase().min(1).max(64),
+  bookedFor: z
+    .string()
+    .trim()
+    .min(1, "Choose a time.")
+    .refine(
+      (value) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value),
+      "Choose a valid time.",
+    ),
+  partySize: z
+    .number()
+    .int("Choose how many people are coming.")
+    .min(1, "A booking needs at least one person.")
+    // A generous absolute ceiling so a hostile client cannot send 10^9 and make
+    // the capacity arithmetic meaningless. The venue's real, much lower cap is
+    // applied server-side from bookingMaxPartySize.
+    .max(500, "That party is too large to book online."),
+  customerName: customerNameSchema,
+  customerEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(3, "Enter your email.")
+    .max(254, "Email is too long.")
+    .refine(
+      (value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
+      "Enter a valid email address.",
+    ),
+  customerPhone: z
+    .string()
+    .trim()
+    .max(30, "Phone number is too long.")
+    .nullish()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  /** Allergies, occasion, seating preference. Stored as plain text, never priced. */
+  notes: orderNotesSchema,
+});
+
+/** Explicit input contract for the createBooking server action. */
+export type BookingRequestInput = {
+  slug: string;
+  bookedFor: string;
+  partySize: number;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
+  notes?: string | null;
+};
