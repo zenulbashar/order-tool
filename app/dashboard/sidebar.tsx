@@ -55,7 +55,11 @@ type NavEntry = NavLink | NavGroup;
  * rail-collapse still works — there, each category shows a single icon linking to
  * its first page.
  */
-function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
+function navEntries(
+  slug: string,
+  activeOrderCount: number,
+  upcomingBookingCount: number,
+): NavEntry[] {
   return [
     { kind: "link", label: "Home", href: "/dashboard", icon: <IconHome />, exact: true },
     {
@@ -78,6 +82,14 @@ function navEntries(slug: string, activeOrderCount: number): NavEntry[] {
       icon: <IconOrders />,
       items: [
         { label: "Live orders", href: "/dashboard/orders", badge: activeOrderCount },
+        {
+          label: "Bookings",
+          href: "/dashboard/bookings",
+          badge: upcomingBookingCount,
+          // Same gate as the page it links to (floor work, same PII shape as the
+          // orders board), so the nav can never advertise a page that 404s.
+          permission: "orders:view",
+        },
         { label: "Tables & QR codes", href: "/dashboard/tables" },
         {
           label: "Sales reports",
@@ -226,6 +238,7 @@ export function Sidebar({
   userEmail,
   hasMultiple,
   activeOrderCount,
+  upcomingBookingCount,
   brandColor,
   permissions,
 }: {
@@ -238,6 +251,7 @@ export function Sidebar({
   userEmail: string | null;
   hasMultiple: boolean;
   activeOrderCount: number;
+  upcomingBookingCount: number;
   brandColor: string;
   /** The viewer's permissions at this venue, resolved server-side. */
   permissions: Permission[];
@@ -305,7 +319,7 @@ export function Sidebar({
   }, [collapsed]);
 
   const entries = visibleEntries(
-    navEntries(currentSlug, activeOrderCount),
+    navEntries(currentSlug, activeOrderCount, upcomingBookingCount),
     new Set(permissions),
   );
   const ownerLabel = userName ?? userEmail ?? "Owner";

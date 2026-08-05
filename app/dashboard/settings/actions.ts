@@ -262,6 +262,69 @@ export async function saveTaxSettings(
 }
 
 /**
+ * Save the venue's table-booking settings.
+ *
+ * Every bound is clamped server-side, because these values are what the public
+ * booking form is built from and what its server gate enforces: a negative lead
+ * time or a zero party cap would produce a form that offers nothing, or a gate
+ * that rejects everything, with no obvious cause.
+ *
+ * Turning bookings ON without opening hours is allowed but inert by design — the
+ * booking page and the storefront link both require hours, so the venue simply
+ * has no bookable times until they are set. The form says so rather than
+ * silently accepting a toggle that does nothing.
+ */
+export async function saveBookingSettings(
+  _prev: VenueSettingsState,
+  formData: FormData,
+): Promise<VenueSettingsState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/signin");
+  }
+  const venue = await requireVenuePermission("settings:manage");
+
+  const enabled = formData.get("bookingsEnabled") === "on";
+  const leadMinutes = Number(formData.get("bookingLeadMinutes") ?? 60);
+  const maxDaysAhead = Number(formData.get("bookingMaxDaysAhead") ?? 30);
+  const maxPartySize = Number(formData.get("bookingMaxPartySize") ?? 12);
+  const durationMinutes = Number(formData.get("bookingDurationMinutes") ?? 90);
+
+  if (!Number.isInteger(leadMinutes) || leadMinutes < 0 || leadMinutes > 10080) {
+    return { error: "Notice must be between 0 minutes and 7 days." };
+  }
+  if (!Number.isInteger(maxDaysAhead) || maxDaysAhead < 1 || maxDaysAhead > 365) {
+    return { error: "Diners must be able to book between 1 and 365 days ahead." };
+  }
+  if (!Number.isInteger(maxPartySize) || maxPartySize < 1 || maxPartySize > 100) {
+    return { error: "Largest party must be between 1 and 100." };
+  }
+  if (
+    !Number.isInteger(durationMinutes) ||
+    durationMinutes < 15 ||
+    durationMinutes > 480
+  ) {
+    return { error: "Table time must be between 15 minutes and 8 hours." };
+  }
+
+  await db
+    .update(venues)
+    .set({
+      bookingsEnabled: enabled,
+      bookingLeadMinutes: leadMinutes,
+      bookingMaxDaysAhead: maxDaysAhead,
+      bookingMaxPartySize: maxPartySize,
+      bookingDurationMinutes: durationMinutes,
+    })
+    .where(eq(venues.id, venue.id));
+
+  revalidatePath("/dashboard/settings/bookings");
+  revalidatePath("/dashboard/bookings");
+  revalidateStorefront(venue);
+  return { success: true };
+}
+
+/**
  * Toggle new-order push notifications for the current venue (quick-win #5).
  * Ownership from the session (no client id). Only gates the send path in
  * lib/push.ts — never fabricates a push (still needs FCM + a registered device).

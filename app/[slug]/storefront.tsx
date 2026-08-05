@@ -471,6 +471,17 @@ function StorefrontInner({
                     {venue.storefrontDescription}
                   </p>
                 ) : null}
+                {/* Bookings entry point. Rendered only when the venue has the
+                    feature on AND has hours set, which is exactly when
+                    /[slug]/book exists — so this link can never lead to a 404. */}
+                {venue.bookingsEnabled && venue.openingHours?.length ? (
+                  <Link
+                    href={`/${venue.slug}/book`}
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-control border border-line px-3 py-1.5 text-sm font-semibold text-ink transition hover:bg-sand"
+                  >
+                    Book a table
+                  </Link>
+                ) : null}
               </div>
             </header>
           </div>

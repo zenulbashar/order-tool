@@ -91,6 +91,12 @@ const CONFIG = {
   aiSupport: { limit: 30, window: "1 h", prefix: "rl:ai:support" },
   // CHECKOUT (moderate — stop junk-order floods, tolerate payment retries).
   checkoutIp: { limit: 20, window: "1 m", prefix: "rl:checkout:ip" },
+  // TABLE BOOKINGS (public, unauthenticated, and every accepted one sends TWO
+  // emails — the diner's confirmation and the owner's alert). So this is really
+  // an inbox-spam gate, not a load gate, and it is tighter than checkout for
+  // that reason. An hour window rather than a minute: a person books once, and a
+  // burst of bookings from one IP is far more likely to be abuse than a rush.
+  bookingIp: { limit: 6, window: "1 h", prefix: "rl:booking:ip" },
 } as const;
 
 export type RateLimitName = keyof typeof CONFIG;

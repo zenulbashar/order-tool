@@ -3,6 +3,8 @@ import { and, eq, gte } from "drizzle-orm";
 
 import { cx } from "@/app/_components/cx";
 import { PageHeader } from "@/app/_components/page-header";
+import { NewBookingAlert } from "./bookings/new-booking-alert";
+import { getUpcomingBookingCount } from "./bookings/queries";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { computeMenuHealth } from "@/lib/menu-health";
@@ -183,6 +185,13 @@ function Delta({ value }: { value: number | null }) {
 export default async function DashboardPage() {
   const user = await requireUser();
   const venue = await requireVenue();
+
+  // Drives the live "a table was just booked" popup below. Cheap venue-scoped
+  // count(); the owner home is already dynamic.
+  const upcomingBookingCount = await getUpcomingBookingCount(
+    venue.id,
+    new Date(),
+  );
   const needsOnboarding = !isOnboardingComplete(venue);
 
   const now = new Date();
@@ -614,6 +623,10 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* Live booking popup. Mounted on the owner home as well as the bookings
+          page, because "I was looking at the dashboard" is the common case. */}
+      <NewBookingAlert count={upcomingBookingCount} />
     </main>
   );
 }

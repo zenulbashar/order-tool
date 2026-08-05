@@ -124,6 +124,10 @@ async function loadPublicVenue(normalized: string): Promise<PublicVenue | null> 
         schedulingEnabled: venues.schedulingEnabled,
         schedulingLeadMinutes: venues.schedulingLeadMinutes,
         schedulingMaxDaysAhead: venues.schedulingMaxDaysAhead,
+        bookingsEnabled: venues.bookingsEnabled,
+        bookingLeadMinutes: venues.bookingLeadMinutes,
+        bookingMaxDaysAhead: venues.bookingMaxDaysAhead,
+        bookingMaxPartySize: venues.bookingMaxPartySize,
         // Pay-by-bank saving (Track B · 3b-ii) — powers the checkout "Save $X"
         // callout. Display only; the discount is always server-recomputed at
         // pay time by applyBankDiscount.
