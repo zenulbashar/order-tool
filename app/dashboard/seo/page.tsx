@@ -10,7 +10,7 @@ import { isSearchConsoleConfigured } from "@/lib/search-console";
 import {
   hasVenuePermission,
   requireUser,
-  requireVenue,
+  requireVenuePermission,
 } from "@/lib/tenant";
 
 import { AuditPanel } from "./_components/audit-panel";
@@ -45,7 +45,7 @@ const dateFormat = new Intl.DateTimeFormat("en-AU", {
  */
 export default async function SeoPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
   // Billing is owner-only, so a manager reaching this page would bounce off
   // the CTA below. Show it only to someone who can act on it.
   const canBill = await hasVenuePermission(venue.id, "billing:manage");

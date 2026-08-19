@@ -9,7 +9,11 @@ import {
   venueIntegrations,
 } from "@/lib/db/schema";
 import { listLocations } from "@/lib/integrations/square/oauth";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import {
+  requireUser,
+  requireVenuePermission,
+  scopedToVenue,
+} from "@/lib/tenant";
 import { formatCents, orderReference } from "@/lib/validation";
 
 import { type ActivityRow, SquareDetailDrawer } from "./detail-drawer";
@@ -50,7 +54,7 @@ export default async function IntegrationsPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("integrations:manage");
   const sp = await searchParams;
   const showError = sp.error === "square";
   const showDrawer = sp.detail === "square";

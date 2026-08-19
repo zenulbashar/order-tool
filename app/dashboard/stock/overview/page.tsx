@@ -6,7 +6,11 @@ import { cx } from "@/app/_components/cx";
 import { db } from "@/lib/db";
 import { ingredients, stockMovements } from "@/lib/db/schema";
 import { costPerUnitCents, isLowStock } from "@/lib/stock/cost";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import {
+  requireUser,
+  requireVenuePermission,
+  scopedToVenue,
+} from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +70,7 @@ function coverLabel(days: number | null): string {
  */
 export default async function StockOverviewPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("stock:manage");
 
   const since = new Date(new Date().getTime() - USAGE_WINDOW_DAYS * 86_400_000);
 

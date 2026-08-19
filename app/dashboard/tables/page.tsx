@@ -1,5 +1,5 @@
 import { tableDeepLink, tableQrSvg } from "@/lib/qr";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 import { getBaseUrl } from "@/lib/url";
 
 import { getTablesWithStatus } from "./queries";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TablesPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const [tables, baseUrl] = await Promise.all([
     getTablesWithStatus(venue.id),

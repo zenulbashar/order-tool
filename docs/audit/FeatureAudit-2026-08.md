@@ -107,7 +107,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P6 | Medium | Printed customer receipt lines do not sum to the printed Total |
 | P7 | Medium | All five backstop sweeps filter `status='confirmed'` — refunded orders skipped forever |
 | P8 | Medium | Reports and Payments give contradictory 30-day revenue and GST |
-| P9 | Medium | `/dashboard` home renders revenue on bare membership, bypassing `reports:view` |
+| P9 | Medium | ~~`/dashboard` home renders revenue on bare membership, bypassing `reports:view`~~ **FIXED** — and the class was 22 of 38 dashboard pages, not one |
 | P10 | Medium | Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition |
 | P11 | Medium | Scheduled pre-order stamped with the placement day's call number |
 | P12 | Medium | Completed orders cannot be refunded or stepped back from the dashboard |
@@ -222,6 +222,35 @@ Gates on `requireVenue()` (membership only), then queries 30 days of confirmed o
 *Why the green suite misses it:* `test/authz-coverage.test.ts` only enrols files whose source contains `"use server"`. A read-only Server Component is out of scope by construction.
 
 *Fix:* Wrap the revenue/AOV/trend/mix block in `await hasVenuePermission(venue.id, "reports:view")` and render the operational tiles (open orders, prep queue) unconditionally. Also make `?denied=1` render an explanatory banner.
+
+**RESOLVED — and the finding understated it by a factor of 22.** Fixing this meant
+asking which other read-only pages had the same shape, and the answer was
+**22 of the 38 pages under `app/dashboard`**: every settings screen (tax, brand,
+hours, prep stations, order-notification recipients), all four stock screens
+(ingredient COSTS and supplier reorder data), the whole menu editor with its
+prices, `integrations`, `marketplace`, `media`, `studio` and `tables`. Each
+one's sibling `actions.ts` already gated its WRITES on a permission; the READ
+beside it was open to any member. The SECRET_PAGES docblock in
+`test/authz-coverage.test.ts` had already written the rule down — "a gate on the
+write without the same gate on the read is decorative" — for one page.
+
+All 22 now gate on the permission their own actions require, and
+`app/dashboard/sidebar.tsx` carries the matching `permission:` so nobody is
+shown a link that will bounce them. `/dashboard` itself stays open to every
+member DELIBERATELY: `requireVenuePermission` redirects there on denial, so
+gating it would put a denied viewer in a redirect loop. It gates its own
+privileged tiles inline instead — and gates them by NOT FETCHING, so the
+figures never reach the render at all. The Concierge tile went behind the same
+gate: its suggestions quote per-dish gross margin ("Pad Thai margin is 38%").
+Kitchen staff get an operational KPI row (open orders / preparing / ready)
+built from the live queue they already hold `orders:view` on.
+
+The structural gap is closed too. `test/authz-coverage.test.ts` only enrolled
+files containing `"use server"`, which is *why* a read-only Server Component was
+invisible to it; it now also walks every `app/dashboard/**/page.tsx`, requires a
+gate or a written exemption, and asserts the home page's inline gate really does
+guard the query rather than just the markup. Mutation-verified against three
+separate regressions.
 
 ---
 

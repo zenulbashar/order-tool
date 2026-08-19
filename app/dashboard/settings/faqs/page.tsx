@@ -4,7 +4,11 @@ import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { venueFaqs } from "@/lib/db/schema";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import {
+  requireUser,
+  requireVenuePermission,
+  scopedToVenue,
+} from "@/lib/tenant";
 
 import { SettingsPane, StorefrontHint } from "../settings-pane";
 import { FaqsEditor } from "./faqs-editor";
@@ -18,7 +22,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function FaqsSettingsPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const faqs = await db
     .select({ question: venueFaqs.question, answer: venueFaqs.answer })

@@ -68,11 +68,11 @@ function navEntries(
       label: "Menu & photos",
       icon: <IconMenu />,
       items: [
-        { label: "Menu", href: "/dashboard/menu", exact: true },
-        { label: "Import menu", href: "/dashboard/menu/import" },
-        { label: "Write descriptions", href: "/dashboard/menu/descriptions" },
-        { label: "Photo library", href: "/dashboard/media" },
-        { label: "Design studio", href: "/dashboard/studio" },
+        { label: "Menu", href: "/dashboard/menu", exact: true, permission: "menu:manage" },
+        { label: "Import menu", href: "/dashboard/menu/import", permission: "menu:manage" },
+        { label: "Write descriptions", href: "/dashboard/menu/descriptions", permission: "menu:manage" },
+        { label: "Photo library", href: "/dashboard/media", permission: "menu:manage" },
+        { label: "Design studio", href: "/dashboard/studio", permission: "settings:manage" },
       ],
     },
     {
@@ -81,7 +81,7 @@ function navEntries(
       label: "Orders & customers",
       icon: <IconOrders />,
       items: [
-        { label: "Live orders", href: "/dashboard/orders", badge: activeOrderCount },
+        { label: "Live orders", href: "/dashboard/orders", badge: activeOrderCount, permission: "orders:view" },
         {
           label: "Bookings",
           href: "/dashboard/bookings",
@@ -90,7 +90,7 @@ function navEntries(
           // orders board), so the nav can never advertise a page that 404s.
           permission: "orders:view",
         },
-        { label: "Tables & QR codes", href: "/dashboard/tables" },
+        { label: "Tables & QR codes", href: "/dashboard/tables", permission: "settings:manage" },
         {
           label: "Sales reports",
           href: "/dashboard/reports",
@@ -109,11 +109,11 @@ function navEntries(
       label: "Stock & supplies",
       icon: <IconStock />,
       items: [
-        { label: "Ingredients", href: "/dashboard/stock", exact: true },
-        { label: "Stock overview", href: "/dashboard/stock/overview" },
-        { label: "Reorder suggestions", href: "/dashboard/stock/suggestions" },
-        { label: "Scan invoice", href: "/dashboard/stock/scan" },
-        { label: "Shop supplies", href: "/dashboard/marketplace" },
+        { label: "Ingredients", href: "/dashboard/stock", exact: true, permission: "stock:manage" },
+        { label: "Stock overview", href: "/dashboard/stock/overview", permission: "stock:manage" },
+        { label: "Reorder suggestions", href: "/dashboard/stock/suggestions", permission: "stock:manage" },
+        { label: "Scan invoice", href: "/dashboard/stock/scan", permission: "stock:manage" },
+        { label: "Shop supplies", href: "/dashboard/marketplace", permission: "stock:manage" },
       ],
     },
     {
@@ -122,17 +122,17 @@ function navEntries(
       label: "Storefront setup",
       icon: <IconSettings />,
       items: [
-        { label: "Brand & colours", href: "/dashboard/settings/brand" },
-        { label: "Logo", href: "/dashboard/settings/logo" },
-        { label: "Photos & hero", href: "/dashboard/settings/imagery" },
-        { label: "Announcement bar", href: "/dashboard/settings/announcement" },
-        { label: "Social links", href: "/dashboard/settings/social" },
-        { label: "About & description", href: "/dashboard/settings/about" },
-        { label: "FAQs", href: "/dashboard/settings/faqs" },
-        { label: "SEO & AEO", href: "/dashboard/seo" },
-        { label: "Opening hours & location", href: "/dashboard/settings/hours" },
-        { label: "Tax (GST)", href: "/dashboard/settings/tax" },
-        { label: "Prep stations", href: "/dashboard/settings/stations" },
+        { label: "Brand & colours", href: "/dashboard/settings/brand", permission: "settings:manage" },
+        { label: "Logo", href: "/dashboard/settings/logo", permission: "settings:manage" },
+        { label: "Photos & hero", href: "/dashboard/settings/imagery", permission: "settings:manage" },
+        { label: "Announcement bar", href: "/dashboard/settings/announcement", permission: "settings:manage" },
+        { label: "Social links", href: "/dashboard/settings/social", permission: "settings:manage" },
+        { label: "About & description", href: "/dashboard/settings/about", permission: "settings:manage" },
+        { label: "FAQs", href: "/dashboard/settings/faqs", permission: "settings:manage" },
+        { label: "SEO & AEO", href: "/dashboard/seo", permission: "settings:manage" },
+        { label: "Opening hours & location", href: "/dashboard/settings/hours", permission: "settings:manage" },
+        { label: "Tax (GST)", href: "/dashboard/settings/tax", permission: "settings:manage" },
+        { label: "Prep stations", href: "/dashboard/settings/stations", permission: "settings:manage" },
         {
           label: "Staff & roles",
           href: "/dashboard/settings/staff",
@@ -143,7 +143,7 @@ function navEntries(
           href: "/dashboard/settings/activity",
           permission: "settings:manage",
         },
-        { label: "Order notifications", href: "/dashboard/settings/notifications" },
+        { label: "Order notifications", href: "/dashboard/settings/notifications", permission: "settings:manage" },
       ],
     },
     {
@@ -180,8 +180,8 @@ function navEntries(
       label: "Connections",
       icon: <IconIntegrations />,
       items: [
-        { label: "Integrations", href: "/dashboard/integrations" },
-        { label: "Apps", href: "/dashboard/apps" },
+        { label: "Integrations", href: "/dashboard/integrations", permission: "integrations:manage" },
+        { label: "Apps", href: "/dashboard/apps", permission: "settings:manage" },
       ],
     },
     {

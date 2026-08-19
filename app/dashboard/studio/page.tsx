@@ -1,5 +1,5 @@
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import type { MenuArtworkData } from "./artwork";
 import { buildMenuCategories, inlineImage } from "./menu-data";
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function StudioPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const [categories, logoDataUri] = await Promise.all([
     buildMenuCategories(venue.id, { withPhotos: false }),

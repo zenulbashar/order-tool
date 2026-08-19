@@ -4,7 +4,7 @@ import { denseButtonStyles } from "@/app/_components/button-variants";
 import { StockHeader, StockNav } from "../stock-chrome";
 import { cx } from "@/app/_components/cx";
 import { buildSuggestions, type Severity } from "@/lib/nudges";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import { dismissSuggestion } from "./actions";
 
@@ -25,7 +25,7 @@ const SEVERITY_DOT: Record<Severity, string> = {
  */
 export default async function SuggestionsPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("stock:manage");
 
   const suggestions = await buildSuggestions(venue.id);
 

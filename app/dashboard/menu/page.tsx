@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { buttonStyles } from "@/app/_components/button-variants";
 import { PageHeader } from "@/app/_components/page-header";
 import { computeMenuHealth } from "@/lib/menu-health";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import { MenuHealthPanel } from "./_components/menu-health-panel";
 import { MenuEditor } from "./menu-editor";
@@ -22,7 +22,7 @@ import {
 
 export default async function MenuPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("menu:manage");
 
   const [
     categories,

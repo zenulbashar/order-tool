@@ -1,12 +1,12 @@
 import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import { NotifyToggle } from "../notify-toggle";
 
 export default async function NotificationsSettingsPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   return (
     <main className="mx-auto w-full max-w-[1600px]">

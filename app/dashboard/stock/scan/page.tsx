@@ -5,7 +5,11 @@ import { PageHeader } from "@/app/_components/page-header";
 import { StockNav } from "../stock-chrome";
 import { db } from "@/lib/db";
 import { invoiceScans } from "@/lib/db/schema";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import {
+  requireUser,
+  requireVenuePermission,
+  scopedToVenue,
+} from "@/lib/tenant";
 
 import { ScanClient, type RecentScan } from "./scan-client";
 
@@ -26,7 +30,7 @@ function scannedLabel(date: Date): string {
  */
 export default async function ScanInvoicePage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("stock:manage");
 
   const rows = await db
     .select()

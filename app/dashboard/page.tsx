@@ -10,6 +10,7 @@ import { orders } from "@/lib/db/schema";
 import { computeMenuHealth } from "@/lib/menu-health";
 import { buildSuggestions } from "@/lib/nudges";
 import {
+  hasVenuePermission,
   isOnboardingComplete,
   requireUser,
   requireVenue,
@@ -182,9 +183,30 @@ function Delta({ value }: { value: number | null }) {
 
 /* --------------------------------- page ----------------------------------- */
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const user = await requireUser();
   const venue = await requireVenue();
+
+  /**
+   * The venue's TRADING POSITION — revenue, average order value, the 7-day
+   * chart, the 30-day order mix, and the Concierge insight (which names a
+   * dish's gross margin). /dashboard/reports gates the same figures on
+   * `reports:view` with the comment "a kitchen login has no business reading
+   * it"; this page rendered them on bare membership, so the gate could be
+   * walked around by clicking Home. Worse, `requireVenuePermission` denies by
+   * redirecting HERE — a staff member who opened Sales reports was bounced
+   * onto the page showing the very numbers they had just been denied.
+   *
+   * Gated by NOT FETCHING rather than by hiding: the 30-day query below is
+   * skipped outright when the permission is absent, so the figures never reach
+   * the render at all and cannot be recovered from the RSC payload.
+   */
+  const canViewReports = await hasVenuePermission(venue.id, "reports:view");
+  const denied = (await searchParams).denied !== undefined;
 
   // Drives the live "a table was just booked" popup below. Cheap venue-scoped
   // count(); the owner home is already dynamic.
@@ -205,24 +227,29 @@ export default async function DashboardPage() {
   const [recentOrders, items, categories, active, suggestions] = await Promise.all([
     // Confirmed orders over 30 days — powers today's KPIs, the 7-day trend, and
     // the order mix. Bucketed by venue-local day in JS (tz-correct via Intl).
-    db
-      .select({
-        createdAt: orders.createdAt,
-        totalCents: orders.totalCents,
-        orderType: orders.orderType,
-      })
-      .from(orders)
-      .where(
-        and(
-          scopedToVenue(orders.venueId, venue.id),
-          eq(orders.status, "confirmed"),
-          gte(orders.createdAt, since30),
-        ),
-      ),
+    // Not run at all without reports:view; the tiles it feeds are not rendered.
+    canViewReports
+      ? db
+          .select({
+            createdAt: orders.createdAt,
+            totalCents: orders.totalCents,
+            orderType: orders.orderType,
+          })
+          .from(orders)
+          .where(
+            and(
+              scopedToVenue(orders.venueId, venue.id),
+              eq(orders.status, "confirmed"),
+              gte(orders.createdAt, since30),
+            ),
+          )
+      : [],
     getItemsForVenue(venue.id),
     getCategoriesForVenue(venue.id),
     getVenueOrders(venue.id),
-    buildSuggestions(venue.id),
+    // Concierge suggestions quote per-dish gross margin ("X margin is 42%") and
+    // ingredient costs — commercial data, same class as the revenue tiles.
+    canViewReports ? buildSuggestions(venue.id) : [],
   ]);
 
   // Bucket confirmed orders by venue-local day.
@@ -308,6 +335,16 @@ export default async function DashboardPage() {
 
   const topSuggestion = suggestions[0] ?? null;
 
+  // The operational row a kitchen login sees in place of the trading tiles.
+  // Built entirely from `active` (the live queue they already have orders:view
+  // on) and the booking count — no extra query, and no money.
+  const preparingCount = active.filter(
+    (o) => o.fulfillmentStatus === "preparing",
+  ).length;
+  const readyCount = active.filter(
+    (o) => o.fulfillmentStatus === "ready",
+  ).length;
+
   return (
     <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
@@ -328,6 +365,19 @@ export default async function DashboardPage() {
       />
 
       <section className="space-y-4 px-5 py-8">
+        {denied ? (
+          /* requireVenuePermission redirects here on denial. Nothing used to
+             read the flag, so a staff member who opened Sales reports simply
+             found themselves on Home with no explanation. */
+          <p
+            role="status"
+            className="rounded-card border border-[var(--color-warm-deep)]/30 bg-[var(--color-warm-deep)]/10 px-4 py-3 text-sm text-ink"
+          >
+            You don&apos;t have access to that page. Ask an owner or manager if
+            you need it.
+          </p>
+        ) : null}
+
         {needsOnboarding ? (
           <Link
             href="/onboarding"
@@ -351,43 +401,83 @@ export default async function DashboardPage() {
         {/* KPI row */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className={cardBox}>
-            <p className={eyebrow}>Today&apos;s orders</p>
-            <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
-              {today.orders}
+            <p className={eyebrow}>
+              {canViewReports ? "Today's orders" : "Open orders"}
             </p>
-            <div className="mt-2 flex items-center justify-between">
-              <Delta value={ordersDelta} />
-              <Sparkline values={weekOrders} stroke="var(--color-success-deep)" />
-            </div>
+            <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
+              {canViewReports ? today.orders : active.length}
+            </p>
+            {canViewReports ? (
+              <div className="mt-2 flex items-center justify-between">
+                <Delta value={ordersDelta} />
+                <Sparkline values={weekOrders} stroke="var(--color-success-deep)" />
+              </div>
+            ) : (
+              /* today.orders is derived from the 30-day query, which is skipped
+                 without reports:view — rendering it here would report a
+                 confident, wrong 0 rather than nothing. */
+              <p className="mt-2 text-micro font-semibold text-muted">
+                in the kitchen right now
+              </p>
+            )}
           </div>
 
-          <div className={cardBox}>
-            <p className={eyebrow}>Revenue</p>
-            <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
-              {dollars(today.revenue)}
-            </p>
-            <div className="mt-2 flex items-center justify-between">
-              <Delta value={revenueDelta} />
-              <Sparkline values={weekRevenue} stroke="var(--color-success-deep)" />
-            </div>
-          </div>
+          {canViewReports ? (
+            <>
+              <div className={cardBox}>
+                <p className={eyebrow}>Revenue</p>
+                <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
+                  {dollars(today.revenue)}
+                </p>
+                <div className="mt-2 flex items-center justify-between">
+                  <Delta value={revenueDelta} />
+                  <Sparkline values={weekRevenue} stroke="var(--color-success-deep)" />
+                </div>
+              </div>
 
-          <div className={cardBox}>
-            <p className={eyebrow}>Avg order</p>
-            <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
-              ${formatCents(avgOrderCents)}
-            </p>
-            <div className="mt-2 flex items-center justify-between">
-              <Delta value={avgDelta} />
-              <Sparkline
-                values={week.map((d) => {
-                  const b = val(d.key);
-                  return b.orders > 0 ? b.revenue / b.orders : 0;
-                })}
-                stroke="var(--color-accent)"
-              />
-            </div>
-          </div>
+              <div className={cardBox}>
+                <p className={eyebrow}>Avg order</p>
+                <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
+                  ${formatCents(avgOrderCents)}
+                </p>
+                <div className="mt-2 flex items-center justify-between">
+                  <Delta value={avgDelta} />
+                  <Sparkline
+                    values={week.map((d) => {
+                      const b = val(d.key);
+                      return b.orders > 0 ? b.revenue / b.orders : 0;
+                    })}
+                    stroke="var(--color-accent)"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Same two slots, filled with what someone running the pass
+                  actually needs. No query of their own — both counts come from
+                  the live queue already fetched for the tile below. */}
+              <div className={cardBox}>
+                <p className={eyebrow}>Preparing</p>
+                <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
+                  {preparingCount}
+                </p>
+                <p className="mt-2 text-micro font-semibold text-muted">
+                  {preparingCount === 1 ? "order" : "orders"} on the pass
+                </p>
+              </div>
+
+              <div className={cardBox}>
+                <p className={eyebrow}>Ready</p>
+                <p className="mt-1.5 font-display text-3xl font-extrabold text-ink">
+                  {readyCount}
+                </p>
+                <p className="mt-2 text-micro font-semibold text-muted">
+                  waiting to be handed over
+                </p>
+              </div>
+            </>
+          )}
 
           <div className={cx(cardBox, "flex items-center gap-4")}>
             <div className="flex-1">
@@ -412,106 +502,115 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Revenue this week + Order mix */}
-        <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
-          <div className={cardBox}>
-            <div className="flex items-center justify-between">
-              <p className="font-display text-sm font-bold text-ink">
-                Revenue · this week
-              </p>
-              <span className={eyebrow}>{dollars(weekTotal)} total</span>
-            </div>
-            {weekTotal === 0 ? (
-              <p className="py-10 text-center text-sm text-muted">
-                No sales yet this week — orders will chart here as they come in.
-              </p>
-            ) : (
-              <div className="mt-5 flex h-32 items-end gap-2 sm:gap-3">
-                {week.map((d, i) => {
-                  const isToday = i === week.length - 1;
-                  const heightPct = Math.max(4, (weekRevenue[i] / maxBar) * 100);
-                  return (
-                    <div key={d.key} className="flex flex-1 flex-col items-center gap-1.5">
-                      <div className="flex h-28 w-full items-end justify-center">
-                        <div
-                          className={cx(
-                            "relative w-2/3 rounded-t-[6px]",
-                            isToday ? "bg-forest-deep" : "bg-[var(--color-accent)]",
-                          )}
-                          style={{ height: `${heightPct}%` }}
-                        >
-                          {isToday && weekRevenue[i] > 0 ? (
-                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[5px] bg-[var(--color-accent)] px-1.5 py-0.5 font-mono text-2xs font-bold text-forest">
-                              {compactDollars(weekRevenue[i])}
-                            </span>
-                          ) : null}
+        {/* Revenue this week + Order mix — both derived from the 30-day
+            confirmed-orders query, which reports:view gates. */}
+        {canViewReports ? (
+          <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
+            <div className={cardBox}>
+              <div className="flex items-center justify-between">
+                <p className="font-display text-sm font-bold text-ink">
+                  Revenue · this week
+                </p>
+                <span className={eyebrow}>{dollars(weekTotal)} total</span>
+              </div>
+              {weekTotal === 0 ? (
+                <p className="py-10 text-center text-sm text-muted">
+                  No sales yet this week — orders will chart here as they come in.
+                </p>
+              ) : (
+                <div className="mt-5 flex h-32 items-end gap-2 sm:gap-3">
+                  {week.map((d, i) => {
+                    const isToday = i === week.length - 1;
+                    const heightPct = Math.max(4, (weekRevenue[i] / maxBar) * 100);
+                    return (
+                      <div key={d.key} className="flex flex-1 flex-col items-center gap-1.5">
+                        <div className="flex h-28 w-full items-end justify-center">
+                          <div
+                            className={cx(
+                              "relative w-2/3 rounded-t-[6px]",
+                              isToday ? "bg-forest-deep" : "bg-[var(--color-accent)]",
+                            )}
+                            style={{ height: `${heightPct}%` }}
+                          >
+                            {isToday && weekRevenue[i] > 0 ? (
+                              <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[5px] bg-[var(--color-accent)] px-1.5 py-0.5 font-mono text-2xs font-bold text-forest">
+                                {compactDollars(weekRevenue[i])}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
+                        <span
+                          className={cx(
+                            "font-mono text-micro",
+                            isToday ? "font-bold text-ink" : "text-muted",
+                          )}
+                        >
+                          {d.label}
+                        </span>
                       </div>
-                      <span
-                        className={cx(
-                          "font-mono text-micro",
-                          isToday ? "font-bold text-ink" : "text-muted",
-                        )}
-                      >
-                        {d.label}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className={cardBox}>
+              <p className="font-display text-sm font-bold text-ink">Order mix</p>
+              {mixTotal === 0 ? (
+                <p className="py-10 text-center text-sm text-muted">
+                  No orders in the last 30 days yet.
+                </p>
+              ) : (
+                <div className="mt-3.5 flex items-center gap-5">
+                  <div
+                    className="relative h-24 w-24 shrink-0 rounded-full"
+                    style={{
+                      background: `conic-gradient(var(--color-forest-deep) 0 ${dineInPct}%, var(--color-accent) 0 100%)`,
+                    }}
+                  >
+                    <div className="absolute inset-[13px] flex flex-col items-center justify-center rounded-full bg-surface-elevated">
+                      <span className="font-display text-lg font-extrabold text-ink">
+                        {mixTotal}
+                      </span>
+                      <span className="font-mono text-[8px] uppercase tracking-wider text-label">
+                        orders
                       </span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className={cardBox}>
-            <p className="font-display text-sm font-bold text-ink">Order mix</p>
-            {mixTotal === 0 ? (
-              <p className="py-10 text-center text-sm text-muted">
-                No orders in the last 30 days yet.
-              </p>
-            ) : (
-              <div className="mt-3.5 flex items-center gap-5">
-                <div
-                  className="relative h-24 w-24 shrink-0 rounded-full"
-                  style={{
-                    background: `conic-gradient(var(--color-forest-deep) 0 ${dineInPct}%, var(--color-accent) 0 100%)`,
-                  }}
-                >
-                  <div className="absolute inset-[13px] flex flex-col items-center justify-center rounded-full bg-surface-elevated">
-                    <span className="font-display text-lg font-extrabold text-ink">
-                      {mixTotal}
-                    </span>
-                    <span className="font-mono text-[8px] uppercase tracking-wider text-label">
-                      orders
-                    </span>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-[3px] bg-forest-deep" />
+                        <span className="text-xs font-bold text-ink">Dine-in</span>
+                      </div>
+                      <p className="ml-[18px] font-display text-base font-extrabold text-ink">
+                        {dineInPct}%
+                      </p>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-[3px] bg-[var(--color-accent)]" />
+                        <span className="text-xs font-bold text-ink">Takeaway</span>
+                      </div>
+                      <p className="ml-[18px] font-display text-base font-extrabold text-ink">
+                        {takeawayPct}%
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-[3px] bg-forest-deep" />
-                      <span className="text-xs font-bold text-ink">Dine-in</span>
-                    </div>
-                    <p className="ml-[18px] font-display text-base font-extrabold text-ink">
-                      {dineInPct}%
-                    </p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-[3px] bg-[var(--color-accent)]" />
-                      <span className="text-xs font-bold text-ink">Takeaway</span>
-                    </div>
-                    <p className="ml-[18px] font-display text-base font-extrabold text-ink">
-                      {takeawayPct}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Live orders + Concierge insight */}
-        <div className="grid gap-4 lg:grid-cols-[1.55fr_1fr]">
+        <div
+          className={cx(
+            "grid gap-4",
+            // Without the Concierge tile the 1fr column would sit empty.
+            canViewReports ? "lg:grid-cols-[1.55fr_1fr]" : "lg:grid-cols-1",
+          )}
+        >
           <div className={cardBox}>
             <div className="mb-1 flex items-center justify-between">
               <p className="font-display text-sm font-bold text-ink">Live orders</p>
@@ -563,64 +662,68 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          {/* Concierge insight — the top REAL suggestion (or an all-clear). Forest
-              surface + amber = the sanctioned AI signature. */}
-          <div
-            className="relative overflow-hidden rounded-card p-5 shadow-card"
-            style={{
-              background:
-                "linear-gradient(135deg, var(--color-forest-deep), var(--color-concierge-glow))",
-            }}
-          >
+          {/* Concierge insight. Gated with the revenue tiles, not separately:
+              its suggestions name a dish's gross margin ("Pad Thai margin is
+              38%") and ingredient costs, which is the same commercial data
+              reports:view exists to protect. */}
+          {canViewReports ? (
             <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full"
+              className="relative overflow-hidden rounded-card p-5 shadow-card"
               style={{
                 background:
-                  "radial-gradient(circle, color-mix(in srgb, var(--color-accent) 30%, transparent), transparent 65%)",
+                  "linear-gradient(135deg, var(--color-forest-deep), var(--color-concierge-glow))",
               }}
-            />
-            <div className="relative flex items-center gap-2">
-              <span className="text-base text-[var(--color-accent)]" aria-hidden="true">
-                ✦
-              </span>
-              <span className="font-mono text-eyebrow font-bold uppercase tracking-wider text-[var(--color-accent)]">
-                Concierge insight
-              </span>
+            >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full"
+                style={{
+                  background:
+                    "radial-gradient(circle, color-mix(in srgb, var(--color-accent) 30%, transparent), transparent 65%)",
+                }}
+              />
+              <div className="relative flex items-center gap-2">
+                <span className="text-base text-[var(--color-accent)]" aria-hidden="true">
+                  ✦
+                </span>
+                <span className="font-mono text-eyebrow font-bold uppercase tracking-wider text-[var(--color-accent)]">
+                  Concierge insight
+                </span>
+              </div>
+              {topSuggestion ? (
+                <>
+                  <p className="relative mt-3 text-[15px] font-semibold leading-snug text-white">
+                    {topSuggestion.title}
+                  </p>
+                  <p className="relative mt-1.5 text-xs text-white/75">
+                    {topSuggestion.detail}
+                  </p>
+                  <Link
+                    href={topSuggestion.href}
+                    className="relative mt-3.5 inline-flex rounded-control bg-[var(--color-accent)] px-3.5 py-2 text-xs font-bold text-forest transition hover:opacity-90"
+                  >
+                    {topSuggestion.actionLabel} →
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="relative mt-3 text-[15px] font-semibold leading-snug text-white">
+                    You&apos;re all caught up.
+                  </p>
+                  <p className="relative mt-1.5 text-xs text-white/75">
+                    Nothing needs your attention right now. New suggestions appear
+                    here as your menu and stock data grows.
+                  </p>
+                  <Link
+                    href="/dashboard/stock/suggestions"
+                    className="relative mt-3.5 inline-flex rounded-control bg-white/10 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-white/15"
+                  >
+                    Open suggestions →
+                  </Link>
+                </>
+              )}
             </div>
-            {topSuggestion ? (
-              <>
-                <p className="relative mt-3 text-[15px] font-semibold leading-snug text-white">
-                  {topSuggestion.title}
-                </p>
-                <p className="relative mt-1.5 text-xs text-white/75">
-                  {topSuggestion.detail}
-                </p>
-                <Link
-                  href={topSuggestion.href}
-                  className="relative mt-3.5 inline-flex rounded-control bg-[var(--color-accent)] px-3.5 py-2 text-xs font-bold text-forest transition hover:opacity-90"
-                >
-                  {topSuggestion.actionLabel} →
-                </Link>
-              </>
-            ) : (
-              <>
-                <p className="relative mt-3 text-[15px] font-semibold leading-snug text-white">
-                  You&apos;re all caught up.
-                </p>
-                <p className="relative mt-1.5 text-xs text-white/75">
-                  Nothing needs your attention right now. New suggestions appear
-                  here as your menu and stock data grows.
-                </p>
-                <Link
-                  href="/dashboard/stock/suggestions"
-                  className="relative mt-3.5 inline-flex rounded-control bg-white/10 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-white/15"
-                >
-                  Open suggestions →
-                </Link>
-              </>
-            )}
-          </div>
+          ) : null}
         </div>
       </section>
 

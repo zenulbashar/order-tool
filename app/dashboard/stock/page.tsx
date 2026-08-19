@@ -4,7 +4,11 @@ import { StockHeader, StockNav } from "./stock-chrome";
 import { db } from "@/lib/db";
 import { ingredients } from "@/lib/db/schema";
 import { dishCost, isCosted, isLowStock, marginOf } from "@/lib/stock/cost";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import {
+  requireUser,
+  requireVenuePermission,
+  scopedToVenue,
+} from "@/lib/tenant";
 
 import {
   getItemsForVenue,
@@ -48,7 +52,7 @@ function Kpi({
  */
 export default async function StockPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("stock:manage");
 
   const [rows, recipeLines, items] = await Promise.all([
     db
