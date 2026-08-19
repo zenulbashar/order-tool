@@ -14,6 +14,7 @@ import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
 
 import { dinerBrandStyle } from "../../brand-style";
 import { getPublicVenueBySlug } from "../../queries";
+import { KitchenStatusPoller } from "./kitchen-status-poller";
 import { PaymentStatusPoller } from "./payment-status-poller";
 import { getOrderByToken, type ConfirmedOrder } from "./queries";
 import {
@@ -486,6 +487,11 @@ export default async function OrderConfirmationPage({
         <div className="px-5 py-5 lg:grid lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6">
           <section className="space-y-4">
             <OrderTracker order={order} timeZone={venue.timezone} />
+            {/* Keeps the tracker moving while the kitchen works. Mounted only
+                until the order is done, so a finished order stops polling. */}
+            {order.fulfillmentStatus !== "completed" ? (
+              <KitchenStatusPoller />
+            ) : null}
             {order.fulfillmentStatus !== "completed" ? (
               <div className="flex items-start gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-4 py-3">
                 <span
