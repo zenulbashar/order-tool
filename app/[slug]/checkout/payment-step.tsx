@@ -365,6 +365,11 @@ function PaymentForm({
       );
       setSubmitting(false);
     } else {
+      // This is the SAME absolute return_url Stripe was handed above, and for
+      // every redirect-based method Stripe itself lands the customer here with a
+      // full browser navigation. Routing this one async case through
+      // router.push() would give one destination two different load semantics.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign(returnUrl);
     }
   }

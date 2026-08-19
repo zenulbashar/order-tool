@@ -86,6 +86,10 @@ export function BookingForm({
         // Full navigation: the confirmation page is server-rendered from the
         // token and must not read a stale client cache of a page that did not
         // exist a moment ago.
+        // A hard navigation is the point: router.push() keeps the client router
+        // alive and can serve this route from the RSC cache, and the booking it
+        // confirms was created milliseconds ago by the Server Function above.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.assign(`/${slug}/book/${result.token}`);
       } else {
         setError(result.error);

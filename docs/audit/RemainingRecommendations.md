@@ -488,4 +488,9 @@ Ordered by priority. Nothing here is Critical.
   tenant brand colours, reduced-motion verification.
 - Responsive verification across the device matrix (see Responsive.md).
 - Lighthouse/bundle analysis, N+1 query profiling under load (see Performance.md).
-- Dependency CVE scan, secret-scanning of git history, live pen-test.
+- ~~Dependency CVE scan~~ — DONE (PR #260). It turned out not to need a runtime
+  environment at all: `npm audit` went from 15 advisories (3 critical, 6 high,
+  6 moderate) to zero. See ReleaseChecklist.md for what moved and why two of
+  them needed a decision rather than a bump.
+- Secret-scanning of git HISTORY (the current tree is clean — see
+  ReleaseChecklist.md; history needs a full, non-shallow clone), live pen-test.

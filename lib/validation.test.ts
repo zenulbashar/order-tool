@@ -25,6 +25,85 @@ describe("normalizeEmail", () => {
   });
 });
 
+/**
+ * The sign-in path's real threat model.
+ *
+ * This function is the Resend provider's `normalizeIdentifier`, which REPLACES
+ * Auth.js's own normalizer — so @auth/core's fix for GHSA-7rqj-j65f-68wh never
+ * runs for us and the equivalent hardening has to live here. Its return value
+ * becomes the `to:` of a magic link, so every case below is really asking one
+ * question: can a caller make the address we validate differ from the address
+ * the mailer delivers to?
+ */
+describe("normalizeEmail — address-splitting defences", () => {
+  const FULLWIDTH_AT = "\uFF20"; // U+FF20 FULLWIDTH COMMERCIAL AT
+
+  it("rejects a homoglyph @ that would canonicalize into a second recipient", () => {
+    // The exact GHSA-7rqj-j65f-68wh shape. It carries ONE ascii "@", so a
+    // validate-then-normalize function accepts it; NFKC then turns it into
+    // "attacker@evil.com@victim.com" inside a downstream address parser, which
+    // is how a link for victim.com gets delivered to evil.com.
+    expect(() =>
+      normalizeEmail(`attacker@evil.com${FULLWIDTH_AT}victim.com`),
+    ).toThrow();
+  });
+
+  it("rejects a leading homoglyph @ for the same reason", () => {
+    expect(() => normalizeEmail(`${FULLWIDTH_AT}attacker@evil.com`)).toThrow();
+  });
+
+  it("normalizes BEFORE validating, not after", () => {
+    // The ordering IS the fix, so it is asserted directly: a fullwidth "@" as
+    // the ONLY separator has to normalize to a real "@" and be accepted as one
+    // address. A function that validated first would reject this as having no
+    // "@" at all — passing the two tests above for the wrong reason, and still
+    // accepting the dangerous inputs they cover.
+    expect(normalizeEmail(`owner${FULLWIDTH_AT}venue.com`)).toBe(
+      "owner@venue.com",
+    );
+  });
+
+  it("rejects a quoted local part, which parsers disagree about", () => {
+    expect(() => normalizeEmail('"attacker at evil.com"@victim.com')).toThrow();
+  });
+
+  it("rejects interior whitespace", () => {
+    expect(() => normalizeEmail("attacker evil@victim.com")).toThrow();
+  });
+
+  it("rejects a newline, the classic header-injection separator", () => {
+    expect(() =>
+      normalizeEmail("victim@example.com\nbcc: attacker@evil.com"),
+    ).toThrow();
+  });
+
+  it("rejects a NUL and other C0 controls that a trim() leaves behind", () => {
+    expect(() => normalizeEmail("victim\u0000@example.com")).toThrow();
+  });
+
+  it("strips a non-breaking space rather than rejecting the address", () => {
+    // NFKC folds U+00A0 to a plain space, so trim() can remove it. A pasted
+    // address with a stray NBSP is a real thing owners do, and it is not an
+    // attack — it should sign in, not error.
+    expect(normalizeEmail("\u00a0owner@venue.com\u00a0")).toBe(
+      "owner@venue.com",
+    );
+  });
+
+  it("rejects an address past the RFC 5321 length ceiling", () => {
+    expect(() => normalizeEmail(`${"a".repeat(250)}@venue.com`)).toThrow();
+  });
+
+  it("still accepts the ordinary addresses owners actually use", () => {
+    // The hardening must not cost anyone their sign-in: plus-addressing,
+    // subdomains, hyphens, and a non-ASCII (IDN) domain all stay valid.
+    expect(normalizeEmail("Owner+pos@Sub.Venue-Co.com")).toBe(
+      "owner+pos@sub.venue-co.com",
+    );
+    expect(normalizeEmail("inhaber@münchen.de")).toBe("inhaber@münchen.de");
+  });
+});
+
 describe("slugify", () => {
   it("strips accents and collapses non-alphanumerics to single hyphens", () => {
     expect(slugify("Café Déli!!")).toBe("cafe-deli");
