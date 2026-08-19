@@ -36,7 +36,9 @@ export async function requestOwnerSignIn(
   // Stable email key. normalizeEmail throws on an obviously invalid address; the
   // fallback keeps the rate-limit path from ever throwing (Auth.js still does
   // the real validation + normalization on the value we hand it below).
-  let normalized = rawEmail.trim().toLowerCase();
+  // NFKC here too: it is what normalizeEmail returns on the success path, so a
+  // rejected address cannot mint a fresh rate-limit bucket per homoglyph spelling.
+  let normalized = rawEmail.normalize("NFKC").trim().toLowerCase();
   try {
     normalized = normalizeEmail(rawEmail);
   } catch {

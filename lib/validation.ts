@@ -5,14 +5,49 @@ import { z } from "zod";
  *
  * Auth.js only lower-cases the domain by default, which let mixed-case local
  * parts create duplicate accounts on roster-tool. Fully lower-casing here, plus
- * the UNIQUE INDEX on lower(email), closes that gap. Wired into the Resend
- * provider via `normalizeIdentifier`.
+ * the UNIQUE INDEX on lower(email), closes that gap.
+ *
+ * This is ALSO the only validator on the sign-in path. It is wired into the
+ * Resend provider as `normalizeIdentifier` (lib/auth.ts), and a provider-level
+ * `normalizeIdentifier` REPLACES Auth.js's own normalizer rather than running
+ * after it — so every hardening upstream adds to `defaultNormalizer` stops at
+ * our door. Auth.js fixed a homoglyph bypass there in @auth/core 0.41.3
+ * (GHSA-7rqj-j65f-68wh); this function has to carry that fix itself, because
+ * the patched upstream code never executes for us.
+ *
+ * Hence the order below: NFKC normalization runs BEFORE validation, never
+ * after. `attacker@evil.com\uFF20victim.com` (U+FF20 FULLWIDTH COMMERCIAL AT)
+ * carries exactly ONE ascii "@", so a validate-then-normalize function accepts
+ * it — and a downstream address parser that canonicalizes Unicode then reads
+ * `attacker@evil.com@victim.com` and may split it into two recipients. The
+ * value returned here is handed straight to the Resend API as the `to:` of a
+ * magic link, so "which address does this actually resolve to" is the whole
+ * question. Normalizing first turns the homoglyph into a real "@" and the
+ * one-"@" rule rejects it.
+ *
+ * Quotes and interior whitespace are rejected for the same reason rather than
+ * because they are invalid: `"a@b.com"@c.com` and `a b@c.com` are shapes that
+ * different RFC 5322 parsers disagree about, and an address the mailer reads
+ * differently to us is an address that can be delivered somewhere we did not
+ * intend.
  */
 export function normalizeEmail(identifier: string): string {
-  const email = identifier.trim().toLowerCase();
-  if ((email.match(/@/g) ?? []).length !== 1 || email.startsWith("@") || email.endsWith("@")) {
-    throw new Error("A single valid email address is required.");
-  }
+  // NFKC first — it also folds exotic spaces (NBSP, U+3000) to plain ones, so
+  // trim() can strip them.
+  const email = identifier.normalize("NFKC").trim().toLowerCase();
+
+  const invalid = () => new Error("A single valid email address is required.");
+
+  // RFC 5321's hard ceiling; nothing deliverable is longer.
+  if (email.length > 254) throw invalid();
+  // Whitespace (incl. the newlines used for header injection) and C0/C1
+  // controls never appear in an address we are willing to send to.
+  if (/[\s\u0000-\u001f\u007f-\u009f]/.test(email)) throw invalid();
+  if (email.includes('"')) throw invalid();
+
+  const parts = email.split("@");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) throw invalid();
+
   return email;
 }
 

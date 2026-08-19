@@ -173,6 +173,36 @@ function mapProduct(product: MmtNode, index: number): ShopProduct | null {
 }
 
 /**
+ * Parse ONE MMT price-list document into products. Pure, and exported, so the
+ * feed's parse contract can be exercised without network I/O.
+ *
+ * The three parser options are load-bearing, not stylistic:
+ *  - `parseTagValue: false` keeps every leaf a STRING. `textOf()` returns "" for
+ *    anything that is neither string nor number, and `parsePrice()` calls
+ *    `.replace()` on the result — a parser that started coercing "640.00" to a
+ *    number, or a bare `<Availability/>` to an object, would silently drop
+ *    products rather than throw.
+ *  - `trimValues: true` is what makes a padded `<ShortDescription>` a usable
+ *    name; without it every name would keep the feed's indentation.
+ *  - `ignoreAttributes: true` keeps each node a plain child map, which is what
+ *    `extractProducts()`/`mapProduct()` index into.
+ *
+ * A `<Products>` block with exactly one `<Product>` parses to a bare object
+ * rather than a one-element array; `extractProducts()` handles both, and the
+ * test pins that so a single-product feed cannot read as an empty catalogue.
+ */
+export function parseFeedXml(xml: string): ShopProduct[] {
+  const parsed = new XMLParser({
+    ignoreAttributes: true,
+    parseTagValue: false,
+    trimValues: true,
+  }).parse(xml);
+  return extractProducts(parsed)
+    .map((product, i) => mapProduct(product, i))
+    .filter((p): p is ShopProduct => p !== null);
+}
+
+/**
  * Fetch + parse + map the WHOLE feed (no relevance filter). Cached for an hour;
  * the admin config (categories / hides / pricing) is applied fresh per request
  * on top, so it must be able to reach any category the admin might switch on.
@@ -191,15 +221,7 @@ const getAllProducts = unstable_cache(
         console.warn(`[shop] feed fetch failed with HTTP ${res.status}; serving placeholders.`);
         return [];
       }
-      const xml = await res.text();
-      const parsed = new XMLParser({
-        ignoreAttributes: true,
-        parseTagValue: false,
-        trimValues: true,
-      }).parse(xml);
-      return extractProducts(parsed)
-        .map((product, i) => mapProduct(product, i))
-        .filter((p): p is ShopProduct => p !== null);
+      return parseFeedXml(await res.text());
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       console.warn(`[shop] feed fetch/parse error; serving placeholders: ${reason}`);

@@ -49,9 +49,18 @@ export function generateInviteToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-/** Emails are compared case-insensitively; store them normalised. */
+/**
+ * Emails are compared case-insensitively; store them normalised.
+ *
+ * Deliberately more permissive than lib/validation.ts's normalizer — an invite
+ * is only usable by a signed-in user whose SESSION email matches, so the string
+ * itself is not the security boundary here. It does apply the same NFKC folding
+ * though: the session side of that comparison is `users.email`, which the auth
+ * path writes in NFKC form, and an invite normalised differently could never be
+ * accepted by the person it was addressed to.
+ */
 export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+  return email.normalize("NFKC").trim().toLowerCase();
 }
 
 export type CreateInvitationResult =
