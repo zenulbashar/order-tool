@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, refunds } from "@/lib/db/schema";
 import { reportError } from "@/lib/observability";
 import { compensateFullyRefundedOrder } from "@/lib/payments/refund-compensation";
@@ -228,8 +229,32 @@ export async function reconcileRefundsForPaymentIntent(
 
   let inserted = 0;
   for (const refund of list.data) {
-    // Only money that actually moved becomes a row we count.
-    if (refund.status === "failed" || refund.status === "canceled") continue;
+    // A refund Stripe now reports as failed/canceled must be DEMOTED, not
+    // skipped. refundOrder optimistically records every non-terminal Stripe
+    // status ('pending', 'requires_action') as 'succeeded' and immediately
+    // drives the order status and the compensation off it. `charge.refund.updated`
+    // exists precisely to carry the later transition, and skipping here made it
+    // a no-op for pending -> failed: the order stayed 'refunded', the customer's
+    // gift-card value stayed restored, and the venue believed it had returned
+    // money it still held.
+    if (refund.status === "failed" || refund.status === "canceled") {
+      await db
+        .update(refunds)
+        .set({
+          status: "failed",
+          lastError: `Stripe reported the refund ${refund.status}.`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(refunds.stripeRefundId, refund.id),
+            // Only demote a row we currently count. Without this a redelivery
+            // would keep rewriting an already-failed row's timestamp.
+            eq(refunds.status, "succeeded"),
+          ),
+        );
+      continue;
+    }
     const rows = await db
       .insert(refunds)
       .values({
@@ -272,20 +297,41 @@ export async function syncOrderRefundStatus(
   orderId: string,
 ): Promise<"confirmed" | "partially_refunded" | "refunded"> {
   const [order] = await db
-    .select({ totalCents: orders.totalCents })
+    .select({ totalCents: orders.totalCents, status: orders.status })
     .from(orders)
     .where(eq(orders.id, orderId))
     .limit(1);
   if (!order) return "confirmed";
 
+  // Only an order that TOOK money can be moved into a refunded state. Refund
+  // reconciliation resolves the order by PaymentIntent with no status filter, so
+  // without this an order that was charged but never confirmed could be promoted
+  // straight from 'payment_failed' to 'refunded' — which then triggers the
+  // compensation arm and credits value that was never debited.
+  if (!(PAID_ORDER_STATUSES as readonly string[]).includes(order.status)) {
+    await reportError(
+      new Error("Refund reconciled against an order that never took money."),
+      {
+        context: "refund.sync-status",
+        extra: { orderId, status: order.status },
+      },
+    );
+    return "confirmed";
+  }
+
   const refunded = await refundedCentsForOrder(orderId);
   const status = orderStatusForRefunds(order.totalCents, refunded);
-  if (status !== "confirmed") {
-    await db
-      .update(orders)
-      .set({ status })
-      .where(eq(orders.id, orderId));
-  }
+  await db
+    .update(orders)
+    .set({ status })
+    .where(
+      and(
+        eq(orders.id, orderId),
+        // Re-checked in the WHERE so a concurrent transition cannot be
+        // overwritten between the read above and this write.
+        inArray(orders.status, PAID_ORDER_STATUSES),
+      ),
+    );
   return status;
 }
 

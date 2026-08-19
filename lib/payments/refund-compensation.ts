@@ -99,7 +99,6 @@ export async function compensateFullyRefundedOrder(
     orderId: order.id,
     venueId: order.venueId,
     giftCardId: order.giftCardId,
-    cents: order.giftCardRedeemedCents,
   });
   const ingredientsRestocked = shouldRestock(order.fulfillmentStatus)
     ? await restockOrder(order.id, order.venueId)
@@ -152,14 +151,54 @@ async function reverseLoyalty(
   return inserted[0]?.deltaPoints ?? 0;
 }
 
-/** Return the value a gift card paid toward this order, once. */
+/**
+ * Return the value a gift card ACTUALLY paid toward this order, once.
+ *
+ * Read from the LEDGER, not from `orders.gift_card_redeemed_cents`. That column
+ * is the RESERVATION, written before payment; the debit lands later, in a
+ * swallowed after() block with a daily cron as its only backstop. Trusting the
+ * reservation therefore credited value that was never taken, in two real
+ * situations:
+ *
+ *  - an order charged but never confirmed (a declined-then-retried card, before
+ *    that was fixed) refunded from the Stripe Dashboard — reconcileRefunds
+ *    resolves by PaymentIntent with no status filter, so compensation ran on an
+ *    order whose debit could not have happened;
+ *  - a normally-confirmed order refunded before its deferred debit committed.
+ *
+ * Either way the card gained value it never lost, the ledger stayed internally
+ * self-consistent (so no reconciliation sweep would flag it), and the
+ * non-negative CHECK is a floor rather than a ceiling so nothing errored.
+ *
+ * This is the shape reverseLoyalty already used: observe what happened, reverse
+ * exactly that, and return 0 when nothing did.
+ */
 async function restoreGiftCard(input: {
   orderId: string;
   venueId: string;
   giftCardId: string | null;
-  cents: number;
 }): Promise<number> {
-  if (!input.giftCardId || input.cents <= 0) return 0;
+  if (!input.giftCardId) return 0;
+
+  const rows = await db
+    .select({
+      deltaCents: giftCardLedger.deltaCents,
+      reason: giftCardLedger.reason,
+    })
+    .from(giftCardLedger)
+    .where(eq(giftCardLedger.orderId, input.orderId));
+  if (rows.length === 0) return 0;
+  // Already reversed (replay). The unique index would refuse anyway; bailing
+  // here keeps the returned figure honest about what this call changed.
+  if (rows.some((row) => row.reason === "refund_reversal")) return 0;
+
+  // Net of every row this order wrote against the card. A redeem is negative,
+  // so the amount to give back is its negation. Zero or positive means no value
+  // was ever taken — nothing to restore.
+  const net = rows.reduce((sum, row) => sum + row.deltaCents, 0);
+  const cents = -net;
+  if (cents <= 0) return 0;
+
   return db.transaction(async (tx) => {
     const inserted = await tx
       .insert(giftCardLedger)
@@ -167,7 +206,7 @@ async function restoreGiftCard(input: {
         venueId: input.venueId,
         giftCardId: input.giftCardId!,
         orderId: input.orderId,
-        deltaCents: input.cents, // refund = value back on the card
+        deltaCents: cents, // refund = value back on the card
         reason: "refund_reversal",
         note: "Order refunded",
       })
@@ -178,11 +217,11 @@ async function restoreGiftCard(input: {
     await tx
       .update(giftCards)
       .set({
-        balanceCents: sql`${giftCards.balanceCents} + ${input.cents}`,
+        balanceCents: sql`${giftCards.balanceCents} + ${cents}`,
         updatedAt: new Date(),
       })
       .where(eq(giftCards.id, input.giftCardId!));
-    return input.cents;
+    return cents;
   });
 }
 
@@ -190,11 +229,31 @@ async function restoreGiftCard(input: {
  * Mirror of applyDepletionForOrder with the sign flipped: re-derive what the
  * order consumed and put it back. Guarded by its own partial unique index
  * (order, ingredient) WHERE reason='refund_restock'.
+ *
+ * Gated on a DEPLETION having actually happened, not on fulfilment status
+ * alone. `fulfillment_status` defaults to 'new', so shouldRestock() is true for
+ * an order that was never confirmed and therefore never depleted anything —
+ * restocking it would ADD inventory the venue never had. Depletion runs in a
+ * swallowed after() block with a daily cron backstop, so "confirmed" does not
+ * imply "debited" either. Observing the movement is the only honest test, and it
+ * matches how the gift-card and loyalty arms now work.
  */
 async function restockOrder(
   orderId: string,
   venueId: string,
 ): Promise<number> {
+  const [depleted] = await db
+    .select({ id: stockMovements.id })
+    .from(stockMovements)
+    .where(
+      and(
+        eq(stockMovements.orderId, orderId),
+        eq(stockMovements.reason, "depletion"),
+      ),
+    )
+    .limit(1);
+  if (!depleted) return 0;
+
   const lines = await db
     .select({ menuItemId: orderItems.menuItemId, quantity: orderItems.quantity })
     .from(orderItems)

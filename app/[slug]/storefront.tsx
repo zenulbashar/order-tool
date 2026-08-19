@@ -18,6 +18,7 @@ import { MenuSearch } from "./menu-search";
 import { RecommendationsProvider } from "./recommendations";
 import { AnnouncementBar } from "./announcement-bar";
 import { dinerBrandStyle } from "./brand-style";
+import { menuHref } from "./table-link";
 import { CategoryTiles } from "./category-tiles";
 import { StorefrontFooter } from "./storefront-footer";
 import { BrandTile, StorefrontHero } from "./storefront-hero";
@@ -328,7 +329,7 @@ function StorefrontInner({
                 {isLanding ? (
                   menu.length > 0 ? (
                     <Link
-                      href={`/${venue.slug}/menu`}
+                      href={menuHref(venue.slug, initialTable)}
                       className="transition hover:text-ink"
                     >
                       Menu
@@ -518,11 +519,12 @@ function StorefrontInner({
             <CategoryTiles
               slug={venue.slug}
               categories={categoryTiles.slice(0, 6)}
+              table={initialTable}
             />
             {menu.length > 0 ? (
               <div className="mt-8 text-center">
                 <Link
-                  href={`/${venue.slug}/menu`}
+                  href={menuHref(venue.slug, initialTable)}
                   className="inline-flex items-center gap-2 rounded-pill bg-ink px-6 py-3 text-sm font-semibold text-surface transition hover:-translate-y-px hover:shadow-lift"
                 >
                   View the full menu
