@@ -32,8 +32,25 @@ runtime environment / human sign-off.
 - ✅ Client-IP source hardened (S3) — `clientIpFromHeaders` prefers the
   edge-set `x-vercel-forwarded-for` / `x-real-ip`, with left-most XFF kept
   only as the off-platform fallback.
-- ⬜ Dependency CVE scan (`npm audit` / Snyk)
-- ⬜ Secret-scan of git history; confirm no secrets in the repo
+- ✅ Dependency CVE scan (`npm audit`) — was **15 advisories (3 critical, 6
+  high, 6 moderate)**; now reports `found 0 vulnerabilities`. `next` 16.2.9 →
+  16.3.1 (middleware/proxy bypass, 2× SSRF, Server Action DoS, cache
+  confusion, unauthenticated Server Function disclosure — and with it `postcss`
+  8.5.23 + `sharp` 0.35.3), `next-auth` → beta.32 (auth failing OPEN on a
+  config error), `@auth/core` → 0.41.3, `tailwindcss` → 4.3.3,
+  `fast-xml-parser` → 5.11.0. Two needed judgement rather than a bump: npm
+  offered `drizzle-kit` **0.18.1** as the esbuild "fix", a major DOWNGRADE
+  behind all 65 committed migrations — instead an `overrides` entry lifts the
+  esbuild inside `@esbuild-kit/core-utils`, a subtree drizzle-kit declares and
+  never imports. See PR #260.
+- ⬜ Secret-scan of git history; confirm no secrets in the repo — **half done.**
+  The current tracked tree is clean: a scan for `sk_live_`/`sk_test_`/`whsec_`/
+  `re_`/`AKIA`/`ghp_`/`sk-ant-`/PEM headers across every tracked file returns
+  only README + docs placeholders (`sk_test_…`, ellipsis included) and test
+  fixtures (`"sk_live_" + "a".repeat(48)`, `whsec_test`). HISTORY is still
+  unscanned and cannot be done from here — the CI/agent clone is shallow
+  (back to 2026-07-21 only), so a full-history scan needs a complete clone and
+  a tool like gitleaks or GitHub secret scanning run against the repo itself.
 - ✅ `.env` completeness vs `.env.example` — the file was missing 24 keys the
   code already read, all of which fail SILENTLY (`PLATFORM_ADMIN_EMAILS`
   unset makes `/admin` deny everyone with no error). Now documented and
