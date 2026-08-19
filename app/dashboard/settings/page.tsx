@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 /**
  * Storefront settings hub. The settings that used to live on one long page are
@@ -80,7 +80,7 @@ const SECTIONS: { href: string; title: string; description: string }[] = [
 
 export default async function SettingsPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   return (
     <main className="mx-auto max-w-3xl">

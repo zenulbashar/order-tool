@@ -4,7 +4,11 @@ import { PageHeader } from "@/app/_components/page-header";
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
 import { marketplaceOrders, marketplaceProducts } from "@/lib/db/schema";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import {
+  requireUser,
+  requireVenuePermission,
+  scopedToVenue,
+} from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
 import { ShopClient, type ShopProduct } from "./shop-client";
@@ -33,7 +37,7 @@ export default async function MarketplacePage({
   searchParams: Promise<{ checkout?: string; error?: string }>;
 }) {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("stock:manage");
   const params = await searchParams;
 
   const [products, orders] = await Promise.all([

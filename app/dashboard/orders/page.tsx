@@ -1,6 +1,6 @@
 import { PageHeader } from "@/app/_components/page-header";
 import { requestNowMs } from "@/lib/schedule";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import { OrdersAutoRefresh } from "./orders-auto-refresh";
 import { OrdersBoard } from "./orders-board";
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 export default async function OrdersPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("orders:view");
 
   const activeOrders = await getVenueOrders(venue.id);
   // Always-visible COMPLETED column, bounded to a recent window so it stays

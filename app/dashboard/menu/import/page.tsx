@@ -1,11 +1,11 @@
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import { ImportClient } from "./import-client";
 
 export default async function ImportMenuPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("menu:manage");
 
   return (
     <main className="mx-auto w-full max-w-[1600px]">

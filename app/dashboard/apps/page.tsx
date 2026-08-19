@@ -4,7 +4,7 @@ import { PageHeader } from "@/app/_components/page-header";
 import {
   hasVenuePermission,
   requireUser,
-  requireVenue,
+  requireVenuePermission,
 } from "@/lib/tenant";
 
 import { LaunchRoster } from "./launch-roster";
@@ -37,7 +37,7 @@ const VALUE_CARDS = [
  */
 export default async function AppsPage() {
   const user = await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
   // Billing is owner-only, so a manager reaching this page would bounce off
   // the CTA below. Show it only to someone who can act on it.
   const canBill = await hasVenuePermission(venue.id, "billing:manage");

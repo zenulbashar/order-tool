@@ -5,7 +5,7 @@ import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { venueImages } from "@/lib/db/schema";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import { deleteLibraryImage } from "./actions";
 import { DeleteImageButton } from "./delete-image-button";
@@ -22,7 +22,7 @@ export const metadata: Metadata = { title: "Media library" };
  */
 export default async function MediaPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("menu:manage");
 
   const images = await db
     .select({

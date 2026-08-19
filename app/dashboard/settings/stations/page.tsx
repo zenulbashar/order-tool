@@ -4,7 +4,11 @@ import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
 import { venueStations } from "@/lib/db/schema";
-import { requireUser, requireVenue, scopedToVenue } from "@/lib/tenant";
+import {
+  requireUser,
+  requireVenuePermission,
+  scopedToVenue,
+} from "@/lib/tenant";
 
 import { StationsEditor } from "./stations-editor";
 
@@ -13,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function StationsSettingsPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   const stations = await db
     .select({

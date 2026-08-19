@@ -361,6 +361,112 @@ describe("permission gates on dashboard server actions", () => {
     }
   });
 
+  /**
+   * The gap that let P9 through.
+   *
+   * Everything above scans `"use server"` files or checks pages that ALREADY
+   * gate. A read-only Server Component that gates on nothing was out of scope
+   * by construction — so `/dashboard` shipped rendering the venue's revenue,
+   * average order value, 7-day trend and 30-day order mix on bare membership,
+   * while `/dashboard/reports` gated the same figures on `reports:view`. The
+   * audit found one instance; the class turned out to be 22 of 38 dashboard
+   * pages, including every settings screen, all four stock screens (ingredient
+   * COSTS) and the menu editor.
+   *
+   * A gate on the write without the same gate on the read is decorative — the
+   * SECRET_PAGES docblock above says exactly that, one describe block earlier,
+   * about one page. This generalises it: a dashboard page that resolves a
+   * venue is gated, or it is listed here with the reason it is not.
+   */
+  const UNGATED_PAGES: { file: string; reason: string }[] = [
+    {
+      file: "app/dashboard/page.tsx",
+      reason:
+        "The denial destination. requireVenuePermission redirects to /dashboard, so gating /dashboard itself would bounce a denied viewer into a redirect loop. It stays open to every member and gates its privileged tiles inline on reports:view instead — asserted separately below.",
+    },
+  ];
+
+  function dashboardPages(): string[] {
+    const out: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (entry === "page.tsx") out.push(full);
+      }
+    };
+    walk(join(process.cwd(), "app", "dashboard"));
+    return out;
+  }
+
+  it("finds the dashboard pages it claims to", () => {
+    // Guards the scan, exactly as the server-action scan above guards its own.
+    const pages = dashboardPages();
+    expect(pages.length).toBeGreaterThan(30);
+    expect(pages.some((f) => f.endsWith("dashboard/page.tsx"))).toBe(true);
+    expect(pages.some((f) => f.endsWith("settings/tax/page.tsx"))).toBe(true);
+  });
+
+  it("gates every venue-resolving dashboard page on a permission", () => {
+    const exempt = new Set(UNGATED_PAGES.map((p) => p.file));
+    const ungated: string[] = [];
+    for (const file of dashboardPages()) {
+      const rel = file.replace(process.cwd() + "/", "");
+      if (exempt.has(rel)) continue;
+      const source = code(file);
+      const resolvesVenue = VENUE_RESOLVERS.some((r) => source.includes(r));
+      if (!resolvesVenue && !isGated(source)) continue; // no venue state read
+      if (!isGated(source)) ungated.push(rel);
+    }
+
+    expect(
+      ungated,
+      `Dashboard pages that read venue state behind NO permission. Every ` +
+        `member, kitchen staff included, can open these by typing the URL:\n` +
+        ungated.map((f) => `  ${f}`).join("\n"),
+    ).toEqual([]);
+  });
+
+  it("leaves no bare requireVenue() in a gated dashboard page", () => {
+    // Same rule the action files carry: requireVenuePermission resolves the
+    // venue itself, so a leftover requireVenue() means a path skipped the gate.
+    const exempt = new Set(UNGATED_PAGES.map((p) => p.file));
+    const leftovers: string[] = [];
+    for (const file of dashboardPages()) {
+      const rel = file.replace(process.cwd() + "/", "");
+      if (exempt.has(rel)) continue;
+      if (/\brequireVenue\(\)/.test(code(file))) leftovers.push(rel);
+    }
+    expect(leftovers).toEqual([]);
+  });
+
+  it("gates the dashboard home's trading tiles on reports:view", () => {
+    // The one exempt page owes an inline gate instead. Assert BOTH halves: the
+    // permission is read, and the 30-day revenue query is conditional on it —
+    // hiding the tiles while still running the query would leave the figures a
+    // render away, and the fix is that they are never fetched.
+    const home = code(join(process.cwd(), "app/dashboard/page.tsx"));
+    expect(home).toContain('hasVenuePermission(venue.id, "reports:view")');
+    expect(home).toContain("canViewReports");
+    // The query sits on the true branch of the gate, not in an unconditional
+    // Promise.all entry.
+    expect(home).toMatch(/canViewReports\s*\n?\s*\?\s*db/);
+  });
+
+  it("leaves kitchen staff a usable dashboard", () => {
+    // The counterweight to the sweep above. Gating 22 pages at once could
+    // easily leave a staff login staring at an empty sidebar; the orders board
+    // and bookings must survive, because running the pass IS the staff role.
+    const held = permissionsFor(["staff"]);
+    const reachable = [...gatedPages()].filter(([, permission]) =>
+      held.has(permission as Permission),
+    );
+    expect(reachable.length).toBeGreaterThan(0);
+    const hrefs = reachable.map(([href]) => href);
+    expect(hrefs).toContain("/dashboard/orders");
+    expect(hrefs).toContain("/dashboard/bookings");
+  });
+
   it("requires every exemption to carry a reason", () => {
     for (const exemption of EXEMPTIONS) {
       expect(exemption.reason.length, exemption.file).toBeGreaterThan(30);

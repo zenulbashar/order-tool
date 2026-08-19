@@ -1,13 +1,13 @@
 import { Card } from "@/app/_components/card";
 import { SettingsPane, StorefrontHint } from "../settings-pane";
 import { PageHeader } from "@/app/_components/page-header";
-import { requireUser, requireVenue } from "@/lib/tenant";
+import { requireUser, requireVenuePermission } from "@/lib/tenant";
 
 import { BrandThemeForm } from "../brand-theme-form";
 
 export default async function BrandSettingsPage() {
   await requireUser();
-  const venue = await requireVenue();
+  const venue = await requireVenuePermission("settings:manage");
 
   return (
     <main className="mx-auto w-full max-w-[1600px]">
