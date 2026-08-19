@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { menuHref } from "./table-link";
+
 /**
  * The categories landing grid: big photo tiles (the bakery-site pattern — Bread ·
  * Pies & Quiches · Sandwiches). Each tile uses that category's first item photo,
@@ -17,9 +19,12 @@ export type CategoryTile = {
 export function CategoryTiles({
   slug,
   categories,
+  table,
 }: {
   slug: string;
   categories: CategoryTile[];
+  /** Dine-in table label from the scanned QR, carried through navigation. */
+  table?: string | null;
 }) {
   if (categories.length === 0) return null;
 
@@ -28,7 +33,7 @@ export function CategoryTiles({
       {categories.map((category) => (
         <li key={category.id}>
           <Link
-            href={`/${slug}/menu#${category.id}`}
+            href={menuHref(slug, table, category.id)}
             className="group relative block aspect-[4/3] w-full overflow-hidden rounded-card border border-sand shadow-card transition hover:shadow-lift"
           >
             {category.image ? (

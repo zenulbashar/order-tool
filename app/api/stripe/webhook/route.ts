@@ -1,10 +1,11 @@
 import { after } from "next/server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import { notifyCustomerOrder } from "@/lib/customer/notify";
 import { db } from "@/lib/db";
+import { CONFIRMABLE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders } from "@/lib/db/schema";
 import { enqueueJobsForOrder, processDueJobs } from "@/lib/integrations/dispatch";
 import { drainDueJobs } from "@/lib/integrations/drain";
@@ -118,7 +119,17 @@ export async function POST(request: Request): Promise<Response> {
           .where(
             and(
               eq(orders.stripePaymentIntentId, paymentIntent.id),
-              eq(orders.status, "pending_payment"),
+              // NOT just 'pending_payment'. Checkout retries against the SAME
+              // PaymentIntent, so a decline-then-retry delivers
+              // payment_intent.payment_failed and THEN
+              // payment_intent.succeeded for one pi_. Requiring
+              // 'pending_payment' made that second event match zero rows: the
+              // venue was paid and the order stranded forever, with no kitchen
+              // ticket, no alert, no in-product refund, and a diner-facing page
+              // that said no charge had been made. See
+              // CONFIRMABLE_ORDER_STATUSES for why 'confirmed' and the refund
+              // states stay out (idempotency, and never resurrecting a refund).
+              inArray(orders.status, CONFIRMABLE_ORDER_STATUSES),
             ),
           )
           .returning({ id: orders.id, totalCents: orders.totalCents });

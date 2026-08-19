@@ -1,6 +1,7 @@
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { HOLDING_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, pointsLedger, pointsLedgerReason } from "@/lib/db/schema";
 
 /**
@@ -63,7 +64,20 @@ export async function getAvailablePoints(
       and(
         eq(orders.venueId, venueId),
         eq(orders.customerId, customerId),
-        eq(orders.status, "pending_payment"),
+        // Held while the order is retryable OR live-but-not-yet-debited. The
+        // points debit lands in a swallowed after() after the status flip, so
+        // counting only pending orders left the balance reading as fully
+        // available for that window. Unlike gift cards, insertRedeem has no
+        // clamp and points_ledger has no non-negative CHECK, so an overspend
+        // here renders as a NEGATIVE balance on the customer's account page.
+        inArray(orders.status, HOLDING_ORDER_STATUSES),
+        // …and the debit has not landed. Once a `redeem` row exists the balance
+        // already reflects it; counting the reservation too would double-count.
+        sql`not exists (
+          select 1 from ${pointsLedger}
+           where ${pointsLedger.orderId} = ${orders.id}
+             and ${pointsLedger.reason} = 'redeem'
+        )`,
         ne(orders.id, excludeOrderId),
       ),
     );

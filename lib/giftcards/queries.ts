@@ -1,7 +1,8 @@
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { giftCards, orders } from "@/lib/db/schema";
+import { HOLDING_ORDER_STATUSES } from "@/lib/db/order-status";
+import { giftCardLedger, giftCards, orders } from "@/lib/db/schema";
 
 /** A gift card row for the owner management list. */
 export type GiftCardRow = {
@@ -60,10 +61,25 @@ export async function resolveGiftCardForRedemption(
 
 /**
  * Cash a gift card can put toward an order RIGHT NOW = its cached balance minus
- * value already reserved on OTHER pending orders (a reservation is the
- * gift_card_redeemed_cents on a pending order; the matching ledger debit is only
- * written at confirmation). Excludes `excludeOrderId` — the order being
- * recomputed — so re-applying returns its own reservation to the pool first.
+ * value that is spoken for but not yet debited. Excludes `excludeOrderId` — the
+ * order being recomputed — so re-applying returns its own reservation to the
+ * pool first.
+ *
+ * "Spoken for" is deliberately WIDER than "pending". The debit does not land
+ * with the confirmation: the webhook flips status in one auto-committed UPDATE
+ * and schedules redeemGiftCardForOrder in a swallowed after(), which then
+ * requires status='confirmed' and so can only run AFTER the flip. Counting only
+ * pending orders left the card reading as fully available for that whole window
+ * — hundreds of milliseconds on the happy path, but up to a day when an after()
+ * is dropped and the daily cron is the backstop. Two orders could each be told
+ * the full balance was theirs, both be paid, and both debits then clamp at zero
+ * (the non-negative CHECK forces GREATEST(balance - cents, 0)), so the overspend
+ * was absorbed in silence and the ledger permanently disagreed with the balance.
+ *
+ * So a reservation counts while the order is retryable (pending/declined) OR
+ * live-but-not-yet-debited. The ledger row is the authoritative "this value has
+ * actually left the card" signal, which is why its ABSENCE is what keeps the
+ * hold in place. A fully refunded order is excluded — its value came back.
  */
 export async function getAvailableGiftCardCents(
   cardId: string,
@@ -78,7 +94,15 @@ export async function getAvailableGiftCardCents(
     .where(
       and(
         eq(orders.giftCardId, cardId),
-        eq(orders.status, "pending_payment"),
+        inArray(orders.status, HOLDING_ORDER_STATUSES),
+        // …and the debit has not actually landed yet. Once a `redeem` row
+        // exists, `balance_cents` already reflects it and counting the
+        // reservation as well would double-subtract.
+        sql`not exists (
+          select 1 from ${giftCardLedger}
+           where ${giftCardLedger.orderId} = ${orders.id}
+             and ${giftCardLedger.reason} = 'redeem'
+        )`,
         ne(orders.id, excludeOrderId),
       ),
     );
