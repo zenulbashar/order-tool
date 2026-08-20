@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, eq, gt, notExists, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { giftCardLedger, giftCards, orders } from "@/lib/db/schema";
 import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
@@ -112,7 +113,18 @@ export async function sweepGiftCardRedeem(): Promise<number> {
     .from(orders)
     .where(
       and(
-        eq(orders.status, "confirmed"),
+        // NOT eq(status, "confirmed"). A goodwill partial refund rewrites the
+        // status, nothing ever writes `confirmed` back, and this sweep is the
+        // only path that will ever debit the card once the webhook's after()
+        // block is lost — so a $5 refund used to strand the whole $20 redemption
+        // permanently, with the venue's stored value never leaving the card.
+        //
+        // `refunded` is deliberately NOT in this list. compensateFullyRefundedOrder
+        // restores by reading this ledger, so on a full refund with no debit it
+        // finds nothing and correctly restores nothing. Debiting afterwards would
+        // take $20 of stored value for an order the diner was fully refunded for,
+        // and no later pass would ever give it back.
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         gt(orders.createdAt, since),
         gt(orders.giftCardRedeemedCents, 0),
         notExists(

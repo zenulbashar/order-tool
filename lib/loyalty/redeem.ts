@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, eq, gt, notExists, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, pointsLedger } from "@/lib/db/schema";
 import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
@@ -101,7 +102,12 @@ export async function sweepLoyaltyRedeem(): Promise<number> {
     .from(orders)
     .where(
       and(
-        eq(orders.status, "confirmed"),
+        // Same reasoning as the gift-card redeem sweep: `partially_refunded`
+        // still owes the debit (the points bought food the diner kept), and
+        // `refunded` must NOT be debited — reverseLoyalty reads this ledger, so
+        // on a full refund it already found nothing to reverse, and a late debit
+        // would take points nothing will hand back.
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         gt(orders.createdAt, since),
         gt(orders.pointsRedeemed, 0),
         notExists(

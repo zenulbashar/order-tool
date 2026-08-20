@@ -105,7 +105,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P4 | **High** | Table-QR `?table=` label dropped on every route to the menu |
 | P5 | Medium | Failed/canceled refunds are never demoted from `succeeded` |
 | P6 | Medium | Printed customer receipt lines do not sum to the printed Total |
-| P7 | Medium | All five backstop sweeps filter `status='confirmed'` — refunded orders skipped forever |
+| P7 | Medium | ~~All five backstop sweeps filter `status='confirmed'` — refunded orders skipped forever~~ **FIXED** (the prescribed fix below was itself wrong) |
 | P8 | Medium | Reports and Payments give contradictory 30-day revenue and GST |
 | P9 | Medium | ~~`/dashboard` home renders revenue on bare membership, bypassing `reports:view`~~ **FIXED** — and the class was 22 of 38 dashboard pages, not one |
 | P10 | Medium | Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition |
@@ -201,7 +201,34 @@ Each webhook call site states the fast path is "a latency optimization only — 
 
 *More reachable than that:* `sweepLoyaltyEarn` needs **no infrastructure failure at all**. `claimOrder` is fire-and-forget (`checkout-client.tsx:138`, `.catch(() => {})`); when the link lands after `payment_intent.succeeded`, `earnPointsForOrder` returns 0 and the sweep is the only path that will ever credit those points. A routine goodwill partial refund before 03:00 destroys them.
 
-*Fix:* `inArray(orders.status, PAID_ORDER_STATUSES)` for the three ledger-debit sweeps; `inArray(orders.status, ACTIVE_ORDER_STATUSES)` for depletion and the POS mirror (a fully refunded order should not deplete stock or mirror). `lib/db/order-status.ts` was written for exactly this — its docblock names the hazard verbatim — and the read paths were migrated while the sweep predicates were not.
+*Fix (as first written):* `inArray(orders.status, PAID_ORDER_STATUSES)` for the three ledger-debit sweeps; `inArray(orders.status, ACTIVE_ORDER_STATUSES)` for depletion and the POS mirror (a fully refunded order should not deplete stock or mirror). `lib/db/order-status.ts` was written for exactly this — its docblock names the hazard verbatim — and the read paths were migrated while the sweep predicates were not.
+
+**RESOLVED — but NOT with the predicate prescribed above, which was wrong.**
+
+`PAID_ORDER_STATUSES` includes `refunded`, and putting a fully refunded order
+back into the three ledger sweeps would have been a new money defect pointing
+the other way. `compensateFullyRefundedOrder` restores by READING the ledger
+(`restoreGiftCard` and `reverseLoyalty` both bail on `rows.length === 0`), so a
+full refund whose debit never landed correctly finds nothing and restores
+nothing. A sweep debiting that order afterwards takes stored value — or credits
+points — for an order the diner was refunded in full, and no later pass ever
+undoes it, because the compensation already ran and wrote no reversal row.
+
+Verified against the code rather than reasoned about in the abstract:
+`refund-service.ts:175` and `:277` call the compensation **only** when
+`syncOrderRefundStatus` returns exactly `"refunded"`, so a partial refund gets
+no compensation at all and genuinely still owes its debit.
+
+All five sweeps therefore use `ACTIVE_ORDER_STATUSES` — `confirmed` +
+`partially_refunded`, stopping short of `refunded`. The webhook FAST PATHS keep
+`eq(status, 'confirmed')`: they read the order they have just confirmed, and
+widening them would let a redelivered webhook debit a refunded order.
+
+Pinned by a harness in `test/order-confirm-reclaim.test.ts` that scans each
+sweep body for the narrow predicate, requires the shared grouping, asserts the
+fast paths stay narrow, and asserts `ACTIVE_ORDER_STATUSES` excludes
+`refunded` with the reason above. Mutation-verified against three reverts,
+including the wrong prescription itself.
 
 ---
 
