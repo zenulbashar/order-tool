@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, count, desc, eq, gt, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, sql } from "drizzle-orm";
 
 import { buttonStyles, denseButtonStyles } from "@/app/_components/button-variants";
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import {
   integrationJobs,
   orders,
@@ -73,7 +74,12 @@ export default async function AdminConsolePage() {
         .select({ venueId: orders.venueId, value: count() })
         .from(orders)
         .where(
-          and(eq(orders.status, "confirmed"), gt(orders.createdAt, since)),
+          // A count, so nothing to net — but a partly refunded order is still
+          // an order this venue served, and 'confirmed' alone dropped it.
+          and(
+            inArray(orders.status, PAID_ORDER_STATUSES),
+            gt(orders.createdAt, since),
+          ),
         )
         .groupBy(orders.venueId),
       db

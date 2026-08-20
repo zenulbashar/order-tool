@@ -1,13 +1,15 @@
 import Link from "next/link";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 
 import { cx } from "@/app/_components/cx";
 import { PageHeader } from "@/app/_components/page-header";
 import { NewBookingAlert } from "./bookings/new-booking-alert";
 import { getUpcomingBookingCount } from "./bookings/queries";
 import { db } from "@/lib/db";
-import { orders } from "@/lib/db/schema";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
+import { orders, refunds } from "@/lib/db/schema";
 import { computeMenuHealth } from "@/lib/menu-health";
+import { netOrderMoney } from "@/lib/orders/net-money";
 import { buildSuggestions } from "@/lib/nudges";
 import {
   hasVenuePermission,
@@ -224,13 +226,15 @@ export default async function DashboardPage({
 
   const since30 = new Date(nowMs - 30 * 86_400_000);
 
-  const [recentOrders, items, categories, active, suggestions] = await Promise.all([
+  const [recentOrders, items, categories, active, suggestions, refundRows] =
+    await Promise.all([
     // Confirmed orders over 30 days — powers today's KPIs, the 7-day trend, and
     // the order mix. Bucketed by venue-local day in JS (tz-correct via Intl).
     // Not run at all without reports:view; the tiles it feeds are not rendered.
     canViewReports
       ? db
           .select({
+            id: orders.id,
             createdAt: orders.createdAt,
             totalCents: orders.totalCents,
             orderType: orders.orderType,
@@ -239,7 +243,10 @@ export default async function DashboardPage({
           .where(
             and(
               scopedToVenue(orders.venueId, venue.id),
-              eq(orders.status, "confirmed"),
+              // PAID, not 'confirmed' — same reason as /dashboard/reports. A
+              // refunded cent rewrites the status, and dropping the order made
+              // this page disagree with both Reports and the Payments card.
+              inArray(orders.status, PAID_ORDER_STATUSES),
               gte(orders.createdAt, since30),
             ),
           )
@@ -250,9 +257,33 @@ export default async function DashboardPage({
     // Concierge suggestions quote per-dish gross margin ("X margin is 42%") and
     // ingredient costs — commercial data, same class as the revenue tiles.
     canViewReports ? buildSuggestions(venue.id) : [],
+    // Succeeded refunds keyed on the ORDER, so one lands in its order's day
+    // rather than its own — the convention the Payments card already uses.
+    canViewReports
+      ? db
+          .select({
+            orderId: refunds.orderId,
+            total: sql<number>`coalesce(sum(${refunds.amountCents}), 0)`,
+          })
+          .from(refunds)
+          .innerJoin(orders, eq(orders.id, refunds.orderId))
+          .where(
+            and(
+              scopedToVenue(orders.venueId, venue.id),
+              eq(refunds.status, "succeeded"),
+              gte(orders.createdAt, since30),
+            ),
+          )
+          .groupBy(refunds.orderId)
+      : [],
   ]);
 
-  // Bucket confirmed orders by venue-local day.
+  // Bucket paid orders by venue-local day, each netted by what has gone back on
+  // it first. taxCents is not selected here (this page shows no GST figure), so
+  // the tax half of netOrderMoney is passed 0 and left unused.
+  const refundedByOrder = new Map(
+    refundRows.map((r) => [r.orderId, Number(r.total)]),
+  );
   const keyOf = dayKeyFormatter(venue.timezone);
   const byDay = new Map<string, { orders: number; revenue: number }>();
   let dineIn = 0;
@@ -261,7 +292,11 @@ export default async function DashboardPage({
     const key = keyOf.format(row.createdAt);
     const bucket = byDay.get(key) ?? { orders: 0, revenue: 0 };
     bucket.orders += 1;
-    bucket.revenue += row.totalCents;
+    bucket.revenue += netOrderMoney(
+      row.totalCents,
+      0,
+      refundedByOrder.get(row.id) ?? 0,
+    ).netTotalCents;
     byDay.set(key, bucket);
     if (row.orderType === "dine_in") dineIn += 1;
     else takeaway += 1;

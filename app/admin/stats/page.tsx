@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, eq, gt, inArray } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { customers, orders, venues } from "@/lib/db/schema";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
+import { customers, orders, refunds, venues } from "@/lib/db/schema";
+import { netOrderMoney } from "@/lib/orders/net-money";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { computeApplicationFeeCents } from "@/lib/stripe";
 import { formatCents } from "@/lib/validation";
@@ -56,7 +58,7 @@ export default async function PlatformStatsPage() {
   const since = new Date(now - WINDOW_DAYS * 86_400_000);
   const dayMs = 86_400_000;
 
-  const [venueRows, orderRows] = await Promise.all([
+  const [venueRows, orderRows, refundRows] = await Promise.all([
     db
       .select({
         id: venues.id,
@@ -67,19 +69,51 @@ export default async function PlatformStatsPage() {
       .from(venues),
     db
       .select({
+        id: orders.id,
         venueId: orders.venueId,
         customerId: orders.customerId,
         totalCents: orders.totalCents,
         createdAt: orders.createdAt,
       })
       .from(orders)
-      .where(and(eq(orders.status, "confirmed"), gt(orders.createdAt, since))),
+      .where(
+        and(
+          // PAID, not 'confirmed' — a partly refunded order used to vanish from
+          // fleet GMV and from platform-fee accounting entirely.
+          inArray(orders.status, PAID_ORDER_STATUSES),
+          gt(orders.createdAt, since),
+        ),
+      ),
+    db
+      .select({
+        orderId: refunds.orderId,
+        total: sql<number>`coalesce(sum(${refunds.amountCents}), 0)`,
+      })
+      .from(refunds)
+      .innerJoin(orders, eq(orders.id, refunds.orderId))
+      .where(and(eq(refunds.status, "succeeded"), gt(orders.createdAt, since)))
+      .groupBy(refunds.orderId),
   ]);
 
   // Fleet KPIs.
   const liveCount = venueRows.filter((v) => v.isLive !== null).length;
   const payingCount = venueRows.filter((v) => v.plan === "pro" || v.plan === "scale").length;
-  const gmv = orderRows.reduce((sum, o) => sum + o.totalCents, 0);
+  const refundedByOrder = new Map(
+    refundRows.map((r) => [r.orderId, Number(r.total)]),
+  );
+  const gmv = orderRows.reduce(
+    (sum, o) =>
+      sum +
+      netOrderMoney(o.totalCents, 0, refundedByOrder.get(o.id) ?? 0)
+        .netTotalCents,
+    0,
+  );
+  // Platform revenue stays on the GROSS total, on purpose. Stripe does not
+  // proportionally refund an application fee when a charge is partly refunded
+  // unless the refund explicitly asks it to, and this codebase issues refunds
+  // without `refund_application_fee`. Netting this figure would understate what
+  // the platform actually kept — the opposite error to the one being fixed.
+  // If that refund flag is ever set, this is the line that has to change with it.
   const platformRevenue = orderRows.reduce(
     (sum, o) => sum + computeApplicationFeeCents(o.totalCents),
     0,
