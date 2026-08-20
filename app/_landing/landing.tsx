@@ -216,12 +216,7 @@ export function Landing({ pricing }: { pricing: PublicPricing }) {
               </a>
             </div>
             <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-[var(--mkt-on-dark-muted)]">
-              <span className={`${eyebrow} text-micro text-[var(--mkt-on-dark-sage)]`}>Order with</span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
-                Google Gemini
-              </span>
-              <span className="text-[var(--mkt-on-dark-sage)]">·</span>
+              <span className={`${eyebrow} text-micro text-[var(--mkt-on-dark-sage)]`}>Pay with</span>
               <span> Pay · G Pay · PayTo</span>
             </p>
           </div>
@@ -238,7 +233,6 @@ export function Landing({ pricing }: { pricing: PublicPricing }) {
             Works everywhere you already are
           </span>
           {[
-            { label: "Order from Google Gemini", dot: true },
             { label: "Apple Pay and Google Pay" },
             { label: "PayTo · pay by bank" },
           ].map((c) => (
@@ -246,9 +240,6 @@ export function Landing({ pricing }: { pricing: PublicPricing }) {
               key={c.label}
               className="inline-flex items-center gap-2 rounded-full border border-[rgba(247,243,234,0.1)] bg-[rgba(247,243,234,0.05)] px-3.5 py-1.5 text-[13px] font-semibold text-[var(--mkt-on-dark)]"
             >
-              {c.dot ? (
-                <span className="h-2.5 w-2.5 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
-              ) : null}
               {c.label}
             </span>
           ))}
@@ -304,26 +295,6 @@ export function Landing({ pricing }: { pricing: PublicPricing }) {
             />
             <FeatureRow
               flip
-              eyebrow="Google Gemini"
-              title="Order from the assistant they already use."
-              body="Prompt2Eat plugs into Google Gemini, so a diner can order from your venue without opening anything new. They ask Gemini, it places the order, your kitchen gets the ticket."
-              visual={
-                <div className="rounded-[22px] bg-gradient-to-br from-[var(--mkt-forest-deep)] to-[var(--mkt-forest-deeper)] p-5 text-surface shadow-[0_30px_56px_-28px_rgba(13,29,22,0.5)]">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 text-xs font-semibold">
-                    <span className="h-3 w-3 rounded-full bg-[conic-gradient(from_180deg,#4285F4,#9b72cb,#d96570,#4285F4)]" />
-                    Gemini
-                  </span>
-                  <p className="mt-3 rounded-[14px] bg-white/10 px-3.5 py-2 text-sm">
-                    Order my usual from Maple &amp; Thyme for table 12.
-                  </p>
-                  <p className="mt-2 inline-flex items-center gap-2 rounded-[14px] bg-[var(--color-accent)] px-3.5 py-2 text-sm font-semibold text-forest">
-                    ✓ Placed. The kitchen has it.
-                  </p>
-                </div>
-              }
-            />
-            <FeatureRow
-              flip={false}
               eyebrow="QR dine-in"
               title="Scan the table. Order and pay from the seat."
               body="One code per table. Guests order and pay without waving anyone down, so your staff spend their time on service instead of taking orders."
@@ -343,7 +314,7 @@ export function Landing({ pricing }: { pricing: PublicPricing }) {
               }
             />
             <FeatureRow
-              flip
+              flip={false}
               eyebrow="Reorder and upsell"
               title="Turn first-timers into regulars."
               body="Regulars reorder their favourite in a tap. Smart suggestions add the side or drink that pairs, which lifts the average order without any pressure. That is how a busy night becomes a bigger night."

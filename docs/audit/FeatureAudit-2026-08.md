@@ -113,7 +113,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P12 | Medium | Completed orders cannot be refunded or stepped back from the dashboard |
 | P13 | Medium | Reports trend uses rolling 24h windows labelled in server (UTC) time |
 | P14 | Medium | Onboarding marks a venue live with no Stripe account |
-| P15 | Medium | Landing page advertises a Google Gemini ordering integration that does not exist |
+| P15 | Medium | ~~Landing page advertises a Google Gemini ordering integration that does not exist~~ **FIXED** |
 | P16 | Low ×10 | (see table at end) |
 
 ---
@@ -467,6 +467,37 @@ Sold as shipped in three places, including a full FeatureRow: "Prompt2Eat plugs 
 The capability does not exist: no Google/Gemini/MCP SDK in `package.json` (the concierge runs on Claude Haiku), no agent/tool endpoint among the 11 API routes, no `.well-known/ai-plugin.json`, no `potentialAction`/`OrderAction` in the JSON-LD. There is exactly one order-creation path repo-wide — `placeOrder`, a `"use server"` action reachable only from the venue storefront. The repo's own record agrees: `docs/DEPLOYMENT-PLAN.md:105-106` lists "Order with Google" and "agent/MCP interface" under **"Confirmed genuinely absent."** It also violates the codebase's stated standard at `lib/marketing-content.ts:7-8` ("no invented capabilities").
 
 *Fix:* Remove the FeatureRow and both chips, or re-label them explicitly as roadmap. This is a misleading-representation exposure (notably under Australian Consumer Law given the AU/PayTo positioning), and `app/robots.ts` explicitly admits GPTBot/ClaudeBot/PerplexityBot, so the claim will propagate into AI answers once `prompt2eat.com` is attached. Currently gated behind `MARKETING_HOSTS`, which per the deployment plan is still an open operator step.
+
+**RESOLVED by REMOVING, not re-labelling** — all four sites, including the
+mocked "✓ Placed. The kitchen has it." confirmation, which was a rendered
+screenshot of a completed order through a path with no implementation at all.
+
+Removal rather than a "coming soon" label is a deliberate choice, matching how
+the PayTo saved-mandate claims were handled earlier in this series. Whether
+agent ordering is on the roadmap is a product decision, not one to infer from
+the fact that someone already wrote the copy — and leaving a present-tense claim
+standing while that question is open is the worse default. Re-adding it
+explicitly marked as roadmap is a small change if that is the intent.
+
+Every premise was re-verified against the repo before removal: no
+google/gemini/genai/MCP package in `package.json`, no `.well-known/ai-plugin.json`
+(that directory serves only `apple-app-site-association` and `assetlinks.json`),
+and exactly one `placeOrder` — a `"use server"` action reachable only from the
+venue storefront.
+
+Pinned by `test/marketing-truthfulness.test.ts`. The standard was already
+written down twice — `lib/marketing-content.ts` ("no invented capabilities") and
+`content/voice.md` — and the claim shipped anyway; a stated standard with
+nothing enforcing it is how that recurs. The harness bans each term ALONGSIDE
+what would have to exist to make it honest, and separately asserts no such
+dependency has appeared, so adding a real integration forces someone to revisit
+the ban deliberately instead of leaving it in place by inertia.
+
+`content/voice.md` is deliberately outside the scan: its rules have to NAME the
+claims they ban, so scanning it flags the prohibition as the violation and the
+tempting fix is to weaken the rule. A counterweight test keeps Apple Pay, Google
+Pay and PayTo advertised — all three are really wired up, and stripping copy
+until the page says nothing is not a fix either.
 
 ---
 
