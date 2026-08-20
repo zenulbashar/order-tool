@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 
 import { StockHeader, StockNav } from "../stock-chrome";
 import { cx } from "@/app/_components/cx";
 import { db } from "@/lib/db";
 import { ingredients, stockMovements } from "@/lib/db/schema";
 import { costPerUnitCents, isLowStock } from "@/lib/stock/cost";
+import type { MovementReason } from "@/lib/stock/movements";
 import {
   requireUser,
   requireVenuePermission,
@@ -18,13 +19,22 @@ export const dynamic = "force-dynamic";
 /** Window over which consumption run-rate is measured. */
 const USAGE_WINDOW_DAYS = 30;
 
-const REASON_LABEL: Record<string, string> = {
+/**
+ * Typed on MovementReason, not Record<string, string>.
+ *
+ * The loose type is why `refund_restock` could be missing without anyone
+ * noticing — the feed fell through to printing the raw enum. Keyed on the
+ * derived union, a new movement reason fails the build rather than surfacing
+ * as REFUND_RESTOCK in front of an owner.
+ */
+const REASON_LABEL: Record<MovementReason, string> = {
   opening: "Opening count",
   receiving: "Received",
   adjustment: "Adjusted",
   wastage: "Wastage",
   stocktake: "Stocktake",
   depletion: "Sold",
+  refund_restock: "Returned (refund)",
 };
 
 function Kpi({
@@ -91,7 +101,16 @@ export default async function StockOverviewPage() {
       .where(
         and(
           scopedToVenue(stockMovements.venueId, venue.id),
-          eq(stockMovements.reason, "depletion"),
+          // Restocks NET OFF the usage rather than being ignored. A
+          // refund_restock only ever fires for an UNMADE order (see the enum's
+          // own note in schema.ts), so those ingredients never actually left
+          // the shelf — counting them as consumed overstated usage, run-rate,
+          // days-of-cover and COGS together, all from one omission.
+          //
+          // The sign convention makes the sum exact without a second query:
+          // depletion rows are negative, restock rows positive, so negating
+          // their total gives net consumption directly.
+          inArray(stockMovements.reason, ["depletion", "refund_restock"]),
           gt(stockMovements.createdAt, since),
         ),
       )

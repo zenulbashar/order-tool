@@ -594,9 +594,9 @@ until the page says nothing is not a fix either.
 | ID | File:line | One-line summary | Fix |
 |---|---|---|---|
 | ~~L1~~ **FIXED** (and it was not a low — see below) | `lib/payments/refund-service.ts:161` | `charge.refunded` racing an in-product refund → 23505 on the partial unique index; the action throws, a succeeded refund is reported as failed, no `venue_audit` row, orphan `pending` row forever. On a *partial* refund the false error induces a retry that passes `planRefund` → genuine double refund. | Reserve the id before the Stripe call (idempotency-key-derived), or wrap the stamp UPDATE in a conflict-tolerant path that merges into the webhook-inserted row. |
-| L2 | `app/dashboard/stock/actions.ts:231` | Opening count of **0** on a NULL `on_hand_qty` computes `deltaQty = 0`, `recordStockMovement` bails at `movements.ts:40`, nothing is written, and the action redirects as success. This is the default path — the form pre-selects `set` exactly when `onHandQty` is null and the placeholder is literally "0". | Force the `on_hand_qty` write when `locked?.onHandQty == null`, treating NULL→0 as a real transition. |
+| ~~L2~~ **FIXED** | `app/dashboard/stock/actions.ts:231` | Opening count of **0** on a NULL `on_hand_qty` computes `deltaQty = 0`, `recordStockMovement` bails at `movements.ts:40`, nothing is written, and the action redirects as success. This is the default path — the form pre-selects `set` exactly when `onHandQty` is null and the placeholder is literally "0". | Force the `on_hand_qty` write when `locked?.onHandQty == null`, treating NULL→0 as a real transition. |
 | ~~L3~~ **FIXED** | `lib/payments/refund-compensation.ts:213` | `restockOrder` re-derives from **today's** `recipe_lines` and never consults the order's actual `depletion` movements. A recipe edited mid-order over-restocks; a missed depletion restocks from nothing, permanently (the sweep is already locked out by `status='refunded'`). | Restock from the order's recorded `depletion` movements, negated. |
-| L4 | `app/dashboard/stock/overview/page.tsx:90` | 30-day usage filters `reason='depletion'` only, so `refund_restock` never nets out — usage, run-rate, days-of-cover and COGS all overstate. Separately `REASON_LABEL` (`:17-24`) has no `refund_restock` entry, so the feed prints the raw enum `REFUND_RESTOCK`. | Include `refund_restock` in the sum; add the label. |
+| ~~L4~~ **FIXED** | `app/dashboard/stock/overview/page.tsx:90` | 30-day usage filters `reason='depletion'` only, so `refund_restock` never nets out — usage, run-rate, days-of-cover and COGS all overstate. Separately `REASON_LABEL` (`:17-24`) has no `refund_restock` entry, so the feed prints the raw enum `REFUND_RESTOCK`. | Include `refund_restock` in the sum; add the label. |
 | ~~L5~~ **FIXED** | `lib/promotions.ts:118` | The `audience:"new"` guard short-circuits on `customerId`, which is set only by fire-and-forget `claimOrder` (`checkout-client.tsx:138`, `.catch(() => {})`). If that call fails, a signed-in returning customer gets the first-timers-only promo written to the order and the PI, and also loses their loyalty earn. | Set `orders.customerId` in `placeOrder` — the checkout page already resolved the signed-in customer server-side. |
 | L6 | `app/dashboard/tables/queries.ts:69` | "Current session" is a fixed 2h rolling label-keyed sum with no close control, so a new party inherits the previous party's spend and order count until it ages out. Prepay model, so nothing is owed — a display-accuracy defect. | Add a dwell-gap boundary, or relabel to "Recent orders (2h)" and drop the single-`orderRef`+combined-total pairing. |
 | L7 | `app/dashboard/tables/queries.ts:122` | Table identity is the free-text `tableLabel` snapshot with no FK. Renaming a table orphans its in-flight session; renaming a *different* table onto that string mis-attributes the session. Blast radius is the tables board only. | Add `orders.table_id` alongside the label snapshot and join on it. |
@@ -680,6 +680,35 @@ comment explaining why the recipe join was removed has to NAME the join, and a
 raw-text scan reads that explanation as the violation —
 `test/authz-coverage.test.ts` records the same lesson from the opposite
 direction, prose satisfying an assertion.
+
+### L2 + L4 — resolved, both by removing a hand-maintained list or a loose type
+
+L2 was fixed in `recordStockMovement` rather than at the call site. The zero-delta
+bail skipped the counter UPDATE as well as the ledger insert, and an `opening`
+count is a STATE TRANSITION (unknown -> counted), not a quantity change. Since
+the stock form sets `opening` exactly when `on_hand_qty` is NULL, the guard now
+reads `deltaQty === 0 && reason !== "opening"`, and the existing
+`COALESCE(on_hand_qty, 0) + 0` materialises NULL to 0 for free.
+
+L4's real cause turned out to be a TYPE, not a missing map entry. `MovementReason`
+in `lib/stock/movements.ts` was a hand-written union carrying six of the enum's
+seven values — it had silently dropped `refund_restock`, which refund
+compensation writes. So `REASON_LABEL`, typed `Record<string, string>`, looked
+complete while missing a real case and fell through to printing the raw enum.
+`MovementReason` is now derived from `stockMovementReason.enumValues`, and
+`REASON_LABEL` is keyed on it, so the next movement reason is a build error
+rather than a `REFUND_RESTOCK` in front of an owner.
+
+The usage sum now spans `depletion` and `refund_restock` together. The sign
+convention makes that exact with no second query — depletion rows are negative,
+restock rows positive, so negating their total gives NET consumption. Per the
+enum's own note, a restock only fires for an UNMADE order, so those ingredients
+never left the shelf; counting them as consumed overstated usage, run-rate,
+days-of-cover and COGS from one omission.
+
+Mutation-verified against four reverts, including the OVER-correction: recording
+every zero-delta movement would fill the feed with rows saying nothing changed,
+so a counterweight test keeps a zero-delta stocktake suppressed.
 ---
 
 ## 3. Areas audited and found clean
