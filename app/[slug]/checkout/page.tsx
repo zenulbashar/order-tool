@@ -28,10 +28,18 @@ export default async function CheckoutPage({
   const venue = await getPublicVenueBySlug(slug);
   if (!venue) notFound();
 
-  // A venue that has not finished onboarding is not live (Phase 3c). Show a
-  // graceful notice instead of the checkout form; placeOrder is the authoritative
-  // server-side block. Live venues skip this entirely (today's exact behaviour).
-  if (!venue.isLive) {
+  // A venue that cannot complete an order — onboarding unfinished, OR live but
+  // with no Stripe account connected — gets a graceful notice instead of the
+  // form. It used to check isLive alone, so an owner who finished the wizard
+  // (which never connects Stripe) sent every diner through cart, name, email
+  // and phone to reach "This venue isn't accepting online payments yet" on the
+  // final tap.
+  //
+  // placeOrder's reject stays exactly where it is and is the authoritative
+  // block: it fails closed BEFORE any item fetch, price recompute, transaction
+  // or PaymentIntent. This gate is the courtesy, not the control — do not
+  // "dedupe" the two.
+  if (!venue.acceptsOrders) {
     return (
       <main className="mx-auto max-w-md px-6 py-16 text-center">
         <h1 className="font-display text-xl font-semibold tracking-tight text-ink">

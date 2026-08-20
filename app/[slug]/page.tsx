@@ -94,7 +94,8 @@ export default async function StorefrontPage({
   // action re-checks it too, so a forged client can never bypass it. Suppressed
   // for a not-yet-live venue (Phase 3c) so the prompt box is not offered when
   // ordering is blocked; the concierge's own grounding/security is unchanged.
-  const conciergeEnabled = (await canUseConcierge(venue)) && venue.isLive;
+  // The concierge exists to help someone ORDER, so it follows the same gate.
+  const conciergeEnabled = (await canUseConcierge(venue)) && venue.acceptsOrders;
 
   // Per-venue structured data (SEO). Built from the SAME venue + menu already
   // loaded above — no extra query — and emits only owner-entered fields.
@@ -104,7 +105,11 @@ export default async function StorefrontPage({
     <>
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
       <StorefrontFaqJsonLd faqs={faqs} url={canonicalUrl} />
-      {!venue.isLive ? (
+      {/* acceptsOrders, not isLive: finishing the wizard stamps a venue live,
+          but nothing in the wizard connects Stripe, so a venue can be "live"
+          and still unable to take a cent. A diner should learn that here, not
+          after building a cart and typing their details. */}
+      {!venue.acceptsOrders ? (
         <div className="bg-accent/15 px-6 py-3 text-center text-sm text-ink">
           {venue.name}{" "}isn&apos;t taking orders yet. Please check back soon.
         </div>

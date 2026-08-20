@@ -73,13 +73,14 @@ export default async function MenuPage({ params, searchParams }: MenuParams) {
   const initialTable = typeof tableParam === "string" ? tableParam : "";
 
   const recommendations = await getRecommendations(venue.id, menu);
-  const conciergeEnabled = (await canUseConcierge(venue)) && venue.isLive;
+  const conciergeEnabled = (await canUseConcierge(venue)) && venue.acceptsOrders;
   const canonicalUrl = `${baseUrl}/${venue.slug}/menu`;
 
   return (
     <>
       <StorefrontJsonLd venue={venue} menu={menu} url={canonicalUrl} />
-      {!venue.isLive ? (
+      {/* Same gate as the storefront — see the note there. */}
+      {!venue.acceptsOrders ? (
         <div className="bg-accent/15 px-6 py-3 text-center text-sm text-ink">
           {venue.name} isn&apos;t taking orders yet. Please check back soon.
         </div>

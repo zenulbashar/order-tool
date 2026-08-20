@@ -112,7 +112,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P11 | Medium | ~~Scheduled pre-order stamped with the placement day's call number~~ **FIXED** |
 | P12 | Medium | Completed orders cannot be refunded or stepped back from the dashboard |
 | P13 | Medium | ~~Reports trend uses rolling 24h windows labelled in server (UTC) time~~ **FIXED** |
-| P14 | Medium | Onboarding marks a venue live with no Stripe account |
+| P14 | Medium | ~~Onboarding marks a venue live with no Stripe account~~ **FIXED** |
 | P15 | Medium | ~~Landing page advertises a Google Gemini ordering integration that does not exist~~ **FIXED** |
 | P16 | Low ×10 | (see table at end) |
 
@@ -485,6 +485,38 @@ None of the six wizard steps creates or connects a Stripe account (`stripe.accou
 *Correctly fails closed:* the reject at `checkout/actions.ts:149` runs **before** any item fetch, price recompute, transaction or PaymentIntent — no order row, no PI, no money at risk. This is a dead-end plus a false heading, not a data defect.
 
 *Fix:* Gate the "You are ready to go live" copy on `stripeChargesEnabled`, add a persistent dashboard banner and a storefront "not taking orders yet" banner when it is false, and move the payments check into the checkout page gate so the diner is told before filling the form.
+
+**RESOLVED**, all four parts, via a new `acceptsOrders` on the public venue
+shape (`onboarding_completed_at is not null AND stripe_charges_enabled`).
+
+The tempting fix was to fold payments into `isLive` itself — one line, and all
+three diner gates would have covered it for free. Deliberately NOT done. "The
+owner finished setup" and "the venue can take money" are different facts;
+`app/admin` reports on the first, every diner surface needs the second, and
+overloading the name is how the next person gets a surprise. A test pins
+`isLive` to the onboarding timestamp alone.
+
+The three diner surfaces (storefront, menu, checkout) now gate on
+`acceptsOrders`, so a diner learns before building a cart rather than on the
+final tap. `placeOrder`'s reject stays exactly where it is and is commented as
+the authoritative block — it fails closed before any item fetch, price
+recompute, transaction or PaymentIntent, and a test exists specifically to stop
+it being "deduped" now that the UI checks too. The page gate is the courtesy;
+the action gate is the control.
+
+The concierge follows `acceptsOrders` as well: it exists to help someone order,
+so offering it on a venue that cannot take one is the same dead end one step
+earlier.
+
+Owner side: the wizard's final heading reads "One step left: connect payments"
+with a CTA when charges are off, instead of promising readiness above the QR
+codes it invites the owner to print. And the dashboard finally says something —
+this state was silent in every direction, because `needsOnboarding` goes false
+the moment the wizard ends, leaving an owner staring at an empty board with no
+indication that every checkout was being turned away.
+
+Mutation-verified against three reverts: the checkout page back on `isLive`, the
+one-line `isLive` fold, and `placeOrder`'s reject deduped away.
 
 ---
 

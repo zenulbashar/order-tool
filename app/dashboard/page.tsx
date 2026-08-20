@@ -404,6 +404,34 @@ export default async function DashboardPage({
           </p>
         ) : null}
 
+        {/* Onboarding finished but no Stripe account connected. This state was
+            completely silent: needsOnboarding goes false the moment the wizard
+            ends, so the dashboard showed a venue that looks open and reports
+            zero orders, with nothing anywhere explaining that every checkout is
+            being turned away at the last tap. Shown to everyone who can see the
+            page, because a manager watching an empty board needs the reason as
+            much as the owner does — the CTA is what requires billing:manage. */}
+        {!needsOnboarding && !venue.stripeChargesEnabled ? (
+          <Link
+            href="/dashboard/payments"
+            className="group flex items-center justify-between gap-3 rounded-card border border-[var(--color-warm-deep)]/30 bg-[var(--color-warm-deep)]/10 px-4 py-3 transition hover:border-[var(--color-warm-deep)]/50"
+          >
+            <span className="text-sm text-ink">
+              Your storefront is live but cannot take payments yet, so orders
+              are being declined at checkout.
+            </span>
+            <span className="shrink-0 text-sm font-medium text-[var(--action)]">
+              Connect payments{" "}
+              <span
+                aria-hidden="true"
+                className="inline-block transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+              >
+                →
+              </span>
+            </span>
+          </Link>
+        ) : null}
+
         {needsOnboarding ? (
           <Link
             href="/onboarding"
