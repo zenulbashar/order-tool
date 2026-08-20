@@ -99,11 +99,11 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 
 | # | Severity | Title |
 |---|---|---|
-| P1 | **Critical** | Declined-then-retried payment: charged, never confirmed, stranded forever |
-| P2 | **High** | Refund compensation credits gift cards / restocks stock that was never debited |
-| P3 | **High** | Confirm-to-debit window lets one gift card be spent twice |
-| P4 | **High** | Table-QR `?table=` label dropped on every route to the menu |
-| P5 | Medium | Failed/canceled refunds are never demoted from `succeeded` |
+| P1 | **Critical** | ~~Declined-then-retried payment: charged, never confirmed, stranded forever~~ **FIXED** (`CONFIRMABLE_ORDER_STATUSES`) |
+| P2 | **High** | ~~Refund compensation credits gift cards / restocks stock that was never debited~~ **FIXED** (observe-then-reverse) |
+| P3 | **High** | ~~Confirm-to-debit window lets one gift card be spent twice~~ **FIXED** (`HOLDING_ORDER_STATUSES` + not-yet-debited check) |
+| P4 | **High** | ~~Table-QR `?table=` label dropped on every route to the menu~~ **FIXED** (`menuHref`) |
+| P5 | Medium | ~~Failed/canceled refunds are never demoted from `succeeded`~~ **FIXED** |
 | P6 | Medium | ~~Printed customer receipt lines do not sum to the printed Total~~ **FIXED** |
 | P7 | Medium | ~~All five backstop sweeps filter `status='confirmed'` — refunded orders skipped forever~~ **FIXED** (the prescribed fix below was itself wrong) |
 | P8 | Medium | ~~Reports and Payments give contradictory 30-day revenue and GST~~ **FIXED** |
@@ -114,7 +114,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P13 | Medium | ~~Reports trend uses rolling 24h windows labelled in server (UTC) time~~ **FIXED** |
 | P14 | Medium | ~~Onboarding marks a venue live with no Stripe account~~ **FIXED** |
 | P15 | Medium | ~~Landing page advertises a Google Gemini ordering integration that does not exist~~ **FIXED** |
-| P16 | Low ×10 | (see table at end) |
+| P16 | Low ×12 | (see table at end) — 11 fixed, L7 deferred with reasons |
 
 ---
 
