@@ -21,11 +21,23 @@ export const dynamic = "force-dynamic";
 const CONTAINER = "mx-auto w-full max-w-[1240px] px-[clamp(18px,4vw,48px)]";
 
 export default async function ShopPage() {
-  const { products } = await getShopProducts();
+  const { products, source } = await getShopProducts();
 
   return (
     <div className="min-h-dvh bg-surface-elevated text-forest">
-      <ShopJsonLd products={products} />
+      {/* Structured data ONLY for a real feed.
+          `source` was destructured away here, so with SHOP_FEED_URL unset the
+          six hardcoded placeholders in lib/shop/feed.ts — a 50" signage display
+          at $640, a 14" laptop at $899 — were published as Product/Offer markup
+          carrying priceCurrency "AUD", a real price and InStock availability.
+          ShopJsonLd's docblock promises "the markup never claims an offer the
+          page doesn't display", which is true of the PAGE and says nothing
+          about whether the offer exists.
+          app/robots.ts deliberately admits GPTBot, ClaudeBot and PerplexityBot,
+          so those were machine-readable commerce claims about products nobody
+          can buy. The discriminant to prevent it already existed; it was just
+          being thrown away. */}
+      {source === "feed" ? <ShopJsonLd products={products} /> : null}
       {/* Slim nav */}
       <MarketingHeader
         container={CONTAINER}
