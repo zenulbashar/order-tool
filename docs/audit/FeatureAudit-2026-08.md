@@ -109,7 +109,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P8 | Medium | ~~Reports and Payments give contradictory 30-day revenue and GST~~ **FIXED** |
 | P9 | Medium | ~~`/dashboard` home renders revenue on bare membership, bypassing `reports:view`~~ **FIXED** — and the class was 22 of 38 dashboard pages, not one |
 | P10 | Medium | Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition |
-| P11 | Medium | Scheduled pre-order stamped with the placement day's call number |
+| P11 | Medium | ~~Scheduled pre-order stamped with the placement day's call number~~ **FIXED** |
 | P12 | Medium | Completed orders cannot be refunded or stepped back from the dashboard |
 | P13 | Medium | Reports trend uses rolling 24h windows labelled in server (UTC) time |
 | P14 | Medium | Onboarding marks a venue live with no Stripe account |
@@ -365,6 +365,33 @@ Verified by running the real exported functions: Sydney venue, Sat 17:00-21:00, 
 *Failure:* Monday, a Thursday pre-order is the 5th order of Monday → `dailyNumber = 5`. Thursday the counter restarts; by 11:40 the venue is on order 5. At 12:00 the pre-order joins the make-now queue. Two cards badged `#5`, two dockets headed `ORDER 5`, two station labels tagged `5-K`. The card/ticket/docket carry a `createdAt` line with day+month, a weak disambiguator — **the station label (`station-label.tsx:32-73`) carries none at all**, so the one surface designed to be sorted by eye is byte-identical. Both diners are also independently told "Order 5" (`app/[slug]/order/[token]/page.tsx:457`, `lib/customer/notify.ts:84`).
 
 *Fix:* `assignDailyNumber(venueId, serviceInstant)` — derive `serviceDate` from `scheduledForInstant ?? new Date()`.
+
+**RESOLVED**, with the parameter REQUIRED rather than defaulted. A default of
+`new Date()` is precisely how this went wrong the first time, and it would have
+let the next caller reintroduce it silently; the signature now forces the
+decision, and the compiler caught the single existing call site as intended.
+
+Fixing it surfaced a second, unrelated defect in the same function. "Which
+venue-local day is this" had TWO implementations — this one and
+`dashboard/page.tsx`'s `dayKeyFormatter` — and they had already drifted: the
+dashboard's caught a timezone `Intl` rejects and fell back to UTC, while this
+one did not, so a corrupt `venues.timezone` fell into `assignDailyNumber`'s
+outer catch and cost the order its call number ENTIRELY. Days in the wrong zone
+are strictly better than no number. Both now resolve through
+`lib/orders/service-date.ts`, which exports a reusable formatter for the
+dashboard's per-row bucketing and a one-shot for the counter, so the dedup costs
+the loop nothing.
+
+No DST interaction with P10, and worth stating because the two look adjacent:
+formatting an instant INTO a local date is DST-safe on its own, since `Intl`
+resolves the offset in effect at that instant. P10's bug is the opposite
+direction — wall-clock to instant, which must pick an offset before it knows the
+instant. Pinned by a test asserting the same wall-clock hour maps correctly
+either side of a Sydney DST change.
+
+Pinned by `lib/orders/service-date.test.ts`, mutation-verified against four
+reverts: the wall-clock read, a defaulted parameter, a call site passing
+placement time, and the dropped timezone fallback.
 
 ---
 

@@ -10,6 +10,7 @@ import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, refunds } from "@/lib/db/schema";
 import { computeMenuHealth } from "@/lib/menu-health";
 import { netOrderMoney } from "@/lib/orders/net-money";
+import { venueDayFormatter } from "@/lib/orders/service-date";
 import { buildSuggestions } from "@/lib/nudges";
 import {
   hasVenuePermission,
@@ -76,20 +77,6 @@ function greetingFor(hour: number): string {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
-}
-
-/** A reusable en-CA (ISO-ordered) day-key formatter in the venue's timezone. */
-function dayKeyFormatter(timeZone: string): Intl.DateTimeFormat {
-  const opts: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  };
-  try {
-    return new Intl.DateTimeFormat("en-CA", { ...opts, timeZone });
-  } catch {
-    return new Intl.DateTimeFormat("en-CA", { ...opts, timeZone: "UTC" });
-  }
 }
 
 /** Whole-dollar money, no cents (e.g. "$3,480"). */
@@ -284,7 +271,7 @@ export default async function DashboardPage({
   const refundedByOrder = new Map(
     refundRows.map((r) => [r.orderId, Number(r.total)]),
   );
-  const keyOf = dayKeyFormatter(venue.timezone);
+  const keyOf = venueDayFormatter(venue.timezone);
   const byDay = new Map<string, { orders: number; revenue: number }>();
   let dineIn = 0;
   let takeaway = 0;
