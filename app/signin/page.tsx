@@ -12,11 +12,22 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const session = await auth();
   if (session?.user) {
     redirect("/");
   }
+
+  // The landing page's final CTA is a GET <form action="/signin">, so the
+  // address the visitor typed arrives as ?email=. Nothing read it, and the copy
+  // beside that field says "Enter your email above to get started" — so the
+  // first thing the product asked them to do was type it again.
+  const prefill = (await searchParams).email;
+  const initialEmail = typeof prefill === "string" ? prefill : "";
 
   return (
     <main className="min-h-dvh lg:grid lg:grid-cols-2">
@@ -74,7 +85,7 @@ export default async function SignInPage() {
               </p>
             </div>
 
-            <SignInForm />
+            <SignInForm initialEmail={initialEmail} />
 
             <p className="text-sm text-muted">
               No passwords, ever. We email you a secure one-tap link.

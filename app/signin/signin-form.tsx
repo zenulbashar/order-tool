@@ -12,7 +12,7 @@ import { requestOwnerSignIn } from "./actions";
  * inline server-action form had none). On success the action redirects exactly
  * as before.
  */
-export function SignInForm() {
+export function SignInForm({ initialEmail = "" }: { initialEmail?: string }) {
   const [state, formAction, pending] = useActionState(requestOwnerSignIn, {
     error: null,
   });
@@ -24,6 +24,10 @@ export function SignInForm() {
         type="email"
         required
         autoComplete="email"
+        // defaultValue, not value: the field stays uncontrolled so the visitor
+        // can edit it, and a re-render after a rate-limit error does not wipe
+        // what they typed.
+        defaultValue={initialEmail}
         placeholder="you@example.com"
         className="w-full rounded-lg border border-sand bg-surface-elevated px-3 py-2.5 text-base sm:text-sm text-ink shadow-sm placeholder:text-muted focus-visible:border-[var(--color-accent)] focus-visible:shadow-[var(--focus-ring-input)] focus-visible:outline-none"
       />
