@@ -593,7 +593,7 @@ until the page says nothing is not a fix either.
 
 | ID | File:line | One-line summary | Fix |
 |---|---|---|---|
-| L1 | `lib/payments/refund-service.ts:161` | `charge.refunded` racing an in-product refund → 23505 on the partial unique index; the action throws, a succeeded refund is reported as failed, no `venue_audit` row, orphan `pending` row forever. On a *partial* refund the false error induces a retry that passes `planRefund` → genuine double refund. | Reserve the id before the Stripe call (idempotency-key-derived), or wrap the stamp UPDATE in a conflict-tolerant path that merges into the webhook-inserted row. |
+| ~~L1~~ **FIXED** (and it was not a low — see below) | `lib/payments/refund-service.ts:161` | `charge.refunded` racing an in-product refund → 23505 on the partial unique index; the action throws, a succeeded refund is reported as failed, no `venue_audit` row, orphan `pending` row forever. On a *partial* refund the false error induces a retry that passes `planRefund` → genuine double refund. | Reserve the id before the Stripe call (idempotency-key-derived), or wrap the stamp UPDATE in a conflict-tolerant path that merges into the webhook-inserted row. |
 | L2 | `app/dashboard/stock/actions.ts:231` | Opening count of **0** on a NULL `on_hand_qty` computes `deltaQty = 0`, `recordStockMovement` bails at `movements.ts:40`, nothing is written, and the action redirects as success. This is the default path — the form pre-selects `set` exactly when `onHandQty` is null and the placeholder is literally "0". | Force the `on_hand_qty` write when `locked?.onHandQty == null`, treating NULL→0 as a real transition. |
 | L3 | `lib/payments/refund-compensation.ts:213` | `restockOrder` re-derives from **today's** `recipe_lines` and never consults the order's actual `depletion` movements. A recipe edited mid-order over-restocks; a missed depletion restocks from nothing, permanently (the sweep is already locked out by `status='refunded'`). | Restock from the order's recorded `depletion` movements, negated. |
 | L4 | `app/dashboard/stock/overview/page.tsx:90` | 30-day usage filters `reason='depletion'` only, so `refund_restock` never nets out — usage, run-rate, days-of-cover and COGS all overstate. Separately `REASON_LABEL` (`:17-24`) has no `refund_restock` entry, so the feed prints the raw enum `REFUND_RESTOCK`. | Include `refund_restock` in the sum; add the label. |
@@ -606,6 +606,39 @@ until the page says nothing is not a fix either.
 | L11 | `app/dashboard/orders/order-card.tsx:201` | A partially refunded order stays on the board and reprints `Total $55.00 / incl. GST $5.00` with a plain fulfillment badge; `refundedCents` is on `KitchenOrder` but its only consumer is `RefundControl` inside the drawer. | Render a "Refunded $X" line on the card and docket when `refundedCents > 0`. |
 | L12 | `app/onboarding/plan/page.tsx:37` | "We will email you before it ends" — no trial-reminder sender, template, cron or `trial_will_end` webhook case exists. Mitigated: the owner who sees this string *did* complete Checkout, so `trialEndsAt` is populated and the Billing page countdown does render; and trial expiry is not enforced at all yet (`schema.ts:288`). | Remove the sentence, or implement the reminder. Confirm whether Stripe Billing's own trial-ending email is enabled (§4). |
 
+
+### L1 — resolved, and re-rated
+
+Filed as LOW. It is not. `planRefund` gates only on HEADROOM, so on a partial
+refund the false error is not self-limiting: the webhook's row makes
+`alreadyRefunded` $10 of a $55 order, leaving $45 remaining, so the retry the
+operator is pushed into VALIDATES and creates a second real Stripe refund under
+a fresh idempotency key. The diner is refunded twice, with no `venue_audit` row
+naming either actor. Verified by reading `planRefund` rather than inferred.
+
+The stamp UPDATE is now conflict-tolerant. A 23505 on `stripe_refund_id` means
+one specific thing — `charge.refunded` for this very refund already inserted a
+row — so the handler adopts that row, stamping on the actor, reason and note the
+webhook could not know, and deletes the duplicate pending row inside one
+transaction. The caller is told the refund succeeded, because it did.
+
+`isUniqueViolation` moved to `lib/db/errors.ts`; it was already inlined in
+`lib/customer/auth.ts` and now has two call sites.
+
+Pinned by `test/refund-webhook-race.test.ts`, which drives the real `refundOrder`
+with only its I/O mocked. Mutation testing earned its keep here: swallowing
+EVERY stamp error rather than only 23505 passed all four original assertions, so
+a fifth was added — an unrelated DB failure must not be mistaken for a webhook
+race, because that would adopt a row that does not exist and report success on a
+refund the ledger has no succeeded record of.
+
+**Residual, deliberately not widened into:** any post-Stripe DB failure that is
+NOT a unique violation still surfaces as an error, and an operator who retries
+on the back of it can still double-refund a partial. That is a broader question
+about compensating actions after money has already moved, not the race this
+finding describes, and it wants its own design rather than being smuggled in
+here. The `charge.refunded` webhook does eventually reconcile the record via
+`reconcileRefundsForPaymentIntent`, which bounds the exposure.
 ---
 
 ## 3. Areas audited and found clean
