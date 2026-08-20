@@ -35,7 +35,14 @@ import { describe, expect, it } from "vitest";
  * same lesson from the other direction: prose must never be able to satisfy an
  * assertion, and it must not be able to break one either.
  */
-const PUBLIC_COPY = ["app/_landing/landing.tsx", "lib/marketing-content.ts"];
+const PUBLIC_COPY = [
+  "app/_landing/landing.tsx",
+  "lib/marketing-content.ts",
+  // Owner-facing product copy, but the same rule applies and for a sharper
+  // reason: this page is read by someone who has just paid, and its promises
+  // are commitments rather than marketing.
+  "app/onboarding/plan/page.tsx",
+];
 
 /** term -> what would have to exist in the repo for the claim to be honest. */
 const UNBUILT_CAPABILITIES: { term: RegExp; requires: string }[] = [
@@ -48,6 +55,11 @@ const UNBUILT_CAPABILITIES: { term: RegExp; requires: string }[] = [
     term: /\bai-plugin\b|\bMCP server\b/i,
     requires:
       "a .well-known/ai-plugin.json or an MCP endpoint. app/.well-known serves only apple-app-site-association and assetlinks.json.",
+  },
+  {
+    term: /\bemail you before it ends\b|\bremind you before\b/i,
+    requires:
+      "a trial-reminder sender, a template, and something to fire it — a cron, or a `customer.subscription.trial_will_end` case in app/api/stripe/billing-webhook/route.ts. None of the three exists; lib/billing/sync.ts only maps trial STATUS and stores trial_ends_at.",
   },
   {
     term: /\bcommission[- ]free\b/i,
@@ -77,6 +89,18 @@ describe("public copy claims only what is built", () => {
       ).toEqual([]);
     });
   }
+
+  it("has no trial_will_end handler that would make a reminder claim honest", () => {
+    // The other half of the ban, same discipline as the dependency check below:
+    // if someone implements the reminder, this fails and the banned phrase gets
+    // revisited deliberately rather than staying banned by inertia.
+    const webhook = source("app/api/stripe/billing-webhook/route.ts");
+    expect(
+      webhook.includes("trial_will_end"),
+      "A trial_will_end case appeared — revisit UNBUILT_CAPABILITIES rather " +
+        "than leaving the reminder phrasing banned.",
+    ).toBe(false);
+  });
 
   it("has no dependency that would make an agent-ordering claim honest", () => {
     // The other half: if someone adds the SDK, this test stops being the reason

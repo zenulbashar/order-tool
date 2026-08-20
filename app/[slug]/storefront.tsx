@@ -410,7 +410,11 @@ function StorefrontInner({
         {/* ============ Desktop hero (lg+) — LANDING only ============ */}
         {isLanding ? (
           <div className="hidden lg:block">
-            <StorefrontHero venue={venue} images={heroImages} />
+            <StorefrontHero
+              venue={venue}
+              images={heroImages}
+              menuUrl={menuHref(venue.slug, initialTable)}
+            />
           </div>
         ) : null}
 
@@ -513,14 +517,27 @@ function StorefrontInner({
         {/* ============ Categories landing — big tiles (both breakpoints) ============ */}
         {isLanding ? (
           <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1680px] px-5 py-8 lg:px-6 lg:py-12">
-            <h2 className="mb-5 font-display text-2xl font-bold tracking-tight text-ink">
-              Browse by category
-            </h2>
-            <CategoryTiles
-              slug={venue.slug}
-              categories={categoryTiles.slice(0, 6)}
-              table={initialTable}
-            />
+            {menu.length === 0 ? (
+              /* The landing had no empty state at all — only the MENU view
+                 carried this copy. A venue that skipped the menu step handed
+                 out table QR codes that landed here on "Browse by category"
+                 with nothing beneath it and no explanation. A heading over
+                 empty tiles is worse than no heading. */
+              <p className="rounded-card border border-dashed border-sand p-8 text-center text-sm text-muted">
+                This venue hasn&rsquo;t published a menu yet. Check back soon.
+              </p>
+            ) : (
+              <>
+                <h2 className="mb-5 font-display text-2xl font-bold tracking-tight text-ink">
+                  Browse by category
+                </h2>
+                <CategoryTiles
+                  slug={venue.slug}
+                  categories={categoryTiles.slice(0, 6)}
+                  table={initialTable}
+                />
+              </>
+            )}
             {menu.length > 0 ? (
               <div className="mt-8 text-center">
                 <Link

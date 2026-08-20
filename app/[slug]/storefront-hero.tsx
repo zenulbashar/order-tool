@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { PublicVenue } from "./types";
@@ -56,8 +57,9 @@ const ROTATE_MS = 6000;
 /**
  * Desktop storefront hero (world-class hospitality pattern): a FULL-PAGE image —
  * rotating through up to three owner-uploaded photos — with a dark scrim, the
- * venue's logo + name centered over it, and a "View menu" cue that scrolls to
- * the menu. Rotation is a slow 6s crossfade with manual dots (carousel best
+ * venue's logo + name centered over it, and a "View menu" cue that LINKS to the
+ * menu route (it used to scroll to an id that only exists in the other branch,
+ * so it never moved anything). Rotation is a slow 6s crossfade with manual dots (carousel best
  * practice) and is disabled entirely under prefers-reduced-motion or with a
  * single image. With NO images it falls back to the short brand-tint band —
  * never a full page of empty colour. Desktop only; the mobile banner is
@@ -66,9 +68,19 @@ const ROTATE_MS = 6000;
 export function StorefrontHero({
   venue,
   images,
+  menuUrl,
 }: {
   venue: PublicVenue;
   images: string[];
+  /**
+   * Where "View menu" goes. A URL rather than a scroll target, because the
+   * menu is a SEPARATE ROUTE: this hero renders only inside the storefront's
+   * landing branch, and `#menu-top` is the id of the menu branch — the two are
+   * mutually exclusive, so the old scrollIntoView found nothing and silently
+   * did nothing, on every venue, every time. Passed in so it carries the
+   * ?table= parameter from the QR code exactly as the body's link does.
+   */
+  menuUrl: string;
 }) {
   const [index, setIndex] = useState(0);
 
@@ -81,12 +93,6 @@ export function StorefrontHero({
     );
     return () => clearInterval(id);
   }, [images.length]);
-
-  function scrollToMenu() {
-    document
-      .getElementById("menu-top")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 
   if (images.length === 0) {
     // No photos: a calm brand-tint band of the classic height.
@@ -169,9 +175,8 @@ export function StorefrontHero({
             ))}
           </div>
         ) : null}
-        <button
-          type="button"
-          onClick={scrollToMenu}
+        <Link
+          href={menuUrl}
           className="flex items-center gap-2 rounded-pill bg-white/12 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
         >
           View menu
@@ -188,7 +193,7 @@ export function StorefrontHero({
           >
             <path d="M6 9l6 6 6-6" />
           </svg>
-        </button>
+        </Link>
       </div>
     </div>
   );

@@ -600,11 +600,11 @@ until the page says nothing is not a fix either.
 | ~~L5~~ **FIXED** | `lib/promotions.ts:118` | The `audience:"new"` guard short-circuits on `customerId`, which is set only by fire-and-forget `claimOrder` (`checkout-client.tsx:138`, `.catch(() => {})`). If that call fails, a signed-in returning customer gets the first-timers-only promo written to the order and the PI, and also loses their loyalty earn. | Set `orders.customerId` in `placeOrder` — the checkout page already resolved the signed-in customer server-side. |
 | L6 | `app/dashboard/tables/queries.ts:69` | "Current session" is a fixed 2h rolling label-keyed sum with no close control, so a new party inherits the previous party's spend and order count until it ages out. Prepay model, so nothing is owed — a display-accuracy defect. | Add a dwell-gap boundary, or relabel to "Recent orders (2h)" and drop the single-`orderRef`+combined-total pairing. |
 | L7 | `app/dashboard/tables/queries.ts:122` | Table identity is the free-text `tableLabel` snapshot with no FK. Renaming a table orphans its in-flight session; renaming a *different* table onto that string mis-attributes the session. Blast radius is the tables board only. | Add `orders.table_id` alongside the label snapshot and join on it. |
-| L8 | `app/[slug]/checkout/payment-step.tsx:224` | `runDiscount` wraps its body in `if (result.ok)` with no `else`, no catch, and every caller uses `void`. On `{ok:false}` both status states stay "idle", so Apply looks broken. Most reachable trigger: after a decline the order is `payment_failed`, so every subsequent Apply silently no-ops for the session. No financial consequence — the gift card is never consumed (the reservation rolls back with the transaction). | Add an `else` setting an error status, and a `.catch` on every `void runDiscount(...)`. |
-| L9 | `app/[slug]/storefront.tsx:505` | Landing branch has no empty-menu state — the "hasn't published a menu yet" copy lives only in the `!isLanding` block, and the link to `/menu` is gated on `menu.length > 0`. A venue that skipped the menu step hands out QRs that land on "Browse by category" with nothing beneath it. | Render the line-651 paragraph in the landing branch when `menu.length === 0`. **Adjacent:** `StorefrontHero`'s "View menu" button scrolls to `#menu-top`, which only exists in the `!isLanding` block — so it is a no-op on the landing even for a venue *with* a menu. |
-| L10 | `app/_landing/landing.tsx:590` | Final-CTA `<form action="/signin">` is a GET, so the email lands in `/signin?email=…`; `app/signin/page.tsx` declares no props and never reads `searchParams`, and `SignInForm` has no `defaultValue`. The visitor retypes the address next to copy reading "Enter your email above to get started." | Accept `searchParams` on the sign-in page and pass `defaultValue` into the input. |
+| ~~L8~~ **FIXED** | `app/[slug]/checkout/payment-step.tsx:224` | `runDiscount` wraps its body in `if (result.ok)` with no `else`, no catch, and every caller uses `void`. On `{ok:false}` both status states stay "idle", so Apply looks broken. Most reachable trigger: after a decline the order is `payment_failed`, so every subsequent Apply silently no-ops for the session. No financial consequence — the gift card is never consumed (the reservation rolls back with the transaction). | Add an `else` setting an error status, and a `.catch` on every `void runDiscount(...)`. |
+| ~~L9~~ **FIXED** | `app/[slug]/storefront.tsx:505` | Landing branch has no empty-menu state — the "hasn't published a menu yet" copy lives only in the `!isLanding` block, and the link to `/menu` is gated on `menu.length > 0`. A venue that skipped the menu step hands out QRs that land on "Browse by category" with nothing beneath it. | Render the line-651 paragraph in the landing branch when `menu.length === 0`. **Adjacent:** `StorefrontHero`'s "View menu" button scrolls to `#menu-top`, which only exists in the `!isLanding` block — so it is a no-op on the landing even for a venue *with* a menu. |
+| ~~L10~~ **FIXED** | `app/_landing/landing.tsx:590` | Final-CTA `<form action="/signin">` is a GET, so the email lands in `/signin?email=…`; `app/signin/page.tsx` declares no props and never reads `searchParams`, and `SignInForm` has no `defaultValue`. The visitor retypes the address next to copy reading "Enter your email above to get started." | Accept `searchParams` on the sign-in page and pass `defaultValue` into the input. |
 | ~~L11~~ **FIXED** | `app/dashboard/orders/order-card.tsx:201` | A partially refunded order stays on the board and reprints `Total $55.00 / incl. GST $5.00` with a plain fulfillment badge; `refundedCents` is on `KitchenOrder` but its only consumer is `RefundControl` inside the drawer. | Render a "Refunded $X" line on the card and docket when `refundedCents > 0`. |
-| L12 | `app/onboarding/plan/page.tsx:37` | "We will email you before it ends" — no trial-reminder sender, template, cron or `trial_will_end` webhook case exists. Mitigated: the owner who sees this string *did* complete Checkout, so `trialEndsAt` is populated and the Billing page countdown does render; and trial expiry is not enforced at all yet (`schema.ts:288`). | Remove the sentence, or implement the reminder. Confirm whether Stripe Billing's own trial-ending email is enabled (§4). |
+| ~~L12~~ **FIXED** | `app/onboarding/plan/page.tsx:37` | "We will email you before it ends" — no trial-reminder sender, template, cron or `trial_will_end` webhook case exists. Mitigated: the owner who sees this string *did* complete Checkout, so `trialEndsAt` is populated and the Billing page countdown does render; and trial expiry is not enforced at all yet (`schema.ts:288`). | Remove the sentence, or implement the reminder. Confirm whether Stripe Billing's own trial-ending email is enabled (§4). |
 
 
 ### L1 — resolved, and re-rated
@@ -709,6 +709,27 @@ days-of-cover and COGS from one omission.
 Mutation-verified against four reverts, including the OVER-correction: recording
 every zero-delta movement would fill the feed with rows saying nothing changed,
 so a counterweight test keeps a zero-delta stocktake suppressed.
+
+### L9 — sharper than recorded
+
+The finding notes the hero's "View menu" is a no-op "even for a venue *with* a
+menu". It is worse: `StorefrontHero` renders ONLY inside the storefront's
+landing branch, and `#menu-top` is the id of the menu branch. They are mutually
+exclusive, so `scrollIntoView` found nothing on **every venue, every time** —
+the button had never worked. It is now a `Link` to the menu route, carrying the
+QR `?table=` parameter through `menuHref` exactly as the body's link does.
+
+### L12 — routed through the truthfulness harness
+
+`app/onboarding/plan/page.tsx` joined `test/marketing-truthfulness.test.ts`'s
+scanned surfaces. It is owner-facing product copy rather than marketing, but the
+rule applies with a sharper edge: the reader has just paid, so its promises are
+commitments. Verified absent before removal — no sender, no template, no cron,
+and no `customer.subscription.trial_will_end` case in the billing webhook
+(`lib/billing/sync.ts` only maps trial STATUS and stores `trial_ends_at`). The
+harness now also fails if a `trial_will_end` handler appears, so building the
+reminder forces the ban to be revisited rather than left standing by inertia.
+The copy points at the Billing page countdown, which is real.
 ---
 
 ## 3. Areas audited and found clean

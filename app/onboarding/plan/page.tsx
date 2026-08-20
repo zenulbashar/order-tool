@@ -33,8 +33,15 @@ export default async function PlanStepPage({ searchParams }: PlanParams) {
             <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
               Your free trial is set up
             </h1>
+            {/* No trial-reminder promise. There is no sender, template or cron
+                for one, and the billing webhook handles no
+                `customer.subscription.trial_will_end` case — so the sentence
+                that used to sit here committed the product to something it
+                cannot do. The Billing page's countdown from `trial_ends_at` is
+                real, so it is what the owner is pointed at instead. */}
             <p className="text-sm text-muted">
-              You have full access for 30 days. We will email you before it ends.
+              You have full access for 30 days. Your Billing page shows how long
+              is left.
             </p>
           </div>
           <form action={advanceToLiveStep}>

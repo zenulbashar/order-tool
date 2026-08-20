@@ -34,6 +34,9 @@ const applyButton =
  * already created server-side as 'pending_payment'; it is confirmed ONLY by the
  * webhook — never by this client.
  */
+const RECOMPUTE_FAILED =
+  "We couldn't update your total just now. Please try again.";
+
 export function PaymentStep({
   venue,
   clientSecret,
@@ -243,7 +246,28 @@ function PaymentForm({
         } catch {
           // Element re-sync is best-effort; the charged amount is the PI's.
         }
+      } else {
+        // A failed recompute must not look like nothing happened. There was no
+        // `else` here and no `catch` beside the `finally`, so on {ok:false}
+        // every status stayed "idle" and Apply appeared inert.
+        //
+        // Most reachable after a DECLINE: discount-actions.ts requires
+        // `status === "pending_payment"`, and a declined card leaves the order
+        // `payment_failed` — so every subsequent Apply returned {ok:false} and
+        // silently did nothing for the rest of the session.
+        //
+        // Deliberately NOT setCodeStatus("invalid"): the code may be perfectly
+        // valid and the recompute failed for its own reasons. Claiming the
+        // diner's code was rejected would be a different, wrong statement.
+        setError(RECOMPUTE_FAILED);
       }
+    } catch {
+      // applyOrderDiscounts can also THROW. The five call sites all use `void`,
+      // so an escaping rejection was unhandled and left the UI just as inert.
+      // Catching here makes the function total, which is what makes `void`
+      // honest — and cannot be forgotten at a sixth call site the way a
+      // per-caller .catch() can.
+      setError(RECOMPUTE_FAILED);
     } finally {
       setRecomputing(false);
     }
