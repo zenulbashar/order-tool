@@ -595,15 +595,15 @@ until the page says nothing is not a fix either.
 |---|---|---|---|
 | ~~L1~~ **FIXED** (and it was not a low — see below) | `lib/payments/refund-service.ts:161` | `charge.refunded` racing an in-product refund → 23505 on the partial unique index; the action throws, a succeeded refund is reported as failed, no `venue_audit` row, orphan `pending` row forever. On a *partial* refund the false error induces a retry that passes `planRefund` → genuine double refund. | Reserve the id before the Stripe call (idempotency-key-derived), or wrap the stamp UPDATE in a conflict-tolerant path that merges into the webhook-inserted row. |
 | L2 | `app/dashboard/stock/actions.ts:231` | Opening count of **0** on a NULL `on_hand_qty` computes `deltaQty = 0`, `recordStockMovement` bails at `movements.ts:40`, nothing is written, and the action redirects as success. This is the default path — the form pre-selects `set` exactly when `onHandQty` is null and the placeholder is literally "0". | Force the `on_hand_qty` write when `locked?.onHandQty == null`, treating NULL→0 as a real transition. |
-| L3 | `lib/payments/refund-compensation.ts:213` | `restockOrder` re-derives from **today's** `recipe_lines` and never consults the order's actual `depletion` movements. A recipe edited mid-order over-restocks; a missed depletion restocks from nothing, permanently (the sweep is already locked out by `status='refunded'`). | Restock from the order's recorded `depletion` movements, negated. |
+| ~~L3~~ **FIXED** | `lib/payments/refund-compensation.ts:213` | `restockOrder` re-derives from **today's** `recipe_lines` and never consults the order's actual `depletion` movements. A recipe edited mid-order over-restocks; a missed depletion restocks from nothing, permanently (the sweep is already locked out by `status='refunded'`). | Restock from the order's recorded `depletion` movements, negated. |
 | L4 | `app/dashboard/stock/overview/page.tsx:90` | 30-day usage filters `reason='depletion'` only, so `refund_restock` never nets out — usage, run-rate, days-of-cover and COGS all overstate. Separately `REASON_LABEL` (`:17-24`) has no `refund_restock` entry, so the feed prints the raw enum `REFUND_RESTOCK`. | Include `refund_restock` in the sum; add the label. |
-| L5 | `lib/promotions.ts:118` | The `audience:"new"` guard short-circuits on `customerId`, which is set only by fire-and-forget `claimOrder` (`checkout-client.tsx:138`, `.catch(() => {})`). If that call fails, a signed-in returning customer gets the first-timers-only promo written to the order and the PI, and also loses their loyalty earn. | Set `orders.customerId` in `placeOrder` — the checkout page already resolved the signed-in customer server-side. |
+| ~~L5~~ **FIXED** | `lib/promotions.ts:118` | The `audience:"new"` guard short-circuits on `customerId`, which is set only by fire-and-forget `claimOrder` (`checkout-client.tsx:138`, `.catch(() => {})`). If that call fails, a signed-in returning customer gets the first-timers-only promo written to the order and the PI, and also loses their loyalty earn. | Set `orders.customerId` in `placeOrder` — the checkout page already resolved the signed-in customer server-side. |
 | L6 | `app/dashboard/tables/queries.ts:69` | "Current session" is a fixed 2h rolling label-keyed sum with no close control, so a new party inherits the previous party's spend and order count until it ages out. Prepay model, so nothing is owed — a display-accuracy defect. | Add a dwell-gap boundary, or relabel to "Recent orders (2h)" and drop the single-`orderRef`+combined-total pairing. |
 | L7 | `app/dashboard/tables/queries.ts:122` | Table identity is the free-text `tableLabel` snapshot with no FK. Renaming a table orphans its in-flight session; renaming a *different* table onto that string mis-attributes the session. Blast radius is the tables board only. | Add `orders.table_id` alongside the label snapshot and join on it. |
 | L8 | `app/[slug]/checkout/payment-step.tsx:224` | `runDiscount` wraps its body in `if (result.ok)` with no `else`, no catch, and every caller uses `void`. On `{ok:false}` both status states stay "idle", so Apply looks broken. Most reachable trigger: after a decline the order is `payment_failed`, so every subsequent Apply silently no-ops for the session. No financial consequence — the gift card is never consumed (the reservation rolls back with the transaction). | Add an `else` setting an error status, and a `.catch` on every `void runDiscount(...)`. |
 | L9 | `app/[slug]/storefront.tsx:505` | Landing branch has no empty-menu state — the "hasn't published a menu yet" copy lives only in the `!isLanding` block, and the link to `/menu` is gated on `menu.length > 0`. A venue that skipped the menu step hands out QRs that land on "Browse by category" with nothing beneath it. | Render the line-651 paragraph in the landing branch when `menu.length === 0`. **Adjacent:** `StorefrontHero`'s "View menu" button scrolls to `#menu-top`, which only exists in the `!isLanding` block — so it is a no-op on the landing even for a venue *with* a menu. |
 | L10 | `app/_landing/landing.tsx:590` | Final-CTA `<form action="/signin">` is a GET, so the email lands in `/signin?email=…`; `app/signin/page.tsx` declares no props and never reads `searchParams`, and `SignInForm` has no `defaultValue`. The visitor retypes the address next to copy reading "Enter your email above to get started." | Accept `searchParams` on the sign-in page and pass `defaultValue` into the input. |
-| L11 | `app/dashboard/orders/order-card.tsx:201` | A partially refunded order stays on the board and reprints `Total $55.00 / incl. GST $5.00` with a plain fulfillment badge; `refundedCents` is on `KitchenOrder` but its only consumer is `RefundControl` inside the drawer. | Render a "Refunded $X" line on the card and docket when `refundedCents > 0`. |
+| ~~L11~~ **FIXED** | `app/dashboard/orders/order-card.tsx:201` | A partially refunded order stays on the board and reprints `Total $55.00 / incl. GST $5.00` with a plain fulfillment badge; `refundedCents` is on `KitchenOrder` but its only consumer is `RefundControl` inside the drawer. | Render a "Refunded $X" line on the card and docket when `refundedCents > 0`. |
 | L12 | `app/onboarding/plan/page.tsx:37` | "We will email you before it ends" — no trial-reminder sender, template, cron or `trial_will_end` webhook case exists. Mitigated: the owner who sees this string *did* complete Checkout, so `trialEndsAt` is populated and the Billing page countdown does render; and trial expiry is not enforced at all yet (`schema.ts:288`). | Remove the sentence, or implement the reminder. Confirm whether Stripe Billing's own trial-ending email is enabled (§4). |
 
 
@@ -639,6 +639,47 @@ about compensating actions after money has already moved, not the race this
 finding describes, and it wants its own design rather than being smuggled in
 here. The `charge.refunded` webhook does eventually reconcile the record via
 `reconcileRefundsForPaymentIntent`, which bounds the exposure.
+
+### L3, L5, L11 — resolved
+
+**L3** was half-closed already, by the earlier fix that required an observed
+`depletion` movement before restocking — that stopped restocking from nothing.
+The remaining half was the AMOUNT, which still came from order_items x TODAY's
+`recipe_lines`. Edit a dish from 5g of saffron to 20g, refund an order from
+before the edit, and the venue is credited four times the saffron it ever took
+out. `restockOrder` now negates the order's recorded depletion movements, which
+are exact by construction (one row per ingredient, `deltaQty: -consumed`, under
+a unique index on `(order_id, ingredient_id) WHERE reason = 'depletion'`). The
+orderItems/recipeLines join is gone from the module entirely, so the fix is a
+simplification rather than a patch.
+
+**L5** was worse than the summary implied. The guard reads
+`c.audience === "new" && customerId && returning`, short-circuiting on a falsy
+`customerId` — and `placeOrder` never set the column at all. Its only writer was
+`claimOrder`, which runs AFTER the order exists and is called fire-and-forget
+with `.catch(() => {})`. So at the moment discounts are evaluated it was null in
+the ORDINARY case, not only when that call failed. `placeOrder` now resolves the
+diner from the SESSION via `getCustomer(venueId)` — never from input, because a
+client-supplied customer id would let anyone attach an order to another diner's
+account. Best-effort: a lookup failure degrades to null rather than blocking a
+paying order. The guard itself is untouched; loosening it would have granted
+first-timer promos more widely, not less.
+
+**L11** is the item deliberately left out of the P6 fix, where the scope was the
+lines-versus-Total reconciliation. The refund is printed BENEATH the Total, not
+netted into it: the Total is what was charged and the refund is a separate
+movement against it, so collapsing them would leave a receipt that reconciles
+against neither the Stripe charge nor the refund.
+
+Mutation-verified against three reverts: restocking the raw (negative) deltaQty,
+taking `customerId` from client input, and netting the refund into the Total.
+
+One test-harness note worth recording, because it recurs: the absence
+assertions in `test/refund-restock-source.test.ts` strip comments first. The
+comment explaining why the recipe join was removed has to NAME the join, and a
+raw-text scan reads that explanation as the violation —
+`test/authz-coverage.test.ts` records the same lesson from the opposite
+direction, prose satisfying an assertion.
 ---
 
 ## 3. Areas audited and found clean

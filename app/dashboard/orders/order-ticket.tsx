@@ -4,7 +4,7 @@ import { formatCents, orderReference } from "@/lib/validation";
 
 import type { KitchenOrder, KitchenOrderItem } from "./queries";
 import { taxLineText } from "./tax-line";
-import { orderDiscountLine } from "./discount-line";
+import { orderDiscountLine, orderRefundLine } from "./discount-line";
 
 /**
  * Print-only paper ticket for a single order, rendered entirely from the
@@ -37,6 +37,7 @@ export function OrderTicket({
     order.subtotalCents,
     order.totalCents,
   );
+  const refundLine = orderRefundLine(order.totalCents, order.refundedCents);
 
   return (
     <div className="mx-auto max-w-[72mm] px-1 py-2 font-mono text-[12px] leading-snug text-black">
@@ -122,6 +123,21 @@ export function OrderTicket({
         <p className="text-right text-eyebrow">
           {taxLineText(taxLabel, order.taxCents)}
         </p>
+      ) : null}
+      {/* Money that has gone back. Printed under the Total rather than netted
+          into it, so the docket reconciles against BOTH the charge and the
+          refund. */}
+      {refundLine ? (
+        <div className="mt-1 border-t-2 border-black pt-1">
+          <div className="flex justify-between">
+            <span>Refunded</span>
+            <span>-${refundLine.refunded}</span>
+          </div>
+          <div className="flex justify-between font-bold">
+            <span>Net</span>
+            <span>${refundLine.net}</span>
+          </div>
+        </div>
       ) : null}
 
       <p className="mt-3 text-center text-eyebrow">Thank you</p>

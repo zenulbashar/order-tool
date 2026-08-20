@@ -10,7 +10,7 @@ import { PrintButton } from "./print-button";
 import { RefundControl } from "./refund-control";
 import type { KitchenOrder, KitchenOrderItem } from "./queries";
 import { taxLineText } from "./tax-line";
-import { orderDiscountLine } from "./discount-line";
+import { orderDiscountLine, orderRefundLine } from "./discount-line";
 
 /**
  * Focused, enlarged single-order ticket in a right-side drawer (deferred design-
@@ -39,6 +39,7 @@ export function TicketDrawer({
     order.subtotalCents,
     order.totalCents,
   );
+  const refundLine = orderRefundLine(order.totalCents, order.refundedCents);
 
   return (
     <div
@@ -154,6 +155,18 @@ export function TicketDrawer({
             <p className="mt-1 text-right text-xs text-muted">
               {taxLineText(taxLabel, order.taxCents)}
             </p>
+          ) : null}
+          {refundLine ? (
+            <div className="mt-2 space-y-1 border-t border-line pt-2 text-base">
+              <div className="flex items-center justify-between text-warm-deep">
+                <span>Refunded</span>
+                <span>-${refundLine.refunded}</span>
+              </div>
+              <div className="flex items-center justify-between font-bold text-ink">
+                <span>Net</span>
+                <span>${refundLine.net}</span>
+              </div>
+            </div>
           ) : null}
 
           {/* Refunds (M4) — inside the scrolling body rather than the sticky
