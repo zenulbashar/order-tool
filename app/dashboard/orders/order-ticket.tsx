@@ -4,6 +4,7 @@ import { formatCents, orderReference } from "@/lib/validation";
 
 import type { KitchenOrder, KitchenOrderItem } from "./queries";
 import { taxLineText } from "./tax-line";
+import { orderDiscountLine } from "./discount-line";
 
 /**
  * Print-only paper ticket for a single order, rendered entirely from the
@@ -32,6 +33,10 @@ export function OrderTicket({
   taxLabel: string | null;
 }) {
   const isDineIn = order.orderType === "dine_in";
+  const discountLine = orderDiscountLine(
+    order.subtotalCents,
+    order.totalCents,
+  );
 
   return (
     <div className="mx-auto max-w-[72mm] px-1 py-2 font-mono text-[12px] leading-snug text-black">
@@ -86,7 +91,28 @@ export function OrderTicket({
 
       <TicketDocket items={order.items} />
 
-      <div className="mt-2 flex justify-between border-t-2 border-black pt-1 text-base font-bold">
+      {/* Subtotal + Discount, so the full-price rows above reconcile to the
+          Total. Printed lighter than the Total, which stays the emphasis. */}
+      {discountLine ? (
+        <div className="mt-2 border-t-2 border-black pt-1">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span>${discountLine.subtotal}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Discount</span>
+            <span>-${discountLine.discount}</span>
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className={
+          discountLine
+            ? "mt-1 flex justify-between pt-1 text-base font-bold"
+            : "mt-2 flex justify-between border-t-2 border-black pt-1 text-base font-bold"
+        }
+      >
         <span>Total</span>
         <span>${formatCents(order.totalCents)}</span>
       </div>

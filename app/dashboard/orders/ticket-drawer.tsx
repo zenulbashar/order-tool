@@ -10,6 +10,7 @@ import { PrintButton } from "./print-button";
 import { RefundControl } from "./refund-control";
 import type { KitchenOrder, KitchenOrderItem } from "./queries";
 import { taxLineText } from "./tax-line";
+import { orderDiscountLine } from "./discount-line";
 
 /**
  * Focused, enlarged single-order ticket in a right-side drawer (deferred design-
@@ -34,6 +35,10 @@ export function TicketDrawer({
   const panelRef = useDialog<HTMLDivElement>(onClose);
 
   const isDineIn = order.orderType === "dine_in";
+  const discountLine = orderDiscountLine(
+    order.subtotalCents,
+    order.totalCents,
+  );
 
   return (
     <div
@@ -120,7 +125,26 @@ export function TicketDrawer({
               kitchen vs front-counter (drinks) sections. */}
           <DrawerDocketItems items={order.items} />
 
-          <div className="mt-2 flex items-center justify-between border-t border-line pt-3">
+          {discountLine ? (
+            <div className="mt-2 space-y-1 border-t border-line pt-3 text-base text-muted">
+              <div className="flex items-center justify-between">
+                <span>Subtotal</span>
+                <span>${discountLine.subtotal}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Discount</span>
+                <span>-${discountLine.discount}</span>
+              </div>
+            </div>
+          ) : null}
+
+          <div
+            className={
+              discountLine
+                ? "mt-2 flex items-center justify-between pt-1"
+                : "mt-2 flex items-center justify-between border-t border-line pt-3"
+            }
+          >
             <span className="text-base font-semibold text-ink">Total</span>
             <span className="text-lg font-bold text-ink">
               ${formatCents(order.totalCents)}
