@@ -108,7 +108,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P7 | Medium | ~~All five backstop sweeps filter `status='confirmed'` — refunded orders skipped forever~~ **FIXED** (the prescribed fix below was itself wrong) |
 | P8 | Medium | ~~Reports and Payments give contradictory 30-day revenue and GST~~ **FIXED** |
 | P9 | Medium | ~~`/dashboard` home renders revenue on bare membership, bypassing `reports:view`~~ **FIXED** — and the class was 22 of 38 dashboard pages, not one |
-| P10 | Medium | Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition |
+| P10 | Medium | ~~Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition~~ **FIXED** |
 | P11 | Medium | ~~Scheduled pre-order stamped with the placement day's call number~~ **FIXED** |
 | P12 | Medium | Completed orders cannot be refunded or stepped back from the dashboard |
 | P13 | Medium | Reports trend uses rolling 24h windows labelled in server (UTC) time |
@@ -355,6 +355,37 @@ Verified by running the real exported functions: Sydney venue, Sat 17:00-21:00, 
 *Why it is latent, not live:* `venues.timezone` is `text notNull default 'Australia/Brisbane'` and **no application code ever writes it** — a grep of every `.ts/.tsx` returns only reads. The onboarding insert omits it, there is no settings field, no admin action, no migration UPDATE. Brisbane has no DST, so every venue the product can currently create is clean. It becomes the full outage the moment one row gets a DST zone — one UPDATE, or the settings UI this fully-threaded column is plainly waiting for.
 
 *Fix:* Two-pass offset resolution — compute the provisional offset, subtract it, then re-derive the offset at that corrected instant and use it (the standard fix). Then either add the round-trip guard to `buildPickupSlots` or make both call one guarded helper. `lib/schedule.test.ts:9` deliberately pins `timeZone: "UTC"` and comments that it is "DST-free", which is why the suite is green.
+
+**RESOLVED**, both halves, and the reproduction was re-run against the real
+exported functions before anything changed rather than taken from the finding:
+Sydney venue, Sat 17:00-21:00, `now` = Fri 2 Oct 2026 gave **16 slots offered,
+0 accepted, 16 rejected**. Exactly as recorded.
+
+The conversion is now two-pass, and the second pass is the correctness rather
+than a refinement — the offset has to be sampled somewhere, the only available
+starting point is the components read as UTC, and for a UTC+10 zone that sits
+ten to eleven hours before the answer.
+
+`buildPickupSlots` did not get a copy of the round-trip guard. Both callers now
+go through one `venueWallClockToInstantStrict` returning `Date | null`, so
+"offered ⟺ accepted" is structural instead of two call sites remembering the
+same rule. That was the actual defect: the module's docblock already promised
+the two cannot drift, and one of them was simply not enforcing it.
+
+The test that carries this asserts the INVARIANT — every slot the picker offers
+must validate — rather than the offset arithmetic, so it keeps holding if the
+conversion is ever rewritten. The suite also now covers the direction easy to
+over-correct into: the REPEATED hour at fall-back (5 Apr 2026, 02:00-02:59 twice
+in Sydney) must be accepted, not refused, because both readings genuinely exist.
+
+Mutation-verified against three reverts: the single-pass offset, the slot
+builder dropping back to the unguarded conversion, and the strict helper
+ceasing to reject.
+
+**Still true, and still the reason this was latent:** no application code writes
+`venues.timezone`. Every venue the product can currently create is Brisbane,
+which has no DST. This fix means the settings UI that column is plainly waiting
+for can ship without taking scheduling down with it.
 
 ---
 
