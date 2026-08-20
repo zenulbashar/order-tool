@@ -46,3 +46,56 @@ export function venueDayFormatter(timeZone: string): Intl.DateTimeFormat {
 export function venueServiceDate(instant: Date, timeZone: string): string {
   return venueDayFormatter(timeZone).format(instant);
 }
+
+/** One venue-local calendar day: its `YYYY-MM-DD` key and a Date to label from. */
+export type VenueDay = {
+  /** Matches what `venueDayFormatter(tz).format(instant)` returns. */
+  key: string;
+  /**
+   * The same day as a Date built in UTC. It is a CALENDAR DATE, not an instant,
+   * so anything formatting it must pass `timeZone: "UTC"` — otherwise the
+   * process zone shifts it and the label names a different day than the key.
+   */
+  date: Date;
+};
+
+/**
+ * The last `count` venue-local calendar days, oldest first.
+ *
+ * Both the owner Overview and Reports draw a daily revenue chart from the same
+ * order rows, and only one of them was doing it by calendar day. Reports bucketed
+ * `[dayEnd − 24h, dayEnd)` anchored to the REQUEST INSTANT and labelled the
+ * result with no `timeZone` at all, so on Vercel (no `TZ` set, process runs UTC)
+ * a Sydney venue opening Reports at 09:00 Wednesday saw its last bar labelled
+ * Tuesday, covering 09:00 Tue -> 09:00 Wed. Wednesday morning's takings appeared
+ * under Tuesday, Tuesday evening's split across two bars, and the Overview on
+ * the same dashboard reported those same takings under "Today".
+ *
+ * The bar HEIGHTS were wrong, not just the labels, which is why this is a
+ * bucketing fix rather than a formatting one.
+ *
+ * Deriving the series by calendar arithmetic on the venue-local "today" — rather
+ * than subtracting 86_400_000 from an instant — is also what makes it survive a
+ * DST week, where a local day is 23 or 25 hours long.
+ *
+ * `offsetDays` shifts the whole window back, for a caller comparing this week
+ * against the one before it.
+ */
+export function venueCalendarDays(
+  timeZone: string,
+  now: Date,
+  count: number,
+  offsetDays = 0,
+): VenueDay[] {
+  const [year, month, day] = venueServiceDate(now, timeZone)
+    .split("-")
+    .map(Number);
+  return Array.from({ length: count }, (_, i) => {
+    // Date.UTC normalises an out-of-range day (0, -3, 32) into the right month,
+    // so no month-boundary arithmetic is needed here.
+    const date = new Date(
+      Date.UTC(year, month - 1, day - offsetDays - (count - 1 - i)),
+    );
+    return { key: date.toISOString().slice(0, 10), date };
+  });
+}
