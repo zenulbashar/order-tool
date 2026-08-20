@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, refunds } from "@/lib/db/schema";
 import { reportError } from "@/lib/observability";
@@ -157,10 +158,47 @@ export async function refundOrder(input: {
     stripeStatus === "failed" || stripeStatus === "canceled"
       ? (stripeStatus as "failed" | "canceled")
       : "succeeded";
-  await db
-    .update(refunds)
-    .set({ status: settled, stripeRefundId, updatedAt: new Date() })
-    .where(eq(refunds.id, pending.id));
+  // Stamping the Stripe id onto our pending row can COLLIDE. `stripe_refund_id`
+  // carries a partial unique index, and `charge.refunded` for this very refund
+  // may land between refunds.create() returning and this UPDATE, inserting a
+  // row that already claims the id.
+  //
+  // Left to throw, that 23505 was expensive out of all proportion to its
+  // rarity. The action reported a refund that HAD moved money as failed, wrote
+  // no venue_audit row, and orphaned the pending row forever. Worse, on a
+  // PARTIAL refund the operator retries — and the retry is not blocked, because
+  // planRefund only checks headroom: the webhook's row makes alreadyRefunded
+  // $10 of a $55 order, leaving $45 remaining, so a second $10 refund passes
+  // validation and creates a second REAL Stripe refund under a fresh
+  // idempotency key. The diner is refunded twice.
+  //
+  // So the conflict is handled as what it actually is: the webhook already
+  // recorded this exact refund. Adopt its row — giving it the actor, reason and
+  // note it could not know — and drop our duplicate. The money moved once and
+  // the caller is told it succeeded, because it did.
+  try {
+    await db
+      .update(refunds)
+      .set({ status: settled, stripeRefundId, updatedAt: new Date() })
+      .where(eq(refunds.id, pending.id));
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
+    await db.transaction(async (tx) => {
+      await tx
+        .update(refunds)
+        .set({
+          actorUserId: input.actorUserId,
+          reason: normalizeRefundReason(input.reason) ?? null,
+          note: input.note?.trim() || null,
+          updatedAt: new Date(),
+        })
+        .where(eq(refunds.stripeRefundId, stripeRefundId));
+      // Never became a distinct refund — it IS the row the webhook inserted.
+      // Leaving it as `pending` would strand it; leaving it `canceled` would
+      // imply a second attempt that failed, which did not happen.
+      await tx.delete(refunds).where(eq(refunds.id, pending.id));
+    });
+  }
 
   if (settled !== "succeeded") {
     return {

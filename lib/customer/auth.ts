@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import {
   customerLoginTokens,
   customerSessions,
@@ -27,15 +28,6 @@ import { generateOpaqueToken, hashToken } from "./tokens";
 const CUSTOMER_SESSION_COOKIE = "ot_customer_session";
 const SESSION_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
 const LOGIN_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "23505"
-  );
-}
 
 /**
  * Resolve the signed-in customer FOR THIS VENUE, or null. The session row is
