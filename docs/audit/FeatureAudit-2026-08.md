@@ -104,7 +104,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P3 | **High** | Confirm-to-debit window lets one gift card be spent twice |
 | P4 | **High** | Table-QR `?table=` label dropped on every route to the menu |
 | P5 | Medium | Failed/canceled refunds are never demoted from `succeeded` |
-| P6 | Medium | Printed customer receipt lines do not sum to the printed Total |
+| P6 | Medium | ~~Printed customer receipt lines do not sum to the printed Total~~ **FIXED** |
 | P7 | Medium | ~~All five backstop sweeps filter `status='confirmed'` — refunded orders skipped forever~~ **FIXED** (the prescribed fix below was itself wrong) |
 | P8 | Medium | Reports and Payments give contradictory 30-day revenue and GST |
 | P9 | Medium | ~~`/dashboard` home renders revenue on bare membership, bypassing `reports:view`~~ **FIXED** — and the class was 22 of 38 dashboard pages, not one |
@@ -188,6 +188,35 @@ Two optimistic writes with no walk-back. `refundOrder:155-158` maps every non-te
 *Failure:* 3 × Burger @ $10 with a $5 promo → paper reads `3× Burger $30.00 / Total $25.00 / incl. GST $2.27`. Nothing accounts for the $5. The diner's own receipt page and the notification email **both** print Subtotal/Promotion/Total for the identical order — `lib/customer/order-email.ts:51-53` even carries the comment stating that without the breakdown "the lines visibly sum to more than the stated Total." The team fixed this class of bug on the email and left it on the three owner surfaces.
 
 *Fix:* No schema or query change needed for a single line — `subtotalCents` is already on `KitchenOrder`. Render `Subtotal` and `Discount −$(subtotal − total)` above the Total when they differ. Add the four discount columns to the two selects only if a per-component breakdown is wanted.
+
+**RESOLVED.** `app/dashboard/orders/discount-line.ts` holds the decision, exactly
+as `tax-line.ts` holds the GST one, and all three surfaces render it in their own
+styling. No schema, query or migration change — as predicted.
+
+The assumption the whole fix rests on was verified at the source rather than
+taken on trust: `lib/payments/line-plan.ts:186-193` accumulates
+`subtotalCents` from the SAME `lineTotalCents` values it writes to
+`order_items`, and `discount-actions.ts` reads `orders.subtotalCents` without
+ever rewriting it or the line rows. So the printed Subtotal is, by
+construction, exactly what the printed rows add up to.
+
+Two guards worth naming. The helper returns null when `total >= subtotal`, not
+just when they are equal — the product charges no per-order fee, so a total
+above subtotal means data we do not understand, and an unexplained Total is a
+smaller error than a confidently wrong breakdown a venue might carry into its
+books. And the undiscounted path renders byte-identically to before, so the
+common docket is unchanged.
+
+Pinned by `test/order-discount-line.test.ts`, which covers the arithmetic and
+asserts all three surfaces resolve through the shared helper and off the
+order's own `subtotalCents` rather than a re-summed item list. A counterweight
+test keeps a Total on every surface. Mutation-verified against three reverts.
+
+**Still open, and deliberately not folded in:** `refundedCents` is on
+`KitchenOrder`, so a docket printed for a partially refunded order still shows a
+Total that no longer reflects the money the venue kept. That is a different
+defect from this one and wants its own decision about what a reprinted receipt
+should say after a refund.
 
 **On #251:** the GST figure itself is correct — `discount-actions.ts:288` recomputes `finalTaxCents` off the discounted total. #251 introduced no arithmetic error; it added a correct line beneath an already-unreconciled Total, and the commit positioned the docket as "enough for the shoebox with no dashboard lookup later." That framing is what turns a pre-existing presentational gap into a tax-invoice problem.
 

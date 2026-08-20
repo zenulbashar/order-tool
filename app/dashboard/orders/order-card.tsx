@@ -12,6 +12,7 @@ import type {
   KitchenOrderItem,
 } from "./queries";
 import { taxLineText } from "./tax-line";
+import { orderDiscountLine } from "./discount-line";
 
 // Fulfillment status → StatusBadge kitchen tone + label. "completed" maps to the
 // "done" tone (muted); the others map 1:1.
@@ -53,6 +54,10 @@ export function OrderCard({
   onOpen?: () => void;
 }) {
   const isNew = order.fulfillmentStatus === "new";
+  const discountLine = orderDiscountLine(
+    order.subtotalCents,
+    order.totalCents,
+  );
 
   // Compact summary for the COMPLETED column — no controls, no notes, no print:
   // just enough to recognise a finished order at a glance.
@@ -192,7 +197,26 @@ export function OrderCard({
 
       <DocketItems items={order.items} />
 
-      <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
+      {discountLine ? (
+        <div className="mt-2 space-y-0.5 border-t border-line pt-2 text-sm text-muted">
+          <div className="flex items-center justify-between">
+            <span>Subtotal</span>
+            <span>${discountLine.subtotal}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Discount</span>
+            <span>-${discountLine.discount}</span>
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className={
+          discountLine
+            ? "mt-2 flex items-center justify-between pt-2"
+            : "mt-2 flex items-center justify-between border-t border-line pt-2"
+        }
+      >
         <span className="text-sm font-medium text-ink">Total</span>
         <span className="text-base font-semibold text-ink">
           ${formatCents(order.totalCents)}
