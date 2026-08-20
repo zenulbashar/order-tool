@@ -106,7 +106,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P5 | Medium | Failed/canceled refunds are never demoted from `succeeded` |
 | P6 | Medium | ~~Printed customer receipt lines do not sum to the printed Total~~ **FIXED** |
 | P7 | Medium | ~~All five backstop sweeps filter `status='confirmed'` — refunded orders skipped forever~~ **FIXED** (the prescribed fix below was itself wrong) |
-| P8 | Medium | Reports and Payments give contradictory 30-day revenue and GST |
+| P8 | Medium | ~~Reports and Payments give contradictory 30-day revenue and GST~~ **FIXED** |
 | P9 | Medium | ~~`/dashboard` home renders revenue on bare membership, bypassing `reports:view`~~ **FIXED** — and the class was 22 of 38 dashboard pages, not one |
 | P10 | Medium | Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition |
 | P11 | Medium | Scheduled pre-order stamped with the placement day's call number |
@@ -268,6 +268,42 @@ Reports filters `eq(orders.status, "confirmed")` for both the order rows and the
 *Failure:* One $55 order, $10 goodwill refund → `partially_refunded`. Payments: **"Sales · 30d $45.00"**. Reports: **Revenue $0.00, Orders 0, GST collected $0.00, "No sales yet"** — and the order drops out of Top Items and the order mix entirely. Meanwhile the board card and docket for that same order print `Total $55.00 / incl. GST $5.00`, because `ACTIVE_ORDER_STATUSES` includes `partially_refunded`. A single refunded cent zeroes an entire order out of the venue's revenue and GST line.
 
 *Fix:* Use `PAID_ORDER_STATUSES` in all five query sites and subtract succeeded refunds from the revenue and GST aggregates, matching the Payments convention. `docs/audit/PlatformAudit-2026-07.md:70` already asserts "Revenue reporting is now net of refunds" — Reports does not honour it.
+
+**RESOLVED.** All five sites migrated, with the refund subtraction in
+`lib/orders/net-money.ts` so a sixth aggregate cannot pick a third convention.
+
+Two things the finding did not anticipate, both decided rather than guessed:
+
+**GST has to be APPORTIONED, not looked up.** The `refunds` table stores
+`amount_cents` and nothing else — there is no tax component on a refund row to
+subtract. So the GST going back is the same fraction of the order's own
+recorded `taxCents` as the refund is of its total, computed PER ORDER. A single
+ratio across a window's totals would be wrong whenever a venue changed its GST
+setting mid-window, since `taxCents` is 0 on everything after. Deriving from
+the order's STORED tax rather than re-applying today's rate is the same
+reasoning: a refund must unwind the tax the order actually carried.
+
+**Platform revenue is deliberately NOT netted.** `admin/stats` computes
+`computeApplicationFeeCents(o.totalCents)`, and Stripe does not proportionally
+refund an application fee on a partial refund unless the refund asks it to —
+which this codebase's refunds do not. Netting it would understate what the
+platform kept, the opposite error to the one being fixed. GMV nets; the fee
+line stays gross with a comment naming the flag that would have to change with
+it.
+
+Reports now also SHOWS the subtraction ("net of $X refunded" under Revenue)
+rather than silently reporting a smaller number, and the page description no
+longer says "confirmed orders". The order COUNT stays gross on every site — a
+partly refunded order is still an order the venue served, which is how Payments
+already counted it.
+
+Pinned by `lib/orders/net-money.test.ts`: the apportionment arithmetic, plus a
+harness asserting no aggregate filters on `confirmed` alone, all five resolve
+through `PAID_ORDER_STATUSES`, every money site reads succeeded refunds, and
+each joins refunds to ORDERS so a refund lands in its order's window rather
+than its own. Mutation-verified against four reverts, including the halfway
+state — status widened but refunds not netted — which would have counted
+refunded orders at full value and been worse than the original bug.
 
 ---
 

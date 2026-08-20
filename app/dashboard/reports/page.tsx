@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 
 import { PageHeader } from "@/app/_components/page-header";
 import { db } from "@/lib/db";
-import { orderItems, orders } from "@/lib/db/schema";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
+import { orderItems, orders, refunds } from "@/lib/db/schema";
 import { getVenuePointsOutstanding } from "@/lib/loyalty/balance";
+import { netOrderMoney } from "@/lib/orders/net-money";
 import { requireVenuePermission, scopedToVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
@@ -60,10 +62,18 @@ function BarRow({
 
 /**
  * Owner sales reports — read-only analytics for the owner's OWN venue (Square
- * parity, quick-win #2). Everything is derived from this venue's CONFIRMED
- * orders in the last 30 days: revenue KPIs (incl. GST collected), a daily
- * revenue trend, top items by revenue, and the dine-in/takeaway split. Pure
- * read — no money path, no writes. venue-scoped via requireVenue + scopedToVenue.
+ * parity, quick-win #2). Everything is derived from this venue's PAID orders in
+ * the last 30 days — every status that took money, not just `confirmed` — with
+ * succeeded refunds netted off per order: revenue KPIs (incl. GST collected), a
+ * daily revenue trend, top items by revenue, and the dine-in/takeaway split.
+ *
+ * The status set and the refund subtraction both match
+ * `getConfirmedSalesSummary`, which drives the Payments card. They used to
+ * disagree, and the disagreement was not subtle: one $10 goodwill refund on a
+ * $55 order left Payments reading "$45.00" and this page reading "No sales yet".
+ *
+ * Pure read — no money path, no writes. venue-scoped via
+ * requireVenuePermission + scopedToVenue.
  */
 export default async function ReportsPage() {
   // Gated on reports:view, not bare membership. Thirty-day revenue, GST collected and top items — the venue's trading position. reports:view is owner+manager; a kitchen login has no business reading it.
@@ -75,9 +85,10 @@ export default async function ReportsPage() {
   const since = new Date(now - WINDOW_DAYS * 86_400_000);
   const dayMs = 86_400_000;
 
-  const [orderRows, itemRows] = await Promise.all([
+  const [orderRows, itemRows, refundRows] = await Promise.all([
     db
       .select({
+        id: orders.id,
         totalCents: orders.totalCents,
         taxCents: orders.taxCents,
         orderType: orders.orderType,
@@ -87,7 +98,14 @@ export default async function ReportsPage() {
       .where(
         and(
           scopedToVenue(orders.venueId, venue.id),
-          eq(orders.status, "confirmed"),
+          // PAID, not 'confirmed'. syncOrderRefundStatus rewrites the status
+          // the moment any money goes back, so filtering on 'confirmed' alone
+          // removed a $55 order from this page entirely over a $10 goodwill
+          // refund — Revenue $0.00, GST $0.00, "No sales yet" — while the
+          // Payments card read $45.00 for the same window and the docket for
+          // that order still printed $55.00. Refunds are netted below rather
+          // than the order being dropped.
+          inArray(orders.status, PAID_ORDER_STATUSES),
           gt(orders.createdAt, since),
         ),
       ),
@@ -102,17 +120,55 @@ export default async function ReportsPage() {
       .where(
         and(
           scopedToVenue(orders.venueId, venue.id),
-          eq(orders.status, "confirmed"),
+          // Same widening, so a partly refunded order stops vanishing from Top
+          // Items. Its lines are counted at full value: a refund is recorded
+          // against the ORDER and carries no line attribution, so there is
+          // nothing to net an individual item by. Dropping the order outright
+          // was the larger distortion.
+          inArray(orders.status, PAID_ORDER_STATUSES),
           gt(orders.createdAt, since),
         ),
       ),
+    // Succeeded refunds against orders in the SAME window, keyed on the order
+    // so a refund always lands in its order's 30 days rather than its own —
+    // the convention getConfirmedSalesSummary already uses on the Payments card.
+    db
+      .select({
+        orderId: refunds.orderId,
+        total: sql<number>`coalesce(sum(${refunds.amountCents}), 0)`,
+      })
+      .from(refunds)
+      .innerJoin(orders, eq(orders.id, refunds.orderId))
+      .where(
+        and(
+          scopedToVenue(orders.venueId, venue.id),
+          eq(refunds.status, "succeeded"),
+          gt(orders.createdAt, since),
+        ),
+      )
+      .groupBy(refunds.orderId),
   ]);
 
-  // KPIs.
-  const revenue = orderRows.reduce((sum, o) => sum + o.totalCents, 0);
-  const orderCount = orderRows.length;
+  // Net each order by what has actually gone back on it, BEFORE any aggregate
+  // is taken. Per order rather than one subtraction off the totals, because the
+  // GST apportionment needs each order's own tax ratio — a venue that turned
+  // GST off mid-window leaves taxCents = 0 on everything after it.
+  const refundedByOrder = new Map(
+    refundRows.map((r) => [r.orderId, Number(r.total)]),
+  );
+  const netRows = orderRows.map((o) => ({
+    ...o,
+    ...netOrderMoney(o.totalCents, o.taxCents, refundedByOrder.get(o.id) ?? 0),
+  }));
+
+  // KPIs — net of refunds, matching the Payments card.
+  const revenue = netRows.reduce((sum, o) => sum + o.netTotalCents, 0);
+  // The order COUNT stays gross: a partly refunded order is still an order the
+  // venue served, and Payments counts it the same way.
+  const orderCount = netRows.length;
   const avgOrder = orderCount > 0 ? Math.round(revenue / orderCount) : 0;
-  const gstCollected = orderRows.reduce((sum, o) => sum + o.taxCents, 0);
+  const gstCollected = netRows.reduce((sum, o) => sum + o.netTaxCents, 0);
+  const refundedCents = netRows.reduce((sum, o) => sum + o.refundedCents, 0);
 
   // Daily revenue trend (last TREND_DAYS).
   const trend: { label: string; cents: number }[] = [];
@@ -122,13 +178,13 @@ export default async function ReportsPage() {
       day: "numeric",
       month: "short",
     });
-    const cents = orderRows
+    const cents = netRows
       .filter(
         (o) =>
           o.createdAt.getTime() >= dayEnd - dayMs &&
           o.createdAt.getTime() < dayEnd,
       )
-      .reduce((sum, o) => sum + o.totalCents, 0);
+      .reduce((sum, o) => sum + o.netTotalCents, 0);
     trend.push({ label, cents });
   }
   const trendMax = Math.max(1, ...trend.map((t) => t.cents));
@@ -147,7 +203,7 @@ export default async function ReportsPage() {
   const topItemMax = Math.max(1, ...topItems.map(([, v]) => v.revenue));
 
   // Order-type split.
-  const dineIn = orderRows.filter((o) => o.orderType === "dine_in").length;
+  const dineIn = netRows.filter((o) => o.orderType === "dine_in").length;
   const takeaway = orderCount - dineIn;
   const mixMax = Math.max(1, dineIn, takeaway);
 
@@ -165,7 +221,7 @@ export default async function ReportsPage() {
     <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Reports"
-        description={`Last ${WINDOW_DAYS} days · confirmed orders`}
+        description={`Last ${WINDOW_DAYS} days · paid orders, net of refunds`}
       />
 
       <div className="space-y-6 px-5 py-8">
@@ -173,9 +229,13 @@ export default async function ReportsPage() {
           <Kpi
             label="Revenue"
             value={`$${formatCents(revenue)}`}
-            sub={`Last ${WINDOW_DAYS} days`}
+            sub={
+              refundedCents > 0
+                ? `Last ${WINDOW_DAYS} days · net of $${formatCents(refundedCents)} refunded`
+                : `Last ${WINDOW_DAYS} days`
+            }
           />
-          <Kpi label="Orders" value={String(orderCount)} sub="Confirmed" />
+          <Kpi label="Orders" value={String(orderCount)} sub="Paid" />
           <Kpi label="Avg order" value={`$${formatCents(avgOrder)}`} sub="Per order" />
           <Kpi
             label="GST collected"
