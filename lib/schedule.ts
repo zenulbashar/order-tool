@@ -97,13 +97,41 @@ function instantToVenueParts(instant: Date, timeZone: string): WallParts {
 }
 
 /**
+ * The zone offset in effect at an instant, in ms (UTC+10 -> +36_000_000).
+ * Derived by reading the instant back as venue wall-clock and diffing.
+ */
+function zoneOffsetAt(instantMs: number, timeZone: string): number {
+  const seen = instantToVenueParts(new Date(instantMs), timeZone);
+  return (
+    Date.UTC(seen.year, seen.month - 1, seen.day, seen.hour, seen.minute) -
+    instantMs
+  );
+}
+
+/**
  * Interpret a naive wall-clock as an absolute instant in `timeZone` (the hard
- * direction Intl doesn't do directly). Treat the components as if they were UTC,
- * see what wall-clock that provisional instant shows in the venue zone, and
- * subtract the difference (the zone offset). One pass is exact for every
- * wall-clock that actually exists; the only ill-defined input is the nonexistent
- * hour at a spring-forward DST transition, which the caller rejects via a
- * round-trip equality check.
+ * direction Intl doesn't do directly).
+ *
+ * TWO passes, and the second one is not a refinement — it is the correctness.
+ * The offset has to be sampled somewhere, and the only starting point available
+ * is the wall-clock components read as if they were UTC. For a UTC+10 zone that
+ * provisional instant is ten to eleven hours EARLIER than the answer, so any DST
+ * transition falling in that gap gets applied from the wrong side.
+ *
+ * This is not theoretical. A Sydney venue open Sat 17:00-21:00, quoted on Fri 2
+ * Oct 2026 with AEDT starting Sun 4 Oct: the provisional instant for Sat 17:00
+ * reads as Sun 04:00 in Sydney, already past the transition, so the offset came
+ * back +11 instead of +10 and the instant landed an hour early. Every one of the
+ * 16 offered slots then failed the round-trip check below.
+ *
+ * So: sample once to get within an hour or two, then re-sample AT that corrected
+ * instant and use that offset. One extra pass is enough for every real zone,
+ * because an offset change is at most a couple of hours and the second sample is
+ * already on the correct side of the transition.
+ *
+ * The nonexistent hour at a spring-forward transition remains ill-defined by
+ * nature — there is no such instant. `venueWallClockToInstantStrict` is what
+ * rejects it, and every caller goes through that rather than this.
  */
 function venueWallClockToInstant(parts: WallParts, timeZone: string): Date {
   const asUTC = Date.UTC(
@@ -113,16 +141,31 @@ function venueWallClockToInstant(parts: WallParts, timeZone: string): Date {
     parts.hour,
     parts.minute,
   );
-  const seen = instantToVenueParts(new Date(asUTC), timeZone);
-  const seenAsUTC = Date.UTC(
-    seen.year,
-    seen.month - 1,
-    seen.day,
-    seen.hour,
-    seen.minute,
-  );
-  const offset = seenAsUTC - asUTC;
-  return new Date(asUTC - offset);
+  const provisional = asUTC - zoneOffsetAt(asUTC, timeZone);
+  return new Date(asUTC - zoneOffsetAt(provisional, timeZone));
+}
+
+/**
+ * The instant for a venue wall-clock, or null when that wall-clock DOES NOT
+ * EXIST — the skipped hour at a spring-forward transition, or a rolled-over date
+ * like "02-30" that Date.UTC silently normalises.
+ *
+ * Single definition on purpose. The validator carried this round-trip check and
+ * the slot builder did not, so the picker offered times the validator then
+ * refused — breaking this module's own promise at the top of the file that
+ * offered and accepted slots cannot drift. Routing both through one function
+ * makes that promise structural instead of a thing two call sites have to
+ * remember.
+ */
+function venueWallClockToInstantStrict(
+  parts: WallParts,
+  timeZone: string,
+): Date | null {
+  const instant = venueWallClockToInstant(parts, timeZone);
+  const roundTrip = instantToVenueParts(instant, timeZone);
+  return toWallClockString(roundTrip) === toWallClockString(parts)
+    ? instant
+    : null;
 }
 
 /** Valid "HH:MM" -> minutes since midnight, or null if malformed. */
@@ -186,12 +229,11 @@ export function validateScheduledForConfig(
     };
   }
 
-  const instant = venueWallClockToInstant(parts, config.timeZone);
-
-  // Round-trip guard: a nonexistent (spring-forward) wall-clock, or a rolled-over
-  // date (e.g. "02-30"), won't reformat back to the same wall-clock — reject it.
-  const roundTrip = instantToVenueParts(instant, config.timeZone);
-  if (toWallClockString(roundTrip) !== toWallClockString(parts)) {
+  // null = that wall-clock does not exist (spring-forward gap, or a rolled-over
+  // date like "02-30"). The slot builder uses the SAME function, so a time this
+  // rejects is a time the picker never offered.
+  const instant = venueWallClockToInstantStrict(parts, config.timeZone);
+  if (instant === null) {
     return { ok: false, error: "That time isn't available. Please pick another." };
   }
 
@@ -264,7 +306,12 @@ export function buildPickupSlots(
           hour: Math.floor(mins / 60),
           minute: mins % 60,
         };
-        const ms = venueWallClockToInstant(parts, config.timeZone).getTime();
+        // Strict: never offer a wall-clock that does not exist. This used to
+        // call the unguarded conversion, so on a DST weekend the picker offered
+        // slots the validator refused one click later.
+        const instant = venueWallClockToInstantStrict(parts, config.timeZone);
+        if (instant === null) continue;
+        const ms = instant.getTime();
         if (ms < earliestMs || ms > latestMs) continue;
         times.push(`${pad2(parts.hour)}:${pad2(parts.minute)}`);
       }
