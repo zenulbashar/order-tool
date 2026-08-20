@@ -307,7 +307,16 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   // Short daily "call number" for the kitchen/customer (resets per venue per
   // day). Best-effort + INERT to money: a counter hiccup returns null and never
   // blocks the order. Assigned ONCE here so a token-collision retry reuses it.
-  const dailyNumber = await assignDailyNumber(venueId);
+  //
+  // Numbered against the day the order is FOR, not the day it was placed. This
+  // used to read the wall clock, so a Thursday pre-order placed on Monday took
+  // MONDAY's number — and on Thursday the counter restarted and handed the same
+  // number to a walk-in. Two dockets headed ORDER 5, and two station labels
+  // reading `5-K`, which is the one surface carrying no date to tell them apart.
+  const dailyNumber = await assignDailyNumber(
+    venueId,
+    scheduledForInstant ?? new Date(),
+  );
 
   // (f) Write order + items + modifiers in ONE transaction. Every sensitive
   // column (venue_id, token, status, all totals/snapshots) is set from
