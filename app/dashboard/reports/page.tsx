@@ -7,6 +7,10 @@ import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orderItems, orders, refunds } from "@/lib/db/schema";
 import { getVenuePointsOutstanding } from "@/lib/loyalty/balance";
 import { netOrderMoney } from "@/lib/orders/net-money";
+import {
+  venueCalendarDays,
+  venueDayFormatter,
+} from "@/lib/orders/service-date";
 import { requireVenuePermission, scopedToVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
@@ -81,9 +85,8 @@ export default async function ReportsPage() {
   // gate is the control — the URL is typeable.
   const venue = await requireVenuePermission("reports:view");
 
-  const now = new Date().getTime();
-  const since = new Date(now - WINDOW_DAYS * 86_400_000);
-  const dayMs = 86_400_000;
+  const now = new Date();
+  const since = new Date(now.getTime() - WINDOW_DAYS * 86_400_000);
 
   const [orderRows, itemRows, refundRows] = await Promise.all([
     db
@@ -170,23 +173,33 @@ export default async function ReportsPage() {
   const gstCollected = netRows.reduce((sum, o) => sum + o.netTaxCents, 0);
   const refundedCents = netRows.reduce((sum, o) => sum + o.refundedCents, 0);
 
-  // Daily revenue trend (last TREND_DAYS).
-  const trend: { label: string; cents: number }[] = [];
-  for (let d = TREND_DAYS - 1; d >= 0; d -= 1) {
-    const dayEnd = now - d * dayMs;
-    const label = new Date(dayEnd).toLocaleDateString("en-AU", {
-      day: "numeric",
-      month: "short",
-    });
-    const cents = netRows
-      .filter(
-        (o) =>
-          o.createdAt.getTime() >= dayEnd - dayMs &&
-          o.createdAt.getTime() < dayEnd,
-      )
-      .reduce((sum, o) => sum + o.netTotalCents, 0);
-    trend.push({ label, cents });
+  // Daily revenue trend — venue-local CALENDAR days, the same way the owner
+  // Overview buckets the identical rows. This used to slice rolling 24h windows
+  // anchored to the request instant and label them with no timeZone, so on
+  // Vercel (process runs UTC) a Sydney venue opening Reports at 09:00 Wednesday
+  // saw Wednesday's takings filed under Tuesday — while the Overview on the same
+  // dashboard reported them under "Today". The bar heights were wrong too, not
+  // only the labels.
+  const dayKeyOf = venueDayFormatter(venue.timezone);
+  const revenueByDay = new Map<string, number>();
+  for (const row of netRows) {
+    const key = dayKeyOf.format(row.createdAt);
+    revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + row.netTotalCents);
   }
+  // timeZone: "UTC" is load-bearing — `date` is a calendar date built in UTC,
+  // not an instant, so formatting it in the process zone would name a different
+  // day than the key it was derived from.
+  const trendLabel = new Intl.DateTimeFormat("en-AU", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+  const trend = venueCalendarDays(venue.timezone, now, TREND_DAYS).map(
+    (d) => ({
+      label: trendLabel.format(d.date),
+      cents: revenueByDay.get(d.key) ?? 0,
+    }),
+  );
   const trendMax = Math.max(1, ...trend.map((t) => t.cents));
 
   // Top items by revenue.

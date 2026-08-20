@@ -111,7 +111,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P10 | Medium | ~~Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition~~ **FIXED** |
 | P11 | Medium | ~~Scheduled pre-order stamped with the placement day's call number~~ **FIXED** |
 | P12 | Medium | Completed orders cannot be refunded or stepped back from the dashboard |
-| P13 | Medium | Reports trend uses rolling 24h windows labelled in server (UTC) time |
+| P13 | Medium | ~~Reports trend uses rolling 24h windows labelled in server (UTC) time~~ **FIXED** |
 | P14 | Medium | Onboarding marks a venue live with no Stripe account |
 | P15 | Medium | ~~Landing page advertises a Google Gemini ordering integration that does not exist~~ **FIXED** |
 | P16 | Low ×10 | (see table at end) |
@@ -445,6 +445,34 @@ The COMPLETED column renders `onOpen={isCompleted ? undefined : …}` and `compa
 *Failure:* Sydney venue, owner opens Reports at 09:00 Wed. The last bar is labelled "5 Aug" and covers 09:00 Tue → 09:00 Wed Sydney. Wednesday morning's takings appear under Tuesday; Tuesday's evening trade is split across two bars. The Overview on the same dashboard reports Wednesday's takings under "Today." Bar *heights* are wrong versus calendar days regardless of labels.
 
 *Fix:* Reuse `dayKeyFormatter(venue.timezone)` and bucket by venue-local calendar day, exactly as `app/dashboard/page.tsx:220` does. (`app/admin/stats/page.tsx:90` has the same copied pattern but is cross-venue, where no single timezone applies.)
+
+**RESOLVED**, and the day-series construction is now shared rather than copied a
+second time. `venueCalendarDays` joins `venueDayFormatter` in
+`lib/orders/service-date.ts`, and BOTH charts use it — the Overview's inline
+`dayFor` is gone. Two charts on one dashboard drawing the same rows through two
+different definitions of "a day" is the whole finding; leaving one of them
+private would have left the next copy free to drift again.
+
+Deriving the series by calendar arithmetic rather than subtracting 86_400_000
+also makes it correct across a DST week, where a venue-local day is 23 or 25
+hours long — pinned by a test over the 4 Oct 2026 Sydney transition. The old
+shape would drift an hour per transition and eventually skip or repeat a day.
+
+The `timeZone: "UTC"` on the label formatter is load-bearing and commented as
+such at both sites: `VenueDay.date` is a CALENDAR DATE built in UTC, not an
+instant, so formatting it in the process zone shifts it and labels a bar with
+its neighbour's date — a subtler version of the bug being fixed.
+
+`app/admin/stats/page.tsx` deliberately keeps its own pattern. It is cross-venue,
+so no single timezone applies, and forcing it through a venue-scoped helper
+would be wrong rather than consistent.
+
+Pinned by `lib/orders/service-date.test.ts`: the series arithmetic (month
+boundaries, DST, the non-overlapping prior window the Overview's Delta baseline
+depends on) plus a harness asserting neither chart slices rolling windows off
+the request instant or formats a label without a timeZone. Mutation-verified
+against three reverts, including a prior window overlapping the current one by a
+day, which would silently distort every percentage on the Overview.
 
 ---
 

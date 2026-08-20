@@ -10,7 +10,10 @@ import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, refunds } from "@/lib/db/schema";
 import { computeMenuHealth } from "@/lib/menu-health";
 import { netOrderMoney } from "@/lib/orders/net-money";
-import { venueDayFormatter } from "@/lib/orders/service-date";
+import {
+  venueCalendarDays,
+  venueDayFormatter,
+} from "@/lib/orders/service-date";
 import { buildSuggestions } from "@/lib/nudges";
 import {
   hasVenuePermission,
@@ -289,21 +292,22 @@ export default async function DashboardPage({
     else takeaway += 1;
   }
 
-  // Calendar-day series (pure date arithmetic on the venue-local "today").
+  // Calendar-day series, shared with /dashboard/reports so the two charts on
+  // this dashboard cannot bucket the same orders differently again.
+  // timeZone: "UTC" is load-bearing — `date` is a calendar date built in UTC,
+  // not an instant, so the process zone would shift the label off its own key.
   const todayKey = keyOf.format(now);
-  const [ty, tm, td] = todayKey.split("-").map(Number);
-  const dayFor = (offset: number) => {
-    const d = new Date(Date.UTC(ty, tm - 1, td - offset));
-    return {
-      key: d.toISOString().slice(0, 10),
-      label: new Intl.DateTimeFormat("en-AU", {
-        weekday: "narrow",
-        timeZone: "UTC",
-      }).format(d),
-    };
-  };
-  const week = Array.from({ length: 7 }, (_, i) => dayFor(6 - i)); // oldest → today
-  const prior = Array.from({ length: 7 }, (_, i) => dayFor(i + 1)); // yesterday → 7d ago
+  const weekdayLabel = new Intl.DateTimeFormat("en-AU", {
+    weekday: "narrow",
+    timeZone: "UTC",
+  });
+  const withLabel = (d: { key: string; date: Date }) => ({
+    key: d.key,
+    label: weekdayLabel.format(d.date),
+  });
+  const week = venueCalendarDays(venue.timezone, now, 7).map(withLabel);
+  // The 7 days BEFORE that window — the baseline every Delta compares against.
+  const prior = venueCalendarDays(venue.timezone, now, 7, 7).map(withLabel);
 
   const val = (key: string) => byDay.get(key) ?? { orders: 0, revenue: 0 };
   const today = val(todayKey);
