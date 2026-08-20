@@ -598,8 +598,8 @@ until the page says nothing is not a fix either.
 | ~~L3~~ **FIXED** | `lib/payments/refund-compensation.ts:213` | `restockOrder` re-derives from **today's** `recipe_lines` and never consults the order's actual `depletion` movements. A recipe edited mid-order over-restocks; a missed depletion restocks from nothing, permanently (the sweep is already locked out by `status='refunded'`). | Restock from the order's recorded `depletion` movements, negated. |
 | ~~L4~~ **FIXED** | `app/dashboard/stock/overview/page.tsx:90` | 30-day usage filters `reason='depletion'` only, so `refund_restock` never nets out — usage, run-rate, days-of-cover and COGS all overstate. Separately `REASON_LABEL` (`:17-24`) has no `refund_restock` entry, so the feed prints the raw enum `REFUND_RESTOCK`. | Include `refund_restock` in the sum; add the label. |
 | ~~L5~~ **FIXED** | `lib/promotions.ts:118` | The `audience:"new"` guard short-circuits on `customerId`, which is set only by fire-and-forget `claimOrder` (`checkout-client.tsx:138`, `.catch(() => {})`). If that call fails, a signed-in returning customer gets the first-timers-only promo written to the order and the PI, and also loses their loyalty earn. | Set `orders.customerId` in `placeOrder` — the checkout page already resolved the signed-in customer server-side. |
-| L6 | `app/dashboard/tables/queries.ts:69` | "Current session" is a fixed 2h rolling label-keyed sum with no close control, so a new party inherits the previous party's spend and order count until it ages out. Prepay model, so nothing is owed — a display-accuracy defect. | Add a dwell-gap boundary, or relabel to "Recent orders (2h)" and drop the single-`orderRef`+combined-total pairing. |
-| L7 | `app/dashboard/tables/queries.ts:122` | Table identity is the free-text `tableLabel` snapshot with no FK. Renaming a table orphans its in-flight session; renaming a *different* table onto that string mis-attributes the session. Blast radius is the tables board only. | Add `orders.table_id` alongside the label snapshot and join on it. |
+| ~~L6~~ **FIXED** | `app/dashboard/tables/queries.ts:69` | "Current session" is a fixed 2h rolling label-keyed sum with no close control, so a new party inherits the previous party's spend and order count until it ages out. Prepay model, so nothing is owed — a display-accuracy defect. | Add a dwell-gap boundary, or relabel to "Recent orders (2h)" and drop the single-`orderRef`+combined-total pairing. |
+| L7 **DEFERRED — see note** | `app/dashboard/tables/queries.ts:122` | Table identity is the free-text `tableLabel` snapshot with no FK. Renaming a table orphans its in-flight session; renaming a *different* table onto that string mis-attributes the session. Blast radius is the tables board only. | Add `orders.table_id` alongside the label snapshot and join on it. |
 | ~~L8~~ **FIXED** | `app/[slug]/checkout/payment-step.tsx:224` | `runDiscount` wraps its body in `if (result.ok)` with no `else`, no catch, and every caller uses `void`. On `{ok:false}` both status states stay "idle", so Apply looks broken. Most reachable trigger: after a decline the order is `payment_failed`, so every subsequent Apply silently no-ops for the session. No financial consequence — the gift card is never consumed (the reservation rolls back with the transaction). | Add an `else` setting an error status, and a `.catch` on every `void runDiscount(...)`. |
 | ~~L9~~ **FIXED** | `app/[slug]/storefront.tsx:505` | Landing branch has no empty-menu state — the "hasn't published a menu yet" copy lives only in the `!isLanding` block, and the link to `/menu` is gated on `menu.length > 0`. A venue that skipped the menu step hands out QRs that land on "Browse by category" with nothing beneath it. | Render the line-651 paragraph in the landing branch when `menu.length === 0`. **Adjacent:** `StorefrontHero`'s "View menu" button scrolls to `#menu-top`, which only exists in the `!isLanding` block — so it is a no-op on the landing even for a venue *with* a menu. |
 | ~~L10~~ **FIXED** | `app/_landing/landing.tsx:590` | Final-CTA `<form action="/signin">` is a GET, so the email lands in `/signin?email=…`; `app/signin/page.tsx` declares no props and never reads `searchParams`, and `SignInForm` has no `defaultValue`. The visitor retypes the address next to copy reading "Enter your email above to get started." | Accept `searchParams` on the sign-in page and pass `defaultValue` into the input. |
@@ -730,6 +730,44 @@ and no `customer.subscription.trial_will_end` case in the billing webhook
 harness now also fails if a `trial_will_end` handler appears, so building the
 reminder forces the ban to be revisited rather than left standing by inertia.
 The copy points at the Billing page countdown, which is real.
+
+### L6 — fixed by telling the truth, not by guessing
+
+The finding offered a dwell-gap boundary or an honest relabel. The relabel is
+what shipped, and the gap heuristic was rejected on merit: it would invent a
+party boundary the product has NO concept of — there is no close-table control
+and no party lifecycle anywhere — and would be confidently wrong on a table that
+orders drinks, waits forty minutes, then orders mains. Replacing a known-vague
+number with a plausible-looking wrong one is not an improvement.
+
+`TableSession` is now `TableRecentOrders`, the heading reads "Recent orders ·
+last 2h", and neither render site pairs a single order reference with a combined
+total any more — that pairing is precisely what read as "this order's party
+spent this much" and let a new party inherit the previous party's spend. The
+single-order case still shows its reference beside its amount, because there
+both figures are true.
+
+### L7 — deferred, deliberately
+
+**Recommendation: do not build this now.** Reasons, in order of weight:
+
+1. **L6 removed most of what made it matter.** With the session claim gone, the
+   board no longer asserts that the orders at a label are one party. A rename
+   still mis-attributes them, but it mis-attributes a figure that now honestly
+   presents itself as "orders at this label in the last 2h".
+2. **Blast radius is one board's display**, in a PREPAY model — nothing is owed,
+   so no money turns on it, and the 2h window bounds the damage on its own.
+3. **The cost lands in the wrong place.** It needs an additive migration, a
+   backfill decision, a new write in `placeOrder` — the most safety-critical
+   file in the repo — and a join, all to correct a display in a narrow window
+   where an owner renames a table mid-service.
+4. The label snapshot has to stay regardless: it is the historical record of
+   what the diner actually scanned.
+
+If it IS built, it should be as part of a real table-session feature (close
+table, party lifecycle) where `table_id` earns its keep for more than one
+board — not as a point fix for this finding. Recorded rather than silently
+skipped.
 ---
 
 ## 3. Areas audited and found clean

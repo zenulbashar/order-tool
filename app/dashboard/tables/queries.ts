@@ -20,15 +20,35 @@ export async function getTablesForVenue(venueId: string) {
 
 export type TableStatus = "ordering" | "seated" | "open";
 
-/** The live dine-in session at an occupied table (null when the table is open). */
-export type TableSession = {
-  /** Reference of the table's most recent recent order. */
-  orderRef: string;
+/**
+ * Recent dine-in orders at a table LABEL (null when there are none).
+ *
+ * Called a "session" until it was noticed that no such thing exists. There is
+ * no close-table control, no party lifecycle, and no boundary of any kind —
+ * this is every active dine-in order carrying this label in the last two hours,
+ * and nothing more. A party that leaves at 13:00 having spent $80 and a new
+ * party seated at 13:30 are one bucket, so the board showed the NEW party's
+ * order reference beside BOTH parties' money.
+ *
+ * A dwell-gap heuristic was the obvious fix and is not the one taken: it would
+ * invent a party boundary the product has no concept of, and be confidently
+ * wrong on a table that orders drinks, waits forty minutes, then orders mains.
+ * The data honestly supports "orders at this label in the last 2h", so that is
+ * what the type and the UI now say. Prepay model, so nothing is owed either way
+ * — this is an accuracy problem, not a money one.
+ */
+export type TableRecentOrders = {
+  /** Reference of the most recent order. Meaningful ALONE; see totalCents. */
+  latestOrderRef: string;
   /** When that most recent order was placed. */
-  placedAt: Date;
-  /** Combined spend across the table's recent confirmed dine-in orders. */
+  latestPlacedAt: Date;
+  /**
+   * Combined spend across ALL of them. Deliberately not presented next to
+   * latestOrderRef when orderCount > 1 — that pairing is what read as "this
+   * order's party spent this much".
+   */
   totalCents: number;
-  /** How many recent orders that spend covers. */
+  /** How many orders that spend covers. */
   orderCount: number;
 };
 
@@ -37,7 +57,7 @@ export type TableWithStatus = {
   label: string;
   seats: number | null;
   status: TableStatus;
-  session: TableSession | null;
+  recent: TableRecentOrders | null;
 };
 
 // A table reads as occupied for this long after its last confirmed dine-in
@@ -91,7 +111,7 @@ export async function getTablesWithStatus(
   // label add to the combined session spend + count.
   type Agg = {
     status: TableStatus;
-    session: TableSession;
+    recent: TableRecentOrders;
   };
   const byLabel = new Map<string, Agg>();
   for (const order of recent) {
@@ -105,16 +125,16 @@ export async function getTablesWithStatus(
         order.fulfillmentStatus === "ready";
       byLabel.set(key, {
         status: active ? "ordering" : "seated",
-        session: {
-          orderRef: orderReference(order.publicToken),
-          placedAt: order.createdAt,
+        recent: {
+          latestOrderRef: orderReference(order.publicToken),
+          latestPlacedAt: order.createdAt,
           totalCents: order.totalCents,
           orderCount: 1,
         },
       });
     } else {
-      existing.session.totalCents += order.totalCents;
-      existing.session.orderCount += 1;
+      existing.recent.totalCents += order.totalCents;
+      existing.recent.orderCount += 1;
     }
   }
 
@@ -123,7 +143,7 @@ export async function getTablesWithStatus(
     return {
       ...table,
       status: agg?.status ?? "open",
-      session: agg?.session ?? null,
+      recent: agg?.recent ?? null,
     };
   });
 }
