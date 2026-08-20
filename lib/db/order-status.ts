@@ -60,7 +60,7 @@ export const CONFIRMABLE_ORDER_STATUSES = [
  * Statuses in which an order still HOLDS gift-card or points value that may not
  * have been debited yet.
  *
- * Wider than {@link RESERVING_ORDER_STATUSES} because the debit does not land
+ * Wider than {@link ACTIVE_ORDER_STATUSES} because the debit does not land
  * with the confirmation — the webhook flips status in one auto-committed UPDATE
  * and schedules the debit in a swallowed `after()` that itself requires
  * `confirmed`, so the debit can only run afterwards. During that window the

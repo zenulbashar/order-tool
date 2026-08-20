@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, gt, inArray, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import {
   ingredients,
   orderItems,
@@ -165,7 +166,11 @@ export async function sweepStockDepletion(): Promise<number> {
     .from(orders)
     .where(
       and(
-        eq(orders.status, "confirmed"),
+        // A partially refunded order was still cooked from real stock, so it
+        // still owes its depletion; excluding it left the counts overstating
+        // what is on the shelf forever. `refunded` stays out — restockOrder
+        // handles the full-refund case, and depleting here would fight it.
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         gt(orders.createdAt, since),
         notExists(
           db

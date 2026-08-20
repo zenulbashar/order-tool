@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, gt, inArray, lte, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import {
   type IntegrationJob,
   integrationJobs,
@@ -198,7 +199,15 @@ export async function sweepMissedOrders(): Promise<{
         eq(venueIntegrations.status, "active"),
       ),
     )
-    .where(and(eq(orders.status, "confirmed"), gt(orders.createdAt, since)));
+    // A partially refunded order is still a live order the venue is working, so
+    // it still belongs on the POS. `refunded` stays out: a fully refunded order
+    // should not be mirrored as a sale.
+    .where(
+      and(
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
+        gt(orders.createdAt, since),
+      ),
+    );
   if (candidates.length === 0) {
     // Uncapped scan saw the whole (empty) backlog — a completed sweep.
     await advanceSweepWatermark("integrations", startedAt);

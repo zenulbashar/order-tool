@@ -1,8 +1,9 @@
 import "server-only";
 
-import { and, eq, gt, isNotNull, notExists, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orders, pointsLedger, venues } from "@/lib/db/schema";
 import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
@@ -131,7 +132,17 @@ export async function sweepLoyaltyEarn(): Promise<number> {
     .innerJoin(venues, eq(venues.id, orders.venueId))
     .where(
       and(
-        eq(orders.status, "confirmed"),
+        // The most reachable instance of this bug, and the only one needing no
+        // infrastructure failure at all: claimOrder is fire-and-forget
+        // (checkout-client.tsx `.catch(() => {})`), so when the diner opens the
+        // link after payment_intent.succeeded, earnPointsForOrder returns 0 and
+        // this sweep is the ONLY path that will ever credit those points. A
+        // routine partial refund before the next tick destroyed them.
+        //
+        // `refunded` is excluded: reverseLoyalty has already run and found
+        // nothing to reverse, so crediting now would leave a fully refunded
+        // order permanently earning points.
+        inArray(orders.status, ACTIVE_ORDER_STATUSES),
         gt(orders.createdAt, since),
         isNotNull(orders.customerId),
         eq(venues.loyaltyEnabled, true),
