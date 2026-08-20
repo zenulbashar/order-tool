@@ -13,7 +13,7 @@ import { PageHeader } from "@/app/_components/page-header";
 import { formatCents } from "@/lib/validation";
 
 import { deleteTable } from "./actions";
-import type { TableSession, TableStatus } from "./queries";
+import type { TableRecentOrders, TableStatus } from "./queries";
 import { TableForm } from "./table-form";
 
 type BoardTable = {
@@ -21,11 +21,11 @@ type BoardTable = {
   label: string;
   seats: number | null;
   status: TableStatus;
-  session: TableSession | null;
+  recent: TableRecentOrders | null;
   svg: string; // server-rendered QR SVG (deterministic, script-free)
 };
 
-/** Short "how long the table's been active" label from the session start. */
+/** Short "how long ago" label for the most recent order at this label. */
 function sinceLabel(date: Date): string {
   const mins = Math.floor((Date.now() - date.getTime()) / 60_000);
   if (mins < 1) return "just now";
@@ -281,16 +281,27 @@ export function TablesBoard({
                     className="mt-2 aspect-square w-full rounded-input border border-line bg-white p-2 [&_svg]:block [&_svg]:h-full [&_svg]:w-full"
                     dangerouslySetInnerHTML={{ __html: table.svg }}
                   />
-                  {table.session ? (
+                  {/* One order: the reference and the amount belong together
+                      and both are true. MORE than one: the reference names only
+                      the latest, so showing it beside the combined figure read
+                      as "this order's party spent this much" — which is what
+                      let a new party inherit the previous party's spend. */}
+                  {table.recent ? (
                     <p className="mt-2 truncate text-eyebrow text-ink">
-                      <span className="font-mono font-semibold">
-                        {table.session.orderRef}
-                      </span>{" "}
-                      · ${formatCents(table.session.totalCents)}
-                      {table.session.orderCount > 1
-                        ? ` · ${table.session.orderCount} orders`
-                        : ""}{" "}
-                      · {sinceLabel(table.session.placedAt)}
+                      {table.recent.orderCount === 1 ? (
+                        <>
+                          <span className="font-mono font-semibold">
+                            {table.recent.latestOrderRef}
+                          </span>{" "}
+                          · ${formatCents(table.recent.totalCents)}
+                        </>
+                      ) : (
+                        <>
+                          {table.recent.orderCount} orders · $
+                          {formatCents(table.recent.totalCents)}
+                        </>
+                      )}{" "}
+                      · {sinceLabel(table.recent.latestPlacedAt)}
                     </p>
                   ) : null}
                   <span className="mt-2 text-xs text-muted">
@@ -358,23 +369,29 @@ export function TablesBoard({
                 </button>
               </div>
 
-              {selected.session ? (
+              {selected.recent ? (
                 <div className="mt-3 rounded-card border border-line bg-surface-elevated p-3 shadow-sm">
+                  {/* "Current session" claimed a boundary that does not exist —
+                      no close-table control, no party lifecycle. The heading
+                      now says exactly what the window is. */}
                   <p className="font-mono text-2xs font-bold uppercase tracking-wider text-label">
-                    Current session
+                    Recent orders · last 2h
                   </p>
                   <div className="mt-1.5 flex items-center justify-between gap-2">
                     <span className="font-mono text-sm font-semibold text-ink">
-                      {selected.session.orderRef}
+                      {selected.recent.orderCount === 1
+                        ? selected.recent.latestOrderRef
+                        : `${selected.recent.orderCount} orders`}
                     </span>
                     <span className="font-display text-base font-extrabold text-ink">
-                      ${formatCents(selected.session.totalCents)}
+                      ${formatCents(selected.recent.totalCents)}
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs text-muted">
-                    {selected.session.orderCount} order
-                    {selected.session.orderCount === 1 ? "" : "s"} · latest{" "}
-                    {sinceLabel(selected.session.placedAt)} ago
+                    {selected.recent.orderCount === 1
+                      ? "Placed"
+                      : `Latest ${selected.recent.latestOrderRef} ·`}{" "}
+                    {sinceLabel(selected.recent.latestPlacedAt)} ago
                   </p>
                 </div>
               ) : null}
