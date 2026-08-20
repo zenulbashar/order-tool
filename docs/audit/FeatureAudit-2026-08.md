@@ -110,7 +110,7 @@ The skipped-summary screen renders one button labelled "Go to my menu"; its `onC
 | P9 | Medium | ~~`/dashboard` home renders revenue on bare membership, bypassing `reports:view`~~ **FIXED** — and the class was 22 of 38 dashboard pages, not one |
 | P10 | Medium | ~~Scheduled-pickup wall-clock→instant is wrong for ~11h before every DST transition~~ **FIXED** |
 | P11 | Medium | ~~Scheduled pre-order stamped with the placement day's call number~~ **FIXED** |
-| P12 | Medium | Completed orders cannot be refunded or stepped back from the dashboard |
+| P12 | Medium | ~~Completed orders cannot be refunded or stepped back from the dashboard~~ **FIXED** |
 | P13 | Medium | ~~Reports trend uses rolling 24h windows labelled in server (UTC) time~~ **FIXED** |
 | P14 | Medium | ~~Onboarding marks a venue live with no Stripe account~~ **FIXED** |
 | P15 | Medium | ~~Landing page advertises a Google Gemini ordering integration that does not exist~~ **FIXED** |
@@ -435,6 +435,34 @@ The COMPLETED column renders `onOpen={isCompleted ? undefined : …}` and `compa
 *Not as bad as it looks:* a Stripe-Dashboard refund is **not** unreconciled — `charge.refunded` → `reconcileRefundsForPaymentIntent` inserts the refunds row idempotently, rewrites `orders.status`, and runs compensation. The real loss is actor attribution: `actorUserId: null`, note "Reconciled from Stripe", and no `recordVenueAudit("order_refunded")` entry.
 
 *Fix:* Keep the compact card but restore the enlarge affordance (`onOpen`) on completed orders and render the drawer read-only apart from `RefundControl` and the back-one-step control. Also correct the stale comment at `order-status-controls.tsx:66-67` ("nothing forward and nothing back"), which contradicts its own table.
+
+**RESOLVED**, and one part of the prescribed fix turned out to need no work —
+verified rather than assumed. The drawer ALREADY mounts `RefundControl`,
+`OrderStatusControls` and `PrintButton` unconditionally, and for a completed
+order `BACKWARD.completed` is populated, so it renders "Back to ready" perfectly
+well. `RefundControl` gates on PAYMENT status (`confirmed` /
+`partially_refunded`) and never reads `fulfillmentStatus`, so a completed order
+was always refundable by it. The finding inferred drawer work from the symptom;
+the whole defect was that the BOARD never opened the drawer.
+
+Two changes, then: `orders-board.tsx` passes `onOpen` for completed orders, and
+the compact card gained the enlarge affordance — which `onOpen` alone would not
+have surfaced, since the button lived only in the full card's header.
+
+Adding it copy-pasted the button's class literal, and
+`test/button-literal-drift.test.ts` failed — the repo's own harness catching the
+copy before review did. Both branches now share one `OpenTicketButton`, which is
+the better structure and only happened because that test exists.
+
+The stale comment mattered more than tidiness. It claimed completed cards render
+no controls "because nothing forward and nothing back", contradicting the table
+twelve lines above it: `BACKWARD.completed` is populated, so a completed order
+falls straight through that guard. A reader trusting it would conclude the
+back-one-step path did not exist and build it again.
+
+Pinned by `test/completed-order-actions.test.ts`, including a test asserting the
+drawer's three controls stay unconditional so the fix cannot be undone from the
+other end. Mutation-verified against three reverts.
 
 ---
 

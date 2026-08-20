@@ -34,6 +34,50 @@ const STATUS_LABEL: Record<FulfillmentStatus, string> = {
  * snapshots. Brand-new orders get an amber frame + badge so an at-a-glance scan
  * shows what just arrived.
  */
+/**
+ * Enlarge affordance — opens the ticket drawer.
+ *
+ * Shared by BOTH card branches rather than written twice. The compact
+ * (COMPLETED column) card grew this button so a handed-off order can still be
+ * refunded or stepped back, and copying the literal is what
+ * test/button-literal-drift.test.ts exists to stop: two copies of a class
+ * string drift, and the smaller card is the one nobody looks at.
+ *
+ * Renders nothing without onOpen, so a caller that genuinely has no drawer to
+ * open still gets a clean card.
+ */
+function OpenTicketButton({
+  onOpen,
+  reference,
+}: {
+  onOpen?: () => void;
+  reference: string;
+}) {
+  if (!onOpen) return null;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`Open ticket ${reference}`}
+      title="Open ticket"
+      className="flex h-6 w-6 items-center justify-center rounded-control text-muted transition hover:bg-sand hover:text-ink"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-4 w-4"
+        aria-hidden="true"
+      >
+        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+      </svg>
+    </button>
+  );
+}
+
 export function OrderCard({
   order,
   timezone,
@@ -59,8 +103,13 @@ export function OrderCard({
     order.totalCents,
   );
 
-  // Compact summary for the COMPLETED column — no controls, no notes, no print:
-  // just enough to recognise a finished order at a glance.
+  // Compact summary for the COMPLETED column — no inline controls, no notes, no
+  // print: just enough to recognise a finished order at a glance. It DOES carry
+  // the enlarge affordance, because the drawer it opens is the only place in the
+  // dashboard that can refund an order or step it back to Ready, and a customer
+  // returning fifteen minutes after handover is an ordinary event. Without it
+  // this card was a dead end: no click handler, no controls, and no other
+  // order-detail route anywhere in the product.
   if (compact) {
     return (
       <li className="rounded-card border border-line bg-surface-elevated p-3 shadow-card">
@@ -74,6 +123,10 @@ export function OrderCard({
             <span className="font-mono text-sm font-semibold text-ink">
               {orderReference(order.publicToken)}
             </span>
+            <OpenTicketButton
+              onOpen={onOpen}
+              reference={orderReference(order.publicToken)}
+            />
           </span>
           <StatusBadge tone="done" className="shrink-0">
             {STATUS_LABEL.completed}
@@ -120,28 +173,10 @@ export function OrderCard({
             <span className="font-mono text-sm font-semibold text-ink">
               {orderReference(order.publicToken)}
             </span>
-            {onOpen ? (
-              <button
-                type="button"
-                onClick={onOpen}
-                aria-label={`Open ticket ${orderReference(order.publicToken)}`}
-                title="Open ticket"
-                className="flex h-6 w-6 items-center justify-center rounded-control text-muted transition hover:bg-sand hover:text-ink"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                </svg>
-              </button>
-            ) : null}
+            <OpenTicketButton
+              onOpen={onOpen}
+              reference={orderReference(order.publicToken)}
+            />
           </div>
           <p className="mt-0.5 font-mono text-xs text-muted">
             {formatVenueTime(order.createdAt, timezone)}
