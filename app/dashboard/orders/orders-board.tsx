@@ -227,9 +227,11 @@ export function OrdersBoard({
                         taxLabel={taxLabel}
                         compact={isCompleted}
                         showElapsed={!isCompleted}
-                        onOpen={
-                          isCompleted ? undefined : () => setActiveId(order.id)
-                        }
+                        // Completed orders open the drawer too. It is the only
+                        // surface in the dashboard carrying RefundControl and
+                        // the back-one-step control, and withholding it left a
+                        // handed-off order with nothing to click at all.
+                        onOpen={() => setActiveId(order.id)}
                       />
                     ))}
                   </ul>

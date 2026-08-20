@@ -63,8 +63,16 @@ export function OrderStatusControls({
   const forward = FORWARD[status];
   const backward = BACKWARD[status];
 
-  // Completed cards render no controls (handled compactly by the card); nothing
-  // forward and nothing back means there's nothing to show.
+  // Only `new` reaches this: FORWARD.completed and BACKWARD.new are both null,
+  // and every other status has at least one direction.
+  //
+  // The previous comment here claimed completed cards render no controls, which
+  // contradicted the table twelve lines up — BACKWARD.completed is populated, so
+  // a completed order falls straight through this guard and renders its "Back to
+  // ready" button. It was the BOARD that never mounted this component for
+  // completed orders, not this component declining to render. Anyone trusting
+  // the old comment would have concluded the back-one-step path did not exist
+  // and built it again.
   if (!forward && !backward) return null;
 
   return (
