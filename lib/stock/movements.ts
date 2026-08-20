@@ -3,18 +3,26 @@ import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { ingredients, stockMovements } from "@/lib/db/schema";
+import {
+  ingredients,
+  stockMovementReason,
+  stockMovements,
+} from "@/lib/db/schema";
 
 /** The transaction executor drizzle hands to a `db.transaction` callback. */
 export type StockTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export type MovementReason =
-  | "opening"
-  | "receiving"
-  | "adjustment"
-  | "wastage"
-  | "stocktake"
-  | "depletion";
+/**
+ * DERIVED from the pgEnum, not hand-listed.
+ *
+ * The hand-written union had drifted: it carried six of the enum's seven
+ * values, silently omitting `refund_restock` — which refund compensation
+ * writes. Anything typing a map or a switch on this therefore looked complete
+ * to the compiler while missing a real case, which is exactly how the stock
+ * overview ended up printing a raw `REFUND_RESTOCK` in its movement feed.
+ * Deriving it makes the next enum value a build error instead.
+ */
+export type MovementReason = (typeof stockMovementReason.enumValues)[number];
 
 /**
  * Record ONE stock movement and keep the ingredient's cached on-hand counter in
@@ -24,7 +32,16 @@ export type MovementReason =
  * already confirmed the ingredient belongs to the venue (a forged id updates no
  * row, but the ledger insert would still write — validate upstream).
  *
- * A zero delta is a no-op (a stocktake that matches the count records nothing).
+ * A zero delta is a no-op (a stocktake that matches the count records nothing)
+ * — EXCEPT for an `opening` count, which is a state transition rather than a
+ * quantity change. `on_hand_qty` starts NULL meaning "never counted", and the
+ * stock form sets reason `opening` precisely when it is still NULL. Bailing on
+ * the zero delta skipped the counter UPDATE as well as the ledger insert, so an
+ * owner counting an ingredient as genuinely zero got a success redirect and a
+ * row still reading NULL — indistinguishable from never having been counted.
+ *
+ * That is the DEFAULT path, not an edge case: the form pre-selects `set`
+ * exactly when `on_hand_qty` is null, and its placeholder is literally "0".
  */
 export async function recordStockMovement(
   tx: StockTx,
@@ -37,7 +54,7 @@ export async function recordStockMovement(
     note?: string | null;
   },
 ): Promise<void> {
-  if (input.deltaQty === 0) return;
+  if (input.deltaQty === 0 && input.reason !== "opening") return;
 
   await tx.insert(stockMovements).values({
     venueId: input.venueId,
