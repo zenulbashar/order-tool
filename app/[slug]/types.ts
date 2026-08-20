@@ -88,6 +88,19 @@ export type PublicVenue = {
   // storefront can show a graceful "not taking orders yet" state. The server-side
   // placeOrder gate is the authoritative block; this only drives presentation.
   isLive: boolean;
+  /**
+   * Whether a diner can complete an order right now: onboarding finished AND
+   * Stripe charges enabled. Distinct from isLive on purpose — finishing the
+   * wizard stamps a venue live, but NO wizard step creates or connects a Stripe
+   * account (`stripe.accounts.create` appears once in the repo, on the Payments
+   * page), so "live" and "can be paid" routinely disagree.
+   *
+   * Every diner-facing gate reads THIS. The authoritative block is still
+   * placeOrder's server-side reject, which fails closed before any item fetch,
+   * price recompute, transaction or PaymentIntent; this only decides whether a
+   * diner is told before filling the form or after.
+   */
+  acceptsOrders: boolean;
 };
 
 /** One owner-authored storefront FAQ (visible + FAQPage JSON-LD). */

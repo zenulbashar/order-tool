@@ -22,6 +22,9 @@ export default async function LiveStepPage() {
     getBaseUrl(),
   ]);
   const storefrontUrl = `${baseUrl}/${venue.slug}`;
+  // Mirrored from Stripe by the Connect onboarding flow; the same flag
+  // placeOrder gates on.
+  const canTakePayments = venue.stripeChargesEnabled;
 
   // Reuse the existing table-QR helpers (no new QR code). Built server-side from
   // server-constructed deep-links, exactly as the dashboard tables sheet does.
@@ -36,15 +39,36 @@ export default async function LiveStepPage() {
   return (
     <div className="space-y-6">
       <WizardProgress current={6} />
+      {/* The heading has to tell the truth. No wizard step creates or connects a
+          Stripe account, so an owner could finish here, print the QR codes
+          below, open — and have every diner reach "This venue isn't accepting
+          online payments yet" on the final tap of checkout. */}
       <div className="space-y-1">
         <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">
-          You are ready to go live
+          {canTakePayments
+            ? "You are ready to go live"
+            : "One step left: connect payments"}
         </h1>
         <p className="text-sm text-muted">
-          Share your storefront link and put QR codes on your tables. You can
-          change anything later from your dashboard.
+          {canTakePayments
+            ? "Share your storefront link and put QR codes on your tables. You can change anything later from your dashboard."
+            : "Everything else is set up. Until you connect payments your storefront stays visible but cannot take orders, so connect it before you print the codes below."}
         </p>
       </div>
+
+      {!canTakePayments ? (
+        <Link
+          href="/dashboard/payments"
+          className="flex items-center justify-between gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 px-4 py-3"
+        >
+          <span className="text-sm text-ink">
+            Connect payments to start taking orders.
+          </span>
+          <span className="shrink-0 text-sm font-medium text-[var(--action)]">
+            Connect →
+          </span>
+        </Link>
+      ) : null}
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-ink">Your storefront link</p>

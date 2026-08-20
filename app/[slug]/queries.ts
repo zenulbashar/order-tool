@@ -148,6 +148,13 @@ async function loadPublicVenue(normalized: string): Promise<PublicVenue | null> 
         // Live-ready signal (Phase 3c). Derived to a boolean in SQL so the raw
         // onboarding_completed_at timestamp never reaches the client shape.
         isLive: sql<boolean>`${venues.onboardingCompletedAt} is not null`,
+        // Whether a diner can actually complete an order RIGHT NOW. Kept
+        // separate from isLive rather than folded into it: "the owner finished
+        // setup" and "the venue can take money" are different facts, and
+        // app/admin reports on the first while every diner surface needs the
+        // second. No wizard step connects Stripe, so a venue is routinely one
+        // and not the other.
+        acceptsOrders: sql<boolean>`${venues.onboardingCompletedAt} is not null and ${venues.stripeChargesEnabled}`,
       })
       .from(venues)
       .where(eq(venues.slug, normalized))
