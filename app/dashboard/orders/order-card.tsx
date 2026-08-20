@@ -12,7 +12,7 @@ import type {
   KitchenOrderItem,
 } from "./queries";
 import { taxLineText } from "./tax-line";
-import { orderDiscountLine } from "./discount-line";
+import { orderDiscountLine, orderRefundLine } from "./discount-line";
 
 // Fulfillment status → StatusBadge kitchen tone + label. "completed" maps to the
 // "done" tone (muted); the others map 1:1.
@@ -102,6 +102,7 @@ export function OrderCard({
     order.subtotalCents,
     order.totalCents,
   );
+  const refundLine = orderRefundLine(order.totalCents, order.refundedCents);
 
   // Compact summary for the COMPLETED column — no inline controls, no notes, no
   // print: just enough to recognise a finished order at a glance. It DOES carry
@@ -261,6 +262,18 @@ export function OrderCard({
         <p className="mt-0.5 text-right text-2xs text-muted">
           {taxLineText(taxLabel, order.taxCents)}
         </p>
+      ) : null}
+      {refundLine ? (
+        <div className="mt-1.5 space-y-0.5 border-t border-line pt-1.5 text-sm">
+          <div className="flex items-center justify-between text-warm-deep">
+            <span>Refunded</span>
+            <span>-${refundLine.refunded}</span>
+          </div>
+          <div className="flex items-center justify-between font-semibold text-ink">
+            <span>Net</span>
+            <span>${refundLine.net}</span>
+          </div>
+        </div>
       ) : null}
 
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">

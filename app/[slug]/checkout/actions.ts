@@ -16,6 +16,7 @@ import {
   orders,
   venues,
 } from "@/lib/db/schema";
+import { getCustomer } from "@/lib/customer/auth";
 import { reportError } from "@/lib/observability";
 import { assignDailyNumber } from "@/lib/orders/daily-number";
 import { MIN_TOTAL_CENTS } from "@/lib/payments/limits";
@@ -304,6 +305,27 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     ? inclusiveTaxCents(totalCents, taxConfig.rateBps)
     : 0;
 
+  // The signed-in diner, resolved from the SESSION — never from input. This is
+  // what makes the `audience: "new"` promo guard able to fire at all:
+  // lib/promotions.ts short-circuits on `customerId &&`, so a null one means a
+  // first-timers-only promo is granted to everyone. Until now the column's only
+  // writer was claimOrder, which runs AFTER the order exists and is called
+  // fire-and-forget with `.catch(() => {})` — so at the moment discounts are
+  // evaluated it was null in the ordinary case, not just on failure.
+  //
+  // Read server-side on purpose. A client-supplied customer id would let anyone
+  // attach an order to another diner's account, which is a tenant-isolation
+  // hole wearing the costume of a form field.
+  //
+  // Best-effort: a session lookup failure must never block a paying order, so
+  // it degrades to null — exactly the behaviour that exists today.
+  let customerId: string | null = null;
+  try {
+    customerId = (await getCustomer(venueId))?.id ?? null;
+  } catch {
+    customerId = null;
+  }
+
   // Short daily "call number" for the kitchen/customer (resets per venue per
   // day). Best-effort + INERT to money: a counter hiccup returns null and never
   // blocks the order. Assigned ONCE here so a token-collision retry reuses it.
@@ -338,6 +360,10 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
             customerName: data.customerName,
             customerEmail: data.customerEmail,
             customerPhone: data.customerPhone,
+            // Session-derived (see above). Inert to the recompute, the app fee
+            // and the PaymentIntent; it only lets promo audience and loyalty
+            // attribution work at the moment they are actually evaluated.
+            customerId,
             // Additive capture ONLY: stored as-is from the validated/trimmed
             // input and never read back into any total. The recompute above and
             // the PaymentIntent below are byte-for-byte unchanged.

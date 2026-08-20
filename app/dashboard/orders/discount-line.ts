@@ -48,3 +48,40 @@ export function orderDiscountLine(
     discount: formatCents(subtotalCents - totalCents),
   };
 }
+
+/**
+ * The "Refunded" line for an order that has had money go back, or null.
+ *
+ * A partially refunded order stays on the board — ACTIVE_ORDER_STATUSES
+ * includes `partially_refunded`, deliberately, because a goodwill refund on a
+ * late order does not cancel the food. But it kept printing `Total $55.00 /
+ * incl. GST $5.00` with a plain fulfilment badge, so the docket a venue files
+ * still claimed the full amount after $10 had gone back. `refundedCents` was
+ * already on KitchenOrder; its only consumer was RefundControl, inside a drawer
+ * nobody opens to read a receipt.
+ *
+ * Deliberately NOT netted into the Total. The Total is what was CHARGED, and
+ * the refund is a separate movement against it — collapsing them would leave a
+ * receipt that cannot be reconciled against either the Stripe charge or the
+ * refund. Printing both, with the net beneath, is what makes the paper add up.
+ */
+export type OrderRefundLine = {
+  /** What has gone back, formatted as a positive figure. */
+  refunded: string;
+  /** Charged less refunded — what the venue actually kept. */
+  net: string;
+};
+
+export function orderRefundLine(
+  totalCents: number,
+  refundedCents: number,
+): OrderRefundLine | null {
+  // Clamped rather than trusted, same discipline as netOrderMoney: this reads a
+  // stored aggregate, and a receipt must never print a negative kept amount.
+  const refunded = Math.min(Math.max(refundedCents, 0), Math.max(totalCents, 0));
+  if (refunded <= 0) return null;
+  return {
+    refunded: formatCents(refunded),
+    net: formatCents(Math.max(totalCents - refunded, 0)),
+  };
+}

@@ -3,7 +3,10 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { orderDiscountLine } from "@/app/dashboard/orders/discount-line";
+import {
+  orderDiscountLine,
+  orderRefundLine,
+} from "@/app/dashboard/orders/discount-line";
 
 /**
  * Reconciling the printed receipt (audit P6).
@@ -66,15 +69,15 @@ describe("orderDiscountLine", () => {
   });
 });
 
-describe("the three owner surfaces", () => {
-  const SURFACES = [
-    "app/dashboard/orders/order-ticket.tsx",
-    "app/dashboard/orders/order-card.tsx",
-    "app/dashboard/orders/ticket-drawer.tsx",
-  ];
+const SURFACES = [
+  "app/dashboard/orders/order-ticket.tsx",
+  "app/dashboard/orders/order-card.tsx",
+  "app/dashboard/orders/ticket-drawer.tsx",
+];
 
-  const source = (file: string) =>
-    readFileSync(join(process.cwd(), file), "utf8");
+const source = (file: string) => readFileSync(join(process.cwd(), file), "utf8");
+
+describe("the three owner surfaces", () => {
 
   it("all print the breakdown from the SHARED decision", () => {
     // The same reason tax-line.ts exists: three surfaces styled differently
@@ -105,6 +108,74 @@ describe("the three owner surfaces", () => {
     // than the bug.
     for (const file of SURFACES) {
       expect(source(file), file).toContain("formatCents(order.totalCents)");
+    }
+  });
+});
+
+
+/**
+ * The refunded line (audit L11).
+ *
+ * A partially refunded order stays on the board on purpose —
+ * ACTIVE_ORDER_STATUSES includes `partially_refunded`, because a goodwill
+ * refund on a late order does not cancel the food. But the card and docket kept
+ * printing `Total $55.00 / incl. GST $5.00` with a plain fulfilment badge, so
+ * the receipt a venue files still claimed the full amount after $10 had gone
+ * back. `refundedCents` was already on KitchenOrder; its only consumer was
+ * RefundControl, inside a drawer nobody opens to read a receipt.
+ *
+ * This is the item deliberately left out of the P6 fix, where the scope was the
+ * lines-versus-Total reconciliation. It is a different defect and gets its own
+ * decision: what should a reprinted receipt say after a refund.
+ */
+describe("orderRefundLine", () => {
+  it("shows what went back and what the venue kept", () => {
+    expect(orderRefundLine(5500, 1000)).toEqual({
+      refunded: "10.00",
+      net: "45.00",
+    });
+  });
+
+  it("renders nothing on an unrefunded order", () => {
+    // The overwhelmingly common case stays byte-identical to before.
+    expect(orderRefundLine(5500, 0)).toBeNull();
+  });
+
+  it("does NOT net the refund into the Total", () => {
+    // The Total is what was CHARGED; the refund is a separate movement against
+    // it. Collapsing them leaves a receipt that reconciles against neither the
+    // Stripe charge nor the refund. The caller prints Total, then these.
+    const line = orderRefundLine(5500, 1000)!;
+    expect(line.net).not.toBe("55.00");
+    expect(line.refunded).toBe("10.00");
+  });
+
+  it("reports the refund as a POSITIVE figure", () => {
+    // The surfaces render their own minus sign.
+    expect(orderRefundLine(5500, 1000)!.refunded).not.toContain("-");
+  });
+
+  it("takes a fully refunded order to a net of zero", () => {
+    expect(orderRefundLine(5500, 5500)).toEqual({
+      refunded: "55.00",
+      net: "0.00",
+    });
+  });
+
+  it("never prints a negative kept amount", () => {
+    // Reads a stored aggregate rather than enforcing the invariant, so it
+    // clamps — same discipline as netOrderMoney.
+    expect(orderRefundLine(5500, 9999)).toEqual({
+      refunded: "55.00",
+      net: "0.00",
+    });
+  });
+
+  it("is rendered on all three owner surfaces", () => {
+    for (const file of SURFACES) {
+      expect(source(file), `${file} must show the refund`).toContain(
+        "orderRefundLine(order.totalCents, order.refundedCents)",
+      );
     }
   });
 });

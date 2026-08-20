@@ -1,16 +1,14 @@
 import "server-only";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
   giftCardLedger,
   giftCards,
   ingredients,
-  orderItems,
   orders,
   pointsLedger,
-  recipeLines,
   stockMovements,
 } from "@/lib/db/schema";
 
@@ -242,56 +240,46 @@ async function restockOrder(
   orderId: string,
   venueId: string,
 ): Promise<number> {
-  const [depleted] = await db
-    .select({ id: stockMovements.id })
+  // Restock EXACTLY what was taken, read back from the depletion movements this
+  // order actually wrote.
+  //
+  // This used to re-derive the amount from order_items x TODAY's recipe_lines,
+  // which is only correct while the recipe has not changed since the order was
+  // made. Edit a dish to use 20g of saffron instead of 5g, refund an order from
+  // before the edit, and the venue is credited four times the saffron it ever
+  // took out. The stock ledger is what a venue counts against; silently
+  // inventing 15g of it is worse than restocking nothing.
+  //
+  // The movements are exact by construction: lib/stock/depletion.ts writes one
+  // row per ingredient with `deltaQty: -consumed`, under a unique index on
+  // (order_id, ingredient_id) WHERE reason = 'depletion'. Negating them is the
+  // whole computation, and it removes the orderItems/recipeLines join entirely.
+  //
+  // An order with no depletion rows still restocks nothing — the guard is now
+  // implicit in there being nothing to negate, rather than a separate check.
+  const depletions = await db
+    .select({
+      ingredientId: stockMovements.ingredientId,
+      deltaQty: stockMovements.deltaQty,
+    })
     .from(stockMovements)
     .where(
       and(
         eq(stockMovements.orderId, orderId),
         eq(stockMovements.reason, "depletion"),
       ),
-    )
-    .limit(1);
-  if (!depleted) return 0;
-
-  const lines = await db
-    .select({ menuItemId: orderItems.menuItemId, quantity: orderItems.quantity })
-    .from(orderItems)
-    .where(eq(orderItems.orderId, orderId));
-
-  const qtyByMenuItem = new Map<string, number>();
-  for (const line of lines) {
-    if (!line.menuItemId) continue;
-    qtyByMenuItem.set(
-      line.menuItemId,
-      (qtyByMenuItem.get(line.menuItemId) ?? 0) + line.quantity,
     );
-  }
-  if (qtyByMenuItem.size === 0) return 0;
-
-  const recipes = await db
-    .select({
-      menuItemId: recipeLines.menuItemId,
-      ingredientId: recipeLines.ingredientId,
-      qty: recipeLines.qty,
-    })
-    .from(recipeLines)
-    .where(
-      and(
-        eq(recipeLines.venueId, venueId),
-        inArray(recipeLines.menuItemId, [...qtyByMenuItem.keys()]),
-      ),
-    );
-  if (recipes.length === 0) return 0;
+  if (depletions.length === 0) return 0;
 
   const restoredByIngredient = new Map<string, number>();
-  for (const recipe of recipes) {
-    const servings = qtyByMenuItem.get(recipe.menuItemId) ?? 0;
-    const amount = servings * recipe.qty;
-    if (amount <= 0) continue;
+  for (const movement of depletions) {
+    // Depletion rows are negative (stock out), so the amount to give back is
+    // their negation. A non-negative row is not a depletion this can reverse.
+    const restored = -movement.deltaQty;
+    if (restored <= 0) continue;
     restoredByIngredient.set(
-      recipe.ingredientId,
-      (restoredByIngredient.get(recipe.ingredientId) ?? 0) + amount,
+      movement.ingredientId,
+      (restoredByIngredient.get(movement.ingredientId) ?? 0) + restored,
     );
   }
   if (restoredByIngredient.size === 0) return 0;
