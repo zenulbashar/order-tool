@@ -50,12 +50,15 @@ export function OrdersBoard({
   completedOrders,
   timezone,
   taxLabel,
+  canRefund,
 }: {
   makeNowOrders: KitchenOrder[];
   upcomingOrders: KitchenOrder[];
   completedOrders: KitchenOrder[];
   timezone: string;
   taxLabel: string | null;
+  /** Viewer holds refunds:issue — decides whether the drawer offers Refund. */
+  canRefund: boolean;
 }) {
   const [filter, setFilter] = useState<TypeFilter>("all");
   const soundEnabled = useSoundEnabled();
@@ -247,6 +250,7 @@ export function OrdersBoard({
           order={activeOrder}
           timezone={timezone}
           taxLabel={taxLabel}
+          canRefund={canRefund}
           onClose={() => setActiveId(null)}
         />
       ) : null}
