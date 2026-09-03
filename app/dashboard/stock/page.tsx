@@ -104,7 +104,7 @@ export default async function StockPage() {
   const costed = rows.filter((row) => isCosted(row));
   const uncostedCount = total - costed.length;
   const freshCount = costed.filter(
-    (row) => (now - row.updatedAt.getTime()) / dayMs < FRESH_WINDOW_DAYS,
+    (row) => (now - (row.costUpdatedAt ?? row.updatedAt).getTime()) / dayMs < FRESH_WINDOW_DAYS,
   ).length;
   const lowStockCount = rows.filter((row) => isLowStock(row)).length;
   const trackedCount = rows.filter((row) => row.onHandQty != null).length;
@@ -175,7 +175,7 @@ export default async function StockPage() {
                 <IngredientRow
                   key={row.id}
                   ingredient={row}
-                  ageDays={Math.floor((now - row.updatedAt.getTime()) / dayMs)}
+                  ageDays={Math.floor((now - (row.costUpdatedAt ?? row.updatedAt).getTime()) / dayMs)}
                 />
               ))}
             </ul>

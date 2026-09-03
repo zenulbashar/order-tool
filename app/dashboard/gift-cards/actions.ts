@@ -81,14 +81,22 @@ export async function issueGiftCardAction(
 }
 
 /** Add value to an existing active card. */
-export async function topUpGiftCardAction(formData: FormData): Promise<void> {
+export async function topUpGiftCardAction(
+  formData: FormData,
+): Promise<{ ok: boolean }> {
   const venue = await requireVenueMemberSession();
   const cardId = String(formData.get("cardId") ?? "");
   const cents = dollarsToCents(String(formData.get("amount") ?? ""));
-  if (cardId && cents !== null) {
-    await topUpGiftCard(venue.id, cardId, cents);
-  }
+  // topUpGiftCard reports false for an invalid amount, a void or missing card
+  // or a failed write. Discarding that left the page simply re-rendering with
+  // the balance unchanged and nothing to say why — the outcome is returned so
+  // the row can show it.
+  const ok =
+    cardId && cents !== null
+      ? await topUpGiftCard(venue.id, cardId, cents)
+      : false;
   revalidatePath(PATH);
+  return { ok };
 }
 
 /** Void a card so it can no longer be redeemed. */

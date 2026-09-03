@@ -441,6 +441,13 @@ export default async function OrderConfirmationPage({
         <div className="bg-[var(--color-warm)]/15 px-5 py-2 text-center text-xs font-medium text-[var(--color-warm-deep)]">
           Payment was not completed — no charge was made.
         </div>
+      ) : isRefunded ? (
+        // A refunded order was PAID and then returned — not cancelled. The
+        // banner used to say "cancelled" directly above an "Order refunded"
+        // eyebrow.
+        <div className="bg-sand px-5 py-2 text-center text-xs font-medium text-muted">
+          This order was refunded in full.
+        </div>
       ) : (
         <div className="bg-sand px-5 py-2 text-center text-xs font-medium text-muted">
           This order was cancelled.

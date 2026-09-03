@@ -18,7 +18,14 @@ const TABS = [
   { href: "/admin/support", label: "Support" },
 ];
 
-export function AdminNav({ email }: { email: string }) {
+export function AdminNav({
+  email,
+  environment,
+}: {
+  email: string;
+  /** "Prod" | "Preview" | "Local" — resolved server-side from VERCEL_ENV. */
+  environment: string;
+}) {
   const pathname = usePathname();
   const active = (href: string) =>
     href === "/admin"
@@ -59,7 +66,7 @@ export function AdminNav({ email }: { email: string }) {
 
       <div className="ml-auto flex items-center gap-3">
         <span className="rounded-full border border-line-strong px-2.5 py-1 font-mono text-2xs font-bold uppercase tracking-wider text-muted">
-          Prod
+          {environment}
         </span>
         <span
           title={email}

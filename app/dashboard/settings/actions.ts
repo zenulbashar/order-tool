@@ -244,6 +244,11 @@ export async function saveTaxSettings(
   if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
     return { error: "Tax rate must be between 0 and 100%." };
   }
+  // Every consumer gates the tax line on rateBps > 0, so "enabled" with no
+  // rate saved as On and showed nothing anywhere. Ask for the rate instead.
+  if (enabled && rate <= 0) {
+    return { error: "Enter a tax rate above 0% to show tax on receipts." };
+  }
   if (label.length > 20) {
     return { error: "Tax label must be 20 characters or fewer." };
   }

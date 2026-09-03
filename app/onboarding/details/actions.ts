@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { isUniqueViolation } from "@/lib/db/errors";
 import { venueMembers, venues, venueType } from "@/lib/db/schema";
 import { setSelectedVenueCookie } from "@/lib/tenant";
-import { isReservedSlug, slugSchema, venueNameSchema } from "@/lib/validation";
+import { isReservedSlug, slugSchema, venueNameSchema, logoUrlSchema, venuePhoneSchema } from "@/lib/validation";
 
 export type DetailsState = { error?: string };
 
@@ -78,8 +78,20 @@ export async function createVenueFromOnboarding(
   const state = optionalText(formData.get("state"), 100);
   const postcode = optionalText(formData.get("postcode"), 20);
   const country = optionalText(formData.get("country"), 100);
-  const phone = optionalText(formData.get("phone"), 40);
-  const logoUrl = optionalText(formData.get("logoUrl"), 2048);
+  // The same rules Settings › Details enforces. The wizard used to accept a
+  // 40-character free-text phone and any string as a logo URL; both were then
+  // emitted verbatim into schema.org JSON-LD, and the Settings form could not
+  // be saved until the owner fixed them.
+  const phoneParsed = venuePhoneSchema.safeParse(String(formData.get("phone") ?? ""));
+  if (!phoneParsed.success) {
+    return { error: phoneParsed.error.issues[0]?.message ?? "Enter a valid phone number." };
+  }
+  const phone = phoneParsed.data;
+  const logoParsed = logoUrlSchema.safeParse(String(formData.get("logoUrl") ?? ""));
+  if (!logoParsed.success) {
+    return { error: logoParsed.error.issues[0]?.message ?? "Enter a valid URL." };
+  }
+  const logoUrl = logoParsed.data;
 
   const slugTaken = await db
     .select({ id: venues.id })

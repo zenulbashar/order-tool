@@ -5,6 +5,7 @@ import { and, eq, gt, inArray, notExists, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { giftCardLedger, giftCards, orders } from "@/lib/db/schema";
+import { reportError } from "@/lib/observability";
 import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
 /**
@@ -38,6 +39,32 @@ async function insertDebit(row: {
 }): Promise<number> {
   if (row.cents <= 0) return 0;
   return db.transaction(async (tx) => {
+    // The card's status is checked when the reservation is made, not here —
+    // so a card voided as lost or stolen AFTER an order applied it was still
+    // spent by that order at confirmation. A void card is never debited; the
+    // venue chose to void it, and the difference on that one order is reported
+    // rather than taken from the card's remaining record.
+    const [card] = await tx
+      .select({ status: giftCards.status })
+      .from(giftCards)
+      .where(eq(giftCards.id, row.giftCardId))
+      .limit(1);
+    if (!card || card.status !== "active") {
+      await reportError(
+        new Error("Gift card redeemed on a card that is not active."),
+        {
+          context: "giftcards.redeem-inactive",
+          tags: { venue_id: row.venueId },
+          extra: {
+            orderId: row.orderId,
+            giftCardId: row.giftCardId,
+            status: card?.status ?? null,
+            cents: row.cents,
+          },
+        },
+      );
+      return 0;
+    }
     const inserted = await tx
       .insert(giftCardLedger)
       .values({

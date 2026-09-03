@@ -151,6 +151,16 @@ export function OrderCard({
             ${formatCents(order.totalCents)}
           </span>
         </div>
+        {order.refundedCents > 0 ? (
+          // A handed-off order can still be refunded; showing only the charged
+          // total made a partially refunded order read as fully paid.
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-muted">Refunded</span>
+            <span className="font-semibold text-ink">
+              −${formatCents(order.refundedCents)}
+            </span>
+          </div>
+        ) : null}
       </li>
     );
   }

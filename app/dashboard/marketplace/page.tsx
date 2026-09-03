@@ -37,7 +37,10 @@ export default async function MarketplacePage({
   searchParams: Promise<{ checkout?: string; error?: string }>;
 }) {
   await requireUser();
-  const venue = await requireVenuePermission("stock:manage");
+  const venue = await // billing:manage, matching checkoutMarketplaceOrder: buying supplies spends
+  // the venue's money. Gated on stock:manage, a manager could browse, build a
+  // cart, and be bounced to /dashboard?denied=1 at checkout with the cart lost.
+  requireVenuePermission("billing:manage");
   const params = await searchParams;
 
   const [products, orders] = await Promise.all([

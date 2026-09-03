@@ -22,12 +22,21 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const { email } = await requirePlatformAdmin();
+  // The header pill used to be the literal "Prod", so preview and local
+  // consoles also claimed to be production. Vercel sets VERCEL_ENV per
+  // deployment; anything else is a local run.
+  const environment =
+    process.env.VERCEL_ENV === "production"
+      ? "Prod"
+      : process.env.VERCEL_ENV === "preview"
+        ? "Preview"
+        : "Local";
 
   return (
     // min-h-dvh, not min-h-screen: the rest of the app already uses dvh, and
     // 100vh produces the classic jump under mobile browser chrome (UI audit P1-7).
     <div className="admin-dark min-h-dvh bg-surface text-ink">
-      <AdminNav email={email} />
+      <AdminNav email={email} environment={environment} />
       {children}
     </div>
   );

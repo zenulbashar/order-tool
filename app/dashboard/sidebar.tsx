@@ -113,7 +113,7 @@ function navEntries(
         { label: "Stock overview", href: "/dashboard/stock/overview", permission: "stock:manage" },
         { label: "Reorder suggestions", href: "/dashboard/stock/suggestions", permission: "stock:manage" },
         { label: "Scan invoice", href: "/dashboard/stock/scan", permission: "stock:manage" },
-        { label: "Shop supplies", href: "/dashboard/marketplace", permission: "stock:manage" },
+        { label: "Shop supplies", href: "/dashboard/marketplace", permission: "billing:manage" },
       ],
     },
     {

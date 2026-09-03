@@ -1,0 +1,1 @@
+ALTER TABLE "ingredients" ADD COLUMN "cost_updated_at" timestamp with time zone;

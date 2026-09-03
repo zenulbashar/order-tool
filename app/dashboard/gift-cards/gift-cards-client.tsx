@@ -119,6 +119,7 @@ function IssuedCode({ code }: { code: string }) {
 
 function GiftCardItem({ card }: { card: GiftCardRow }) {
   const [pending, startTransition] = useTransition();
+  const [topUpError, setTopUpError] = useState<string | null>(null);
   const isVoid = card.status === "void";
 
   return (
@@ -146,7 +147,12 @@ function GiftCardItem({ card }: { card: GiftCardRow }) {
             <form
               action={(formData) =>
                 startTransition(async () => {
-                  await topUpGiftCardAction(formData);
+                  const result = await topUpGiftCardAction(formData);
+                  setTopUpError(
+                    result.ok
+                      ? null
+                      : "Top-up not applied — check the amount and that the card is still active.",
+                  );
                 })
               }
               className="flex items-center gap-1.5"
@@ -158,6 +164,7 @@ function GiftCardItem({ card }: { card: GiftCardRow }) {
                 required
                 placeholder="10.00"
                 aria-label="Top-up amount"
+                aria-invalid={topUpError ? true : undefined}
                 className={`${control} w-20`}
               />
               <Button type="submit" variant="secondary" size="sm" loading={pending}>
@@ -177,6 +184,11 @@ function GiftCardItem({ card }: { card: GiftCardRow }) {
               </ConfirmSubmit>
             </form>
           </div>
+        ) : null}
+        {topUpError ? (
+          <p className="basis-full text-xs text-[var(--color-warm)]" role="alert">
+            {topUpError}
+          </p>
         ) : null}
       </div>
     </li>

@@ -4,6 +4,7 @@ import { desc, eq } from "drizzle-orm";
 
 import { StatusBadge } from "@/app/_components/status-badge";
 import { db } from "@/lib/db";
+import { DEFAULT_VENUE_TIME_ZONE } from "@/lib/time";
 import { supportTickets, venues } from "@/lib/db/schema";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 
@@ -22,13 +23,16 @@ const DEPARTMENT_LABEL: Record<string, string> = {
   billing: "Billing",
 };
 
+// Rendered on the server (UTC on Vercel): without a zone the queue showed UTC
+// times to Australian operators with no label. Platform default zone, named.
 function fmtWhen(d: Date): string {
-  return d.toLocaleString("en-AU", {
+  return `${d.toLocaleString("en-AU", {
     day: "numeric",
     month: "short",
     hour: "numeric",
     minute: "2-digit",
-  });
+    timeZone: DEFAULT_VENUE_TIME_ZONE,
+  })} ${DEFAULT_VENUE_TIME_ZONE.split("/")[1]}`;
 }
 
 /**
