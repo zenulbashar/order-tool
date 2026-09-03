@@ -58,6 +58,7 @@ export default async function AdminMarketplacePage() {
       .select({
         id: marketplaceOrders.id,
         venueName: venues.name,
+        paidAt: marketplaceOrders.paidAt,
         status: marketplaceOrders.status,
         totalCents: marketplaceOrders.totalCents,
         note: marketplaceOrders.note,
@@ -140,9 +141,22 @@ export default async function AdminMarketplacePage() {
                     ${formatCents(order.totalCents)}
                   </span>
                   {(NEXT_STATUS[order.status] ?? []).map((next) => (
-                    <form key={next.value} action={advanceMarketplaceOrder}>
+                    <form
+                      key={next.value}
+                      action={advanceMarketplaceOrder}
+                      className="flex items-center gap-1.5"
+                    >
                       <input type="hidden" name="id" value={order.id} />
                       <input type="hidden" name="status" value={next.value} />
+                      {next.value === "cancelled" && order.paidAt ? (
+                        // A paid order has money to return and no in-product
+                        // refund path: the operator confirms the Stripe refund
+                        // before the cancel is accepted (the action enforces it).
+                        <label className="flex items-center gap-1 text-xs text-muted">
+                          <input type="checkbox" name="refunded" required />
+                          Refunded in Stripe
+                        </label>
+                      ) : null}
                       <button
                         type="submit"
                         className={denseButtonStyles({ size: "xs" })}

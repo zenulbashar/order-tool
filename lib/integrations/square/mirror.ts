@@ -4,6 +4,7 @@ import { and, asc, eq, inArray, lt } from "drizzle-orm";
 
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
 import { db } from "@/lib/db";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
 import {
   type IntegrationJob,
   orderItemModifiers,
@@ -112,6 +113,7 @@ export const mirrorOrderToSquare: JobProcessor = async (
   const [order] = await db
     .select({
       id: orders.id,
+      status: orders.status,
       publicToken: orders.publicToken,
       orderType: orders.orderType,
       tableLabel: orders.tableLabel,
@@ -125,6 +127,14 @@ export const mirrorOrderToSquare: JobProcessor = async (
     .where(eq(orders.id, job.orderId))
     .limit(1);
   if (!order) throw new Error("Order not found for mirror job.");
+  // The job was enqueued when the order confirmed; by the time it runs (retry
+  // backoff, a provider outage, a manual "Retry all" days later) the order may
+  // have been fully refunded. Mirroring it then records a full EXTERNAL
+  // payment and a PROPOSED pickup ticket in the venue's Square for a sale that
+  // no longer stands. Succeed without mirroring instead.
+  if (!(ACTIVE_ORDER_STATUSES as readonly string[]).includes(order.status)) {
+    return {};
+  }
 
   const items = await db
     .select({

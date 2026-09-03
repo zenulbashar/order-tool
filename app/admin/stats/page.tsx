@@ -108,16 +108,26 @@ export default async function PlatformStatsPage() {
         .netTotalCents,
     0,
   );
-  // Platform revenue stays on the GROSS total, on purpose. Stripe does not
-  // proportionally refund an application fee when a charge is partly refunded
-  // unless the refund explicitly asks it to, and this codebase issues refunds
-  // without `refund_application_fee`. Netting this figure would understate what
-  // the platform actually kept — the opposite error to the one being fixed.
-  // If that refund flag is ever set, this is the line that has to change with it.
-  const platformRevenue = orderRows.reduce(
-    (sum, o) => sum + computeApplicationFeeCents(o.totalCents),
-    0,
+  // Net order value per order, used by every figure below so the rankings can
+  // never disagree with the headline GMV (they summed gross totalCents while
+  // the KPI was net, so a venue with a big refund still topped "Top venues").
+  const netByOrder = new Map(
+    orderRows.map((o) => [
+      o.id,
+      netOrderMoney(o.totalCents, 0, refundedByOrder.get(o.id) ?? 0).netTotalCents,
+    ]),
   );
+  // Platform revenue is netted in proportion to what was refunded. The
+  // previous note here claimed refunds were issued without
+  // `refund_application_fee`; refundOrder passes it (lib/payments/
+  // refund-service.ts), so Stripe returns the platform's cut pro rata and the
+  // gross figure overstated what the platform actually kept.
+  const platformRevenue = orderRows.reduce((sum, o) => {
+    const fee = computeApplicationFeeCents(o.totalCents);
+    const keptShare =
+      o.totalCents > 0 ? (netByOrder.get(o.id) ?? o.totalCents) / o.totalCents : 0;
+    return sum + Math.round(fee * keptShare);
+  }, 0);
 
   // Daily orders trend (last TREND_DAYS).
   const trend: { label: string; count: number }[] = [];
@@ -140,7 +150,9 @@ export default async function PlatformStatsPage() {
   // Top venues by GMV.
   const venueName = new Map(venueRows.map((v) => [v.id, v.name]));
   const gmvByVenue = new Map<string, number>();
-  for (const o of orderRows) gmvByVenue.set(o.venueId, (gmvByVenue.get(o.venueId) ?? 0) + o.totalCents);
+  for (const o of orderRows) {
+    gmvByVenue.set(o.venueId, (gmvByVenue.get(o.venueId) ?? 0) + (netByOrder.get(o.id) ?? 0));
+  }
   const topVenues = [...gmvByVenue.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
   const topVenueMax = Math.max(1, ...topVenues.map((r) => r[1]));
 
@@ -149,7 +161,7 @@ export default async function PlatformStatsPage() {
   for (const o of orderRows) {
     if (!o.customerId) continue;
     const cur = spendByCustomer.get(o.customerId) ?? { gmv: 0, orders: 0 };
-    cur.gmv += o.totalCents;
+    cur.gmv += netByOrder.get(o.id) ?? 0;
     cur.orders += 1;
     spendByCustomer.set(o.customerId, cur);
   }
@@ -194,13 +206,13 @@ export default async function PlatformStatsPage() {
         <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">
           Platform stats
         </h1>
-        <p className="mt-1 text-sm text-muted">Last {WINDOW_DAYS} days · confirmed orders</p>
+        <p className="mt-1 text-sm text-muted">Last {WINDOW_DAYS} days · paid orders, net of refunds</p>
       </header>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Venues" value={String(venueRows.length)} sub={`${liveCount} live · ${payingCount} paying`} />
         <Kpi label="Orders" value={String(orderRows.length)} sub={`Last ${WINDOW_DAYS} days`} />
-        <Kpi label="GMV" value={`$${formatCents(gmv)}`} sub="Confirmed order value" />
+        <Kpi label="GMV" value={`$${formatCents(gmv)}`} sub="Paid order value, net of refunds" />
         <Kpi label="Platform revenue" value={`$${formatCents(platformRevenue)}`} sub="Application fees" />
       </div>
 
