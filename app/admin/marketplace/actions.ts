@@ -85,6 +85,28 @@ export async function advanceMarketplaceOrder(formData: FormData): Promise<void>
   if (!id || !(ORDER_STATUSES as readonly string[]).includes(statusRaw)) return;
   const status = statusRaw as OrderStatus;
 
+  // "Cancel" on a PAID order flipped it to cancelled with no refund path and
+  // no precondition, silently retaining the venue's Checkout payment. There is
+  // no in-product marketplace refund, so cancelling a paid order requires the
+  // operator to confirm the payment was refunded in Stripe first; without
+  // that the order is left unchanged and the refusal is audited.
+  if (status === "cancelled") {
+    const [current] = await db
+      .select({ paidAt: marketplaceOrders.paidAt })
+      .from(marketplaceOrders)
+      .where(eq(marketplaceOrders.id, id))
+      .limit(1);
+    if (current?.paidAt && formData.get("refunded") !== "on") {
+      await db.insert(platformAuditLog).values({
+        actorEmail: admin.email,
+        action: "marketplace_order_status",
+        detail: `${id.slice(0, 8)} → cancelled REFUSED: paid order, refund not confirmed`,
+      });
+      revalidatePath(ADMIN_MARKETPLACE);
+      return;
+    }
+  }
+
   await db
     .update(marketplaceOrders)
     .set({ status, updatedAt: new Date() })
