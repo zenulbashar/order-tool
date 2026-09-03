@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { controlClass } from "@/app/_components/field";
 import Link from "next/link";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { asc, desc, inArray, sql } from "drizzle-orm";
 
 import { buttonStyles, denseButtonStyles } from "@/app/_components/button-variants";
 import { StatusBadge } from "@/app/_components/status-badge";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { db } from "@/lib/db";
 import { orders, promotions, promotionVenues, venues } from "@/lib/db/schema";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
@@ -47,7 +48,7 @@ export default async function AdminPromotionsPage() {
         funded: sql<number>`coalesce(sum(${orders.platformFundedCents}), 0)`,
       })
       .from(orders)
-      .where(eq(orders.status, "confirmed"))
+      .where(inArray(orders.status, PAID_ORDER_STATUSES))
       .groupBy(orders.appliedPromoId),
     // Targeted-venue count per promo.
     db

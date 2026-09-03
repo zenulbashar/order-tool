@@ -2,6 +2,7 @@ import "server-only";
 
 import { and, count, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { db } from "@/lib/db";
 import { orders, promotions, promotionVenues } from "@/lib/db/schema";
 import { promoDiscountRawCents } from "@/lib/payments/order-discount";
@@ -73,7 +74,9 @@ export async function resolveActivePromo(
     targeted = new Set(rows.map((r) => r.promotionId));
   }
 
-  // BUDGET — spend so far per capped promo (confirmed orders only).
+  // BUDGET — spend so far per capped promo. PAID statuses, not `confirmed`
+  // alone: a partial refund rewrites the status, and dropping that order
+  // released its promo spend so a capped promotion could overshoot.
   const budgetIds = candidates.filter((c) => c.budgetCents != null).map((c) => c.id);
   const spent = new Map<string, number>();
   if (budgetIds.length > 0) {
@@ -86,7 +89,7 @@ export async function resolveActivePromo(
       .where(
         and(
           inArray(orders.appliedPromoId, budgetIds),
-          eq(orders.status, "confirmed"),
+          inArray(orders.status, PAID_ORDER_STATUSES),
         ),
       )
       .groupBy(orders.appliedPromoId);
@@ -103,7 +106,7 @@ export async function resolveActivePromo(
         and(
           eq(orders.venueId, venueId),
           eq(orders.customerId, customerId),
-          eq(orders.status, "confirmed"),
+          inArray(orders.status, PAID_ORDER_STATUSES),
         ),
       );
     returning = (row?.n ?? 0) > 0;

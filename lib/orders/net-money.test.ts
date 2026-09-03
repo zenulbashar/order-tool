@@ -117,7 +117,17 @@ describe("revenue aggregate sites", () => {
   ];
 
   /** Sites that only COUNT orders — right status set, nothing to net. */
-  const COUNT_SITES = ["app/admin/page.tsx"];
+  const COUNT_SITES = [
+    "app/admin/page.tsx",
+    // Promo spend / budget cap / audience and discount-code usage: a partial
+    // refund dropping the order out let a capped promotion overshoot and
+    // treated a returning customer as new. Recommendations: a partly refunded
+    // order is still a real order that was eaten.
+    "app/dashboard/discounts/page.tsx",
+    "app/admin/promotions/page.tsx",
+    "lib/promotions.ts",
+    "app/[slug]/queries.ts",
+  ];
 
   it("never filters an order aggregate on confirmed alone", () => {
     const narrow: string[] = [];
