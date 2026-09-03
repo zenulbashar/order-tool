@@ -43,6 +43,19 @@ type Provider = VenueIntegration["provider"];
  * (with encrypted credentials) and performs the provider calls; returns the
  * provider-side reference to store. Throwing = retryable failure (backoff).
  */
+/**
+ * Connections that should still receive mirror jobs. `needs_attention` is a
+ * CONNECTED integration whose recent work dead-lettered; it was excluded from
+ * enqueueing, but the only automatic way back to `active` is a later job
+ * SUCCESS — which cannot happen when nothing is enqueued. Excluding it made
+ * the state permanent while the hub card still read "connected". Revoked and
+ * disabled connections stay out.
+ */
+export const CONNECTED_INTEGRATION_STATUSES = [
+  "active",
+  "needs_attention",
+] as const;
+
 export type JobProcessor = (
   job: IntegrationJob,
   integration: VenueIntegration,
@@ -145,7 +158,7 @@ export async function enqueueJobsForOrder(
     .where(
       and(
         eq(venueIntegrations.venueId, order.venueId),
-        eq(venueIntegrations.status, "active"),
+        inArray(venueIntegrations.status, CONNECTED_INTEGRATION_STATUSES),
       ),
     );
   if (active.length === 0) return 0;
@@ -196,7 +209,7 @@ export async function sweepMissedOrders(): Promise<{
       venueIntegrations,
       and(
         eq(venueIntegrations.venueId, orders.venueId),
-        eq(venueIntegrations.status, "active"),
+        inArray(venueIntegrations.status, CONNECTED_INTEGRATION_STATUSES),
       ),
     )
     // A partially refunded order is still a live order the venue is working, so
@@ -205,7 +218,17 @@ export async function sweepMissedOrders(): Promise<{
     .where(
       and(
         inArray(orders.status, ACTIVE_ORDER_STATUSES),
-        gt(orders.createdAt, since),
+        // Lookback floor AND the connection's own start: with no lower bound
+        // tied to when the integration was connected, connecting Square
+        // enqueued a mirror job for every confirmed order in the lookback
+        // (72h minimum, wider with a stale watermark) — days of already-served
+        // orders pushed into Square as new PROPOSED tickets with external
+        // payments dated today. Orders placed before the connection existed
+        // are never the POS's business.
+        gt(
+          orders.createdAt,
+          sql`greatest(${since}::timestamptz, ${venueIntegrations.createdAt})`,
+        ),
       ),
     );
   if (candidates.length === 0) {
@@ -424,7 +447,7 @@ async function runClaimedJob(job: IntegrationJob): Promise<void> {
         and(
           eq(venueIntegrations.venueId, job.venueId),
           eq(venueIntegrations.provider, job.provider),
-          eq(venueIntegrations.status, "active"),
+          inArray(venueIntegrations.status, CONNECTED_INTEGRATION_STATUSES),
         ),
       );
   }
