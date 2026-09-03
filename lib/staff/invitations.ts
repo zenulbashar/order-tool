@@ -8,6 +8,7 @@ import {
   type RoleKey,
   assignableRoles,
   parseRoleKey,
+  roleFromLegacyMemberRole,
 } from "@/lib/authz";
 import { db } from "@/lib/db";
 import {
@@ -112,6 +113,31 @@ export async function createInvitation(input: {
   return { ok: true, token, invitationId: row.id };
 }
 
+/**
+ * Pure decision: which role rows to write when an invitation is accepted.
+ *
+ * `legacyRole` is the EXISTING membership's `venue_members.role` (null when
+ * the invitee is not yet a member); `explicitRoles` are their current
+ * `venue_member_roles` rows. Role rows take precedence over the legacy column
+ * (lib/tenant.ts getVenueRoles), so for a pre-M5 member — e.g. a venue's
+ * founding owner, who has ONLY the legacy 'owner' value — writing the invited
+ * role alone would silently REPLACE owner with e.g. staff: a manager could
+ * invite the owner as staff and lock them out of their own venue, with no
+ * remaining owner to undo it. Accepting an invite must only ever widen access,
+ * so the legacy role is carried across as an explicit row first.
+ */
+export function rolesToGrantOnAccept(input: {
+  invitedRole: RoleKey;
+  legacyRole: string | null;
+  explicitRoles: readonly RoleKey[];
+}): RoleKey[] {
+  const carried =
+    input.legacyRole !== null && input.explicitRoles.length === 0
+      ? [roleFromLegacyMemberRole(input.legacyRole)]
+      : [];
+  return [...new Set<RoleKey>([...carried, input.invitedRole])];
+}
+
 export type AcceptInvitationResult =
   | { ok: true; venueId: string; role: RoleKey }
   | { ok: false; error: string };
@@ -154,6 +180,36 @@ export async function acceptInvitation(input: {
   // Membership + role in one transaction, so a half-accepted invite can't
   // leave a member with no role (or a role with no membership).
   await db.transaction(async (tx) => {
+    // An invitee who is ALREADY a member keeps everything they have: see
+    // rolesToGrantOnAccept for why a legacy-only member needs their current
+    // role written explicitly before the invited one is added.
+    const [existing] = await tx
+      .select({ role: venueMembers.role })
+      .from(venueMembers)
+      .where(
+        and(
+          eq(venueMembers.venueId, invitation.venueId),
+          eq(venueMembers.userId, input.userId),
+        ),
+      )
+      .limit(1);
+    const explicit = existing
+      ? await tx
+          .select({ role: venueMemberRoles.role })
+          .from(venueMemberRoles)
+          .where(
+            and(
+              eq(venueMemberRoles.venueId, invitation.venueId),
+              eq(venueMemberRoles.userId, input.userId),
+            ),
+          )
+      : [];
+    const roles = rolesToGrantOnAccept({
+      invitedRole: invitation.role,
+      legacyRole: existing?.role ?? null,
+      explicitRoles: explicit.map((row) => row.role),
+    });
+
     await tx
       .insert(venueMembers)
       .values({
@@ -167,12 +223,16 @@ export async function acceptInvitation(input: {
 
     await tx
       .insert(venueMemberRoles)
-      .values({
-        venueId: invitation.venueId,
-        userId: input.userId,
-        role: invitation.role,
-        grantedByUserId: invitation.invitedByUserId,
-      })
+      .values(
+        roles.map((role) => ({
+          venueId: invitation.venueId,
+          userId: input.userId,
+          role,
+          // A carried-over legacy role was not granted by the inviter.
+          grantedByUserId:
+            role === invitation.role ? invitation.invitedByUserId : null,
+        })),
+      )
       .onConflictDoNothing();
 
     await tx

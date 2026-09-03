@@ -4,6 +4,7 @@ import {
   generateInviteToken,
   hashInviteToken,
   normalizeEmail,
+  rolesToGrantOnAccept,
 } from "@/lib/staff/invitations";
 
 /**
@@ -57,5 +58,63 @@ describe("email normalisation", () => {
     expect(normalizeEmail("chef@example.com")).not.toBe(
       normalizeEmail("chef@example.co"),
     );
+  });
+});
+
+describe("roles granted on acceptance", () => {
+  it("grants exactly the invited role to a brand-new member", () => {
+    expect(
+      rolesToGrantOnAccept({
+        invitedRole: "staff",
+        legacyRole: null,
+        explicitRoles: [],
+      }),
+    ).toEqual(["staff"]);
+  });
+
+  it("never demotes a legacy-only owner who accepts a lower invite", () => {
+    // The founding owner has only venue_members.role = 'owner' (no role rows).
+    // A manager invites them as staff. Role rows override the legacy column,
+    // so the invited role alone would REPLACE owner with staff and lock the
+    // sole owner out of their venue.
+    const roles = rolesToGrantOnAccept({
+      invitedRole: "staff",
+      legacyRole: "owner",
+      explicitRoles: [],
+    });
+    expect(roles).toContain("owner");
+    expect(roles).toContain("staff");
+  });
+
+  it("carries a legacy staff member's role across alongside a promotion", () => {
+    expect(
+      rolesToGrantOnAccept({
+        invitedRole: "manager",
+        legacyRole: "staff",
+        explicitRoles: [],
+      }).sort(),
+    ).toEqual(["manager", "staff"]);
+  });
+
+  it("adds only the invited role when explicit role rows already govern", () => {
+    // Existing rows stay in place (the insert is add-only), so nothing needs
+    // carrying: the union in the table already preserves current access.
+    expect(
+      rolesToGrantOnAccept({
+        invitedRole: "staff",
+        legacyRole: "owner",
+        explicitRoles: ["owner"],
+      }),
+    ).toEqual(["staff"]);
+  });
+
+  it("does not duplicate a role that matches the legacy value", () => {
+    expect(
+      rolesToGrantOnAccept({
+        invitedRole: "owner",
+        legacyRole: "owner",
+        explicitRoles: [],
+      }),
+    ).toEqual(["owner"]);
   });
 });
