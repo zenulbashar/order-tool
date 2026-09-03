@@ -37,6 +37,19 @@ export function getStripe(): Stripe {
  * runtime and handed to the client by the checkout action — it is publishable,
  * so sending it to the browser is expected. Lazy for the same build-time reason.
  */
+/**
+ * Whether the configured Stripe keys are TEST keys. The money pages used to
+ * hard-code "Test mode — no real charges are made", which becomes false the
+ * moment the live secret is deployed (README: there is no separate flag; going
+ * live is swapping STRIPE_SECRET_KEY). Derived from the key itself so the copy
+ * can never disagree with what Stripe is actually doing. Unset counts as not
+ * test mode: the sentence is a reassurance, and it must never be offered
+ * unless it is known to be true.
+ */
+export function isStripeTestMode(): boolean {
+  return (process.env.STRIPE_SECRET_KEY ?? "").startsWith("sk_test_");
+}
+
 export function getStripePublishableKey(): string {
   const key = process.env.STRIPE_PUBLISHABLE_KEY;
   if (!key) {

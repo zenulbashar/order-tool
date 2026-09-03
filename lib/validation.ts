@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_LINE_QUANTITY } from "@/lib/orders/limits";
 
 /**
  * Canonical email form used everywhere we read or write a user's email.
@@ -947,7 +948,7 @@ const orderLineSchema = z.object({
     .number()
     .int("Invalid quantity.")
     .min(1, "Quantity must be at least 1.")
-    .max(50, "Quantity is too high."),
+    .max(MAX_LINE_QUANTITY, "Quantity is too high."),
 });
 
 export const placeOrderSchema = z

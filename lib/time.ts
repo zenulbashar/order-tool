@@ -98,3 +98,35 @@ export function dayBoundsInTimeZone(
     return null;
   }
 }
+
+/**
+ * IANA zone for an Australian state/territory as entered at onboarding (any
+ * case, full name or abbreviation). The venues.timezone column defaulted every
+ * venue to Australia/Brisbane and nothing ever wrote it, so a Sydney or Perth
+ * venue's pickup slots, opening-hours windows and daily order numbers ran on
+ * Queensland time. Returns null when the state is not recognised so the caller
+ * keeps the column default rather than guessing. Pure.
+ */
+export function timeZoneForAustralianState(state: string | null | undefined): string | null {
+  if (!state) return null;
+  const key = state.toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+  const zones: Record<string, string> = {
+    qld: "Australia/Brisbane",
+    queensland: "Australia/Brisbane",
+    nsw: "Australia/Sydney",
+    "new south wales": "Australia/Sydney",
+    act: "Australia/Sydney",
+    "australian capital territory": "Australia/Sydney",
+    vic: "Australia/Melbourne",
+    victoria: "Australia/Melbourne",
+    tas: "Australia/Hobart",
+    tasmania: "Australia/Hobart",
+    sa: "Australia/Adelaide",
+    "south australia": "Australia/Adelaide",
+    nt: "Australia/Darwin",
+    "northern territory": "Australia/Darwin",
+    wa: "Australia/Perth",
+    "western australia": "Australia/Perth",
+  };
+  return zones[key] ?? null;
+}

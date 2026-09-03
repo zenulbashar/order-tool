@@ -24,11 +24,14 @@ export function TicketDrawer({
   order,
   timezone,
   taxLabel,
+  canRefund,
   onClose,
 }: {
   order: KitchenOrder;
   timezone: string;
   taxLabel: string | null;
+  /** Only viewers with refunds:issue see the Refund control at all. */
+  canRefund: boolean;
   onClose: () => void;
 }) {
   // Focus trap + initial focus + focus restoration + Escape + scroll lock.
@@ -172,14 +175,16 @@ export function TicketDrawer({
           {/* Refunds (M4) — inside the scrolling body rather than the sticky
               action bar, so the money action is never adjacent to the
               high-frequency kitchen status buttons. */}
-          <div className="mt-4 border-t border-line pt-4">
-            <RefundControl
-              orderId={order.id}
-              totalCents={order.totalCents}
-              refundedCents={order.refundedCents}
-              status={order.status}
-            />
-          </div>
+          {canRefund ? (
+            <div className="mt-4 border-t border-line pt-4">
+              <RefundControl
+                orderId={order.id}
+                totalCents={order.totalCents}
+                refundedCents={order.refundedCents}
+                status={order.status}
+              />
+            </div>
+          ) : null}
         </div>
 
         {/* Actions — same status controls + print as the card. */}

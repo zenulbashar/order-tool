@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, gt, inArray, notExists, sql } from "drizzle-orm";
+import { and, asc, eq, exists, gt, inArray, notExists, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { ACTIVE_ORDER_STATUSES } from "@/lib/db/order-status";
@@ -183,8 +183,30 @@ export async function sweepStockDepletion(): Promise<number> {
               ),
             ),
         ),
+        // Only orders that CAN deplete: at least one line whose menu item has
+        // a recipe. An order of recipe-less items never gets a depletion row,
+        // so without this filter the same recipe-less orders filled the batch
+        // every tick once more than SWEEP_BATCH of them sat in the lookback —
+        // the watermark never advanced and a real missed depletion behind
+        // them was never reached.
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(orderItems)
+            .innerJoin(
+              recipeLines,
+              and(
+                eq(recipeLines.menuItemId, orderItems.menuItemId),
+                eq(recipeLines.venueId, orders.venueId),
+              ),
+            )
+            .where(eq(orderItems.orderId, orders.id)),
+        ),
       ),
     )
+    // Oldest first, so a backlog drains in order instead of the same
+    // arbitrary hundred being returned each tick.
+    .orderBy(asc(orders.createdAt))
     .limit(SWEEP_BATCH);
 
   let applied = 0;

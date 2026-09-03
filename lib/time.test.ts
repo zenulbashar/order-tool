@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { dayBoundsInTimeZone, formatVenueTime } from "./time";
+import {
+  dayBoundsInTimeZone,
+  formatVenueTime,
+  timeZoneForAustralianState,
+} from "./time";
 
 describe("formatVenueTime", () => {
   it("renders in the venue timezone, not the server's UTC", () => {
@@ -54,5 +58,25 @@ describe("dayBoundsInTimeZone", () => {
     expect(dayBoundsInTimeZone("2026-02-30", "Australia/Brisbane")).toBeNull();
     expect(dayBoundsInTimeZone("", "Australia/Brisbane")).toBeNull();
     expect(dayBoundsInTimeZone("2026-03-15", "Mars/Olympus")).toBeNull();
+  });
+});
+
+describe("timeZoneForAustralianState", () => {
+  it("maps each state and territory, by abbreviation or name, any case", () => {
+    expect(timeZoneForAustralianState("NSW")).toBe("Australia/Sydney");
+    expect(timeZoneForAustralianState("new south wales")).toBe("Australia/Sydney");
+    expect(timeZoneForAustralianState("Vic")).toBe("Australia/Melbourne");
+    expect(timeZoneForAustralianState("QLD")).toBe("Australia/Brisbane");
+    expect(timeZoneForAustralianState("S.A.")).toBe("Australia/Adelaide");
+    expect(timeZoneForAustralianState("WA")).toBe("Australia/Perth");
+    expect(timeZoneForAustralianState("Tasmania")).toBe("Australia/Hobart");
+    expect(timeZoneForAustralianState("NT")).toBe("Australia/Darwin");
+    expect(timeZoneForAustralianState("ACT")).toBe("Australia/Sydney");
+  });
+
+  it("returns null rather than guess for anything else", () => {
+    expect(timeZoneForAustralianState("Auckland")).toBeNull();
+    expect(timeZoneForAustralianState("")).toBeNull();
+    expect(timeZoneForAustralianState(null)).toBeNull();
   });
 });

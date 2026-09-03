@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import type { PublicMenu } from "./types";
+import { MAX_LINE_QUANTITY } from "@/lib/orders/limits";
 
 /**
  * Cart state lives entirely on the client and is persisted to sessionStorage,
@@ -67,7 +68,8 @@ type CartApi = {
   clear: () => void;
 };
 
-const MAX_QTY = 99;
+// Same cap the server enforces in placeOrderSchema — see lib/orders/limits.ts.
+const MAX_QTY = MAX_LINE_QUANTITY;
 
 /* -------------------------------------------------------------------------- */
 /* Menu index + pure cart helpers                                             */

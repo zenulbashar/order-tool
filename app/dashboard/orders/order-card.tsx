@@ -194,7 +194,10 @@ export function OrderCard({
           </StatusBadge>
           {showElapsed ? (
             <ElapsedTime
-              placedAt={order.createdAt}
+              // A scheduled pre-order is not "waiting" until it is due: timing
+              // it from created_at flagged every pre-order LATE the moment it
+              // entered the make-now columns.
+              placedAt={order.scheduledFor ?? order.createdAt}
               status={order.fulfillmentStatus}
             />
           ) : null}

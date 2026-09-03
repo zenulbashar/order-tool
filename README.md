@@ -182,8 +182,9 @@ so this one is an ordinary (non-Connect) endpoint.
 
 1. **Add endpoint**, this time WITHOUT "Events on connected accounts".
 2. Endpoint URL: `https://prompt2eat.com/api/stripe/billing-webhook`.
-3. Events — all **six**:
+3. Events — all **seven**:
    - `checkout.session.completed`
+   - `checkout.session.async_payment_succeeded` (a Checkout paid by bank debit reports `paid` only here)
    - `customer.subscription.created`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`

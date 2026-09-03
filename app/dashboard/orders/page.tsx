@@ -1,6 +1,11 @@
 import { PageHeader } from "@/app/_components/page-header";
 import { requestNowMs } from "@/lib/schedule";
-import { requireUser, requireVenuePermission } from "@/lib/tenant";
+import { can } from "@/lib/authz";
+import {
+  getCurrentVenueRoles,
+  requireUser,
+  requireVenuePermission,
+} from "@/lib/tenant";
 
 import { OrdersAutoRefresh } from "./orders-auto-refresh";
 import { OrdersBoard } from "./orders-board";
@@ -19,6 +24,11 @@ export const dynamic = "force-dynamic";
 export default async function OrdersPage() {
   await requireUser();
   const venue = await requireVenuePermission("orders:view");
+  // The ticket drawer's Refund control posts to an action gated on
+  // refunds:issue. Rendering it for a viewer without that capability sent
+  // them off the board to /dashboard?denied=1 instead of an inline error, so
+  // the capability is resolved here (server) and the control hidden without it.
+  const canRefund = can(await getCurrentVenueRoles(venue.id), "refunds:issue");
 
   const activeOrders = await getVenueOrders(venue.id);
   // Always-visible COMPLETED column, bounded to a recent window so it stays
@@ -78,6 +88,7 @@ export default async function OrdersPage() {
           completedOrders={completedOrders}
           timezone={venue.timezone}
           taxLabel={taxLabel}
+          canRefund={canRefund}
         />
       </main>
     </PrintProvider>

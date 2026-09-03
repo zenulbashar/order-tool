@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { timeZoneForAustralianState } from "@/lib/time";
 import { db } from "@/lib/db";
 import { isUniqueViolation } from "@/lib/db/errors";
 import { venueMembers, venues, venueType } from "@/lib/db/schema";
@@ -106,6 +107,12 @@ export async function createVenueFromOnboarding(
           country,
           phone,
           logoUrl,
+          // The zone every schedule, opening-hours window and daily order
+          // number runs on. Derived from the state the owner just entered;
+          // an unrecognised state keeps the column default.
+          ...(timeZoneForAustralianState(state)
+            ? { timezone: timeZoneForAustralianState(state)! }
+            : {}),
           // Advance the resume pointer; onboarding stays incomplete until 3c.
           onboardingStep: 2,
         })
