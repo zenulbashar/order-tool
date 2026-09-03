@@ -190,7 +190,15 @@ export async function retrySquareJob(formData: FormData): Promise<void> {
   if (parsed.success) {
     await db
       .update(integrationJobs)
-      .set({ status: "pending", nextAttemptAt: new Date() })
+      .set({
+        status: "pending",
+        nextAttemptAt: new Date(),
+        // A manual retry is a fresh start. Leaving `attempts` where the dead
+        // letter left it tripped the engine's poison guard (attempts >
+        // MAX_ATTEMPTS + 1) on the SECOND retry of any dead job, which was
+        // then parked dead without running and labelled a repeated crash.
+        attempts: 0,
+      })
       .where(
         and(
           eq(integrationJobs.id, parsed.data),
@@ -209,7 +217,15 @@ export async function retryAllSquareJobs(): Promise<void> {
   const venue = await requireVenueForAction();
   await db
     .update(integrationJobs)
-    .set({ status: "pending", nextAttemptAt: new Date() })
+    .set({
+        status: "pending",
+        nextAttemptAt: new Date(),
+        // A manual retry is a fresh start. Leaving `attempts` where the dead
+        // letter left it tripped the engine's poison guard (attempts >
+        // MAX_ATTEMPTS + 1) on the SECOND retry of any dead job, which was
+        // then parked dead without running and labelled a repeated crash.
+        attempts: 0,
+      })
     .where(
       and(
         scopedToVenue(integrationJobs.venueId, venue.id),
