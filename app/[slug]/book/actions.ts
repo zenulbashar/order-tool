@@ -2,7 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 
-import { and, eq, gte, inArray, lte, sum } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql, sum } from "drizzle-orm";
 import { headers } from "next/headers";
 import { after } from "next/server";
 
@@ -137,51 +137,66 @@ export async function createBooking(
   const durationMs = config.durationMinutes * 60_000;
   const windowStart = new Date(slot.instant.getTime() - durationMs);
   const windowEnd = new Date(slot.instant.getTime() + durationMs);
-  const neighbours = await db
-    .select({ bookedFor: bookings.bookedFor, partySize: bookings.partySize })
-    .from(bookings)
-    .where(
-      and(
-        scopedToVenue(bookings.venueId, venue.id),
-        // Cancelled and no-show bookings free their seats; completed ones are
-        // in the past and cannot overlap a future request.
-        inArray(bookings.status, ["confirmed", "seated"]),
-        gte(bookings.bookedFor, windowStart),
-        lte(bookings.bookedFor, windowEnd),
-      ),
-    );
-
-  const fits = fitsCapacity(
-    config,
-    capacity,
-    neighbours.map((n) => ({
-      bookedForMs: n.bookedFor.getTime(),
-      partySize: n.partySize,
-    })),
-    slot.instant.getTime(),
-    data.partySize,
-  );
-  if (!fits) {
-    return reject(
-      "We're fully booked at that time. Please try another time, or call us.",
-    );
-  }
-
   const token = generateToken();
+
+  // Read neighbours -> fitsCapacity -> INSERT ran with no lock, so two
+  // requests arriving together both read the same neighbours, both fit, and
+  // both booked — an overbooked floor. The check and the insert now run in
+  // one transaction under a per-venue advisory lock (keyed on the venue id),
+  // so concurrent requests for the SAME venue take turns and the second sees
+  // the first's row; other venues are unaffected.
+  let fits = true;
   try {
-    await db.insert(bookings).values({
-      venueId: venue.id,
-      publicToken: token,
-      bookedFor: slot.instant,
-      partySize: data.partySize,
-      customerName: data.customerName,
-      customerEmail: data.customerEmail,
-      customerPhone: data.customerPhone || null,
-      notes: data.notes || null,
+    fits = await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtext(${`bookings:${venue.id}`}))`,
+      );
+      const neighbours = await tx
+        .select({ bookedFor: bookings.bookedFor, partySize: bookings.partySize })
+        .from(bookings)
+        .where(
+          and(
+            scopedToVenue(bookings.venueId, venue.id),
+            // Cancelled and no-show bookings free their seats; completed ones
+            // are in the past and cannot overlap a future request.
+            inArray(bookings.status, ["confirmed", "seated"]),
+            gte(bookings.bookedFor, windowStart),
+            lte(bookings.bookedFor, windowEnd),
+          ),
+        );
+
+      const ok = fitsCapacity(
+        config,
+        capacity,
+        neighbours.map((n) => ({
+          bookedForMs: n.bookedFor.getTime(),
+          partySize: n.partySize,
+        })),
+        slot.instant.getTime(),
+        data.partySize,
+      );
+      if (!ok) return false;
+
+      await tx.insert(bookings).values({
+        venueId: venue.id,
+        publicToken: token,
+        bookedFor: slot.instant,
+        partySize: data.partySize,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        customerPhone: data.customerPhone || null,
+        notes: data.notes || null,
+      });
+      return true;
     });
   } catch (error) {
     await reportError(error, { context: "bookings.create" });
     return reject(UNAVAILABLE);
+  }
+  if (!fits) {
+    return reject(
+      "We're fully booked at that time. Please try another time, or call us.",
+    );
   }
 
   const baseUrl = await getBaseUrl();
