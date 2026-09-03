@@ -87,7 +87,7 @@ export async function deleteLibraryImage(formData: FormData): Promise<void> {
     .set({ imageUrl: null })
     .where(and(eq(menuItems.venueId, venue.id), eq(menuItems.imageUrl, img.url)));
 
-  const key = r2KeyFromPublicUrl(img.url);
+  const key = r2KeyFromPublicUrl(img.url, venue.id);
   if (key) {
     try {
       await deleteFromR2(key);
