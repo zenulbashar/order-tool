@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
+import { revalidateStorefront } from "@/lib/storefront-cache";
 import { venues } from "@/lib/db/schema";
 import { requireWizardVenue } from "@/lib/tenant";
 
@@ -28,6 +29,11 @@ export async function finishOnboarding(): Promise<void> {
     .update(venues)
     .set({ onboardingCompletedAt: new Date() })
     .where(eq(venues.id, venue.id));
+
+  // The storefront caches the venue for an hour; going live must not wait
+  // for that to lapse (the hero's "Open" signal and the not-yet-live notice
+  // both read the cached row).
+  revalidateStorefront(venue);
 
   redirect("/dashboard");
 }
