@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { decideSubscriptionCheckout } from "@/lib/billing/checkout-policy";
+import { planDiscountCouponParams } from "@/lib/billing/plan-discount";
 import { syncVenueFromSubscription } from "@/lib/billing/sync";
 import {
   isRosterLookupKey,
@@ -99,10 +100,21 @@ export async function createBillingCheckout(formData: FormData): Promise<void> {
 
     const baseUrl = await getBaseUrl();
     const priceId = await resolvePriceId(plan, interval);
+    // An admin-granted plan discount saved before the venue subscribed. The
+    // console applies it to a live subscription; this is the other half —
+    // without it the saved discount was read by nothing.
+    const couponParams = planDiscountCouponParams(
+      venue.planDiscountMode,
+      venue.planDiscountValue,
+    );
+    const discounts = couponParams
+      ? [{ coupon: (await stripe.coupons.create(couponParams)).id }]
+      : undefined;
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
+      ...(discounts ? { discounts } : {}),
       // 1-month trial with Scale-level access (the trial -> all-features mapping
       // lives in lib/billing/plans.ts) — for a venue's FIRST subscription only;
       // a re-subscribing venue pays from day one (see checkout-policy). venueId

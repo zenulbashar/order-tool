@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { menuItems, platformAuditLog, venues } from "@/lib/db/schema";
+import { planDiscountCouponParams } from "@/lib/billing/plan-discount";
+import { reportError } from "@/lib/observability";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { getStripe } from "@/lib/stripe";
 
@@ -43,6 +45,11 @@ export async function setVenuePlanDiscount(formData: FormData): Promise<void> {
     const dollars = Number(raw);
     value = Number.isFinite(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0;
   }
+  // An invalid value (out-of-range percent, non-positive amount, a typo) is a
+  // rejected submission, not "off": coercing it to 0 used to flip the mode to
+  // off and REMOVE the venue's existing Stripe coupon. Turning a discount off
+  // is an explicit choice of mode 'off'.
+  if (mode !== "off" && value <= 0) return;
   const finalMode: Mode = value > 0 ? mode : "off";
 
   const [venue] = await db
@@ -57,26 +64,31 @@ export async function setVenuePlanDiscount(formData: FormData): Promise<void> {
     .limit(1);
   if (!venue) return;
 
-  // Apply to Stripe if the venue has a live subscription. Best-effort: a Stripe
-  // failure still records intent, and the page surfaces the "no subscription"
-  // case; nothing here can affect a diner order.
+  // Apply to Stripe if the venue has a live subscription. A venue with none
+  // is applied at Checkout instead (createBillingCheckout reads these columns).
+  // Best-effort, but never silent: a Stripe failure is reported and the audit
+  // row says the coupon did NOT land, so "Currently: X% off" on the console is
+  // never mistaken for a discount the venue is actually receiving.
+  let stripeOutcome = venue.subId ? "applied to Stripe" : "applies at Checkout";
   if (venue.subId) {
     try {
       const stripe = getStripe();
       if (finalMode === "off") {
         await stripe.subscriptions.update(venue.subId, { discounts: [] });
       } else {
-        const coupon = await stripe.coupons.create(
-          finalMode === "percent"
-            ? { percent_off: value, duration: "forever" }
-            : { amount_off: value, currency: "aud", duration: "forever" },
-        );
+        const params = planDiscountCouponParams(finalMode, value);
+        if (!params) throw new Error("Invalid plan discount.");
+        const coupon = await stripe.coupons.create(params);
         await stripe.subscriptions.update(venue.subId, {
           discounts: [{ coupon: coupon.id }],
         });
       }
-    } catch {
-      // Recorded as intent; the admin can retry. Diner money path untouched.
+    } catch (error) {
+      stripeOutcome = "STRIPE UPDATE FAILED — retry";
+      await reportError(error, {
+        context: "admin.venue-plan-discount",
+        extra: { venueId, mode: finalMode, value },
+      });
     }
   }
 
@@ -88,7 +100,7 @@ export async function setVenuePlanDiscount(formData: FormData): Promise<void> {
   await db.insert(platformAuditLog).values({
     actorEmail: admin.email,
     action: "venue_plan_discount",
-    detail: `${venueId.slice(0, 8)}: ${venue.priorMode}/${venue.priorValue} → ${finalMode}/${value}`,
+    detail: `${venueId.slice(0, 8)}: ${venue.priorMode}/${venue.priorValue} → ${finalMode}/${value} (${stripeOutcome})`,
   });
 
   revalidatePath(pathFor(venueId));
