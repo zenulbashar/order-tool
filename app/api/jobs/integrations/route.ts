@@ -8,6 +8,7 @@ import { sweepGiftCardRedeem } from "@/lib/giftcards/redeem";
 import { sweepLoyaltyEarn } from "@/lib/loyalty/earn";
 import { sweepLoyaltyRedeem } from "@/lib/loyalty/redeem";
 import { reportError, reportSweepBacklog } from "@/lib/observability";
+import { sweepAbandonedCheckouts } from "@/lib/orders/abandoned-checkout";
 import { sweepStockDepletion } from "@/lib/stock/depletion";
 
 // The dispatch engine uses the Neon pool + node crypto — keep off Edge.
@@ -114,6 +115,17 @@ export async function GET(request: Request): Promise<Response> {
     console.error("[jobs] gift card redeem sweep failed:", error);
     await reportError(error, { context: "jobs-cron.sweep-gift-card-redeem" });
   }
+  // Abandoned-checkout sweep — closes orders left unpaid for a day, cancelling
+  // their PaymentIntent first, so the gift-card / loyalty value they reserved
+  // is released. Routine housekeeping (a diner closing the tab is normal), so
+  // it is NOT part of the sweep-backlog alert below. Isolated like the others.
+  let abandonedCancelled = 0;
+  try {
+    abandonedCancelled = await sweepAbandonedCheckouts();
+  } catch (error) {
+    console.error("[jobs] abandoned checkout sweep failed:", error);
+    await reportError(error, { context: "jobs-cron.sweep-abandoned-checkouts" });
+  }
   // M1 / F5: every sweep is a backstop for work the webhook fast path should
   // already have done, so ANY recovered work — or a drain that ran out of
   // budget — is a warning-level alert event ("sweep_backlog"). A clean tick
@@ -136,5 +148,6 @@ export async function GET(request: Request): Promise<Response> {
     earned,
     redeemed,
     giftCardsRedeemed,
+    abandonedCancelled,
   });
 }

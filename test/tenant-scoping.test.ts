@@ -67,6 +67,11 @@ const EXEMPTIONS: { file: string; reason: string }[] = [
       "The job engine processes every venue's outbox; each job row carries its own venue_id and the worker scopes provider calls by it.",
   },
   {
+    file: "lib/orders/abandoned-checkout.ts",
+    reason:
+      "Cron sweep across venues for stale unpaid orders; each row's own venue_id scopes the cancel write that follows.",
+  },
+  {
     file: "lib/sweep-watermark.ts",
     reason: "sweep_watermarks is keyed by sweep NAME and is platform-wide, not per venue.",
   },
