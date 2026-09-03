@@ -23,11 +23,9 @@ const PLANS = [
     name: "Scale",
     popular: false,
     tagline: "For groups and multiple venues.",
-    features: [
-      "Everything in Pro",
-      "Multiple venues",
-      "Custom domain",
-    ],
+    // "Custom domain" was listed here, but no custom-domain capability exists
+    // anywhere in the product — public copy claims only what is built.
+    features: ["Everything in Pro", "Multiple venues"],
   },
 ] as const;
 
