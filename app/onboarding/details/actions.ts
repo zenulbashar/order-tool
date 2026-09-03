@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import { venueMembers, venues, venueType } from "@/lib/db/schema";
 import { setSelectedVenueCookie } from "@/lib/tenant";
 import { isReservedSlug, slugSchema, venueNameSchema } from "@/lib/validation";
@@ -12,15 +13,6 @@ import { isReservedSlug, slugSchema, venueNameSchema } from "@/lib/validation";
 export type DetailsState = { error?: string };
 
 const VENUE_TYPES: readonly string[] = venueType.enumValues;
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "23505"
-  );
-}
 
 /** Trim an optional text field to null-or-value, capped at `max` characters. */
 function optionalText(
