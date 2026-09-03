@@ -148,12 +148,16 @@ export async function getVenueOrders(
       subtotalCents: orders.subtotalCents,
       totalCents: orders.totalCents,
       taxCents: orders.taxCents,
-      // Correlated sum so one query still hydrates the whole board.
+      // Correlated sum so one query still hydrates the whole board. Pending
+      // refunds count: a bank-debit refund has been ISSUED even while Stripe
+      // still reports it pending, and refundOrder plans headroom against
+      // succeeded + pending — so the drawer's "leave blank to refund $X" must
+      // not offer money the service will refuse.
       refundedCents: sql<number>`coalesce((
         select sum(${refunds.amountCents})
           from ${refunds}
          where ${refunds.orderId} = ${orders.id}
-           and ${refunds.status} = 'succeeded'
+           and ${refunds.status} in ('pending', 'succeeded')
       ), 0)::int`,
       createdAt: orders.createdAt,
       scheduledFor: orders.scheduledFor,
@@ -207,7 +211,7 @@ export async function getRecentCompletedOrders(
         select sum(${refunds.amountCents})
           from ${refunds}
          where ${refunds.orderId} = ${orders.id}
-           and ${refunds.status} = 'succeeded'
+           and ${refunds.status} in ('pending', 'succeeded')
       ), 0)::int`,
       createdAt: orders.createdAt,
       scheduledFor: orders.scheduledFor,

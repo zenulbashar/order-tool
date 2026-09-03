@@ -83,6 +83,9 @@ type MenuIndex = {
   // An item with a non-empty set here is variant-priced; an empty set is flat.
   variants: Map<string, { name: string; priceCents: number }>;
   itemVariantIds: Map<string, Set<string>>;
+  // Required modifier groups per item (minSelect > 0), so a restored line can
+  // be checked for choices it no longer satisfies.
+  itemRequiredGroups: Map<string, { minSelect: number; optionIds: Set<string> }[]>;
 };
 
 function buildIndex(menu: PublicMenu): MenuIndex {
@@ -91,21 +94,32 @@ function buildIndex(menu: PublicMenu): MenuIndex {
   const itemOptionIds = new Map<string, Set<string>>();
   const variants = new Map<string, { name: string; priceCents: number }>();
   const itemVariantIds = new Map<string, Set<string>>();
+  const itemRequiredGroups = new Map<
+    string,
+    { minSelect: number; optionIds: Set<string> }[]
+  >();
 
   for (const category of menu) {
     for (const item of category.items) {
       items.set(item.id, { name: item.name, priceCents: item.priceCents });
       const ids = new Set<string>();
+      const required: { minSelect: number; optionIds: Set<string> }[] = [];
       for (const group of item.groups) {
+        const groupIds = new Set<string>();
         for (const option of group.options) {
           options.set(option.id, {
             name: option.name,
             priceDeltaCents: option.priceDeltaCents,
           });
           ids.add(option.id);
+          groupIds.add(option.id);
+        }
+        if (group.minSelect > 0) {
+          required.push({ minSelect: group.minSelect, optionIds: groupIds });
         }
       }
       itemOptionIds.set(item.id, ids);
+      itemRequiredGroups.set(item.id, required);
       const variantIds = new Set<string>();
       for (const variant of item.variants) {
         variants.set(variant.id, {
@@ -117,7 +131,14 @@ function buildIndex(menu: PublicMenu): MenuIndex {
       itemVariantIds.set(item.id, variantIds);
     }
   }
-  return { items, options, itemOptionIds, variants, itemVariantIds };
+  return {
+    items,
+    options,
+    itemOptionIds,
+    variants,
+    itemVariantIds,
+    itemRequiredGroups,
+  };
 }
 
 /**
@@ -293,6 +314,21 @@ function readStoredCart(
         (id): id is string => typeof id === "string" && validIds.has(id),
       );
       if (ids.length !== rawIds.length) changed = true; // some options gone
+
+      // A required group the surviving options no longer satisfy (a choice
+      // was removed, or the group became required since the line was stored)
+      // drops the line: the cart used to keep it, report the item as merely
+      // "updated", and placeOrder rejected it only after the diner had
+      // completed the checkout form. We never silently pick a choice.
+      const requiredGroups = index.itemRequiredGroups.get(itemId) ?? [];
+      const unsatisfied = requiredGroups.some(
+        (group) =>
+          ids.filter((id) => group.optionIds.has(id)).length < group.minSelect,
+      );
+      if (unsatisfied) {
+        changed = true;
+        continue;
+      }
 
       let qty = 1;
       if (

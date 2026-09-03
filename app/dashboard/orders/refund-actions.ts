@@ -6,7 +6,7 @@ import { recordVenueAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import {
-  refundedCentsForOrder,
+  committedRefundCentsForOrder,
   refundOrder,
 } from "@/lib/payments/refund-service";
 import { remainingRefundableCents } from "@/lib/payments/refund";
@@ -104,7 +104,7 @@ export async function getOrderRefundSummary(
     .limit(1);
   if (!order) return null;
 
-  const refundedCents = await refundedCentsForOrder(parsed.data);
+  const refundedCents = await committedRefundCentsForOrder(parsed.data);
   return {
     totalCents: order.totalCents,
     refundedCents,
