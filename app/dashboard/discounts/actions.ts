@@ -30,7 +30,7 @@ export async function createOwnerDiscount(
   }
   const venue = await requireVenuePermission("promotions:manage");
 
-  const parsed = parseDiscountForm(formData);
+  const parsed = parseDiscountForm(formData, venue.timezone);
   if (!parsed.ok) return { error: parsed.error };
   const input = parsed.value;
 
@@ -88,7 +88,7 @@ export async function updateOwnerDiscount(
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "Missing discount id." };
 
-  const parsed = parseDiscountForm(formData);
+  const parsed = parseDiscountForm(formData, venue.timezone);
   if (!parsed.ok) return { error: parsed.error };
 
   let updated: { id: string }[];

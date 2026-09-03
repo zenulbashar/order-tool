@@ -10,6 +10,7 @@ import {
   promotionVenues,
 } from "@/lib/db/schema";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
+import { DEFAULT_VENUE_TIME_ZONE, dayBoundsInTimeZone } from "@/lib/time";
 
 const PATH = "/admin/promotions";
 
@@ -17,11 +18,21 @@ const TYPES = ["percent", "amount"] as const;
 const FUNDING = ["merchant", "platform", "cofunded"] as const;
 const AUDIENCES = ["all", "new"] as const;
 
-function parseDate(raw: FormDataEntryValue | null): Date | null {
+/**
+ * A promotion window's edge from an `<input type="date">` value. `new Date()`
+ * read the value as UTC midnight, shifting every window by the AU offset (a
+ * promo started mid-morning on its first day and stopped mid-morning on its
+ * last). Resolved on the platform calendar instead: a start is the beginning
+ * of that day, an end is the end of it, inclusive.
+ */
+function parseDate(
+  raw: FormDataEntryValue | null,
+  edge: "start" | "end",
+): Date | null {
   const s = String(raw ?? "").trim();
   if (!s) return null;
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const bounds = dayBoundsInTimeZone(s, DEFAULT_VENUE_TIME_ZONE);
+  return bounds ? bounds[edge] : null;
 }
 
 /**
@@ -94,8 +105,8 @@ export async function createPromotion(formData: FormData): Promise<void> {
       type,
       value,
       minBasketCents,
-      startsAt: parseDate(formData.get("startsAt")),
-      endsAt: parseDate(formData.get("endsAt")),
+      startsAt: parseDate(formData.get("startsAt"), "start"),
+      endsAt: parseDate(formData.get("endsAt"), "end"),
       fundingSource,
       platformFundedPercent,
       scope,

@@ -11,6 +11,8 @@
  * Pure — no db, no auth, no "use server" — so it can be driven directly.
  */
 
+import { dayBoundsInTimeZone } from "@/lib/time";
+
 export type DiscountInput = {
   name: string;
   code: string;
@@ -29,7 +31,11 @@ export type ParseResult =
 /** Codes are stored uppercased; letters + digits only, no spaces. */
 export const CODE_RE = /^[A-Z0-9]{3,24}$/;
 
-export function parseDiscountForm(formData: FormData): ParseResult {
+export function parseDiscountForm(
+  formData: FormData,
+  /** The venue's IANA zone — the "Ends" date is a day on ITS calendar. */
+  timeZone: string,
+): ParseResult {
   const name = String(formData.get("name") ?? "").trim();
   const code = String(formData.get("code") ?? "")
     .trim()
@@ -67,11 +73,14 @@ export function parseDiscountForm(formData: FormData): ParseResult {
 
   let endsAt: Date | null = null;
   if (endsAtRaw) {
-    const parsed = new Date(endsAtRaw);
-    if (Number.isNaN(parsed.getTime())) {
+    // The last day the code works, INCLUSIVE, in the venue's zone. Parsed with
+    // new Date() this was UTC midnight — mid-morning locally — so the code
+    // stopped hours before the day the owner advertised had ended.
+    const bounds = dayBoundsInTimeZone(endsAtRaw, timeZone);
+    if (!bounds) {
       return { ok: false, error: "Enter a valid end date." };
     }
-    endsAt = parsed;
+    endsAt = bounds.end;
   }
 
   return {
