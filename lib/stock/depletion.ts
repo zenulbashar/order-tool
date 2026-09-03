@@ -15,6 +15,7 @@ import {
   consumptionByIngredient,
   sumQuantityByMenuItem,
 } from "@/lib/stock/depletion-plan";
+import { reportError } from "@/lib/observability";
 import { advanceSweepWatermark, sweepLookbackSince } from "@/lib/sweep-watermark";
 
 /**
@@ -214,9 +215,18 @@ export async function sweepStockDepletion(): Promise<number> {
     try {
       const n = await applyDepletionForOrder(order.id, order.venueId);
       if (n > 0) applied += 1;
-    } catch {
+    } catch (error) {
       // A single order's depletion failure must not abort the sweep; the next
-      // tick retries it (idempotent).
+      // tick retries it (idempotent). Logged AND reported: swallowed silently,
+      // an order that fails persistently was retried every tick forever with
+      // zero signal — while the cron route's comment claimed these failures
+      // were logged.
+      console.error("[stock] depletion failed for order", order.id, error);
+      await reportError(error, {
+        context: "stock.sweep-depletion",
+        tags: { venue_id: order.venueId },
+        extra: { orderId: order.id },
+      });
     }
   }
   // Advance the watermark only when this sweep saw its WHOLE backlog — a
