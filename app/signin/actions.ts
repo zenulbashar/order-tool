@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { signIn } from "@/lib/auth";
 import { checkRateLimit, clientIpFromHeaders, emailKey } from "@/lib/rate-limit";
+import { safeReturnPath } from "@/lib/url";
 import { normalizeEmail } from "@/lib/validation";
 
 export type OwnerSignInState = { error: string | null };
@@ -57,8 +58,13 @@ export async function requestOwnerSignIn(
     };
   }
 
-  // Unchanged from the previous inline action.
-  await signIn("resend", { email: rawEmail, redirectTo: "/" });
+  // Land where the visitor was headed (the invite link's callbackUrl), never
+  // anywhere off-site: the form value is client-controlled, so it is reduced to
+  // a same-origin path first.
+  await signIn("resend", {
+    email: rawEmail,
+    redirectTo: safeReturnPath(formData.get("callbackUrl")),
+  });
   // signIn redirects on success, so this is unreachable; it satisfies the type.
   return { error: null };
 }

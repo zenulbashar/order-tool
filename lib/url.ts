@@ -111,3 +111,19 @@ export async function getBaseUrl(): Promise<string> {
     },
   );
 }
+
+/**
+ * A user-supplied "return here afterwards" value reduced to a SAME-ORIGIN
+ * path, or the fallback. Auth.js will happily redirect to whatever
+ * `redirectTo` it is handed, so anything that is not a plain absolute path
+ * on this site — an external URL, a protocol-relative `//evil`, a
+ * backslash trick, a scheme — is dropped rather than followed. Pure.
+ */
+export function safeReturnPath(value: unknown, fallback = "/"): string {
+  if (typeof value !== "string") return fallback;
+  if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
+    return fallback;
+  }
+  if (/[\x00-\x1f\s]/.test(value)) return fallback;
+  return value;
+}

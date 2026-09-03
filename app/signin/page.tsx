@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { BrandMark, Wordmark } from "@/app/_components/wordmark";
 import { auth } from "@/lib/auth";
+import { safeReturnPath } from "@/lib/url";
 
 import { SignInForm } from "./signin-form";
 
@@ -17,16 +18,23 @@ export default async function SignInPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const sp = await searchParams;
+  // Where to land after sign-in. The staff invite link sends people here with
+  // ?callbackUrl=/invite/<token>; without honouring it an invitee who was not
+  // yet signed in never got back to the invitation (and one with no venue was
+  // funnelled into creating one). Reduced to a same-origin path so the value
+  // can never be used as an open redirect.
+  const returnTo = safeReturnPath(sp.callbackUrl);
   const session = await auth();
   if (session?.user) {
-    redirect("/");
+    redirect(returnTo);
   }
 
   // The landing page's final CTA is a GET <form action="/signin">, so the
   // address the visitor typed arrives as ?email=. Nothing read it, and the copy
   // beside that field says "Enter your email above to get started" — so the
   // first thing the product asked them to do was type it again.
-  const prefill = (await searchParams).email;
+  const prefill = sp.email;
   const initialEmail = typeof prefill === "string" ? prefill : "";
 
   return (
@@ -85,7 +93,7 @@ export default async function SignInPage({
               </p>
             </div>
 
-            <SignInForm initialEmail={initialEmail} />
+            <SignInForm initialEmail={initialEmail} returnTo={returnTo} />
 
             <p className="text-sm text-muted">
               No passwords, ever. We email you a secure one-tap link.
