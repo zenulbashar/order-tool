@@ -8,6 +8,7 @@ import {
   getBillingOverview,
   getRosterAddonPriceCents,
 } from "@/lib/billing/overview";
+import { decideSubscriptionCheckout } from "@/lib/billing/checkout-policy";
 import { requireVenuePermission } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
@@ -167,8 +168,13 @@ export default async function BillingPage({ searchParams }: BillingParams) {
   const statusLabel = STATUS_LABELS[venue.planStatus] ?? venue.planStatus;
   const hasCustomer = venue.stripeCustomerId !== null;
   const hasSubscription = venue.stripeSubscriptionId !== null;
+  // Same decision the Server Function makes: a subscription that still exists
+  // in Stripe is changed in the portal, never via a second Checkout.
+  const hasLiveSubscription =
+    decideSubscriptionCheckout(venue).kind === "portal";
   const isTrialing = venue.planStatus === "trialing";
   const checkoutCanceled = sp.checkout === "cancel";
+  const alreadySubscribed = sp.notice === "subscribed";
   const errored =
     sp.error === "checkout" || sp.error === "portal" || sp.error === "roster";
   const rosterAdded = sp.roster === "added";
@@ -298,6 +304,12 @@ export default async function BillingPage({ searchParams }: BillingParams) {
               &ldquo;Manage billing&rdquo; portal below so both lines stay in sync
               on one invoice.
             </p>
+          ) : hasLiveSubscription ? (
+            <p className="mt-3 rounded-control border border-line px-3 py-2 text-xs text-muted">
+              Change your plan or interval from the &ldquo;Manage billing&rdquo;
+              portal below — it updates your existing subscription, so
+              you&apos;re never billed twice.
+            </p>
           ) : (
             <PlanComparison currentPlan={venue.plan} hasCustomer={hasCustomer} />
           )}
@@ -377,6 +389,13 @@ export default async function BillingPage({ searchParams }: BillingParams) {
         {checkoutCanceled ? (
           <p className="text-sm text-muted" role="status">
             Checkout canceled. No changes were made.
+          </p>
+        ) : null}
+        {alreadySubscribed ? (
+          <p className="text-sm text-muted" role="status">
+            This venue already has a subscription, so a new checkout
+            wasn&apos;t started. Use &ldquo;Manage billing&rdquo; to change your
+            plan or interval.
           </p>
         ) : null}
         {errored ? (

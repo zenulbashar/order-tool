@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { decideSubscriptionCheckout } from "@/lib/billing/checkout-policy";
 import { syncVenueFromSubscription } from "@/lib/billing/sync";
 import {
   isRosterLookupKey,
@@ -63,6 +64,16 @@ export async function createBillingCheckout(formData: FormData): Promise<void> {
     ? "/onboarding/plan?checkout=cancel"
     : "/dashboard/billing?checkout=cancel";
 
+  // Checkout CREATES a subscription; it cannot change one. A venue whose
+  // subscription still exists in Stripe would end up with two billing in
+  // parallel, so it is sent to manage the existing one instead. The wizard
+  // case means Checkout already completed once (the owner came back to this
+  // step), which IS the success state. Redirect stays outside try/catch.
+  const decision = decideSubscriptionCheckout(venue);
+  if (decision.kind === "portal") {
+    redirect(isWizard ? successPath : "/dashboard/billing?notice=subscribed");
+  }
+
   let destination: string;
   try {
     if (!plan || !interval) {
@@ -93,10 +104,14 @@ export async function createBillingCheckout(formData: FormData): Promise<void> {
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
       // 1-month trial with Scale-level access (the trial -> all-features mapping
-      // lives in lib/billing/plans.ts). venueId on the subscription so its
-      // webhook events resolve the venue even without the session.
+      // lives in lib/billing/plans.ts) — for a venue's FIRST subscription only;
+      // a re-subscribing venue pays from day one (see checkout-policy). venueId
+      // on the subscription so its webhook events resolve the venue even
+      // without the session.
       subscription_data: {
-        trial_period_days: 30,
+        ...(decision.trialDays !== null
+          ? { trial_period_days: decision.trialDays }
+          : {}),
         metadata: { venueId: venue.id },
       },
       metadata: { venueId: venue.id, plan, interval },
