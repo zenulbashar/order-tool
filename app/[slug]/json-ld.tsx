@@ -104,13 +104,20 @@ function buildStorefrontJsonLd(
         name: category.name,
         ...(category.description ? { description: category.description } : {}),
         hasMenuItem: category.items.map((item) => {
+          // A variant-priced item's base priceCents is documented as ignored,
+          // so the offer quotes the cheapest variant — the "from" price the
+          // page shows — never the ignored column.
+          const offerCents =
+            item.variants.length > 0
+              ? Math.min(...item.variants.map((variant) => variant.priceCents))
+              : item.priceCents;
           const menuItem: Record<string, unknown> = {
             "@type": "MenuItem",
             name: item.name,
             offers: {
               "@type": "Offer",
               priceCurrency: "AUD",
-              price: priceFromCents(item.priceCents),
+              price: priceFromCents(offerCents),
             },
           };
           if (item.description) menuItem.description = item.description;
