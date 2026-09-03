@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { readableOn } from "@/app/_components/brand-contrast";
 import { Button } from "@/app/_components/button";
 import { bankDiscountCents } from "@/lib/payments/bank-discount";
+import { composeOrderDiscount } from "@/lib/payments/order-discount";
 import { formatCents } from "@/lib/validation";
 
 import { applyOrderDiscounts } from "./discount-actions";
@@ -200,14 +201,20 @@ function PaymentForm({
 
   // The pay-by-bank saving on offer for this order (0 when the venue hasn't
   // configured one). Display only; the server recompute is the source of truth.
-  const offerDiscountCents =
-    venue.paytoEnabled
-      ? bankDiscountCents(
+  // Clamped the same way the server clamps it — promo first, then the bank
+  // saving fills only the room left above Stripe's minimum — so the callout
+  // never promises "Save $X" when the applied promotion leaves less than $X.
+  const offerDiscountCents = venue.paytoEnabled
+    ? composeOrderDiscount({
+        subtotalCents: amountCents,
+        promoRaw: promoDiscountCents,
+        bankRaw: bankDiscountCents(
           amountCents,
           venue.paytoDiscountMode,
           venue.paytoDiscountValue,
-        )
-      : 0;
+        ),
+      }).discountCents - promoDiscountCents
+    : 0;
 
   // The SINGLE apply path (Track E2d). Recomputes both discounts server-side for
   // the given method, updates the PI + order, and re-syncs the Element. Used for
