@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { menuItems, venueImages } from "@/lib/db/schema";
+import { IMAGE_TYPE_EXT, sniffImageType } from "@/lib/image-type";
 import { deleteFromR2, r2KeyFromPublicUrl, uploadToR2 } from "@/lib/r2";
 import { requireVenuePermission } from "@/lib/tenant";
 
@@ -16,11 +17,6 @@ export type MediaState = { error?: string };
 const MEDIA_PATH = "/dashboard/media";
 const MENU_PATH = "/dashboard/menu";
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
-const TYPE_EXT: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 /** Upload an image into the current venue's shared library. */
 export async function uploadLibraryImage(
@@ -40,15 +36,19 @@ export async function uploadLibraryImage(
   if (file.size > MAX_BYTES) {
     return { error: "Image must be 5MB or smaller." };
   }
-  const ext = TYPE_EXT[file.type];
-  if (!ext) {
+  // The BYTES decide the type, not the browser-declared file.type — they are
+  // served back with this Content-Type.
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const imageType = sniffImageType(buffer);
+  if (!imageType) {
     return { error: "Image must be a JPEG, PNG, or WebP." };
   }
+  const ext = IMAGE_TYPE_EXT[imageType];
 
   const key = `venues/${venue.id}/library/${crypto.randomUUID()}.${ext}`;
   let url: string;
   try {
-    url = await uploadToR2(key, Buffer.from(await file.arrayBuffer()), file.type);
+    url = await uploadToR2(key, buffer, imageType);
   } catch {
     return { error: "Couldn't upload the image right now. Please try again." };
   }

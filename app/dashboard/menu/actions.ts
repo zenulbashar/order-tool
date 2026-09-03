@@ -18,6 +18,7 @@ import {
   venueImages,
   venueStations,
 } from "@/lib/db/schema";
+import { IMAGE_TYPE_EXT, sniffImageType } from "@/lib/image-type";
 import {
   deleteFromR2,
   r2KeyFromPublicUrl,
@@ -579,12 +580,6 @@ export async function moveItem(formData: FormData): Promise<void> {
 /* regardless of any client check. Old objects are cleaned up best-effort.       */
 
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024; // 5MB
-// Allowed upload types -> file extension used in the object key.
-const PHOTO_TYPE_EXT: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 /** Read the item's current photo URL (id + venue scoped), or null. */
 async function currentItemImageUrl(
@@ -640,10 +635,14 @@ export async function uploadItemPhoto(
   if (file.size > PHOTO_MAX_BYTES) {
     return { error: "Photo must be 5MB or smaller." };
   }
-  const ext = PHOTO_TYPE_EXT[file.type];
-  if (!ext) {
+  // The BYTES decide the type, not the browser-declared file.type — they are
+  // served back with this Content-Type.
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const imageType = sniffImageType(buffer);
+  if (!imageType) {
     return { error: "Photo must be a JPEG, PNG, or WebP image." };
   }
+  const ext = IMAGE_TYPE_EXT[imageType];
 
   // Parent-ownership (IDOR gate): the item must belong to this venue.
   const owned = await ownedItemId(venue.id, itemId.data);
@@ -658,8 +657,7 @@ export async function uploadItemPhoto(
 
   let publicUrl: string;
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    publicUrl = await uploadToR2(key, buffer, file.type);
+    publicUrl = await uploadToR2(key, buffer, imageType);
   } catch {
     // Upload failed (network, or R2 not configured) — leave the DB untouched.
     return {

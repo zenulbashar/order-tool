@@ -14,6 +14,7 @@ import {
 } from "@/lib/contrast";
 import { recordVenueAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { IMAGE_TYPE_EXT, sniffImageType } from "@/lib/image-type";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { venues } from "@/lib/db/schema";
 import {
@@ -352,11 +353,6 @@ export async function setPushNewOrders(formData: FormData): Promise<void> {
 /* best-effort; a manually-pasted URL we don't manage is left alone.            */
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024; // 2MB
-const LOGO_TYPE_EXT: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
 
 /** Read the venue's current logo URL, or null. */
 async function currentLogoUrl(venueId: string): Promise<string | null> {
@@ -427,18 +423,21 @@ export async function uploadVenueLogo(
   if (file.size > LOGO_MAX_BYTES) {
     return { error: "Logo must be 2MB or smaller." };
   }
-  const ext = LOGO_TYPE_EXT[file.type];
-  if (!ext) {
+  // The BYTES decide the type, not the browser-declared file.type — this
+  // buffer goes to sharp and is served back with this Content-Type.
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const imageType = sniffImageType(buffer);
+  if (!imageType) {
     return { error: "Logo must be a JPEG, PNG, or WebP image." };
   }
+  const ext = IMAGE_TYPE_EXT[imageType];
 
   const previousUrl = await currentLogoUrl(venue.id);
   const key = `venues/${venue.id}/logo/${crypto.randomUUID()}.${ext}`;
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   let publicUrl: string;
   try {
-    publicUrl = await uploadToR2(key, buffer, file.type);
+    publicUrl = await uploadToR2(key, buffer, imageType);
   } catch {
     // Upload failed (network, or R2 not configured) — leave the DB untouched.
     return { error: "Couldn't upload the logo right now. Please try again." };
@@ -596,18 +595,20 @@ async function uploadVenueImage(
   if (file.size > IMAGE_MAX_BYTES) {
     return { error: "Image must be 5MB or smaller." };
   }
-  const ext = LOGO_TYPE_EXT[file.type];
-  if (!ext) {
+  // Bytes decide the type (see uploadVenueLogo).
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const imageType = sniffImageType(buffer);
+  if (!imageType) {
     return { error: "Image must be a JPEG, PNG, or WebP image." };
   }
+  const ext = IMAGE_TYPE_EXT[imageType];
 
   const previousUrl = await currentImageUrl(venue.id, slot);
   const key = `venues/${venue.id}/${slot}/${crypto.randomUUID()}.${ext}`;
 
   let publicUrl: string;
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    publicUrl = await uploadToR2(key, buffer, file.type);
+    publicUrl = await uploadToR2(key, buffer, imageType);
   } catch {
     return { error: "Couldn't upload the image right now. Please try again." };
   }
