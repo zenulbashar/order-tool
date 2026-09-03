@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 
 import { db } from "@/lib/db";
 import { venues } from "@/lib/db/schema";
+import { getStripe } from "@/lib/stripe";
 
 import type { Plan } from "./plans";
 import { isRosterLookupKey, planFromLookupKey } from "./stripe-prices";
@@ -12,7 +13,9 @@ import { isRosterLookupKey, planFromLookupKey } from "./stripe-prices";
 /**
  * The plan/status sync logic the SEPARATE billing webhook delegates to (Phase 2).
  * Pure derivation + idempotent writes — no Stripe-signature or HTTP concerns
- * here, and nothing in this file touches the order/diner money path.
+ * here (the one Stripe read is the rare stale-event check in
+ * syncVenueFromSubscription), and nothing in this file touches the order/diner
+ * money path.
  *
  * Entitlement still flows from `plan` alone (hasFeature). This module's whole job
  * is to keep venue.plan / venue.plan_status / venue.trial_ends_at in sync with
@@ -129,16 +132,96 @@ export async function resolveVenueId(refs: {
   return null;
 }
 
+type SubscriptionRef = {
+  id: string;
+  status: Stripe.Subscription.Status;
+  /** Stripe's creation time (unix seconds). */
+  created: number;
+};
+
+/**
+ * Pure decision: may an event about `incoming` overwrite the venue's plan
+ * state, given the subscription the venue currently points at?
+ *
+ * Events resolve to a venue by metadata/customer, NOT by the subscription id
+ * the venue stores, so a venue can receive events about a subscription that is
+ * no longer (or not yet) its current one. The realistic case: the owner sets
+ * "cancel at period end" on sub_1, re-subscribes as sub_2 before the period
+ * ends, and weeks later sub_1's `customer.subscription.deleted` arrives —
+ * without this check it would flip the venue to `free` while sub_2 is live
+ * and billing. Rules:
+ *   - no stored subscription, or the same one       -> apply (normal path).
+ *   - a DIFFERENT subscription that has lapsed      -> ignore: another
+ *     subscription's death says nothing about this venue's current one.
+ *   - a different LIVE subscription                 -> adopt it, unless the
+ *     stored one is known to be live AND newer (then the event is a stale
+ *     update about a superseded subscription; newest live wins).
+ * `stored` is null when the venue has no subscription or Stripe no longer has
+ * it, in which case there is nothing to protect and the live incoming wins.
+ */
+export function shouldApplySubscriptionSync(input: {
+  storedSubscriptionId: string | null;
+  stored: SubscriptionRef | null;
+  incoming: SubscriptionRef;
+}): boolean {
+  const { storedSubscriptionId, stored, incoming } = input;
+  if (!storedSubscriptionId || storedSubscriptionId === incoming.id) {
+    return true;
+  }
+  if (DOWNGRADE_STATUSES.has(incoming.status)) return false;
+  if (
+    stored &&
+    !DOWNGRADE_STATUSES.has(stored.status) &&
+    stored.created > incoming.created
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * Sync a venue's plan + status from a Stripe subscription. Idempotent: it SETs
  * derived values (never increments), so duplicate or out-of-order webhook
  * deliveries converge to the same row state. Also persists the subscription +
  * customer ids so later metadata-less events (invoices) resolve by column.
+ *
+ * Guarded by shouldApplySubscriptionSync: an event about a subscription that
+ * is not the venue's current one must not overwrite the venue's state (the
+ * stored subscription is fetched from Stripe only on that rare mismatch).
  */
 export async function syncVenueFromSubscription(
   venueId: string,
   subscription: Stripe.Subscription,
 ): Promise<void> {
+  const [row] = await db
+    .select({ stripeSubscriptionId: venues.stripeSubscriptionId })
+    .from(venues)
+    .where(eq(venues.id, venueId))
+    .limit(1);
+  const storedSubscriptionId = row?.stripeSubscriptionId ?? null;
+  let stored: SubscriptionRef | null = null;
+  if (
+    storedSubscriptionId &&
+    storedSubscriptionId !== subscription.id &&
+    !DOWNGRADE_STATUSES.has(subscription.status)
+  ) {
+    try {
+      stored = await getStripe().subscriptions.retrieve(storedSubscriptionId);
+    } catch {
+      // Unknown to Stripe (or unreachable): nothing to protect, adopt incoming.
+      stored = null;
+    }
+  }
+  if (
+    !shouldApplySubscriptionSync({
+      storedSubscriptionId,
+      stored,
+      incoming: subscription,
+    })
+  ) {
+    return;
+  }
+
   const plan = planFromSubscription(subscription);
   const planStatus = planStatusFromStripe(subscription.status);
   const rosterEntitled = rosterEntitledFromSubscription(subscription);
