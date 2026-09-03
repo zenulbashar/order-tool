@@ -602,10 +602,14 @@ async function currentItemImageUrl(
 }
 
 /** Best-effort delete of an R2 object behind a stored public URL. Never throws. */
-async function bestEffortDeletePhoto(url: string | null): Promise<void> {
+async function bestEffortDeletePhoto(
+  url: string | null,
+  venueId: string,
+): Promise<void> {
   if (!url) return;
-  const key = r2KeyFromPublicUrl(url);
-  if (!key) return; // not an object we manage (e.g. a legacy pasted URL)
+  // Scoped to THIS venue's namespace — never another venue's object.
+  const key = r2KeyFromPublicUrl(url, venueId);
+  if (!key) return; // not an object we manage/own (e.g. a legacy pasted URL)
   // Shared LIBRARY objects (venues/{id}/library/…) are owned by the media
   // library, not the item — never delete them on item replace/remove, or other
   // items referencing the same library image would break. The library page is
@@ -675,12 +679,12 @@ export async function uploadItemPhoto(
   if (updated.length === 0) {
     // The item vanished between the ownership check and the write — don't orphan
     // the just-uploaded object.
-    await bestEffortDeletePhoto(publicUrl);
+    await bestEffortDeletePhoto(publicUrl, venue.id);
     return { error: "Item not found." };
   }
 
   // Replace succeeded — remove the previous object (best-effort).
-  await bestEffortDeletePhoto(previousUrl);
+  await bestEffortDeletePhoto(previousUrl, venue.id);
 
   revalidatePath(MENU_PATH);
   revalidateStorefront(venue);
@@ -724,7 +728,7 @@ export async function setItemPhotoFromLibrary(
 
   // Clean up the previous object — the guard skips it if it was itself a shared
   // library image, so only a prior per-item upload is actually deleted.
-  await bestEffortDeletePhoto(previousUrl);
+  await bestEffortDeletePhoto(previousUrl, venue.id);
 
   revalidatePath(MENU_PATH);
   revalidateStorefront(venue);
@@ -746,7 +750,7 @@ export async function removeItemPhoto(formData: FormData): Promise<void> {
       and(eq(menuItems.id, id.data), scopedToVenue(menuItems.venueId, venue.id)),
     );
 
-  await bestEffortDeletePhoto(previousUrl);
+  await bestEffortDeletePhoto(previousUrl, venue.id);
 
   revalidatePath(MENU_PATH);
   revalidateStorefront(venue);

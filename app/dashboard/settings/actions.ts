@@ -392,10 +392,15 @@ async function deriveBrandColorFromLogo(
 }
 
 /** Best-effort delete of an R2 object behind a stored public URL. Never throws. */
-async function bestEffortDeleteLogo(url: string | null): Promise<void> {
+async function bestEffortDeleteLogo(
+  url: string | null,
+  venueId: string,
+): Promise<void> {
   if (!url) return;
-  const key = r2KeyFromPublicUrl(url);
-  if (!key) return; // not an object we manage (e.g. a pasted third-party URL)
+  // Scoped to THIS venue's namespace: a pasted URL may point at another
+  // venue's public object, which is not ours to delete.
+  const key = r2KeyFromPublicUrl(url, venueId);
+  if (!key) return; // not an object we manage/own (e.g. a pasted third-party URL)
   try {
     await deleteFromR2(key);
   } catch {
@@ -469,7 +474,7 @@ export async function uploadVenueLogo(
     })
     .where(eq(venues.id, venue.id));
 
-  await bestEffortDeleteLogo(previousUrl);
+  await bestEffortDeleteLogo(previousUrl, venue.id);
 
   revalidatePath("/dashboard/settings/logo");
   revalidateStorefront(venue);
@@ -499,7 +504,7 @@ export async function setVenueLogoUrl(
 
   // If a pasted URL replaced an object we uploaded, clean the old one up.
   if (previousUrl && previousUrl !== parsed.data) {
-    await bestEffortDeleteLogo(previousUrl);
+    await bestEffortDeleteLogo(previousUrl, venue.id);
   }
 
   revalidatePath("/dashboard/settings/logo");
@@ -520,7 +525,7 @@ export async function removeVenueLogo(): Promise<void> {
     .set({ logoUrl: null })
     .where(eq(venues.id, venue.id));
 
-  await bestEffortDeleteLogo(previousUrl);
+  await bestEffortDeleteLogo(previousUrl, venue.id);
 
   revalidatePath("/dashboard/settings/logo");
   revalidateStorefront(venue);
@@ -608,7 +613,7 @@ async function uploadVenueImage(
   }
 
   await setImageColumn(venue.id, slot, publicUrl);
-  await bestEffortDeleteLogo(previousUrl);
+  await bestEffortDeleteLogo(previousUrl, venue.id);
 
   revalidatePath("/dashboard/settings/imagery");
   revalidateStorefront(venue);
@@ -635,7 +640,7 @@ async function setVenueImageUrl(
   await setImageColumn(venue.id, slot, parsed.data);
 
   if (previousUrl && previousUrl !== parsed.data) {
-    await bestEffortDeleteLogo(previousUrl);
+    await bestEffortDeleteLogo(previousUrl, venue.id);
   }
 
   revalidatePath("/dashboard/settings/imagery");
@@ -654,7 +659,7 @@ async function removeVenueImage(slot: ImagerySlot): Promise<void> {
   const previousUrl = await currentImageUrl(venue.id, slot);
   await setImageColumn(venue.id, slot, null);
 
-  await bestEffortDeleteLogo(previousUrl);
+  await bestEffortDeleteLogo(previousUrl, venue.id);
 
   revalidatePath("/dashboard/settings/imagery");
   revalidateStorefront(venue);

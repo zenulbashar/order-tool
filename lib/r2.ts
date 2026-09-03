@@ -101,14 +101,45 @@ export async function deleteFromR2(key: string): Promise<void> {
 }
 
 /**
+ * Pure decision: the object key behind a stored public URL, but ONLY when that
+ * object belongs to the given venue. Every key we write is namespaced as
+ * `venues/{venueId}/…`, so a key outside the caller's own namespace is never
+ * ours to delete, whatever column it came from.
+ *
+ * Why the venue check is not optional: the logo/imagery "paste a hosted URL"
+ * settings accept any URL, including another venue's public R2 URL (storefronts
+ * expose them). Without this check a venue could store a rival's object URL,
+ * then "remove" it — and the cleanup would delete the RIVAL's object. Returns
+ * null for anything we don't manage or don't own, so cleanup is skipped rather
+ * than deleting the wrong object.
+ */
+export function venueOwnedR2Key(
+  url: string,
+  publicBaseUrl: string,
+  venueId: string,
+): string | null {
+  if (!url || !venueId) return null;
+  const prefix = `${publicBaseUrl.replace(/\/+$/, "")}/`;
+  if (!url.startsWith(prefix)) return null;
+  const key = url.slice(prefix.length);
+  // The trailing slash matters: `venues/abc/` must not match `venues/abcd/…`.
+  if (!key.startsWith(`venues/${venueId}/`)) return null;
+  return key;
+}
+
+/**
  * Recover the object key from a stored public URL so a replaced/removed photo
  * can be cleaned up — WITHOUT needing a separate key column. Because every URL
  * we write is `${publicBaseUrl}/${key}`, the key is just the suffix after that
- * prefix. Returns null for any URL we don't manage (e.g. a leftover
- * manually-pasted URL from before uploads existed, or a different domain), so
- * cleanup is safely skipped rather than deleting the wrong object.
+ * prefix. The key must also sit under the calling venue's own namespace (see
+ * venueOwnedR2Key). Returns null for any URL we don't manage or don't own (a
+ * leftover manually-pasted URL, a different domain, another venue's object),
+ * so cleanup is safely skipped rather than deleting the wrong object.
  */
-export function r2KeyFromPublicUrl(url: string): string | null {
+export function r2KeyFromPublicUrl(
+  url: string,
+  venueId: string,
+): string | null {
   if (!url) return null;
   let base: string;
   try {
@@ -117,8 +148,5 @@ export function r2KeyFromPublicUrl(url: string): string | null {
     // R2 unconfigured — nothing to clean up.
     return null;
   }
-  const prefix = `${base}/`;
-  if (!url.startsWith(prefix)) return null;
-  const key = url.slice(prefix.length);
-  return key.length > 0 ? key : null;
+  return venueOwnedR2Key(url, base, venueId);
 }
