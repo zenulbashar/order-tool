@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import { venues, venueStations } from "@/lib/db/schema";
 import { normaliseStationCode } from "@/lib/orders/station";
 import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
@@ -40,16 +41,6 @@ function revalidateStationConsumers(): void {
   revalidatePath(STATIONS_PATH);
   revalidatePath(ORDERS_PATH);
   revalidatePath(MENU_PATH);
-}
-
-/** Postgres unique-violation — the race-safe backstop for the (venue,code) index. */
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "23505"
-  );
 }
 
 /** Next sort_order = MAX(sort_order)+1 among this venue's stations. */

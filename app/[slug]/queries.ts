@@ -73,15 +73,48 @@ export const getPublicVenueBySlug = cache(
     // audit F6). React cache() above still dedups within one request;
     // this removes the query ACROSS requests. Safe to key by slug: a
     // slug is written once at onboarding and never updated.
-    return unstable_cache(
+    const profile = await unstable_cache(
       () => loadPublicVenue(normalized),
       ["public-venue", normalized],
       { tags: [venueSlugTag(normalized)], revalidate: 3600 },
     )();
+    if (!profile) return null;
+    // The two flags that gate money are read FRESH on every request rather than
+    // from the hour-long cache: they flip through paths that cannot invalidate
+    // it (Stripe flipping charges_enabled, synced during a page render where
+    // updateTag is not allowed) and a stale value in either direction is
+    // wrong — "not taking orders" on a venue that just went live, or a
+    // checkout offered by a venue whose Stripe account can no longer charge.
+    const flags = await loadLiveFlags(profile.id);
+    return { ...profile, ...flags };
   },
 );
 
-async function loadPublicVenue(normalized: string): Promise<PublicVenue | null> {
+type LiveFlags = Pick<PublicVenue, "isLive" | "acceptsOrders">;
+
+async function loadLiveFlags(venueId: string): Promise<LiveFlags> {
+  const [row] = await db
+    .select({
+      // Live-ready signal (Phase 3c). Derived to a boolean in SQL so the raw
+      // onboarding_completed_at timestamp never reaches the client shape.
+      isLive: sql<boolean>`${venues.onboardingCompletedAt} is not null`,
+      // Whether a diner can actually complete an order RIGHT NOW. Kept
+      // separate from isLive rather than folded into it: "the owner finished
+      // setup" and "the venue can take money" are different facts, and
+      // app/admin reports on the first while every diner surface needs the
+      // second. No wizard step connects Stripe, so a venue is routinely one
+      // and not the other.
+      acceptsOrders: sql<boolean>`${venues.onboardingCompletedAt} is not null and ${venues.stripeChargesEnabled}`,
+    })
+    .from(venues)
+    .where(eq(venues.id, venueId))
+    .limit(1);
+  return row ?? { isLive: false, acceptsOrders: false };
+}
+
+async function loadPublicVenue(
+  normalized: string,
+): Promise<Omit<PublicVenue, keyof LiveFlags> | null> {
 
     const rows = await db
       .select({
@@ -145,16 +178,8 @@ async function loadPublicVenue(normalized: string): Promise<PublicVenue | null> 
         taxEnabled: venues.taxEnabled,
         taxRateBps: venues.taxRateBps,
         taxLabel: venues.taxLabel,
-        // Live-ready signal (Phase 3c). Derived to a boolean in SQL so the raw
-        // onboarding_completed_at timestamp never reaches the client shape.
-        isLive: sql<boolean>`${venues.onboardingCompletedAt} is not null`,
-        // Whether a diner can actually complete an order RIGHT NOW. Kept
-        // separate from isLive rather than folded into it: "the owner finished
-        // setup" and "the venue can take money" are different facts, and
-        // app/admin reports on the first while every diner surface needs the
-        // second. No wizard step connects Stripe, so a venue is routinely one
-        // and not the other.
-        acceptsOrders: sql<boolean>`${venues.onboardingCompletedAt} is not null and ${venues.stripeChargesEnabled}`,
+        // isLive / acceptsOrders are deliberately NOT here: they are read fresh
+        // per request in loadLiveFlags (see getPublicVenueBySlug).
       })
       .from(venues)
       .where(eq(venues.slug, normalized))

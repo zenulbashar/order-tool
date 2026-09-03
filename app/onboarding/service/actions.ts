@@ -49,7 +49,8 @@ export async function saveServiceStyle(
     })
     .where(eq(venues.id, venue.id));
 
-  // Steps 3-5 are not built yet (3b/3c); return to the dashboard, where the
-  // "finish setup" nudge keeps the wizard one click away.
-  redirect("/dashboard");
+  // Forward to Step 3 (menu), like every other step. This used to send the
+  // owner to the dashboard on the premise that later steps were unbuilt, which
+  // ejected every new owner from the wizard at step 2 once they existed.
+  redirect("/onboarding/menu");
 }

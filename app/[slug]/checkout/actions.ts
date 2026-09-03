@@ -6,6 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import {
   menuItems,
   menuItemVariants,
@@ -53,15 +54,6 @@ export type PlaceOrderResult =
 
 function reject(error: string): PlaceOrderResult {
   return { ok: false, error };
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "23505"
-  );
 }
 
 /** URL-safe, 192-bit opaque token; the unique index is the collision backstop. */

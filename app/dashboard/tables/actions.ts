@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import { venueTables } from "@/lib/db/schema";
 import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
 import { idSchema, tableLabelSchema } from "@/lib/validation";
@@ -73,16 +74,6 @@ async function labelTaken(
     )
     .limit(1);
   return Boolean(row);
-}
-
-/** Postgres unique-violation — the race-safe backstop for the label index. */
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "23505"
-  );
 }
 
 export async function createTable(
