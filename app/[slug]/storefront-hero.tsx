@@ -204,10 +204,10 @@ function VenueMeta({
   venue,
   toneClass,
 }: {
-  venue: Pick<PublicVenue, "storefrontDescription" | "isLive">;
+  venue: Pick<PublicVenue, "storefrontDescription" | "acceptsOrders">;
   toneClass: string;
 }) {
-  if (!venue.storefrontDescription && !venue.isLive) return null;
+  if (!venue.storefrontDescription && !venue.acceptsOrders) return null;
   return (
     <div
       className={`mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-medium ${toneClass}`}
@@ -215,10 +215,13 @@ function VenueMeta({
       {venue.storefrontDescription ? (
         <span>{venue.storefrontDescription}</span>
       ) : null}
-      {venue.isLive ? (
+      {venue.acceptsOrders ? (
+        // "Taking orders", not "Open": this indicator knows nothing about
+        // opening hours, and isLive alone (setup finished) was shown as "Open"
+        // even when the venue could not take a payment.
         <span className="inline-flex items-center gap-1.5">
           <span className="h-1.5 w-1.5 rounded-pill bg-[var(--color-success)]" />
-          Open
+          Taking orders
         </span>
       ) : null}
     </div>
