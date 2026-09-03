@@ -66,19 +66,25 @@ const db = vi.hoisted(() => {
       const rows = keys.includes("stripeAccountId")
         ? [{ stripeAccountId: "acct_1" }]
         : keys.includes("total")
-          ? [{ total: 0 }] // refundedCentsForOrder: nothing refunded yet
-          : [
-              {
-                id: "ord_1",
-                venueId: "ven_1",
-                status: "confirmed",
-                totalCents: 5500,
-                paymentIntentId: "pi_1",
-              },
-            ];
+          ? [{ total: 0 }] // refundedCentsForOrder: nothing settled yet
+          : keys.includes("committed")
+            ? [{ committed: 0 }] // committedRefundCentsForOrder: nothing in flight
+            : [
+                {
+                  id: "ord_1",
+                  venueId: "ven_1",
+                  status: "confirmed",
+                  totalCents: 5500,
+                  paymentIntentId: "pi_1",
+                },
+              ];
       const result = {
-        limit: () => Promise.resolve(rows),
-        // The aggregate is awaited straight off .where(), with no .limit().
+        // The order read is `.limit(1).for("update")` inside the planning
+        // transaction; the aggregates are awaited straight off .where().
+        limit: () =>
+          Object.assign(Promise.resolve(rows), {
+            for: () => Promise.resolve(rows),
+          }),
         then: (r: (v: unknown) => unknown) => Promise.resolve(rows).then(r),
       };
       return { from: () => ({ where: () => result }) };
@@ -92,7 +98,12 @@ const db = vi.hoisted(() => {
     delete: vi.fn(() => chain("delete")),
     transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) => {
       state.transactions += 1;
-      return cb({ update: () => chain("update"), delete: () => chain("delete") });
+      return cb({
+        select: (projection: Record<string, unknown>) => db.select(projection),
+        insert: () => db.insert(),
+        update: () => chain("update"),
+        delete: () => chain("delete"),
+      });
     }),
   };
 });
@@ -169,7 +180,9 @@ describe("refundOrder — charge.refunded arrives mid-flight", () => {
       reason: "requested_by_customer",
       note: "spilled",
     });
-    expect(state.transactions, "adopt + delete must be atomic").toBe(1);
+    // One transaction plans + records the pending row; the adopt + delete is
+    // the second.
+    expect(state.transactions, "adopt + delete must be atomic").toBe(2);
     expect(state.deletes).toBe(1);
     const adopted = state.updates.find((u) => "actorUserId" in u);
     expect(adopted?.actorUserId).toBe("usr_1");
@@ -198,7 +211,8 @@ describe("refundOrder — charge.refunded arrives mid-flight", () => {
         note: null,
       }),
     ).rejects.toThrow(/connection terminated/);
-    expect(state.transactions, "must not adopt a row on an unknown failure").toBe(0);
+    // Only the planning transaction ran — no adoption.
+    expect(state.transactions, "must not adopt a row on an unknown failure").toBe(1);
   });
 
   it("still stamps normally when no webhook raced it", async () => {
@@ -214,7 +228,7 @@ describe("refundOrder — charge.refunded arrives mid-flight", () => {
       note: null,
     });
     expect(result.ok).toBe(true);
-    expect(state.transactions, "no adoption when there is no conflict").toBe(0);
+    expect(state.transactions, "no adoption when there is no conflict").toBe(1);
     expect(state.deletes).toBe(0);
     expect(state.updates.some((u) => "stripeRefundId" in u)).toBe(true);
   });

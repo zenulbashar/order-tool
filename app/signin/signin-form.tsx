@@ -12,13 +12,21 @@ import { requestOwnerSignIn } from "./actions";
  * inline server-action form had none). On success the action redirects exactly
  * as before.
  */
-export function SignInForm({ initialEmail = "" }: { initialEmail?: string }) {
+export function SignInForm({
+  initialEmail = "",
+  returnTo = "/",
+}: {
+  initialEmail?: string;
+  /** Same-origin path to land on after the magic link is used. */
+  returnTo?: string;
+}) {
   const [state, formAction, pending] = useActionState(requestOwnerSignIn, {
     error: null,
   });
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="callbackUrl" value={returnTo} />
       <input
         name="email"
         type="email"

@@ -19,15 +19,25 @@ import { getStripe } from "@/lib/stripe";
  * The refund money path (M4 / audit F3). Ordering here is deliberate and is
  * the whole point of the module:
  *
- *   1. Read the order + its refunded-to-date total, and PLAN (pure).
- *   2. Write a `pending` refund row FIRST. Its id is the Stripe idempotency
- *      key, so a retry of the same click can never double-refund, and a crash
- *      mid-call leaves a durable record to reconcile instead of silent cash
- *      movement.
+ *   1. Lock the order row (FOR UPDATE, in a transaction), read its
+ *      committed-to-date refunds — succeeded AND still-pending, since money in
+ *      flight is money already claimed — and PLAN (pure). Two operators
+ *      clicking Refund at once serialise here; without the lock both plans
+ *      validated against the same headroom and both reached Stripe under
+ *      distinct idempotency keys.
+ *   2. Write a `pending` refund row FIRST, in that same transaction. Its id is
+ *      the Stripe idempotency key, so a retry of the same click can never
+ *      double-refund, and a crash mid-call leaves a durable record to
+ *      reconcile instead of silent cash movement.
  *   3. Call Stripe on the CONNECTED account (these are direct charges).
- *   4. Record the outcome, then derive the order's status from the sum of
- *      succeeded refunds — never from a local guess.
- *   5. Compensate the non-cash effects when the order is now fully refunded.
+ *   4. Record the outcome. Only Stripe's `succeeded` is recorded as succeeded;
+ *      a `pending` refund (bank debits take days, and CAN still fail) stays
+ *      pending until `charge.refund.updated` settles it. The order's status is
+ *      derived from committed refunds — never from a local guess.
+ *   5. Compensate the non-cash effects (gift-card credit, points reversal,
+ *      restock) only once the order is fully refunded by money that has
+ *      ACTUALLY left. Compensating on a pending refund minted stored value
+ *      that nothing clawed back when Stripe later reported the refund failed.
  *
  * Nothing in steps 4–5 can un-move the cash, so their failures are reported
  * and reconciled, never surfaced as "the refund failed" (it didn't).
@@ -42,7 +52,10 @@ export type RefundOutcome =
     }
   | { ok: false; error: string };
 
-/** Sum of refunds that actually moved money for an order. */
+/** Either the pool or a transaction handle — both run the same query shapes. */
+type DbExecutor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Sum of refunds that actually moved money for an order (Stripe: succeeded). */
 export async function refundedCentsForOrder(orderId: string): Promise<number> {
   const [row] = await db
     .select({
@@ -53,6 +66,45 @@ export async function refundedCentsForOrder(orderId: string): Promise<number> {
       and(eq(refunds.orderId, orderId), eq(refunds.status, "succeeded")),
     );
   return row?.total ?? 0;
+}
+
+/**
+ * Sum of refunds that have moved money OR are still in flight at Stripe. This
+ * is the headroom figure: a refund Stripe reports as `pending` will (almost
+ * always) complete, so a second refund must not be planned against the cents
+ * it has already claimed.
+ */
+export async function committedRefundCentsForOrder(
+  orderId: string,
+  executor: DbExecutor = db,
+): Promise<number> {
+  const [row] = await executor
+    .select({
+      committed: sql<number>`COALESCE(SUM(${refunds.amountCents}), 0)::int`,
+    })
+    .from(refunds)
+    .where(
+      and(
+        eq(refunds.orderId, orderId),
+        inArray(refunds.status, ["pending", "succeeded"]),
+      ),
+    );
+  return row?.committed ?? 0;
+}
+
+/**
+ * Has every cent of the order come back as SETTLED money? Compensation keys
+ * off this, not off the order's `refunded` status: the status is (rightly)
+ * optimistic about pending refunds, the stored-value ledgers must not be.
+ */
+async function isFullyRefundedBySettledMoney(orderId: string): Promise<boolean> {
+  const [order] = await db
+    .select({ totalCents: orders.totalCents })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1);
+  if (!order) return false;
+  return (await refundedCentsForOrder(orderId)) >= order.totalCents;
 }
 
 /**
@@ -69,43 +121,63 @@ export async function refundOrder(input: {
   reason?: unknown;
   note?: string | null;
 }): Promise<RefundOutcome> {
-  const [order] = await db
-    .select({
-      id: orders.id,
-      status: orders.status,
-      totalCents: orders.totalCents,
-      paymentIntentId: orders.stripePaymentIntentId,
-    })
-    .from(orders)
-    .where(and(eq(orders.id, input.orderId), eq(orders.venueId, input.venueId)))
-    .limit(1);
-  if (!order) return { ok: false, error: "Order not found." };
-  if (!order.paymentIntentId) {
-    return { ok: false, error: "This order has no payment to refund." };
-  }
+  // (1)+(2) Lock, plan and record in ONE transaction. The row lock is what
+  // serialises two concurrent refunds on the same order: the second waits,
+  // then plans against headroom that already includes the first's pending row.
+  const planned = await db.transaction(async (tx) => {
+    const [order] = await tx
+      .select({
+        id: orders.id,
+        status: orders.status,
+        totalCents: orders.totalCents,
+        paymentIntentId: orders.stripePaymentIntentId,
+      })
+      .from(orders)
+      .where(
+        and(eq(orders.id, input.orderId), eq(orders.venueId, input.venueId)),
+      )
+      .limit(1)
+      .for("update");
+    if (!order) return { ok: false as const, error: "Order not found." };
+    if (!order.paymentIntentId) {
+      return {
+        ok: false as const,
+        error: "This order has no payment to refund.",
+      };
+    }
 
-  const alreadyRefundedCents = await refundedCentsForOrder(order.id);
-  const plan = planRefund({
-    orderTotalCents: order.totalCents,
-    alreadyRefundedCents,
-    requestedCents: input.amountCents,
-    orderStatus: order.status,
+    const alreadyRefundedCents = await committedRefundCentsForOrder(order.id, tx);
+    const plan = planRefund({
+      orderTotalCents: order.totalCents,
+      alreadyRefundedCents,
+      requestedCents: input.amountCents,
+      orderStatus: order.status,
+    });
+    if (!plan.ok) return { ok: false as const, error: plan.error };
+
+    // Durable record BEFORE any money moves.
+    const [pending] = await tx
+      .insert(refunds)
+      .values({
+        venueId: input.venueId,
+        orderId: order.id,
+        amountCents: plan.amountCents,
+        status: "pending",
+        reason: normalizeRefundReason(input.reason) ?? null,
+        note: input.note?.trim() || null,
+        actorUserId: input.actorUserId,
+      })
+      .returning({ id: refunds.id });
+    return {
+      ok: true as const,
+      // Re-stated so the narrowing above survives the return type.
+      order: { ...order, paymentIntentId: order.paymentIntentId },
+      plan,
+      pending,
+    };
   });
-  if (!plan.ok) return { ok: false, error: plan.error };
-
-  // (2) Durable record BEFORE any money moves.
-  const [pending] = await db
-    .insert(refunds)
-    .values({
-      venueId: input.venueId,
-      orderId: order.id,
-      amountCents: plan.amountCents,
-      status: "pending",
-      reason: normalizeRefundReason(input.reason) ?? null,
-      note: input.note?.trim() || null,
-      actorUserId: input.actorUserId,
-    })
-    .returning({ id: refunds.id });
+  if (!planned.ok) return { ok: false, error: planned.error };
+  const { order, plan, pending } = planned;
 
   // (3) Stripe, on the venue's connected account. The order's PaymentIntent
   // lives there, so the refund must be created there too.
@@ -153,11 +225,17 @@ export async function refundOrder(input: {
   }
 
   // (4) Record the outcome. Stripe reports 'pending' for some payment methods
-  // (the cash still leaves); only 'failed'/'canceled' mean no money moved.
-  const settled =
+  // (bank debits): the cash will almost always leave, but it has not yet and
+  // a pending refund CAN still fail. It is recorded as pending — it counts
+  // toward headroom and the order's refund status, and `charge.refund.updated`
+  // promotes it (and triggers compensation) once Stripe says succeeded. Only
+  // 'failed'/'canceled' mean no money moved.
+  const settled: "pending" | "succeeded" | "failed" | "canceled" =
     stripeStatus === "failed" || stripeStatus === "canceled"
-      ? (stripeStatus as "failed" | "canceled")
-      : "succeeded";
+      ? stripeStatus
+      : stripeStatus === "succeeded"
+        ? "succeeded"
+        : "pending";
   // Stamping the Stripe id onto our pending row can COLLIDE. `stripe_refund_id`
   // carries a partial unique index, and `charge.refunded` for this very refund
   // may land between refunds.create() returning and this UPDATE, inserting a
@@ -200,7 +278,7 @@ export async function refundOrder(input: {
     });
   }
 
-  if (settled !== "succeeded") {
+  if (settled === "failed" || settled === "canceled") {
     return {
       ok: false,
       error: "Stripe could not complete the refund. Nothing was charged back.",
@@ -209,8 +287,10 @@ export async function refundOrder(input: {
 
   const orderStatus = await syncOrderRefundStatus(order.id);
 
-  // (5) Non-cash compensation, only once the order is fully refunded.
-  if (orderStatus === "refunded") {
+  // (5) Non-cash compensation, only once the order is fully refunded by
+  // money that has actually settled (a pending refund defers this to the
+  // webhook that settles it).
+  if (orderStatus === "refunded" && (await isFullyRefundedBySettledMoney(order.id))) {
     try {
       await compensateFullyRefundedOrder(order.id);
     } catch (error) {
@@ -288,18 +368,21 @@ export async function reconcileRefundsForPaymentIntent(
             eq(refunds.stripeRefundId, refund.id),
             // Only demote a row we currently count. Without this a redelivery
             // would keep rewriting an already-failed row's timestamp.
-            eq(refunds.status, "succeeded"),
+            inArray(refunds.status, ["pending", "succeeded"]),
           ),
         );
       continue;
     }
+    // Mirror Stripe's settlement, not an optimistic guess: a refund Stripe
+    // still reports as pending is recorded pending.
+    const settled = refund.status === "succeeded" ? "succeeded" : "pending";
     const rows = await db
       .insert(refunds)
       .values({
         venueId: order.venueId,
         orderId: order.id,
         amountCents: refund.amount,
-        status: "succeeded",
+        status: settled,
         reason: normalizeRefundReason(refund.reason) ?? null,
         // No actor: nobody clicked a button in this product.
         actorUserId: null,
@@ -309,10 +392,24 @@ export async function reconcileRefundsForPaymentIntent(
       .onConflictDoNothing()
       .returning({ id: refunds.id });
     inserted += rows.length;
+    if (rows.length === 0 && settled === "succeeded") {
+      // The row already exists (ours, or an earlier reconcile) and Stripe now
+      // says the money has left: promote it. This is the pending -> succeeded
+      // transition `charge.refund.updated` exists to deliver.
+      await db
+        .update(refunds)
+        .set({ status: "succeeded", updatedAt: new Date() })
+        .where(
+          and(
+            eq(refunds.stripeRefundId, refund.id),
+            eq(refunds.status, "pending"),
+          ),
+        );
+    }
   }
 
   const status = await syncOrderRefundStatus(order.id);
-  if (status === "refunded") {
+  if (status === "refunded" && (await isFullyRefundedBySettledMoney(order.id))) {
     try {
       await compensateFullyRefundedOrder(order.id);
     } catch (error) {
@@ -357,7 +454,10 @@ export async function syncOrderRefundStatus(
     return "confirmed";
   }
 
-  const refunded = await refundedCentsForOrder(orderId);
+  // Committed = succeeded + pending. The status is deliberately optimistic
+  // about a pending refund (the diner has been told, the kitchen should stop),
+  // while compensation waits for settlement — see isFullyRefundedBySettledMoney.
+  const refunded = await committedRefundCentsForOrder(orderId);
   const status = orderStatusForRefunds(order.totalCents, refunded);
   await db
     .update(orders)

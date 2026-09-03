@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveBaseUrl } from "@/lib/url";
+import { resolveBaseUrl, safeReturnPath } from "@/lib/url";
 
 /**
  * The ordering here IS the security property, so it is tested directly rather
@@ -114,5 +114,28 @@ describe("resolveBaseUrl", () => {
         { host: "localhost:3000", proto: "http" },
       ),
     ).toBe("http://localhost:3000");
+  });
+});
+
+describe("safeReturnPath", () => {
+  it("keeps a plain same-origin path (the invite link's callbackUrl)", () => {
+    expect(safeReturnPath("/invite/abc123")).toBe("/invite/abc123");
+    expect(safeReturnPath("/dashboard?joined=1")).toBe("/dashboard?joined=1");
+  });
+
+  it("refuses anything that could leave the site", () => {
+    // Auth.js follows redirectTo verbatim, so an attacker-supplied value must
+    // never become an open redirect off the sign-in page.
+    expect(safeReturnPath("https://evil.example/")).toBe("/");
+    expect(safeReturnPath("//evil.example")).toBe("/");
+    expect(safeReturnPath("/\\evil.example")).toBe("/");
+    expect(safeReturnPath("javascript:alert(1)")).toBe("/");
+    expect(safeReturnPath("/ok\nhttps://evil.example")).toBe("/");
+  });
+
+  it("falls back when nothing usable was supplied", () => {
+    expect(safeReturnPath(undefined)).toBe("/");
+    expect(safeReturnPath(["/a", "/b"])).toBe("/");
+    expect(safeReturnPath("", "/dashboard")).toBe("/dashboard");
   });
 });

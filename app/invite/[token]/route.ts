@@ -13,14 +13,21 @@ import { setSelectedVenueCookie } from "@/lib/tenant";
  * prefetch-or-replay can grant nothing extra. An unauthenticated visitor is
  * sent to sign in and returned here afterwards.
  *
- * Every failure renders the SAME message: distinguishing "expired" from
+ * WHY A ROUTE HANDLER AND NOT A PAGE: on success the accepted venue is
+ * selected by writing the selected-venue cookie, and Next does not allow
+ * cookies to be set while a Server Component renders — only in a Server
+ * Function or a Route Handler. As a page this threw AFTER the membership and
+ * accepted_at had committed, so every successful acceptance ended on an error
+ * screen and a reload reported the (now used) invitation as invalid. The
+ * outcome screen lives at /invite/invalid; a Route Handler can only redirect.
+ *
+ * Every failure lands on the SAME message: distinguishing "expired" from
  * "wrong account" would let someone probe which tokens exist.
  */
-export default async function InvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ token: string }> },
+): Promise<never> {
   const { token } = await params;
   const session = await auth();
 
@@ -40,28 +47,5 @@ export default async function InvitePage({
     redirect("/dashboard?joined=1");
   }
 
-  return (
-    <main
-      id="main-content"
-      className="mx-auto flex min-h-[60vh] max-w-lg flex-col justify-center gap-4 px-5 py-16"
-    >
-      <h1 className="font-display text-2xl font-bold text-ink">
-        This invitation is no longer valid
-      </h1>
-      <p className="text-base text-muted">
-        It may have expired, already been used, been withdrawn, or been sent to
-        a different email address than the one you&rsquo;re signed in with.
-        {session.user.email ? (
-          <>
-            {" "}
-            You&rsquo;re signed in as{" "}
-            <span className="font-semibold text-ink">{session.user.email}</span>.
-          </>
-        ) : null}
-      </p>
-      <p className="text-base text-muted">
-        Ask whoever invited you to send a new invitation.
-      </p>
-    </main>
-  );
+  redirect("/invite/invalid");
 }
