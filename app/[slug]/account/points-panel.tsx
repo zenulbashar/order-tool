@@ -11,10 +11,10 @@ const REASON_LABEL: Record<PointsActivity["reason"], string> = {
   refund_reversal: "Order refunded",
 };
 
-const dateFmt = new Intl.DateTimeFormat("en-AU", {
-  day: "numeric",
-  month: "short",
-});
+// Formatted in the VENUE's zone: this renders on the server (UTC on Vercel),
+// so without an explicit timeZone an evening order showed the next day's date.
+const dateFmt = (timeZone: string) =>
+  new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", timeZone });
 
 /**
  * The signed-in customer's loyalty balance + recent activity, shown at the top
@@ -27,14 +27,18 @@ export function PointsPanel({
   available,
   redeemValueCents,
   activity,
+  timeZone,
 }: {
   balance: number;
   // Points spendable right now = balance minus any reserved on pending orders.
   available: number;
   redeemValueCents: number;
   activity: PointsActivity[];
+  /** The venue's IANA zone — activity dates are the venue's calendar. */
+  timeZone: string;
 }) {
   const onHold = Math.max(0, balance - available);
+  const formatDate = dateFmt(timeZone);
 
   return (
     <section className="px-5 pb-1 pt-2">
@@ -70,7 +74,7 @@ export function PointsPanel({
                 className="flex items-center justify-between gap-3 py-1.5 text-sm"
               >
                 <span className="text-muted">
-                  {REASON_LABEL[row.reason]} · {dateFmt.format(row.createdAt)}
+                  {REASON_LABEL[row.reason]} · {formatDate.format(row.createdAt)}
                 </span>
                 <span
                   className={`font-mono font-semibold ${

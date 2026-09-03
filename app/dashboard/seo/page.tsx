@@ -28,13 +28,17 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "SEO & AEO" };
 
-const dateFormat = new Intl.DateTimeFormat("en-AU", {
+// Includes hour/minute, so the zone matters: rendered on the server (UTC on
+// Vercel) these read 10–11 hours off for every Australian venue without it.
+const dateFormat = (timeZone: string) =>
+  new Intl.DateTimeFormat("en-AU", {
   day: "numeric",
   month: "short",
   year: "numeric",
   hour: "numeric",
   minute: "2-digit",
-});
+    timeZone,
+  });
 
 /**
  * The SEO & AEO studio (Scale plan). One-click audits of the venue's public
@@ -165,7 +169,7 @@ export default async function SeoPage() {
                     </span>
                     <span className="flex items-center gap-3 text-xs text-muted">
                       <span>{run.model ? "AI + checks" : "checks only"}</span>
-                      <span>{dateFormat.format(run.createdAt)}</span>
+                      <span>{dateFormat(venue.timezone).format(run.createdAt)}</span>
                     </span>
                   </li>
                 ))}

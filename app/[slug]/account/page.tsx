@@ -78,6 +78,7 @@ export default async function AccountPage({
           available={points[2]}
           redeemValueCents={venue.loyaltyRedeemValueCents}
           activity={points[1]}
+          timeZone={venue.timezone}
         />
       ) : null}
       <OrderHistory slug={venue.slug} usual={usual} orders={orders} />
