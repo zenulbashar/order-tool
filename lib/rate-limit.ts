@@ -103,8 +103,23 @@ export type RateLimitName = keyof typeof CONFIG;
 
 // Built lazily per name and cached. An in-memory ephemeral cache lets an already
 // over-limit (hot) key short-circuit without a Redis round-trip per instance.
+//
+// ONE CACHE PER LIMITER, never shared. @upstash/ratelimit keys its ephemeral
+// cache by the bare identifier (the IP or email), NOT by the limiter's prefix,
+// so a single Map shared across limiters meant an identifier blocked by one
+// limiter was refused by every other limiter on that instance: a burst of
+// sign-in attempts from an IP blocked that IP's checkout, and menu imports
+// blocked AI copy. Each limiter now remembers only its own blocks.
 const limiters = new Map<RateLimitName, Ratelimit>();
-const ephemeralCache = new Map<string, number>();
+const ephemeralCaches = new Map<RateLimitName, Map<string, number>>();
+
+function ephemeralCacheFor(name: RateLimitName): Map<string, number> {
+  const existing = ephemeralCaches.get(name);
+  if (existing) return existing;
+  const created = new Map<string, number>();
+  ephemeralCaches.set(name, created);
+  return created;
+}
 
 function getLimiter(name: RateLimitName): Ratelimit | null {
   const cached = limiters.get(name);
@@ -121,7 +136,7 @@ function getLimiter(name: RateLimitName): Ratelimit | null {
     // If Redis is slow, .limit() resolves to success:true after `timeout` ms —
     // a built-in fail-open that also bounds the latency the gate can ever add.
     timeout: 1000,
-    ephemeralCache,
+    ephemeralCache: ephemeralCacheFor(name),
     // Keep it lean: no analytics writes back to Redis.
     analytics: false,
   });
