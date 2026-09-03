@@ -59,6 +59,11 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     switch (event.type) {
+      // `async_payment_succeeded` is the SAME session arriving later: a Checkout
+      // paid with a delayed-notification method (bank debit) completes with
+      // payment_status 'unpaid' and only reports 'paid' in this second event.
+      // Without it a paid hardware order stayed pending_payment forever.
+      case "checkout.session.async_payment_succeeded":
       case "checkout.session.completed": {
         const session = event.data.object;
 
