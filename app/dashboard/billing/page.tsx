@@ -9,6 +9,7 @@ import {
   getRosterAddonPriceCents,
 } from "@/lib/billing/overview";
 import { decideSubscriptionCheckout } from "@/lib/billing/checkout-policy";
+import { isStripeTestMode } from "@/lib/stripe";
 import { requireVenuePermission } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
 
@@ -162,6 +163,7 @@ export default async function BillingPage({ searchParams }: BillingParams) {
   // The matching sidebar entry is hidden for viewers without it, but this
   // gate is the control — the URL is typeable.
   const venue = await requireVenuePermission("billing:manage");
+  const testMode = isStripeTestMode();
   const sp = await searchParams;
 
   const planLabel = PLAN_LABELS[venue.plan] ?? venue.plan;
@@ -405,7 +407,7 @@ export default async function BillingPage({ searchParams }: BillingParams) {
         ) : null}
 
         <p className="text-xs text-muted">
-          Test mode — no real charges are made. Platform billing is separate from
+          {testMode ? "Test mode — no real charges are made. " : null}Platform billing is separate from
           the Stripe Connect account that takes your customers&apos; payments.
         </p>
       </section>

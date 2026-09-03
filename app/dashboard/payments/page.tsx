@@ -2,6 +2,7 @@ import { Button } from "@/app/_components/button";
 import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { requireVenuePermission } from "@/lib/tenant";
+import { isStripeTestMode } from "@/lib/stripe";
 import { formatCents } from "@/lib/validation";
 
 import { connectStripe, refreshStripeStatus } from "./actions";
@@ -63,6 +64,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
   // The matching sidebar entry is hidden for viewers without it, but this
   // gate is the control — the URL is typeable.
   const venue = await requireVenuePermission("billing:manage");
+  const testMode = isStripeTestMode();
   const sp = await searchParams;
 
   // On return from Stripe-hosted onboarding, refresh the live account status
@@ -385,7 +387,7 @@ export default async function PaymentsPage({ searchParams }: PaymentsParams) {
         ) : null}
 
         <p className="mt-4 text-xs text-muted">
-          Test mode — no real charges are made. Payments use Stripe Connect; your
+          {testMode ? "Test mode — no real charges are made. " : null}Payments use Stripe Connect; your
           venue is charged customers directly on its own connected account.
         </p>
       </section>
