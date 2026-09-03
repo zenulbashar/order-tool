@@ -134,7 +134,8 @@ export async function buildSuggestions(venueId: string): Promise<Suggestion[]> {
 
     // Stale cost — costed but not touched in a while.
     if (isCosted(row)) {
-      const age = daysBetween(now, row.updatedAt);
+      // The COST date, not updated_at (bumped by every stock movement).
+      const age = daysBetween(now, row.costUpdatedAt ?? row.updatedAt);
       if (age >= STALE_COST_DAYS) {
         suggestions.push({
           dedupeKey: `stale_cost:${row.id}`,

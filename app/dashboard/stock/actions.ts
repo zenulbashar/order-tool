@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth";
@@ -107,6 +107,8 @@ export async function createIngredient(formData: FormData): Promise<void> {
     supplier: parsed.data.supplier,
     parLevel: parsed.data.parLevel,
     isPackaging,
+    // A cost entered now is fresh now; a name-only ingredient has no cost date.
+    costUpdatedAt: parsed.data.packCost != null ? new Date() : null,
   });
   revalidatePath(STOCK_PATH);
   redirect(STOCK_PATH);
@@ -133,6 +135,16 @@ export async function updateIngredient(formData: FormData): Promise<void> {
       supplier: parsed.data.supplier,
       parLevel: parsed.data.parLevel,
       isPackaging,
+      // Stamp the cost date only when a cost INPUT actually changed, so saving
+      // an unrelated field (supplier, par level) does not make a stale cost
+      // look fresh. Decided in SQL against the current row, so no extra read.
+      costUpdatedAt: sql`case
+        when ${ingredients.packCostCents} is distinct from ${parsed.data.packCost ?? null}::integer
+          or ${ingredients.packSize} is distinct from ${parsed.data.packSize ?? null}::double precision
+          or ${ingredients.yieldPct} is distinct from ${parsed.data.yieldPct}::integer
+        then now()
+        else ${ingredients.costUpdatedAt}
+      end`,
     })
     .where(
       and(

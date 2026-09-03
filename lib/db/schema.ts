@@ -1702,6 +1702,14 @@ export const ingredients = pgTable(
     // unit. Analytics only — no order money-path involvement.
     onHandQty: doublePrecision("on_hand_qty"),
     parLevel: doublePrecision("par_level"),
+    // When the COST inputs (pack size, pack cost, yield) last changed. Kept
+    // apart from updated_at on purpose: that column's $onUpdate is bumped by
+    // every on-hand movement (each order depletion, restock, stocktake), so
+    // "costs fresh" and the stale-cost nudge read it as freshly costed for any
+    // ingredient that actually sold — the stale-cost feature never fired for
+    // exactly the ingredients that mattered. Nullable: rows costed before this
+    // column existed fall back to updated_at.
+    costUpdatedAt: timestamp("cost_updated_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
