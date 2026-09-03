@@ -1,7 +1,8 @@
 "use server";
 
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 
+import { CONFIRMABLE_ORDER_STATUSES } from "@/lib/db/order-status";
 import { db } from "@/lib/db";
 import { giftCards, orders, venues } from "@/lib/db/schema";
 import {
@@ -123,7 +124,18 @@ export async function applyOrderDiscounts(
       and(eq(orders.publicToken, trimmedToken), eq(orders.venueId, venue.id)),
     )
     .limit(1);
-  if (!pre || pre.status !== "pending_payment" || !pre.pi) return { ok: false };
+  // Not just 'pending_payment': a declined card leaves the order in
+  // 'payment_failed' on the SAME PaymentIntent, and the next attempt confirms
+  // it (CONFIRMABLE_ORDER_STATUSES). Refusing to re-price here froze the
+  // discount state at decline time, so the bank saving a retrying diner had
+  // just selected was never honoured.
+  if (
+    !pre ||
+    !(CONFIRMABLE_ORDER_STATUSES as readonly string[]).includes(pre.status) ||
+    !pre.pi
+  ) {
+    return { ok: false };
+  }
 
   const promo = await resolveActivePromo(
     venue.id,
@@ -241,7 +253,13 @@ export async function applyOrderDiscounts(
         .where(and(eq(orders.id, pre.id), eq(orders.venueId, venue.id)))
         .for("update")
         .limit(1);
-      if (!locked || locked.status !== "pending_payment" || !locked.pi) return;
+      if (
+        !locked ||
+        !(CONFIRMABLE_ORDER_STATUSES as readonly string[]).includes(locked.status) ||
+        !locked.pi
+      ) {
+        return;
+      }
 
       // Re-derive the gift-card redemption UNDER a row lock so two orders can't
       // both reserve the same balance (a bearer instrument; the order-row lock
@@ -273,7 +291,7 @@ export async function applyOrderDiscounts(
             .where(
               and(
                 eq(orders.giftCardId, giftCardId),
-                eq(orders.status, "pending_payment"),
+                inArray(orders.status, CONFIRMABLE_ORDER_STATUSES),
                 ne(orders.id, locked.id),
               ),
             );
@@ -350,7 +368,12 @@ export async function applyOrderDiscounts(
           appliedPromoId,
           platformFundedCents,
         })
-        .where(and(eq(orders.id, locked.id), eq(orders.status, "pending_payment")));
+        .where(
+          and(
+            eq(orders.id, locked.id),
+            inArray(orders.status, CONFIRMABLE_ORDER_STATUSES),
+          ),
+        );
 
       await getStripe().paymentIntents.update(
         locked.pi,
