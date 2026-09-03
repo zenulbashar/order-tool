@@ -1,8 +1,9 @@
-import { and, asc, desc, eq, isNotNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { db } from "@/lib/db";
 import {
   menuCategories,
@@ -442,7 +443,7 @@ const getVenueCoOccurrence = (venueId: string): Promise<CoOccurrence> =>
           .where(
             and(
               scopedToVenue(a.venueId, venueId),
-              eq(orders.status, "confirmed"),
+              inArray(orders.status, PAID_ORDER_STATUSES),
               isNotNull(a.menuItemId),
               isNotNull(b.menuItemId),
             ),
@@ -461,7 +462,7 @@ const getVenueCoOccurrence = (venueId: string): Promise<CoOccurrence> =>
           .where(
             and(
               scopedToVenue(orderItems.venueId, venueId),
-              eq(orders.status, "confirmed"),
+              inArray(orders.status, PAID_ORDER_STATUSES),
               isNotNull(orderItems.menuItemId),
             ),
           )
@@ -475,7 +476,7 @@ const getVenueCoOccurrence = (venueId: string): Promise<CoOccurrence> =>
           .where(
             and(
               scopedToVenue(orders.venueId, venueId),
-              eq(orders.status, "confirmed"),
+              inArray(orders.status, PAID_ORDER_STATUSES),
             ),
           ),
       ]);

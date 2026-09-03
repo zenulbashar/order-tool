@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  bankDiscountMismatchTelemetry,
   chargeAmountMismatchTelemetry,
   initObservability,
   isObservabilityEnabled,
@@ -305,5 +306,40 @@ describe("chargeAmountMismatchTelemetry", () => {
         orderTotalCents: 1800,
       }),
     ).not.toBeNull();
+  });
+});
+
+describe("bankDiscountMismatchTelemetry", () => {
+  const bankMethods = new Set(["payto", "au_becs_debit"]);
+  const base = {
+    orderId: "ord_1",
+    paymentIntentId: "pi_1",
+    bankDiscountCents: 150,
+    bankMethods,
+  };
+
+  it("reports a bank saving that a card actually paid for", () => {
+    const event = bankDiscountMismatchTelemetry({ ...base, paymentMethodType: "card" });
+    expect(event?.alert).toBe("bank_discount_mismatch");
+    expect(event?.level).toBe("error");
+    expect(event?.message).toContain("150c");
+    expect(event?.message).toContain("card");
+  });
+
+  it("reports when the settling method is unknown — a saving must be provable", () => {
+    expect(bankDiscountMismatchTelemetry({ ...base, paymentMethodType: null })).not.toBeNull();
+  });
+
+  it("is silent when a bank method settled the charge", () => {
+    expect(bankDiscountMismatchTelemetry({ ...base, paymentMethodType: "payto" })).toBeNull();
+    expect(
+      bankDiscountMismatchTelemetry({ ...base, paymentMethodType: "au_becs_debit" }),
+    ).toBeNull();
+  });
+
+  it("is silent when the order carried no bank saving", () => {
+    expect(
+      bankDiscountMismatchTelemetry({ ...base, bankDiscountCents: 0, paymentMethodType: "card" }),
+    ).toBeNull();
   });
 });

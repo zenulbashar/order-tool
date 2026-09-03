@@ -13,6 +13,7 @@ import { redeemGiftCardForOrder } from "@/lib/giftcards/redeem";
 import { earnPointsForOrder } from "@/lib/loyalty/earn";
 import { redeemPointsForOrder } from "@/lib/loyalty/redeem";
 import { reportChargeAmountMismatch, reportError } from "@/lib/observability";
+import { checkBankDiscountSettlement } from "@/lib/payments/bank-discount-settlement";
 import { reconcileRefundsForPaymentIntent } from "@/lib/payments/refund-service";
 import { notifyNewOrder } from "@/lib/push";
 import { depleteStockForOrder } from "@/lib/stock/depletion";
@@ -167,6 +168,23 @@ export async function POST(request: Request): Promise<Response> {
           }
         } catch (error) {
           await swallow("charge amount check scheduling")(error);
+        }
+        // Pay-by-bank settlement check: the saving was applied on the diner's
+        // CLAIMED method; this is where the method that actually paid becomes
+        // known. Same best-effort contract as the block above — a diagnostic
+        // must never cost an order its confirmation.
+        try {
+          for (const order of confirmed) {
+            after(() =>
+              checkBankDiscountSettlement({
+                orderId: order.id,
+                intent: paymentIntent,
+                stripeAccount: event.account,
+              }).catch(swallow("bank discount settlement check")),
+            );
+          }
+        } catch (error) {
+          await swallow("bank discount check scheduling")(error);
         }
         // ADDITIVE (Track 0) — the SINGLE integrations touch in this handler.
         // Runs strictly AFTER the confirm UPDATE above (which is unchanged),

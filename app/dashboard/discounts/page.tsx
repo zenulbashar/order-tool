@@ -4,6 +4,7 @@ import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { Card } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
+import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { db } from "@/lib/db";
 import { orders, promotions } from "@/lib/db/schema";
 import { requireVenuePermission, scopedToVenue } from "@/lib/tenant";
@@ -57,7 +58,7 @@ export default async function DiscountsPage() {
         .where(
           and(
             scopedToVenue(orders.venueId, venue.id),
-            eq(orders.status, "confirmed"),
+            inArray(orders.status, PAID_ORDER_STATUSES),
             inArray(orders.appliedPromoId, ids),
           ),
         )

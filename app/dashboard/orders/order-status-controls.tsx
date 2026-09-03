@@ -54,7 +54,9 @@ export function OrderStatusControls({
     setError(null);
     setTarget(to);
     startTransition(async () => {
-      const result = await updateOrderFulfillmentStatus(orderId, to);
+      // `status` is what THIS device is showing — the server only applies the
+      // move if the order is still there (see the action's compare-and-set).
+      const result = await updateOrderFulfillmentStatus(orderId, to, status);
       if (result?.error) setError(result.error);
       else router.refresh();
     });

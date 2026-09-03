@@ -36,7 +36,8 @@ type ReportLevel = "error" | "warning";
 export type AlertKind =
   | "integration_job_dead_letter"
   | "sweep_backlog"
-  | "charge_amount_mismatch";
+  | "charge_amount_mismatch"
+  | "bank_discount_mismatch";
 
 export type TelemetryEvent = {
   message: string;
@@ -277,6 +278,63 @@ export function chargeAmountMismatchTelemetry(
     // One issue for the whole class — the per-order ids live in `extra`.
     fingerprint: ["charge-amount-mismatch"],
   };
+}
+
+export type BankDiscountFacts = {
+  orderId: string;
+  paymentIntentId: string;
+  /** The pay-by-bank saving the order's charge was reduced by. */
+  bankDiscountCents: number;
+  /** The payment method type that actually settled the charge (Stripe). */
+  paymentMethodType: string | null;
+  /** Method types the saving is offered for (lib/payments/bank-discount). */
+  bankMethods: ReadonlySet<string>;
+};
+
+/**
+ * Decide what a confirmed order's pay-by-bank check reports.
+ *
+ * The bank saving is applied to the PaymentIntent when the diner SELECTS a
+ * bank method in the Payment Element — a client-reported choice — and Stripe
+ * then accepts whatever method confirms the intent. Nothing prevented a card
+ * confirming at the bank-discounted amount, and nothing noticed. The money has
+ * moved by the time this runs, so it reports rather than refuses: the venue
+ * gave a saving it never priced for a card payment and is owed the difference.
+ * A bank-settled or undiscounted order reports nothing.
+ */
+export function bankDiscountMismatchTelemetry(
+  facts: BankDiscountFacts,
+): TelemetryEvent | null {
+  if (facts.bankDiscountCents <= 0) return null;
+  if (facts.paymentMethodType && facts.bankMethods.has(facts.paymentMethodType)) {
+    return null;
+  }
+  return {
+    message: `Order ${facts.orderId} took a ${facts.bankDiscountCents}c pay-by-bank saving but settled by ${facts.paymentMethodType ?? "an unknown method"}.`,
+    level: "error",
+    alert: "bank_discount_mismatch",
+    tags: {
+      context: "stripe-webhook",
+      alert: "bank_discount_mismatch",
+      payment_method_type: facts.paymentMethodType ?? "unknown",
+    },
+    extra: {
+      orderId: facts.orderId,
+      paymentIntentId: facts.paymentIntentId,
+      bankDiscountCents: facts.bankDiscountCents,
+      paymentMethodType: facts.paymentMethodType,
+    },
+    fingerprint: ["bank-discount-mismatch"],
+  };
+}
+
+/** Report a bank saving settled by a non-bank method (no-op otherwise). */
+export async function reportBankDiscountMismatch(
+  facts: BankDiscountFacts,
+): Promise<void> {
+  const event = bankDiscountMismatchTelemetry(facts);
+  if (!event) return;
+  await captureTelemetry(event, null);
 }
 
 /** Report a charge/order divergence (no-op when the amounts agree). */

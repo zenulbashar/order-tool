@@ -17,6 +17,7 @@ import {
 } from "@/lib/payments/bank-discount";
 import { discountIdempotencyKey } from "@/lib/payments/discount-idempotency";
 import { composeOrderDiscount } from "@/lib/payments/order-discount";
+import { BANK_DISCOUNT_METADATA_KEY } from "@/lib/payments/bank-discount-settlement";
 import { inclusiveTaxCents } from "@/lib/payments/tax";
 import { resolveActivePromo } from "@/lib/promotions";
 import { computeApplicationFeeCents, getStripe } from "@/lib/stripe";
@@ -356,6 +357,11 @@ export async function applyOrderDiscounts(
         {
           amount: finalTotalCents,
           application_fee_amount: computeApplicationFeeCents(finalTotalCents),
+          // The bank portion travels on the intent so the webhook can check,
+          // once the charge has settled, that a bank method really paid for
+          // it (lib/payments/bank-discount-settlement.ts). The method is only
+          // ever the client's CLAIM at apply time.
+          metadata: { [BANK_DISCOUNT_METADATA_KEY]: String(bankRaw > 0 ? baseDiscount - promoDiscountCents : 0) },
         },
         {
           stripeAccount: venue.stripeAccountId!,
