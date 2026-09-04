@@ -130,6 +130,7 @@ function navEntries(
         { label: "About & description", href: "/dashboard/settings/about", permission: "settings:manage" },
         { label: "FAQs", href: "/dashboard/settings/faqs", permission: "settings:manage" },
         { label: "SEO & AEO", href: "/dashboard/seo", permission: "settings:manage" },
+        { label: "Marketing copy", href: "/dashboard/marketing", permission: "settings:manage" },
         { label: "Opening hours & location", href: "/dashboard/settings/hours", permission: "settings:manage" },
         { label: "Tax (GST)", href: "/dashboard/settings/tax", permission: "settings:manage" },
         { label: "Prep stations", href: "/dashboard/settings/stations", permission: "settings:manage" },

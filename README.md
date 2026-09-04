@@ -27,6 +27,10 @@ npm run dev                  # http://localhost:3000
 
 A venue can have a phone number answered by its AI agent: it answers questions about hours, location and the menu from the venue's public storefront data, and takes a pickup order that finishes with a **texted checkout link** — the caller pays on the storefront; nothing is placed or charged on the call. Setup: buy a Twilio number, point its Voice webhook at `POST https://<host>/api/voice/incoming`, and assign the number to the venue on `/admin/venues/<id>` ("Voice number"). Uses the existing `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` (signature verification) and `TWILIO_FROM` (the SMS link); the venue's plan must include the AI concierge. No realtime audio: Twilio's speech recognition and text-to-speech run between turns.
 
+### AI marketing generator
+
+`/dashboard/marketing` (Pro and Scale plans, free on trial) drafts Instagram, Facebook, SMS and email copy from the venue's own facts: name, description, location, real menu item names, and the ordering link (`lib/marketing/core.ts`). The owner picks a goal, tone, topic and optional offer; the model may only use those facts, states an offer verbatim, and makes no dietary or health claims. Drafts are shown with copy buttons and are never posted or stored. With `GEMINI_API_KEY` and R2 configured, "Draft an image too" generates a text-free square photo into the venue's R2 folder (`lib/marketing/image.ts`, tighter `aiImage` limit). Copy uses the existing `ANTHROPIC_API_KEY` and the `aiCopy` limit.
+
 ### Ask your data (owner insights)
 
 `/dashboard/reports` carries an "Ask your data" box (Pro and Scale plans, free on trial): the owner types a plain-language question and a model answers it from a bounded fact sheet of the venue's own last-30-day paid orders, net of refunds — the same numbers as the cards on that page (`lib/insights-core.ts`). The model never sees a table or writes SQL; the sheet is prompt-cached, the reply is forced to a JSON shape and re-validated, and each venue is rate-limited. Uses the existing `ANTHROPIC_API_KEY`; unset = the box explains it is off.
@@ -55,6 +59,7 @@ The site ships a manifest and a minimal service worker (`public/sw.js`, push and
 | `ANTHROPIC_API_KEY`      | Anthropic vision | Powers "Import menu from photo". Lazy (`lib/anthropic.ts`); metered cost. |
 | `GEMINI_API_KEY` | AI visibility probes | Google AI Studio key. Enables "Ask AI search" on `/dashboard/seo` (Scale plan) and the weekly cron probes. Unset = the panel says "not switched on". |
 | `GEMINI_MODEL` | AI visibility probes | Optional model override; defaults to `gemini-2.5-flash`. |
+| `GEMINI_IMAGE_MODEL` | Marketing images | Optional image model for "draft an image" on `/dashboard/marketing`; defaults to `gemini-2.5-flash-image`. Needs `GEMINI_API_KEY` and R2. |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web push | VAPID key pair (`npx web-push generate-vapid-keys`). Enables the owner "Enable on this device" and diner "Notify me when it's ready" buttons; unset = buttons hidden, web sends are a no-op. |
 | `VAPID_SUBJECT` | Web push | Optional `mailto:` or https contact the push services see; defaults to the site origin. |
 | `R2_ACCOUNT_ID`          | Cloudflare R2    | R2 account id. Lazy (`lib/r2.ts`); build/typecheck/lint need none.     |
