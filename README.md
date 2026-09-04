@@ -27,6 +27,10 @@ npm run dev                  # http://localhost:3000
 
 A venue can have a phone number answered by its AI agent: it answers questions about hours, location and the menu from the venue's public storefront data, and takes a pickup order that finishes with a **texted checkout link** — the caller pays on the storefront; nothing is placed or charged on the call. Setup: buy a Twilio number, point its Voice webhook at `POST https://<host>/api/voice/incoming`, and assign the number to the venue on `/admin/venues/<id>` ("Voice number"). Uses the existing `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` (signature verification) and `TWILIO_FROM` (the SMS link); the venue's plan must include the AI concierge. No realtime audio: Twilio's speech recognition and text-to-speech run between turns.
 
+### Installable web app + web push (PWA)
+
+The site ships a manifest and a minimal service worker (`public/sw.js`, push and notification-click only — no caching, so deploys are never stale). With `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` set, owners get an "Enable on this device" button on `/dashboard/settings/notifications` that subscribes the browser (or the installed web app) to new-order pushes through the same `/api/push/register` endpoint as the native app, and diners get "Notify me when it's ready" on a paid order's confirmation page (`POST /api/push/order`, anonymous, keyed by the opaque order token). Dead subscriptions are pruned on the first failed send.
+
 ### Agent commerce (MCP)
 
 `POST /api/mcp` is a stateless Model Context Protocol server (JSON-RPC 2.0 over Streamable HTTP, no auth, rate-limited per IP). It exposes only what the public storefront already shows: `find_venue`, `get_venue` (profile, hours, open-now), `get_menu` (live menu with item/size/option ids), `get_faqs`, and `start_order`, which validates a basket against the live menu and returns a storefront link carrying `?cart=<token>` (ids and quantities only, never prices). The diner reviews and pays on the normal checkout; the server never takes payment or places an order. Advertised to crawlers in `public/llms.txt`.
@@ -47,6 +51,8 @@ A venue can have a phone number answered by its AI agent: it answers questions a
 | `ANTHROPIC_API_KEY`      | Anthropic vision | Powers "Import menu from photo". Lazy (`lib/anthropic.ts`); metered cost. |
 | `GEMINI_API_KEY` | AI visibility probes | Google AI Studio key. Enables "Ask AI search" on `/dashboard/seo` (Scale plan) and the weekly cron probes. Unset = the panel says "not switched on". |
 | `GEMINI_MODEL` | AI visibility probes | Optional model override; defaults to `gemini-2.5-flash`. |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Web push | VAPID key pair (`npx web-push generate-vapid-keys`). Enables the owner "Enable on this device" and diner "Notify me when it's ready" buttons; unset = buttons hidden, web sends are a no-op. |
+| `VAPID_SUBJECT` | Web push | Optional `mailto:` or https contact the push services see; defaults to the site origin. |
 | `R2_ACCOUNT_ID`          | Cloudflare R2    | R2 account id. Lazy (`lib/r2.ts`); build/typecheck/lint need none.     |
 | `R2_ACCESS_KEY_ID`       | Cloudflare R2    | R2 API token access key id.                                           |
 | `R2_SECRET_ACCESS_KEY`   | Cloudflare R2    | R2 API token secret.                                                  |

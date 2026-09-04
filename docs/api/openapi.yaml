@@ -220,6 +220,23 @@ paths:
         '200': { description: Registered. }
         '401': { description: No session. }
 
+  /api/push/order:
+    post:
+      tags: [browser]
+      summary: Diner opt-in to an "order ready" web push for one paid order
+      description: |
+        Anonymous, rate-limited per IP. Body `{ slug, token, subscription }`
+        where `token` is the order's opaque public token and `subscription` is
+        the browser's PushSubscription JSON. Accepted only for a paid order the
+        kitchen has not yet marked ready.
+      responses:
+        '200': { description: Subscribed. }
+        '400': { description: Invalid input. }
+        '404': { description: No such order for that venue. }
+        '409': { description: Order is not paid or is already ready/completed. }
+        '429': { description: Rate limited. }
+        '503': { description: Web push is not configured on this deployment. }
+
   /api/support/chat:
     post:
       tags: [browser]

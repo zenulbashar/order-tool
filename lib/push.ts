@@ -7,6 +7,8 @@ import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { orders, pushTokens, venues } from "@/lib/db/schema";
 import { formatCents } from "@/lib/validation";
+import { sendWebPush, webPushConfigured } from "@/lib/web-push";
+import { parseWebPushSubscription, type WebPushSubscription } from "@/lib/web-push-core";
 
 /**
  * Native-app push (new-order alerts). Sends via Firebase Cloud Messaging HTTP
@@ -112,7 +114,9 @@ export async function registerPushToken(
  */
 export async function notifyNewOrder(paymentIntentId: string): Promise<void> {
   const cfg = fcmConfig();
-  if (!cfg) return; // push not configured — complete no-op
+  // Native (FCM) and Web Push are configured independently; either alone is
+  // enough to deliver. Neither configured = complete no-op.
+  if (!cfg && !webPushConfigured()) return;
 
   try {
     const [order] = await db
@@ -137,9 +141,6 @@ export async function notifyNewOrder(paymentIntentId: string): Promise<void> {
       .where(eq(pushTokens.venueId, order.venueId));
     if (rows.length === 0) return;
 
-    const accessTok = await accessToken(cfg);
-    if (!accessTok) return;
-
     const where =
       order.orderType === "dine_in"
         ? `Table ${order.tableLabel ?? "—"}`
@@ -147,8 +148,34 @@ export async function notifyNewOrder(paymentIntentId: string): Promise<void> {
     const body = `${where} · $${formatCents(order.totalCents)}`;
 
     const dead: string[] = [];
+
+    // Web Push rows are stored as the browser subscription's JSON; anything
+    // else is a native device token for FCM.
+    const webRows = rows
+      .map((row) => ({ token: row.token, subscription: parseWebPushSubscription(row.token) }))
+      .filter((row): row is { token: string; subscription: WebPushSubscription } =>
+        row.subscription !== null,
+      );
+    const nativeRows = rows.filter((row) => parseWebPushSubscription(row.token) === null);
+
+    if (webRows.length > 0 && webPushConfigured()) {
+      await Promise.all(
+        webRows.map(async (row) => {
+          const outcome = await sendWebPush(row.subscription, {
+            title: "New order",
+            body,
+            url: "/dashboard/orders",
+            tag: "new-order",
+          });
+          if (outcome === "dead") dead.push(row.token);
+        }),
+      );
+    }
+
+    const accessTok = cfg && nativeRows.length > 0 ? await accessToken(cfg) : null;
+    if (accessTok && cfg) {
     await Promise.all(
-      rows.map(async (row) => {
+      nativeRows.map(async (row) => {
         try {
           const res = await fetch(
             `https://fcm.googleapis.com/v1/projects/${cfg.projectId}/messages:send`,
@@ -173,6 +200,7 @@ export async function notifyNewOrder(paymentIntentId: string): Promise<void> {
         }
       }),
     );
+    }
 
     if (dead.length > 0) {
       await db.delete(pushTokens).where(inArray(pushTokens.token, dead));

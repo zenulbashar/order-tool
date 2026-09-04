@@ -106,6 +106,8 @@ const CONFIG = {
   // Phone agent turns per CALLER number: every turn is a model call and the
   // finish is an SMS. A real caller speaks a handful of times per call.
   voiceCaller: { limit: 40, window: "1 h", prefix: "rl:voice:caller" },
+  // Anonymous diner push opt-in on the order page: keyed by IP.
+  pushIp: { limit: 20, window: "1 h", prefix: "rl:push:ip" },
 } as const;
 
 export type RateLimitName = keyof typeof CONFIG;

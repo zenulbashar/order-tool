@@ -11,11 +11,13 @@ import {
 import { getCustomer } from "@/lib/customer/auth";
 import { formatVenueTime } from "@/lib/time";
 import { formatCents, isReservedSlug, orderReference } from "@/lib/validation";
+import { vapidPublicKey } from "@/lib/web-push";
 
 import { dinerBrandStyle } from "../../brand-style";
 import { getPublicVenueBySlug } from "../../queries";
 import { KitchenStatusPoller } from "./kitchen-status-poller";
 import { PaymentStatusPoller } from "./payment-status-poller";
+import { ReadyPushButton } from "./ready-push-button";
 import { getOrderByToken, type ConfirmedOrder } from "./queries";
 import {
   IconBag,
@@ -265,6 +267,7 @@ export default async function OrderConfirmationPage({
 
   const brandStyle = dinerBrandStyle(venue);
   const reference = orderReference(order.publicToken);
+  const webPushKey = vapidPublicKey();
 
   // M4 — a partially refunded order is still a live, paid order (the kitchen
   // may still be making it), so it keeps the paid layout and tracker; only the
@@ -498,6 +501,18 @@ export default async function OrderConfirmationPage({
                 until the order is done, so a finished order stops polling. */}
             {order.fulfillmentStatus !== "completed" ? (
               <KitchenStatusPoller />
+            ) : null}
+            {/* Web push opt-in while the kitchen is still working: server-gated
+                on VAPID keys, browser-gated on push support, and only until
+                "ready" — after that there is nothing left to announce. */}
+            {webPushKey &&
+            order.fulfillmentStatus !== "ready" &&
+            order.fulfillmentStatus !== "completed" ? (
+              <ReadyPushButton
+                slug={venue.slug}
+                token={order.publicToken}
+                vapidPublicKey={webPushKey}
+              />
             ) : null}
             {order.fulfillmentStatus !== "completed" ? (
               <div className="flex items-start gap-3 rounded-card border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/12 px-4 py-3">
