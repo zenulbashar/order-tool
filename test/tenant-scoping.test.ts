@@ -72,6 +72,11 @@ const EXEMPTIONS: { file: string; reason: string }[] = [
       "Cron sweep across venues for stale unpaid orders; each row's own venue_id scopes the cancel write that follows.",
   },
   {
+    file: "lib/agent-commerce/tools.ts",
+    reason:
+      "Public venue discovery for AI agents (find_venue) — the same public fields the storefront shows, live venues only; every other tool resolves by slug through the public storefront reader.",
+  },
+  {
     file: "lib/sweep-watermark.ts",
     reason: "sweep_watermarks is keyed by sweep NAME and is platform-wide, not per venue.",
   },
