@@ -53,6 +53,12 @@ export const FEATURES = {
    * Metered like the other owner AI tools, so it follows the same tiers.
    */
   AI_INSIGHTS: "ai_insights",
+  /**
+   * Owner AI marketing generator on /dashboard/marketing: social, SMS and
+   * email drafts (and an optional image) from the venue's own facts. Drafts
+   * only; the owner posts them. Same tiers as the other owner AI tools.
+   */
+  AI_MARKETING: "ai_marketing",
 } as const;
 
 export type Feature = (typeof FEATURES)[keyof typeof FEATURES];
@@ -76,6 +82,7 @@ const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
     FEATURES.AI_MENU_IMPORT,
     FEATURES.AI_DESCRIPTIONS,
     FEATURES.AI_INSIGHTS,
+    FEATURES.AI_MARKETING,
     FEATURES.MULTI_VENUE,
     FEATURES.CUSTOM_DOMAIN,
     FEATURES.SEO_AEO,
@@ -85,12 +92,14 @@ const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
     FEATURES.AI_MENU_IMPORT,
     FEATURES.AI_DESCRIPTIONS,
     FEATURES.AI_INSIGHTS,
+    FEATURES.AI_MARKETING,
   ]),
   scale: new Set([
     FEATURES.DINER_CONCIERGE,
     FEATURES.AI_MENU_IMPORT,
     FEATURES.AI_DESCRIPTIONS,
     FEATURES.AI_INSIGHTS,
+    FEATURES.AI_MARKETING,
     FEATURES.MULTI_VENUE,
     FEATURES.CUSTOM_DOMAIN,
     FEATURES.SEO_AEO,

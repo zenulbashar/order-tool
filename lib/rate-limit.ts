@@ -88,6 +88,9 @@ const CONFIG = {
   // "Ask your data" (owner questions over a cached fact sheet — one Haiku call
   // each; the sheet itself is prompt-cached). Keyed on venue.
   aiInsights: { limit: 20, window: "1 h", prefix: "rl:ai:insights" },
+  // Marketing image drafts (one image-generation call each, then an R2 upload).
+  // Costlier than copy, so tighter than aiCopy. Keyed on venue.
+  aiImage: { limit: 6, window: "1 h", prefix: "rl:ai:image" },
   // CONCIERGE (diner-facing "prompt to eat" — real Anthropic spend + abusable
   // from the public storefront). Keyed per venue+IP so one diner can't spam a
   // venue's concierge. Independent of the future fair-use cap (canUseConcierge).
