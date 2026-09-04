@@ -47,6 +47,12 @@ export const FEATURES = {
    * studio is tier-gated. Wired at app/dashboard/seo.
    */
   SEO_AEO: "seo_aeo",
+  /**
+   * Owner "ask your data" insights on /dashboard/reports: plain-language
+   * questions answered by a model from the venue's own bounded sales figures.
+   * Metered like the other owner AI tools, so it follows the same tiers.
+   */
+  AI_INSIGHTS: "ai_insights",
 } as const;
 
 export type Feature = (typeof FEATURES)[keyof typeof FEATURES];
@@ -69,6 +75,7 @@ const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
     FEATURES.DINER_CONCIERGE,
     FEATURES.AI_MENU_IMPORT,
     FEATURES.AI_DESCRIPTIONS,
+    FEATURES.AI_INSIGHTS,
     FEATURES.MULTI_VENUE,
     FEATURES.CUSTOM_DOMAIN,
     FEATURES.SEO_AEO,
@@ -77,11 +84,13 @@ const PLAN_FEATURES: Record<Plan, ReadonlySet<Feature>> = {
     FEATURES.DINER_CONCIERGE,
     FEATURES.AI_MENU_IMPORT,
     FEATURES.AI_DESCRIPTIONS,
+    FEATURES.AI_INSIGHTS,
   ]),
   scale: new Set([
     FEATURES.DINER_CONCIERGE,
     FEATURES.AI_MENU_IMPORT,
     FEATURES.AI_DESCRIPTIONS,
+    FEATURES.AI_INSIGHTS,
     FEATURES.MULTI_VENUE,
     FEATURES.CUSTOM_DOMAIN,
     FEATURES.SEO_AEO,
