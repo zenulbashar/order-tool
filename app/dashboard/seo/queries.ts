@@ -152,3 +152,8 @@ export async function getSearchStats(venueId: string): Promise<SearchStats> {
     fetchedAt: summary?.fetchedAt ?? null,
   };
 }
+
+export {
+  getLatestVisibilityRun,
+  getVisibilityHistory,
+} from "@/lib/aeo-visibility";

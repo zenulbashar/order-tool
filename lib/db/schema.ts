@@ -2383,6 +2383,51 @@ export const seoAudits = pgTable(
 export type SeoAuditRow = typeof seoAudits.$inferSelect;
 
 /**
+ * AI-visibility probes (SEO & AEO studio v2, item 5): the answer an AI search
+ * assistant actually gives to one of the six canonical diner questions about a
+ * venue, and whether the venue was cited in it. One row per question per run;
+ * `run_id` groups the six of a run. Append-only history, pruned per venue.
+ * Provider/model are stored so a later assistant (or model change) is
+ * comparable rather than silently different.
+ */
+export type AeoVisibilitySource = { uri: string; title: string | null };
+
+export const aeoVisibilityProbes = pgTable(
+  "aeo_visibility_probes",
+  {
+    id: id(),
+    venueId: text("venue_id")
+      .notNull()
+      .references(() => venues.id, { onDelete: "cascade" }),
+    runId: text("run_id").notNull(),
+    // 'owner' (button on the studio) or 'cron' (weekly tick).
+    trigger: text("trigger").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    // The canonical question (lib/seo-audit AEO_QUESTIONS) and the venue-
+    // personalised prompt actually asked.
+    question: text("question").notNull(),
+    prompt: text("prompt").notNull(),
+    // The assistant's answer, bounded (see ANSWER_MAX_CHARS).
+    answer: text("answer").notNull(),
+    cited: boolean("cited").notNull(),
+    // How the citation was established: storefront | website | name | null.
+    citedBy: text("cited_by"),
+    sources: jsonb("sources").$type<AeoVisibilitySource[]>().notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    index("aeo_visibility_probes_venue_created_idx").on(
+      table.venueId,
+      table.createdAt,
+    ),
+    index("aeo_visibility_probes_venue_run_idx").on(table.venueId, table.runId),
+  ],
+);
+
+export type AeoVisibilityProbeRow = typeof aeoVisibilityProbes.$inferSelect;
+
+/**
  * One Search Console day for one venue's storefront path (clicks/impressions/
  * ctr/position). Upserted by the cron (unique venue+day), so re-ingesting a
  * window is idempotent and GSC's late-settling data self-corrects.

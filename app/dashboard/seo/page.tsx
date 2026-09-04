@@ -6,6 +6,7 @@ import { cardStyles } from "@/app/_components/card";
 import { PageHeader } from "@/app/_components/page-header";
 import { FEATURES, hasFeature } from "@/lib/billing/plans";
 import { getVenuePlan } from "@/lib/billing/queries";
+import { isGeminiConfigured } from "@/lib/aeo-visibility";
 import { isSearchConsoleConfigured } from "@/lib/search-console";
 import {
   hasVenuePermission,
@@ -16,11 +17,14 @@ import {
 import { AuditPanel } from "./_components/audit-panel";
 import { ScoreRing } from "./_components/score-viz";
 import { SearchStatsPanel } from "./_components/search-stats-panel";
+import { VisibilityPanel } from "./_components/visibility-panel";
 import {
   getAuditHistory,
   getLatestAudit,
+  getLatestVisibilityRun,
   getRecentAudits,
   getSearchStats,
+  getVisibilityHistory,
 } from "./queries";
 
 // Live owner data + plan gate — always rendered per request.
@@ -107,15 +111,25 @@ export default async function SeoPage() {
     );
   }
 
-  const [latestSeo, latestAeo, seoHistory, aeoHistory, recent, searchStats] =
-    await Promise.all([
-      getLatestAudit(venue.id, "seo"),
-      getLatestAudit(venue.id, "aeo"),
-      getAuditHistory(venue.id, "seo"),
-      getAuditHistory(venue.id, "aeo"),
-      getRecentAudits(venue.id),
-      getSearchStats(venue.id),
-    ]);
+  const [
+    latestSeo,
+    latestAeo,
+    seoHistory,
+    aeoHistory,
+    recent,
+    searchStats,
+    latestVisibility,
+    visibilityHistory,
+  ] = await Promise.all([
+    getLatestAudit(venue.id, "seo"),
+    getLatestAudit(venue.id, "aeo"),
+    getAuditHistory(venue.id, "seo"),
+    getAuditHistory(venue.id, "aeo"),
+    getRecentAudits(venue.id),
+    getSearchStats(venue.id),
+    getLatestVisibilityRun(venue.id),
+    getVisibilityHistory(venue.id),
+  ]);
 
   return (
     <>
@@ -127,6 +141,13 @@ export default async function SeoPage() {
         <SearchStatsPanel
           configured={isSearchConsoleConfigured()}
           stats={searchStats}
+        />
+
+        <VisibilityPanel
+          configured={isGeminiConfigured()}
+          latest={latestVisibility}
+          history={visibilityHistory}
+          timeZone={venue.timezone}
         />
 
         <div className="grid gap-8 lg:grid-cols-2">
