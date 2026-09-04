@@ -2388,6 +2388,31 @@ export const seoAudits = pgTable(
 export type SeoAuditRow = typeof seoAudits.$inferSelect;
 
 /**
+ * A diner's Web Push subscription for ONE order ("notify me when it's ready").
+ * Keyed to the order, not to an account, so a guest can opt in from the order
+ * page; the subscription is only ever used for that order's ready event and is
+ * removed when the push service reports it gone. Cascades with the order.
+ */
+export const orderPushSubscriptions = pgTable(
+  "order_push_subscriptions",
+  {
+    id: id(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    // The browser's PushSubscription JSON (endpoint + keys), canonical form.
+    subscription: text("subscription").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("order_push_subscriptions_order_sub_idx").on(
+      table.orderId,
+      table.subscription,
+    ),
+  ],
+);
+
+/**
  * AI-visibility probes (SEO & AEO studio v2, item 5): the answer an AI search
  * assistant actually gives to one of the six canonical diner questions about a
  * venue, and whether the venue was cited in it. One row per question per run;

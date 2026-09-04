@@ -1,9 +1,11 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { customers, orderItems, orders, venues } from "@/lib/db/schema";
+import { customers, orderItems, orders, venues, orderPushSubscriptions } from "@/lib/db/schema";
 import { sendSms, toE164 } from "@/lib/sms";
 import { getBaseUrl } from "@/lib/url";
+import { sendWebPush, webPushConfigured } from "@/lib/web-push";
+import { parseWebPushSubscription } from "@/lib/web-push-core";
 import { formatCents, orderReference } from "@/lib/validation";
 import { sendWhatsApp, whatsAppConfigured } from "@/lib/whatsapp";
 
@@ -74,6 +76,13 @@ export async function notifyCustomerOrder(
       : null
     : row.orderPhone;
 
+  // Web Push ("notify me when it's ready" on the order page) — independent of
+  // email/SMS consent, keyed to this order only. Best-effort; dead
+  // subscriptions are forgotten.
+  if (event === "ready") {
+    await notifyOrderReadyPush(orderId, row.venueSlug, row.publicToken, row.venueName);
+  }
+
   if (!emailTo && !phoneRaw) return; // nothing to send
 
   const first = row.customerName.split(" ")[0] || "there";
@@ -140,5 +149,44 @@ export async function notifyCustomerOrder(
     } catch {
       // Best-effort — swallow (each channel also no-ops when unconfigured).
     }
+  }
+}
+
+async function notifyOrderReadyPush(
+  orderId: string,
+  venueSlug: string,
+  publicToken: string,
+  venueName: string,
+): Promise<void> {
+  if (!webPushConfigured()) return;
+  try {
+    const rows = await db
+      .select({ id: orderPushSubscriptions.id, subscription: orderPushSubscriptions.subscription })
+      .from(orderPushSubscriptions)
+      .where(eq(orderPushSubscriptions.orderId, orderId));
+    if (rows.length === 0) return;
+    const url = `${await getBaseUrl()}/${venueSlug}/order/${publicToken}`;
+    const dead: string[] = [];
+    await Promise.all(
+      rows.map(async (row) => {
+        const subscription = parseWebPushSubscription(row.subscription);
+        if (!subscription) {
+          dead.push(row.id);
+          return;
+        }
+        const outcome = await sendWebPush(subscription, {
+          title: "Your order's ready!",
+          body: `${venueName} has your order ready to collect.`,
+          url,
+          tag: `order-${publicToken}`,
+        });
+        if (outcome === "dead") dead.push(row.id);
+      }),
+    );
+    if (dead.length > 0) {
+      await db.delete(orderPushSubscriptions).where(inArray(orderPushSubscriptions.id, dead));
+    }
+  } catch {
+    // Push is best-effort; email/SMS below still go out.
   }
 }
