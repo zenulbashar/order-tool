@@ -94,6 +94,9 @@ const CONFIG = {
   aiSupport: { limit: 30, window: "1 h", prefix: "rl:ai:support" },
   // CHECKOUT (moderate — stop junk-order floods, tolerate payment retries).
   checkoutIp: { limit: 20, window: "1 m", prefix: "rl:checkout:ip" },
+  // Agent-commerce MCP endpoint: public read tools for AI agents. Generous —
+  // an agent reads a menu in a few calls — but bounded per IP.
+  mcpIp: { limit: 120, window: "1 m", prefix: "rl:mcp:ip" },
   // TABLE BOOKINGS (public, unauthenticated, and every accepted one sends TWO
   // emails — the diner's confirmation and the owner's alert). So this is really
   // an inbox-spam gate, not a load gate, and it is tighter than checkout for

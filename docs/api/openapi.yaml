@@ -165,6 +165,27 @@ paths:
         '401': { description: Wrong or missing bearer secret. }
         '503': { description: CRON_SECRET is not configured. }
 
+  /api/mcp:
+    post:
+      tags: [browser]
+      summary: Agent-commerce MCP server (JSON-RPC 2.0, stateless Streamable HTTP)
+      description: >
+        Public, unauthenticated, rate-limited per IP. Methods: initialize, ping,
+        tools/list, tools/call. Tools read only what the public storefront shows
+        (find_venue, get_venue, get_menu, get_faqs); start_order validates a basket
+        against the live menu and returns a storefront checkout link — it never
+        takes payment or places an order.
+      responses:
+        '200': { description: JSON-RPC response (or batch). }
+        '202': { description: Notification acknowledged, no body. }
+        '400': { description: Body is not JSON-RPC 2.0. }
+        '429': { description: Rate limited. }
+    get:
+      tags: [browser]
+      summary: Not supported — the server is stateless
+      responses:
+        '405': { description: POST JSON-RPC requests instead. }
+
   /api/push/register:
     post:
       tags: [browser]

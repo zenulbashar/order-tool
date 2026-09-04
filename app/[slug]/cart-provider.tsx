@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import type { PublicMenu } from "./types";
+import { decodeCartHandoff } from "@/lib/agent-commerce/cart-handoff";
 import { MAX_LINE_QUANTITY } from "@/lib/orders/limits";
 
 /**
@@ -384,6 +385,28 @@ function persist(slug: string, lines: CartLine[]) {
  * like a returning customer's saved cart. Additive: the store, readStoredCart,
  * and persist are unchanged.
  */
+/**
+ * An external agent (MCP start_order) hands a diner a storefront link carrying
+ * `?cart=<token>` — ids and quantities only, never prices. Seed the stored cart
+ * from it ONCE and drop the parameter from the address bar, so a refresh or a
+ * shared link does not re-seed. readStoredCart then reconciles the seeded lines
+ * against the live menu exactly like any saved cart.
+ */
+function applyCartHandoff(slug: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("cart");
+    if (!token) return;
+    const lines = decodeCartHandoff(token);
+    if (lines && lines.length > 0) seedStoredCart(slug, lines);
+    url.searchParams.delete("cart");
+    window.history.replaceState(window.history.state, "", url.toString());
+  } catch {
+    // A malformed token is simply ignored; the diner sees their usual cart.
+  }
+}
+
 export function seedStoredCart(slug: string, lines: StoredLine[]): void {
   try {
     const stored: StoredLine[] = lines.map(
@@ -411,6 +434,7 @@ function createCartStore(slug: string, index: MenuIndex) {
   function ensureInit() {
     if (initialized) return;
     initialized = true;
+    applyCartHandoff(slug);
     const { lines, changed } = readStoredCart(slug, index);
     if (lines.length > 0 || changed) state = { lines, stale: changed };
   }

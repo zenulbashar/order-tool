@@ -23,6 +23,10 @@ npm run db:migrate           # apply migrations to your dev database
 npm run dev                  # http://localhost:3000
 ```
 
+### Agent commerce (MCP)
+
+`POST /api/mcp` is a stateless Model Context Protocol server (JSON-RPC 2.0 over Streamable HTTP, no auth, rate-limited per IP). It exposes only what the public storefront already shows: `find_venue`, `get_venue` (profile, hours, open-now), `get_menu` (live menu with item/size/option ids), `get_faqs`, and `start_order`, which validates a basket against the live menu and returns a storefront link carrying `?cart=<token>` (ids and quantities only, never prices). The diner reviews and pays on the normal checkout; the server never takes payment or places an order. Advertised to crawlers in `public/llms.txt`.
+
 ### Environment variables
 
 | Variable         | Used by        | Notes                                                                 |
