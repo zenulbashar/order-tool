@@ -77,6 +77,11 @@ const EXEMPTIONS: { file: string; reason: string }[] = [
       "Public venue discovery for AI agents (find_venue) — the same public fields the storefront shows, live venues only; every other tool resolves by slug through the public storefront reader.",
   },
   {
+    file: "lib/voice/webhook.ts",
+    reason:
+      "Resolves WHICH venue a dialled phone number belongs to (unique voice_number), the phone-agent equivalent of resolving a storefront by slug; everything after reads that venue's public data.",
+  },
+  {
     file: "lib/sweep-watermark.ts",
     reason: "sweep_watermarks is keyed by sweep NAME and is platform-wide, not per venue.",
   },

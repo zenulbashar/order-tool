@@ -12,7 +12,7 @@ import { requirePlatformAdmin } from "@/lib/platform-admin";
 import { formatCents } from "@/lib/validation";
 
 import { openVenueAsAdmin } from "../../actions";
-import { setVenueItemPrice } from "./actions";
+import { setVenueItemPrice, setVenueVoiceNumber } from "./actions";
 import { PlanDiscountForm } from "./plan-discount-form";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +94,36 @@ export default async function AdminVenuePage({ params }: Params) {
           value={venue.planDiscountValue}
           hasSubscription={Boolean(venue.stripeSubscriptionId)}
         />
+      </section>
+
+      {/* AI phone ordering number. */}
+      <section className="mb-6 rounded-card border border-line bg-surface-elevated p-5 shadow-card">
+        <p className={eyebrow}>Phone ordering</p>
+        <h2 className="mt-1.5 text-sm font-bold text-ink">Voice number</h2>
+        <p className="mt-1 text-xs text-muted">
+          The Twilio number whose Voice webhook points at{" "}
+          <code>/api/voice/incoming</code>. Callers get the AI phone agent for
+          this venue; orders finish with a texted checkout link.
+          {venue.voiceNumber ? (
+            <span className="ml-1 font-semibold text-success-deep">
+              Currently: {venue.voiceNumber}.
+            </span>
+          ) : null}
+        </p>
+        <form action={setVenueVoiceNumber} className="mt-3 flex items-center gap-2">
+          <input type="hidden" name="venueId" value={venue.id} />
+          <input
+            name="voiceNumber"
+            defaultValue={venue.voiceNumber ?? ""}
+            placeholder="+61…"
+            inputMode="tel"
+            aria-label="Voice number (E.164)"
+            className={`${controlClass} w-48`}
+          />
+          <button type="submit" className={denseButtonStyles()}>
+            Save
+          </button>
+        </form>
       </section>
 
       {/* Menu prices (E2b). */}

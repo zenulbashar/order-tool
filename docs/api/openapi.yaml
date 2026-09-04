@@ -109,6 +109,30 @@ paths:
         '200': { description: Acknowledged. }
         '400': { description: Missing/invalid signature. }
 
+  /api/voice/incoming:
+    post:
+      tags: [webhooks]
+      summary: Twilio Voice webhook — inbound call to a venue's phone-agent number
+      description: >
+        Signature-verified (X-Twilio-Signature). Resolves the venue by the dialled
+        number, greets the caller and gathers speech. Returns TwiML.
+      responses:
+        '200': { description: TwiML. }
+        '403': { description: Invalid signature. }
+        '503': { description: Twilio not configured. }
+  /api/voice/turn:
+    post:
+      tags: [webhooks]
+      summary: Twilio Voice webhook — one spoken turn of a phone-agent call
+      description: >
+        Signature-verified. The transcript goes to the phone agent; a finished
+        order is validated against the live menu and a checkout link is texted
+        to the caller. Payment and the order itself happen on the storefront.
+      responses:
+        '200': { description: TwiML. }
+        '403': { description: Invalid signature. }
+        '503': { description: Twilio not configured. }
+
   /api/integrations/square/callback:
     get:
       tags: [webhooks]

@@ -166,6 +166,10 @@ export const venues = pgTable(
     tiktokUrl: text("tiktok_url"),
     linkedinUrl: text("linkedin_url"),
     websiteUrl: text("website_url"),
+    // AI phone ordering: the Twilio voice number (E.164) that rings this
+    // venue's phone agent. Assigned by the platform in the admin console; one
+    // number belongs to exactly one venue. NULL = no phone agent.
+    voiceNumber: text("voice_number"),
     logoUrl: text("logo_url"),
     // Storefront brand imagery (owner-uploaded, both nullable — unset ⇒ no
     // change to today's look). cover_url replaces the storefront's brand-colour
@@ -362,6 +366,7 @@ export const venues = pgTable(
     // are allowed in Postgres, and these give the billing webhook a reliable
     // fallback lookup when an event carries no venueId metadata (e.g. invoices).
     uniqueIndex("venues_stripe_customer_id_idx").on(table.stripeCustomerId),
+    uniqueIndex("venues_voice_number_idx").on(table.voiceNumber),
     uniqueIndex("venues_stripe_subscription_id_idx").on(
       table.stripeSubscriptionId,
     ),
