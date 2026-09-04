@@ -103,6 +103,9 @@ const CONFIG = {
   // that reason. An hour window rather than a minute: a person books once, and a
   // burst of bookings from one IP is far more likely to be abuse than a rush.
   bookingIp: { limit: 6, window: "1 h", prefix: "rl:booking:ip" },
+  // Phone agent turns per CALLER number: every turn is a model call and the
+  // finish is an SMS. A real caller speaks a handful of times per call.
+  voiceCaller: { limit: 40, window: "1 h", prefix: "rl:voice:caller" },
 } as const;
 
 export type RateLimitName = keyof typeof CONFIG;

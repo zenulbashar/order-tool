@@ -23,6 +23,10 @@ npm run db:migrate           # apply migrations to your dev database
 npm run dev                  # http://localhost:3000
 ```
 
+### AI phone ordering (Twilio Voice)
+
+A venue can have a phone number answered by its AI agent: it answers questions about hours, location and the menu from the venue's public storefront data, and takes a pickup order that finishes with a **texted checkout link** — the caller pays on the storefront; nothing is placed or charged on the call. Setup: buy a Twilio number, point its Voice webhook at `POST https://<host>/api/voice/incoming`, and assign the number to the venue on `/admin/venues/<id>` ("Voice number"). Uses the existing `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` (signature verification) and `TWILIO_FROM` (the SMS link); the venue's plan must include the AI concierge. No realtime audio: Twilio's speech recognition and text-to-speech run between turns.
+
 ### Agent commerce (MCP)
 
 `POST /api/mcp` is a stateless Model Context Protocol server (JSON-RPC 2.0 over Streamable HTTP, no auth, rate-limited per IP). It exposes only what the public storefront already shows: `find_venue`, `get_venue` (profile, hours, open-now), `get_menu` (live menu with item/size/option ids), `get_faqs`, and `start_order`, which validates a basket against the live menu and returns a storefront link carrying `?cart=<token>` (ids and quantities only, never prices). The diner reviews and pays on the normal checkout; the server never takes payment or places an order. Advertised to crawlers in `public/llms.txt`.

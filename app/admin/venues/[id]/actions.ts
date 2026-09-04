@@ -4,11 +4,13 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/errors";
 import { revalidateStorefront } from "@/lib/storefront-cache";
 import { menuItems, platformAuditLog, venues } from "@/lib/db/schema";
 import { planDiscountCouponParams } from "@/lib/billing/plan-discount";
 import { reportError } from "@/lib/observability";
 import { requirePlatformAdmin } from "@/lib/platform-admin";
+import { toE164 } from "@/lib/sms";
 import { getStripe } from "@/lib/stripe";
 
 const MODES = ["off", "percent", "amount"] as const;
@@ -152,5 +154,45 @@ export async function setVenueItemPrice(formData: FormData): Promise<void> {
     if (venue) revalidateStorefront(venue);
   }
 
+  revalidatePath(pathFor(venueId));
+}
+
+/**
+ * Assign (or clear) the Twilio voice number that rings this venue's phone
+ * agent. Platform-owned numbers, so this lives in the console, not Settings.
+ * E.164 only; a number can belong to one venue (unique index). Audited.
+ */
+export async function setVenueVoiceNumber(formData: FormData): Promise<void> {
+  const admin = await requirePlatformAdmin();
+  const venueId = String(formData.get("venueId") ?? "").trim();
+  if (!venueId) return;
+  const raw = String(formData.get("voiceNumber") ?? "").trim();
+  const voiceNumber = raw === "" ? null : toE164(raw);
+  if (raw !== "" && !voiceNumber) return;
+
+  const [venue] = await db
+    .select({ prior: venues.voiceNumber })
+    .from(venues)
+    .where(eq(venues.id, venueId))
+    .limit(1);
+  if (!venue) return;
+
+  try {
+    await db.update(venues).set({ voiceNumber }).where(eq(venues.id, venueId));
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
+    await db.insert(platformAuditLog).values({
+      actorEmail: admin.email,
+      action: "venue_voice_number",
+      detail: `${venueId.slice(0, 8)}: ${voiceNumber} REFUSED — already assigned to another venue`,
+    });
+    revalidatePath(pathFor(venueId));
+    return;
+  }
+  await db.insert(platformAuditLog).values({
+    actorEmail: admin.email,
+    action: "venue_voice_number",
+    detail: `${venueId.slice(0, 8)}: ${venue.prior ?? "none"} → ${voiceNumber ?? "none"}`,
+  });
   revalidatePath(pathFor(venueId));
 }
