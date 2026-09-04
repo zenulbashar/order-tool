@@ -1,7 +1,16 @@
 import { isNotNull, sql } from "drizzle-orm";
 
+import { isGeminiConfigured, runVisibilityProbe } from "@/lib/aeo-visibility";
+import { FEATURES, hasFeature } from "@/lib/billing/plans";
 import { db } from "@/lib/db";
-import { seoSearchDaily, seoSearchSummary, venues } from "@/lib/db/schema";
+import {
+  aeoVisibilityProbes,
+  seoSearchDaily,
+  seoSearchSummary,
+  venues,
+} from "@/lib/db/schema";
+import { reportError } from "@/lib/observability";
+import { getBaseUrl } from "@/lib/url";
 import {
   fetchDailyByPage,
   fetchTopQueriesForSlug,
@@ -41,8 +50,18 @@ export async function GET(request: Request): Promise<Response> {
   if (request.headers.get("authorization") !== `Bearer ${secret}`) {
     return new Response("Unauthorized.", { status: 401 });
   }
+  // Weekly AI-visibility probes for Scale-entitled live venues (metered: a
+  // small batch per tick, oldest-probed first). Independent of Search Console,
+  // so it runs even when GSC is not configured; the GSC section below still
+  // bails on its own.
+  const visibility = await runWeeklyVisibilityProbes();
+
   if (!isSearchConsoleConfigured()) {
-    return Response.json({ ok: true, skipped: "search-console-unconfigured" });
+    return Response.json({
+      ok: true,
+      skipped: "search-console-unconfigured",
+      visibility,
+    });
   }
 
   const liveVenues = await db
@@ -160,10 +179,66 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   return Response.json({
+    visibility,
     ok: true,
     dailyUpserts,
     summariesRefreshed,
     truncated,
     errors,
   });
+}
+
+/** Probe cadence: a venue is re-asked once its last cron run is this old. */
+const VISIBILITY_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+/** Venues probed per tick — bounds the metered provider spend per day. */
+const VISIBILITY_BATCH = 5;
+
+async function runWeeklyVisibilityProbes(): Promise<{
+  probed: number;
+  skipped?: string;
+}> {
+  if (!isGeminiConfigured()) return { probed: 0, skipped: "gemini-unconfigured" };
+  const cutoff = new Date(Date.now() - VISIBILITY_INTERVAL_MS);
+  // Live venues on a plan that includes the studio, whose most recent probe of
+  // any kind is older than the interval (or who have never been probed).
+  const candidates = await db
+    .select({
+      id: venues.id,
+      slug: venues.slug,
+      name: venues.name,
+      suburb: venues.suburb,
+      state: venues.state,
+      websiteUrl: venues.websiteUrl,
+      plan: venues.plan,
+      lastProbedAt: sql<Date | null>`(
+        select max(${aeoVisibilityProbes.createdAt})
+          from ${aeoVisibilityProbes}
+         where ${aeoVisibilityProbes.venueId} = ${venues.id}
+      )`,
+    })
+    .from(venues)
+    .where(isNotNull(venues.onboardingCompletedAt));
+  const due = candidates
+    .filter((venue) => hasFeature({ plan: venue.plan }, FEATURES.SEO_AEO))
+    .filter((venue) => !venue.lastProbedAt || new Date(venue.lastProbedAt) < cutoff)
+    .sort((a, b) => {
+      const at = a.lastProbedAt ? new Date(a.lastProbedAt).getTime() : 0;
+      const bt = b.lastProbedAt ? new Date(b.lastProbedAt).getTime() : 0;
+      return at - bt;
+    })
+    .slice(0, VISIBILITY_BATCH);
+  let probed = 0;
+  const siteOrigin = await getBaseUrl();
+  for (const venue of due) {
+    try {
+      await runVisibilityProbe({ venue, siteOrigin, trigger: "cron" });
+      probed += 1;
+    } catch (error) {
+      await reportError(error, {
+        context: "jobs-cron.visibility-probe",
+        tags: { venue_id: venue.id },
+      });
+    }
+  }
+  return { probed };
 }

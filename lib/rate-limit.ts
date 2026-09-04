@@ -82,6 +82,9 @@ const CONFIG = {
   // SEO/AEO audit (owner-initiated Haiku call with a chunkier input than
   // aiCopy). Over-limit runs still persist a deterministic-only audit.
   aiSeoAudit: { limit: 6, window: "1 h", prefix: "rl:ai:seo" },
+  // AI-visibility probes: six grounded Gemini calls per run, so a run is the
+  // costliest owner-initiated AI action — tight per-venue cap.
+  aiVisibility: { limit: 3, window: "1 h", prefix: "rl:ai:visibility" },
   // CONCIERGE (diner-facing "prompt to eat" — real Anthropic spend + abusable
   // from the public storefront). Keyed per venue+IP so one diner can't spam a
   // venue's concierge. Independent of the future fair-use cap (canUseConcierge).

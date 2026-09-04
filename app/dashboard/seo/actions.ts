@@ -5,6 +5,11 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  isGeminiConfigured,
+  runVisibilityProbe as runVisibilityProbeForVenue,
+  type ProbeVenue,
+} from "@/lib/aeo-visibility";
 import { getAnthropic } from "@/lib/anthropic";
 import { auth } from "@/lib/auth";
 import { FEATURES, hasFeature } from "@/lib/billing/plans";
@@ -33,6 +38,7 @@ import {
   toSeoGeneratedCopy,
 } from "@/lib/seo-audit-llm";
 import { requireVenuePermission, scopedToVenue, type Venue } from "@/lib/tenant";
+import { getBaseUrl } from "@/lib/url";
 import { storefrontDescriptionSchema } from "@/lib/validation";
 
 import { getCategoriesForVenue, getItemsForVenue } from "../menu/queries";
@@ -199,6 +205,65 @@ async function runAudit(kind: "seo" | "aeo"): Promise<RunAuditResult> {
 
   revalidatePath(SEO_PATH);
   return { ok: true, llm: model !== null ? "ok" : "skipped" };
+}
+
+async function runVisibilityProbe_(venue: ProbeVenue, siteOrigin: string) {
+  return runVisibilityProbeForVenue({ venue, siteOrigin, trigger: "owner" });
+}
+
+export type RunVisibilityResult =
+  | { ok: true; cited: number; asked: number; failed: number }
+  | { ok: false; error: string };
+
+/**
+ * Ask an AI search assistant the six canonical diner questions about THIS
+ * venue and record whether it was cited (lib/aeo-visibility). Owner-triggered
+ * and metered by the aiVisibility bucket: one run is six grounded model calls.
+ * Honest when the provider is not configured — no fabricated "not cited".
+ */
+export async function runVisibilityProbe(): Promise<RunVisibilityResult> {
+  const venue = await requireVenueForAction();
+  if (!(await isSeoEntitled(venue.id))) {
+    return { ok: false, error: SCALE_ONLY };
+  }
+  if (!isGeminiConfigured()) {
+    return {
+      ok: false,
+      error:
+        "AI visibility probes aren't switched on for this deployment yet (GEMINI_API_KEY).",
+    };
+  }
+  const limit = await checkRateLimit("aiVisibility", venue.id);
+  if (!limit.success) {
+    return {
+      ok: false,
+      error: "You've run a few probes recently — try again in a little while.",
+    };
+  }
+  const summary = await runVisibilityProbe_(
+    {
+      id: venue.id,
+      slug: venue.slug,
+      name: venue.name,
+      suburb: venue.suburb,
+      state: venue.state,
+      websiteUrl: venue.websiteUrl,
+    },
+    await getBaseUrl(),
+  );
+  revalidatePath(SEO_PATH);
+  if (summary.failed === summary.asked) {
+    return {
+      ok: false,
+      error: "The assistant couldn't be reached this time. Please try again.",
+    };
+  }
+  return {
+    ok: true,
+    cited: summary.cited,
+    asked: summary.asked,
+    failed: summary.failed,
+  };
 }
 
 export async function runSeoAudit(): Promise<RunAuditResult> {

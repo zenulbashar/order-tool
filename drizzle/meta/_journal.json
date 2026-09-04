@@ -470,6 +470,13 @@
       "when": 1788464835910,
       "tag": "0066_ingredient_cost_updated_at",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1788504036590,
+      "tag": "0067_aeo_visibility_probes",
+      "breakpoints": true
     }
   ]
 }
