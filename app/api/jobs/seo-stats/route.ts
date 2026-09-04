@@ -10,6 +10,7 @@ import {
   venues,
 } from "@/lib/db/schema";
 import { reportError } from "@/lib/observability";
+import { runScheduledAudits } from "@/lib/seo-audit-schedule";
 import { getBaseUrl } from "@/lib/url";
 import {
   fetchDailyByPage,
@@ -35,7 +36,8 @@ const TOP_QUERIES_LIMIT = 10;
 const UPSERT_CHUNK = 400;
 
 /**
- * Search-stats ingest (SEO & AEO studio). Runs daily via Vercel Cron
+ * Search-stats ingest (SEO & AEO studio) plus the studio's weekly work
+ * (AI-visibility probes, scheduled re-audits). Runs daily via Vercel Cron
  * (vercel.json), guarded by CRON_SECRET exactly like /api/jobs/integrations.
  * Pulls the platform property's page×date performance in ONE Search Analytics
  * call, buckets rows by venue slug, and upserts per-venue daily stats; then
@@ -55,12 +57,16 @@ export async function GET(request: Request): Promise<Response> {
   // so it runs even when GSC is not configured; the GSC section below still
   // bails on its own.
   const visibility = await runWeeklyVisibilityProbes();
+  // Weekly deterministic SEO/AEO re-audits (no LLM, no provider) with the
+  // score-drop owner nudge. Also independent of Search Console.
+  const audits = await runScheduledAudits();
 
   if (!isSearchConsoleConfigured()) {
     return Response.json({
       ok: true,
       skipped: "search-console-unconfigured",
       visibility,
+      audits,
     });
   }
 
@@ -180,6 +186,7 @@ export async function GET(request: Request): Promise<Response> {
 
   return Response.json({
     visibility,
+    audits,
     ok: true,
     dailyUpserts,
     summariesRefreshed,

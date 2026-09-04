@@ -7,14 +7,17 @@ import { PageHeader } from "@/app/_components/page-header";
 import { FEATURES, hasFeature } from "@/lib/billing/plans";
 import { getVenuePlan } from "@/lib/billing/queries";
 import { isGeminiConfigured } from "@/lib/aeo-visibility";
+import { buildGmbChecklist } from "@/lib/gmb-checklist";
 import { isSearchConsoleConfigured } from "@/lib/search-console";
 import {
   hasVenuePermission,
   requireUser,
   requireVenuePermission,
 } from "@/lib/tenant";
+import { getBaseUrl } from "@/lib/url";
 
 import { AuditPanel } from "./_components/audit-panel";
+import { GmbChecklist } from "./_components/gmb-checklist";
 import { ScoreRing } from "./_components/score-viz";
 import { SearchStatsPanel } from "./_components/search-stats-panel";
 import { VisibilityPanel } from "./_components/visibility-panel";
@@ -130,6 +133,8 @@ export default async function SeoPage() {
     getLatestVisibilityRun(venue.id),
     getVisibilityHistory(venue.id),
   ]);
+  const storefrontUrl = `${await getBaseUrl()}/${venue.slug}`;
+  const gmb = buildGmbChecklist(venue, storefrontUrl, venue.gmbChecklist);
 
   return (
     <>
@@ -165,11 +170,22 @@ export default async function SeoPage() {
           />
         </div>
 
+        <GmbChecklist
+          items={gmb.items}
+          done={gmb.done}
+          total={gmb.total}
+          storefrontUrl={storefrontUrl}
+        />
+
         {recent.length > 0 ? (
           <section>
             <h2 className="font-display text-base font-semibold text-ink">
               Run history
             </h2>
+            <p className="mt-0.5 text-xs text-muted">
+              Prompt2Eat re-checks your storefront every week and emails you if a
+              score drops.
+            </p>
             <div className="mt-3 overflow-hidden rounded-card border border-line">
               <ul className="divide-y divide-line/60">
                 {recent.map((run) => (
@@ -189,7 +205,13 @@ export default async function SeoPage() {
                       </span>
                     </span>
                     <span className="flex items-center gap-3 text-xs text-muted">
-                      <span>{run.model ? "AI + checks" : "checks only"}</span>
+                      <span>
+                        {run.trigger === "scheduled"
+                          ? "weekly check"
+                          : run.model
+                            ? "AI + checks"
+                            : "checks only"}
+                      </span>
                       <span>{dateFormat(venue.timezone).format(run.createdAt)}</span>
                     </span>
                   </li>

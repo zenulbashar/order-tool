@@ -5,9 +5,9 @@ Companion to `AUDIT.md`. Closes every gap against the SEO-masterclass checklist 
 > **Status (2026-07-24):** Phases 0–5 are all **SHIPPED**. What remains is
 > operational: the Google verification/analytics/service-account setup in Phase 0,
 > and the ongoing loops (publish guides via the `/blog-post` skill, review Search
-> Console monthly, keep the Business Profile active). Phase 5's further roadmap
-> items (scheduled audits, custom-domain GSC, AI-visibility probes) are noted at
-> the end as future work.
+> Console monthly, keep the Business Profile active). Phase 5's scheduled audits,
+> GMB checklist card and AI-visibility probes shipped in September 2026; only
+> custom-domain GSC properties remain as future work.
 
 ---
 
@@ -90,13 +90,13 @@ Money pages: service × audience/city, done tastefully (dozens, not thousands �
 
 ## Phase 5 — SEO & AEO studio v2 (product roadmap)
 
-Item 1 (venue FAQs) is **SHIPPED**; the rest remain future work.
+Items 1, 2, 4 and 5 are **SHIPPED**; item 3 remains future work.
 
 1. **Venue FAQs as first-class data · SHIPPED:** the `venue_faqs` table + owner CRUD at `/dashboard/settings/faqs` (with "Import from AEO audit") now render the FAQs visibly on the storefront **and** emit FAQPage JSON-LD from the same data — closing the AEO loop.
-2. **Scheduled audits:** weekly cron re-runs per Scale venue + "score dropped" email nudge (outbox pattern already exists).
+2. **Scheduled audits · SHIPPED:** `/api/jobs/seo-stats` re-runs the deterministic SEO + AEO scorers weekly for every live Scale venue (`lib/seo-audit-schedule.ts`, no LLM, batch-bounded), stores them as `trigger = scheduled` rows in the same history, and emails the venue's owners through the existing Resend credentials when a score falls 10+ points or a band (`lib/seo-audit-schedule-core.ts`).
 3. **Custom-domain venues:** per-domain GSC properties for Scale venues on their own domains.
-4. **Owner GMB checklist card** on `/dashboard/seo` (from the Phase-4 playbook).
-5. **AI-visibility probes:** periodically ask the major assistants the six canonical questions about a venue and record whether the venue is cited — a true AEO rank tracker.
+4. **Owner GMB checklist card · SHIPPED:** `/dashboard/seo` renders the playbook as a checklist (`lib/gmb-checklist.ts`): storefront-derived rows (address, phone, hours, brand assets) are computed from the venue and link to the fix, manual rows persist as ticked keys in `venues.gmb_checklist`.
+5. **AI-visibility probes · SHIPPED:** `lib/aeo-visibility.ts` asks Gemini (grounded with Google Search) the six canonical questions per venue, records whether the storefront is cited, and runs on-demand from the studio and weekly from the cron when `GEMINI_API_KEY` is set.
 
 ---
 

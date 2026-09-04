@@ -7,8 +7,10 @@ metadata, structured data, sitemap, an ordering storefront that ranks and
 answers AI questions — but the Business Profile lives on Google and the owner
 (or their success manager) sets it up. This is the runbook.
 
-Give this to venues during onboarding, and surface it as a checklist card on
-`/dashboard/seo` in a future iteration (see `DEPLOYMENT_PLAN.md`, Phase 5).
+Give this to venues during onboarding. The same steps are surfaced as the
+"Google Business Profile" checklist card on `/dashboard/seo` (Scale plan): the
+storefront-derived rows are computed from the venue's data, the rest are ticked
+off by the owner (`lib/gmb-checklist.ts`).
 
 ## 1. Claim or create the profile
 
