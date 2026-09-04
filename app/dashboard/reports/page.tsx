@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 
 import { PageHeader } from "@/app/_components/page-header";
+import { FEATURES, hasFeature } from "@/lib/billing/plans";
+import { getVenuePlan } from "@/lib/billing/queries";
 import { db } from "@/lib/db";
 import { PAID_ORDER_STATUSES } from "@/lib/db/order-status";
 import { orderItems, orders, refunds } from "@/lib/db/schema";
+import { isInsightsConfigured } from "@/lib/insights";
 import { getVenuePointsOutstanding } from "@/lib/loyalty/balance";
 import { netOrderMoney } from "@/lib/orders/net-money";
 import {
@@ -13,6 +16,8 @@ import {
 } from "@/lib/orders/service-date";
 import { requireVenuePermission, scopedToVenue } from "@/lib/tenant";
 import { formatCents } from "@/lib/validation";
+
+import { AskPanel, type AskPanelState } from "./ask-panel";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Reports" };
@@ -230,6 +235,19 @@ export default async function ReportsPage() {
 
   const empty = orderCount === 0;
 
+  // "Ask your data": plan-gated like the other owner AI tools, off when the
+  // deployment has no model key, and pointless with no sales to ask about.
+  // The server action re-checks all of this; these only pick the panel copy.
+  const plan = await getVenuePlan(venue.id);
+  const askState: AskPanelState =
+    plan === null || !hasFeature({ plan }, FEATURES.AI_INSIGHTS)
+      ? "no-plan"
+      : !isInsightsConfigured()
+        ? "unconfigured"
+        : empty
+          ? "no-sales"
+          : "ready";
+
   return (
     <main className="mx-auto w-full max-w-[1600px]">
       <PageHeader
@@ -271,6 +289,8 @@ export default async function ReportsPage() {
             </p>
           </div>
         ) : null}
+
+        <AskPanel state={askState} />
 
         {empty ? (
           <section className="rounded-card border border-line bg-surface-elevated p-8 text-center shadow-card">

@@ -27,6 +27,10 @@ npm run dev                  # http://localhost:3000
 
 A venue can have a phone number answered by its AI agent: it answers questions about hours, location and the menu from the venue's public storefront data, and takes a pickup order that finishes with a **texted checkout link** — the caller pays on the storefront; nothing is placed or charged on the call. Setup: buy a Twilio number, point its Voice webhook at `POST https://<host>/api/voice/incoming`, and assign the number to the venue on `/admin/venues/<id>` ("Voice number"). Uses the existing `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` (signature verification) and `TWILIO_FROM` (the SMS link); the venue's plan must include the AI concierge. No realtime audio: Twilio's speech recognition and text-to-speech run between turns.
 
+### Ask your data (owner insights)
+
+`/dashboard/reports` carries an "Ask your data" box (Pro and Scale plans, free on trial): the owner types a plain-language question and a model answers it from a bounded fact sheet of the venue's own last-30-day paid orders, net of refunds — the same numbers as the cards on that page (`lib/insights-core.ts`). The model never sees a table or writes SQL; the sheet is prompt-cached, the reply is forced to a JSON shape and re-validated, and each venue is rate-limited. Uses the existing `ANTHROPIC_API_KEY`; unset = the box explains it is off.
+
 ### Installable web app + web push (PWA)
 
 The site ships a manifest and a minimal service worker (`public/sw.js`, push and notification-click only — no caching, so deploys are never stale). With `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` set, owners get an "Enable on this device" button on `/dashboard/settings/notifications` that subscribes the browser (or the installed web app) to new-order pushes through the same `/api/push/register` endpoint as the native app, and diners get "Notify me when it's ready" on a paid order's confirmation page (`POST /api/push/order`, anonymous, keyed by the opaque order token). Dead subscriptions are pruned on the first failed send.
