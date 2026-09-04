@@ -22,6 +22,7 @@ import {
   type SeoAuditRecommendation,
   type SeoGeneratedCopy,
 } from "@/lib/db/schema";
+import { toggleGmbChecklistKey } from "@/lib/gmb-checklist";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { computeAeoAudit, computeSeoAudit } from "@/lib/seo-audit";
 import {
@@ -328,4 +329,24 @@ export async function applyGeneratedCopy(input: {
   revalidatePath("/dashboard/settings/about");
   revalidateStorefront(venue);
   return { ok: true };
+}
+
+/**
+ * Tick / untick one MANUAL item on the Google Business Profile checklist.
+ * Storefront-derived items are recomputed on render and cannot be ticked —
+ * the pure helper returns null for them and the request is ignored. Persists
+ * only known keys (venue-scoped write), so a forged key changes nothing.
+ */
+export async function toggleGmbChecklistItem(formData: FormData): Promise<void> {
+  const venue = await requireVenueForAction();
+  if (!(await isSeoEntitled(venue.id))) return;
+  const key = formData.get("key");
+  if (typeof key !== "string") return;
+  const next = toggleGmbChecklistKey(venue.gmbChecklist, key);
+  if (next === null) return;
+  await db
+    .update(venues)
+    .set({ gmbChecklist: next })
+    .where(scopedToVenue(venues.id, venue.id));
+  revalidatePath(SEO_PATH);
 }

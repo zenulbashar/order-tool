@@ -304,6 +304,10 @@ export const venues = pgTable(
     // (lib/push.ts) is still a no-op unless FCM is configured + a device is
     // registered, so this only ever suppresses, never fabricates, a push.
     pushNewOrders: boolean("push_new_orders").notNull().default(true),
+    // Google Business Profile checklist (lib/gmb-checklist.ts): the MANUAL
+    // items the owner has ticked, as keys. Storefront-derived items are never
+    // stored — they are recomputed from the venue row on every render.
+    gmbChecklist: jsonb("gmb_checklist").$type<string[]>().notNull().default([]),
     // Admin-set subscription-fee discount (Track E2c). off = list price; the
     // value is % (percent mode) or cents/month (amount mode). Applied as a
     // Stripe coupon on the subscription; these columns are our intent/display.
@@ -2369,6 +2373,10 @@ export const seoAudits = pgTable(
     // Model that produced the LLM layer; NULL = deterministic-only run (the
     // AI was rate-limited/unavailable/refused — the audit still succeeded).
     model: text("model"),
+    // Who started the run: the owner's button or the weekly cron
+    // (lib/seo-audit-schedule.ts). Plain text so a later trigger needs no
+    // ALTER TYPE; existing rows are owner-started by definition.
+    trigger: text("trigger").notNull().default("owner"),
     createdAt: createdAt(),
   },
   (table) => [

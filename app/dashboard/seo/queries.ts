@@ -66,6 +66,7 @@ export type RecentAuditRow = {
   score: number;
   band: string;
   model: string | null;
+  trigger: string;
   createdAt: Date;
 };
 
@@ -81,6 +82,7 @@ export async function getRecentAudits(
       score: seoAudits.score,
       band: seoAudits.band,
       model: seoAudits.model,
+      trigger: seoAudits.trigger,
       createdAt: seoAudits.createdAt,
     })
     .from(seoAudits)
